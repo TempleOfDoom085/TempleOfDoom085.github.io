@@ -492,7 +492,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag neon">SVG Art</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v5.2 Live</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v6.0 Live</span>
         </div>
         <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
       </div>
@@ -519,7 +519,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
       <div id="gameLauncher">
         <button class="game-launch-btn" onclick="launchGame()">
           <div class="game-launch-title">KNIGHTS TEMPLAR</div>
-          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 5.2 —</div>
+          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 6.0 —</div>
           <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
         </button>
       </div>
@@ -537,13 +537,58 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
-        <span class="patch-version-tag">v5.2</span>
-        <span class="patch-version-name">Immersion Overhaul — Detail, Readability & Bug Fixes</span>
+        <span class="patch-version-tag">v6.0</span>
+        <span class="patch-version-name">Photorealistic Texture Engine</span>
         <span class="patch-date">March 2026</span>
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
+        <div class="patch-category">Hybrid Image Engine</div>
+        <ul class="patch-list">
+          <li>Photorealistic background system — drop AI-generated .webp images into img/ folder and rooms auto-upgrade from SVG to photo-real</li>
+          <li>Lazy-load architecture with adjacent-room prefetch — silky smooth transitions, zero load stalls</li>
+          <li>SVG knight overlay composites on top of photo backgrounds — your character rendered in real-time over painted scenes</li>
+          <li>Enemy portrait system — combat overlay shows photorealistic enemy art when available</li>
+          <li>Special scene images for golden armor, death, and victory cutscenes</li>
+          <li>Fully backwards compatible — every room falls back to detailed procedural SVG when no image exists</li>
+        </ul>
+        <div class="patch-category">SVG Turbulence Material System</div>
+        <ul class="patch-list">
+          <li>Procedural stone texture via feTurbulence fractalNoise — every wall now has visible, organic surface variation instead of flat color</li>
+          <li>Separate floor stone texture with different noise frequency — flagstones look distinct from walls</li>
+          <li>Rough wall filter with multi-octave fractal noise — surfaces feel weathered and ancient</li>
+          <li>Wood grain filter via directional turbulence — torch brackets and furniture have visible grain</li>
+          <li>Rust metal filter — shields, chains, and armor show realistic corrosion and age</li>
+          <li>Fabric weave filter — Templar banners and cloth have woven textile texture</li>
+          <li>All 17 rooms upgraded — walls, floors, objects, and props all use material filters</li>
+        </ul>
+        <div class="patch-category">Animated Torch Flames</div>
+        <ul class="patch-list">
+          <li>Torch flames now flicker with SVG animate — variable flame height, brightness, and glow radius</li>
+          <li>Light pool beneath each torch pulses with the flame — ambient illumination breathes</li>
+          <li>Multi-layer flame: outer glow, inner flame, bright core — each animated independently</li>
+          <li>No JavaScript required — pure SVG declarative animation, zero performance cost</li>
+        </ul>
+        <div class="patch-category">Atmospheric Rendering</div>
+        <ul class="patch-list">
+          <li>Warm ambient light gradient applied to all indoor scenes — rooms feel lit by firelight</li>
+          <li>Floor edge shadow line — hard contact shadow where wall meets floor adds depth</li>
+          <li>Enhanced candleGlow radial gradient — warmer and more visible light pools</li>
+          <li>Material filters stack with block patterns — stone blocks visible through the surface noise</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v5.2</span>
+        <span class="patch-version-name">Immersion Overhaul — Detail, Readability & Bug Fixes</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status prev">PREVIOUS</span>
+        <span class="patch-toggle">▶</span>
+      </div>
+      <div class="patch-body">
         <div class="patch-category">Font & Readability Overhaul</div>
         <ul class="patch-list">
           <li>All font sizes increased across every UI element — room names, log text, buttons, HP display, inventory, NPC dialog, scroll verses, achievement popups</li>
