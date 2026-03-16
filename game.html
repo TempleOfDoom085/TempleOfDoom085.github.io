@@ -10,19 +10,19 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #08080a;
-  --panel: #0d0d10;
-  --panel-border: rgba(184,147,58,0.18);
-  --gold: #c9a84c;
-  --gold-dim: rgba(184,147,58,0.35);
-  --gold-glow: rgba(201,168,76,0.25);
+  --bg: #0c0c10;
+  --panel: #111116;
+  --panel-border: rgba(184,147,58,0.25);
+  --gold: #d4b458;
+  --gold-dim: rgba(184,147,58,0.45);
+  --gold-glow: rgba(201,168,76,0.35);
   --crimson: #8B0000;
-  --crimson-bright: #cc2222;
-  --neon: #5ec4d4;
-  --neon-dim: rgba(94,196,212,0.15);
-  --text: #d4cfc4;
-  --text-dim: rgba(212,207,196,0.5);
-  --text-faint: rgba(212,207,196,0.25);
+  --crimson-bright: #dd3333;
+  --neon: #6ed4e4;
+  --neon-dim: rgba(94,196,212,0.2);
+  --text: #e8e4da;
+  --text-dim: rgba(232,228,218,0.6);
+  --text-faint: rgba(232,228,218,0.35);
   --hp-green: #4a8;
   --hp-orange: #c84;
   --hp-red: #c44;
@@ -99,15 +99,15 @@ body {
 }
 .hp-text {
   font-family: var(--ui);
-  font-size: 0.78rem;
-  color: var(--text-dim);
+  font-size: 0.88rem;
+  color: var(--text);
   min-width: 52px;
   text-align: right;
 }
 .inv-count {
   font-family: var(--ui);
-  font-size: 0.78rem;
-  color: var(--gold-dim);
+  font-size: 0.88rem;
+  color: var(--gold);
   letter-spacing: 0.08em;
 }
 .btn-audio, .btn-fullscreen {
@@ -174,17 +174,17 @@ body {
 }
 .scene-room-name {
   font-family: var(--heading);
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   color: var(--gold);
-  text-shadow: 0 0 16px rgba(201,168,76,0.4);
+  text-shadow: 0 0 20px rgba(201,168,76,0.5);
   letter-spacing: 0.08em;
 }
 .scene-room-sub {
   font-family: var(--body);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: var(--text-dim);
   font-style: italic;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* ═══ MAP PANEL ═══ */
@@ -233,8 +233,8 @@ body {
   align-items: center;
   gap: 4px;
   font-family: var(--ui);
-  font-size: 0.5rem;
-  color: var(--text-faint);
+  font-size: 0.6rem;
+  color: var(--text-dim);
   letter-spacing: 0.06em;
 }
 .map-legend-dot {
@@ -261,24 +261,24 @@ body {
 .log-panel::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
 
 .log-line {
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.7;
   color: var(--text);
   opacity: 0;
   animation: fadeLogIn 0.4s ease forwards;
 }
 @keyframes fadeLogIn { to { opacity: 1; } }
 
-.log-line.lore { color: #a89870; font-style: italic; }
-.log-line.combat { color: var(--crimson-bright); }
-.log-line.heal { color: var(--hp-green); }
-.log-line.item { color: var(--gold); }
+.log-line.lore { color: #c4ad82; font-style: italic; }
+.log-line.combat { color: var(--crimson-bright); font-weight: 600; }
+.log-line.heal { color: #5ccc88; }
+.log-line.item { color: var(--gold); font-weight: 600; }
 .log-line.npc { color: var(--neon); }
-.log-line.scroll { color: #d4a0ff; }
-.log-line.achievement { color: #ffd700; font-family: var(--ui); font-size: 0.95rem; letter-spacing: 0.04em; }
-.log-line.system { color: var(--text-faint); font-style: italic; font-size: 0.92rem; }
-.log-line.death { color: var(--crimson-bright); font-family: var(--heading); font-size: 1.15rem; text-align: center; }
-.log-line.victory { color: var(--gold); font-family: var(--heading); font-size: 1.15rem; text-align: center; }
+.log-line.scroll { color: #ddb4ff; }
+.log-line.achievement { color: #ffd700; font-family: var(--ui); font-size: 1.05rem; letter-spacing: 0.04em; }
+.log-line.system { color: var(--text-dim); font-style: italic; font-size: 0.95rem; }
+.log-line.death { color: var(--crimson-bright); font-family: var(--heading); font-size: 1.2rem; text-align: center; }
+.log-line.victory { color: var(--gold); font-family: var(--heading); font-size: 1.2rem; text-align: center; }
 .log-line.divine { color: #ffd700; font-family: var(--heading); text-align: center; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
 .log-separator {
   border: none;
@@ -301,27 +301,27 @@ body {
 }
 .inv-label {
   font-family: var(--ui);
-  font-size: 0.72rem;
-  color: var(--gold-dim);
+  font-size: 0.8rem;
+  color: var(--gold);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   flex-shrink: 0;
 }
 .inv-item {
   font-family: var(--ui);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--text);
-  padding: 3px 10px;
-  background: rgba(184,147,58,0.06);
-  border: 1px solid rgba(184,147,58,0.15);
+  padding: 4px 12px;
+  background: rgba(184,147,58,0.08);
+  border: 1px solid rgba(184,147,58,0.2);
   border-radius: 2px;
   white-space: nowrap;
   letter-spacing: 0.04em;
 }
 .inv-item.scroll-item {
-  border-color: rgba(160,120,255,0.25);
-  background: rgba(160,120,255,0.06);
-  color: #c4a0ee;
+  border-color: rgba(160,120,255,0.3);
+  background: rgba(160,120,255,0.08);
+  color: #d4b4ff;
 }
 
 /* ═══ CONTROLS BAR ═══ */
@@ -349,11 +349,11 @@ body {
 }
 .ctrl-btn {
   font-family: var(--ui);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   letter-spacing: 0.08em;
-  padding: 9px 18px;
-  border: 1px solid rgba(184,147,58,0.25);
-  background: rgba(184,147,58,0.04);
+  padding: 11px 22px;
+  border: 1px solid rgba(184,147,58,0.35);
+  background: rgba(184,147,58,0.08);
   color: var(--gold);
   cursor: pointer;
   transition: all 0.2s;
@@ -854,10 +854,10 @@ body {
 <!-- CONTROLS BAR -->
 <div class="controls-bar" id="controlsBar">
   <div class="ctrl-group" id="navGroup">
-    <button class="ctrl-btn" id="btnN" onclick="go('north')">↑ North</button>
-    <button class="ctrl-btn" id="btnS" onclick="go('south')">↓ South</button>
-    <button class="ctrl-btn" id="btnE" onclick="go('east')">→ East</button>
-    <button class="ctrl-btn" id="btnW" onclick="go('west')">← West</button>
+    <button class="ctrl-btn" id="btnNorth" onclick="go('north')">↑ NORTH</button>
+    <button class="ctrl-btn" id="btnSouth" onclick="go('south')">↓ SOUTH</button>
+    <button class="ctrl-btn" id="btnEast" onclick="go('east')">→ EAST</button>
+    <button class="ctrl-btn" id="btnWest" onclick="go('west')">← WEST</button>
   </div>
   <div class="ctrl-divider"></div>
   <div class="ctrl-group" id="actionGroup">
