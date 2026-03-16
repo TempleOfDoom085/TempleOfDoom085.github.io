@@ -120,8 +120,32 @@ html,body{width:100%;height:100%;background:var(--black);color:var(--paper);font
 #cStatus{font-size:0.72rem;letter-spacing:0.1em;color:var(--ice);text-transform:uppercase;}
 #relicCnt{font-size:0.72rem;letter-spacing:0.1em;color:var(--gold);margin-left:auto;}
 
-#mapWrap{padding:8px 10px 4px;border-bottom:1px solid rgba(201,162,39,0.08);}
-#mapSvg{width:100%;display:block;}
+/* MAP - fog of war style, compact */
+#mapWrap{padding:6px 10px 4px;border-bottom:1px solid rgba(201,162,39,0.08);}
+#mapSvg{width:100%;display:block;max-height:130px;}
+
+/* CENTER CONTROL ZONE */
+#controlZone{
+  display:flex;align-items:center;gap:10px;padding:8px 14px;
+  border-bottom:1px solid rgba(201,162,39,0.08);
+  background:linear-gradient(180deg,rgba(13,14,22,0.95),rgba(8,9,14,0.98));
+}
+#actionBtns{
+  display:flex;flex-direction:column;gap:4px;min-width:100px;
+  align-items:flex-start;
+}
+#dirPad{
+  display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,36px);
+  gap:3px;flex-shrink:0;
+}
+.db{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.08em;padding:0;
+  border:1px solid rgba(0,212,255,0.22);color:rgba(0,212,255,0.7);background:rgba(0,212,255,0.04);
+  cursor:pointer;text-transform:uppercase;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+.db:hover:not(:disabled){background:rgba(0,212,255,0.12);border-color:var(--ice);color:#fff;}
+.db:disabled{opacity:0.1;cursor:not-allowed;}
+.db.center-blank{border:none;background:none;cursor:default;}
+#quickInfo{flex:1;display:flex;flex-direction:column;gap:6px;}
+#miniStatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 
 #invRow{display:flex;flex-wrap:wrap;gap:4px;padding:5px 12px;border-bottom:1px solid rgba(201,162,39,0.06);min-height:28px;align-items:center;}
 .ilbl{font-size:0.68rem;color:rgba(221,213,192,0.25);letter-spacing:0.12em;margin-right:4px;text-transform:uppercase;}
@@ -151,7 +175,7 @@ html,body{width:100%;height:100%;background:var(--black);color:var(--paper);font
 .cb-d{border-color:rgba(0,212,255,0.28);color:var(--ice);}.cb-d:hover{background:rgba(0,212,255,0.08);}
 .cb-f{border-color:rgba(221,213,192,0.12);color:rgba(221,213,192,0.38);}.cb-f:hover{background:rgba(221,213,192,0.04);}
 
-#dirGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:7px 12px;border-top:1px solid rgba(201,162,39,0.06);}
+/* dirGrid replaced by dirPad */
 .db{font-family:var(--mono);font-size:0.74rem;letter-spacing:0.1em;padding:8px 4px;border:1px solid rgba(0,212,255,0.18);color:rgba(0,212,255,0.65);background:none;cursor:pointer;text-transform:uppercase;transition:all 0.2s;}
 .db:hover:not(:disabled){background:rgba(0,212,255,0.07);border-color:var(--ice);}
 .db:disabled{opacity:0.1;cursor:not-allowed;}
@@ -213,10 +237,7 @@ html,body{width:100%;height:100%;background:var(--black);color:var(--paper);font
     <div id="npcHint" onclick="talkNPC()"></div>
     <div id="paintingHint" onclick="viewPainting()">🖼 A portrait hangs on the wall…</div>
     <div id="noteHint" onclick="openNote()"></div>
-    <div id="itemArea">
-      <div id="itemLabel"></div>
-      <button id="grabBtn" onclick="doGrab()">⚔ Take Relic</button>
-    </div>
+    <!-- itemArea moved to controlZone -->
     <div id="fxBlood"></div><div id="fxGold"></div><div id="fxIce"></div><div id="fxSaint"></div>
     <div id="endOverlay">
       <h2 id="endH"></h2><p id="endP"></p>
@@ -262,22 +283,60 @@ html,body{width:100%;height:100%;background:var(--black);color:var(--paper);font
   </div>
 
   <div id="lower">
-    <div id="statusBar">
-      <span class="hp-lbl">HP</span>
-      <div id="hpWrap"><div id="hpFill" style="width:100%"></div></div>
-      <span id="hpNum">100/100</span>
-      <span id="invincTag">⚔ SAINT MICHAEL'S BLESSING ⚔</span>
-      <div style="width:1px;height:14px;background:rgba(255,255,255,0.07)"></div>
-      <span id="cStatus"></span>
-      <span id="relicCnt">Relics 0/6</span>
+    <!-- CONTROL ZONE: d-pad center + action buttons + status -->
+    <div id="controlZone">
+      <!-- LEFT: Action buttons (grab + combat) -->
+      <div id="actionBtns">
+        <!-- Grab relic -->
+        <div id="itemArea" style="position:static;z-index:auto;align-items:flex-start;">
+          <div id="itemLabel"></div>
+          <button id="grabBtn" onclick="doGrab()" style="display:none;">⚔ Take Relic</button>
+        </div>
+        <!-- Combat actions (shown during combat) -->
+        <div id="combatQuick" style="display:none;flex-direction:column;gap:4px;">
+          <button class="cb cb-a" onclick="doFight('attack')" style="padding:6px 4px;font-size:0.68rem;">⚔ ATTACK</button>
+          <button class="cb cb-d" onclick="doFight('defend')" style="padding:6px 4px;font-size:0.68rem;">🛡 DEFEND</button>
+          <button class="cb cb-f" onclick="doFight('flee')" style="padding:6px 4px;font-size:0.68rem;">↩ FLEE</button>
+        </div>
+      </div>
+
+      <!-- CENTER: D-PAD -->
+      <div id="dirPad">
+        <div class="db center-blank"></div>
+        <button class="db" id="bN" onclick="move('North')">↑</button>
+        <div class="db center-blank"></div>
+        <button class="db" id="bW" onclick="move('West')">←</button>
+        <div class="db center-blank" style="background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.1);">
+          <span style="font-size:0.55rem;color:rgba(201,162,39,0.4);font-family:var(--mono);">✦</span>
+        </div>
+        <button class="db" id="bE" onclick="move('East')">→</button>
+        <div class="db center-blank"></div>
+        <button class="db" id="bS" onclick="move('South')">↓</button>
+        <div class="db center-blank"></div>
+      </div>
+
+      <!-- RIGHT: Status -->
+      <div id="quickInfo">
+        <div id="miniStatus">
+          <span class="hp-lbl">HP</span>
+          <div id="hpWrap"><div id="hpFill" style="width:100%"></div></div>
+          <span id="hpNum">100/100</span>
+          <span id="invincTag">⚔ BLESSED ⚔</span>
+          <span id="cStatus"></span>
+          <span id="relicCnt" style="margin-left:auto;">Relics 0/6</span>
+        </div>
+        <div id="invRow" style="border:none;padding:0;min-height:auto;">
+          <span class="ilbl">Relics:</span>
+          <span id="invEmpty" style="font-size:0.62rem;color:rgba(221,213,192,0.18)">none collected</span>
+        </div>
+      </div>
     </div>
-    <div id="mapWrap"><svg id="mapSvg" viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <div id="invRow">
-      <span class="ilbl">Relics:</span>
-      <span id="invEmpty" style="font-size:0.65rem;color:rgba(221,213,192,0.18)">none</span>
-    </div>
+    <!-- FOG OF WAR MAP -->
+    <div id="mapWrap"><svg id="mapSvg" viewBox="0 0 640 130" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <!-- LOG -->
     <div id="log"></div>
-    <div id="combatPanel">
+    <!-- COMBAT STATUS (enemy hp bar - kept for logic) -->
+    <div id="combatPanel" style="display:none;flex-direction:column;border-top:1px solid rgba(139,0,0,0.35);background:rgba(139,0,0,0.05);">
       <div id="combatHdr">
         <span id="eName">⚔ COMBAT</span>
         <div id="eHpRow">
@@ -286,20 +345,10 @@ html,body{width:100%;height:100%;background:var(--black);color:var(--paper);font
           <span id="eHpNum"></span>
         </div>
       </div>
-      <div id="combatBtns">
-        <button class="cb cb-a" onclick="doFight('attack')">⚔ ATTACK</button>
-        <button class="cb cb-d" onclick="doFight('defend')">🛡 DEFEND</button>
-        <button class="cb cb-f" onclick="doFight('flee')">↩ FLEE</button>
-      </div>
     </div>
-    <div id="dirGrid">
-      <button class="db" id="bN" onclick="move('North')">↑ North</button>
-      <button class="db" id="bS" onclick="move('South')">↓ South</button>
-      <button class="db" id="bE" onclick="move('East')">→ East</button>
-      <button class="db" id="bW" onclick="move('West')">← West</button>
-    </div>
+    <!-- INPUT -->
     <div id="inputRow">
-      <input id="cmdIn" placeholder="attack / go north / get / read / talk monk…" autocomplete="off"/>
+      <input id="cmdIn" placeholder="attack · go north · get · read · talk monk…" autocomplete="off"/>
       <button id="cmdSend" onclick="submit()">ENTER</button>
       <button id="fsBtn" onclick="toggleFS()">⛶</button>
     </div>
@@ -1085,43 +1134,84 @@ function closeSaint() {
 // ═══════════════════════════════════════════
 function renderMap() {
   const svg = document.getElementById('mapSvg');
-  const RW=72, RH=20;
-  let html = `<rect width="640" height="180" fill="#07080d" rx="3"/>`;
+  const RW=58, RH=16;
+  // Compact fog-of-war map: 640x130
+  let html = `<rect width="640" height="130" fill="#05060a" rx="3"/>`;
 
+  // Connections - only show if BOTH rooms visited
   MAP_CONN.forEach(([a,b])=>{
     const pa=MAP_FIXED[a], pb=MAP_FIXED[b];
     if(!pa||!pb) return;
-    const isV=a===VILLAIN||b===VILLAIN, isH=a==='Infirmary'||b==='Infirmary';
-    html += `<line x1="${pa[0]}" y1="${pa[1]+RH/2}" x2="${pb[0]}" y2="${pb[1]+RH/2}" stroke="${isV?'#5a0000':isH?'#1a4020':'#1e2030'}" stroke-width="1.2" opacity="0.7"/>`;
+    const aVis=G.visited.has(a)||a===G.cur;
+    const bVis=G.visited.has(b)||b===G.cur;
+    // Scale positions to fit 640x130
+    const ax=pa[0]*0.95+10, ay=Math.round(pa[1]*0.7)+8;
+    const bx=pb[0]*0.95+10, by=Math.round(pb[1]*0.7)+8;
+    if(aVis&&bVis){
+      // Full connection - both visited
+      const isV=a===VILLAIN||b===VILLAIN;
+      html += `<line x1="${ax}" y1="${ay+RH/2}" x2="${bx}" y2="${by+RH/2}" stroke="${isV?'#5a0000':'#252830'}" stroke-width="1.5" opacity="0.8"/>`;
+    } else if(aVis||bVis){
+      // Partial - one visited, show path but blurred
+      const ax2=pa[0]*0.95+10+RW/2, ay2=Math.round(pa[1]*0.7)+8+RH/2;
+      const bx2=pb[0]*0.95+10+RW/2, by2=Math.round(pb[1]*0.7)+8+RH/2;
+      html += `<line x1="${ax2}" y1="${ay2}" x2="${bx2}" y2="${by2}" stroke="#1a1e28" stroke-width="1" opacity="0.5" stroke-dasharray="3 4"/>`;
+    }
   });
 
+  // Rooms
   Object.keys(MAP_FIXED).forEach(name=>{
     const pos=MAP_FIXED[name]; if(!pos) return;
-    const [cx,cy]=pos;
-    const isCur=name===G.cur, isVil=name===VILLAIN, isHeal=name==='Infirmary';
-    const isVis=G.visited.has(name), isClr=G.cleared.has(name);
+    const cx=pos[0]*0.95+10, cy=Math.round(pos[1]*0.7)+8;
+    const isCur=name===G.cur;
+    const isVil=name===VILLAIN;
+    const isVis=G.visited.has(name);
+    const isClr=G.cleared.has(name);
     const hasItem=G.roomData[name]&&G.roomData[name].item;
     const npc=NPCS[name];
-    let fill='#0a0b12', stroke='#16182a', tc='rgba(221,213,192,0.18)';
-    if(isVil)      { fill='#120002'; stroke='#4a0000'; tc='rgba(255,80,80,0.5)'; }
-    else if(isHeal){ fill='#04100a'; stroke='#183818'; tc='rgba(100,220,140,0.5)'; }
-    else if(isCur) { fill='#18140a'; stroke='#c9a227'; tc='#f0c040'; }
-    else if(isClr) { fill='#050c12'; stroke='rgba(0,212,255,0.3)'; tc='rgba(0,212,255,0.4)'; }
-    else if(isVis) { fill='#0c0d14'; stroke='#22243a'; tc='rgba(201,162,39,0.5)'; }
-    html += `<rect x="${cx-RW/2}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="${isCur?1.8:0.7}"/>`;
-    if(isCur)    html += `<rect x="${cx-RW/2}" y="${cy}" width="${RW}" height="2" rx="1" fill="#c9a227" opacity="0.8"/>`;
-    if(hasItem)  html += `<circle cx="${cx+RW/2-5}" cy="${cy+4}" r="3.5" fill="#a8e6a3" opacity="0.8"/>`;
-    if(npc&&!G.npcsTalked.has(npc.id)) html += `<circle cx="${cx-RW/2+5}" cy="${cy+4}" r="3.5" fill="#00d4ff" opacity="0.7"/>`;
-    const sh=name.length>12?name.slice(0,11)+'…':name;
-    html += `<text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="7.5" fill="${tc}" font-family="Courier New">${sh}</text>`;
+
+    if(isCur){
+      // Current room — fully visible, glowing
+      html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="#18140a" stroke="#c9a227" stroke-width="1.8"/>`;
+      html += `<rect x="${cx}" y="${cy}" width="${RW}" height="2" rx="1" fill="#c9a227" opacity="0.9"/>`;
+      // Pulse ring
+      html += `<rect x="${cx-2}" y="${cy-2}" width="${RW+4}" height="${RH+4}" rx="3" fill="none" stroke="#c9a227" stroke-width="0.5" opacity="0.3"/>`;
+      html += `<text x="${cx+RW/2}" y="${cy+11}" text-anchor="middle" font-size="7" fill="#f0c040" font-family="Courier New" font-weight="bold">YOU</text>`;
+      if(hasItem) html += `<circle cx="${cx+RW-4}" cy="${cy+4}" r="3" fill="#a8e6a3" opacity="0.9"/>`;
+      if(npc&&!G.npcsTalked.has(npc.id)) html += `<circle cx="${cx+4}" cy="${cy+4}" r="3" fill="#00d4ff" opacity="0.8"/>`;
+    } else if(isVis||isClr){
+      // Visited — show with appropriate color
+      let fill='#0c0d14', stroke='#22243a', tc='rgba(201,162,39,0.52)';
+      if(isVil)      { fill='#120002'; stroke='#5a0000'; tc='rgba(255,80,80,0.65)'; }
+      else if(isClr) { fill='#050c12'; stroke='rgba(0,212,255,0.28)'; tc='rgba(0,212,255,0.5)'; }
+      else if(name==='Infirmary') { fill='#04100a'; stroke='#183818'; tc='rgba(100,220,140,0.55)'; }
+      html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.8"/>`;
+      if(isVil) html += `<rect x="${cx}" y="${cy}" width="${RW}" height="2" rx="1" fill="#8B0000" opacity="0.7"/>`;
+      html += `<text x="${cx+RW/2}" y="${cy+11}" text-anchor="middle" font-size="6.5" fill="${tc}" font-family="Courier New">${name.length>10?name.slice(0,9)+'…':name}</text>`;
+      if(hasItem) html += `<circle cx="${cx+RW-4}" cy="${cy+4}" r="2.5" fill="#a8e6a3" opacity="0.8"/>`;
+      if(npc&&!G.npcsTalked.has(npc.id)) html += `<circle cx="${cx+4}" cy="${cy+4}" r="2.5" fill="#00d4ff" opacity="0.7"/>`;
+    } else {
+      // UNVISITED — fog of war: show shape but NO name, blurred/dark
+      // Only show if adjacent to a visited room
+      const isAdjacent = MAP_CONN.some(([a,b])=>(a===name&&G.visited.has(b))||(b===name&&G.visited.has(a)));
+      if(isAdjacent){
+        // Adjacent — show as mystery room with ? 
+        html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="#0a0b10" stroke="#161820" stroke-width="0.6" opacity="0.7"/>`;
+        html += `<text x="${cx+RW/2}" y="${cy+11}" text-anchor="middle" font-size="8" fill="rgba(221,213,192,0.18)" font-family="Courier New">???</text>`;
+      } else {
+        // Far away — barely visible outline only
+        html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="#07080c" stroke="#0f1018" stroke-width="0.4" opacity="0.4"/>`;
+      }
+    }
   });
 
-  html += `<circle cx="18" cy="172" r="3.5" fill="#a8e6a3" opacity="0.8"/><text x="26" y="176" font-size="7" fill="rgba(221,213,192,0.3)" font-family="Courier New">Relic</text>`;
-  html += `<circle cx="70" cy="172" r="3.5" fill="#00d4ff" opacity="0.7"/><text x="78" y="176" font-size="7" fill="rgba(221,213,192,0.3)" font-family="Courier New">NPC</text>`;
-  html += `<rect x="110" y="168" width="10" height="7" rx="1" fill="#18140a" stroke="#c9a227" stroke-width="1.5"/><text x="124" y="176" font-size="7" fill="rgba(221,213,192,0.3)" font-family="Courier New">You</text>`;
-  html += `<rect x="152" y="168" width="10" height="7" rx="1" fill="#120002" stroke="#4a0000" stroke-width="1"/><text x="166" y="176" font-size="7" fill="rgba(221,213,192,0.3)" font-family="Courier New">Boss</text>`;
+  // Legend - compact
+  html += `<circle cx="10" cy="122" r="3" fill="#a8e6a3" opacity="0.8"/><text x="17" y="126" font-size="6.5" fill="rgba(221,213,192,0.3)" font-family="Courier New">Relic</text>`;
+  html += `<circle cx="58" cy="122" r="3" fill="#00d4ff" opacity="0.7"/><text x="65" y="126" font-size="6.5" fill="rgba(221,213,192,0.3)" font-family="Courier New">NPC</text>`;
+  html += `<rect x="100" y="118" width="9" height="7" rx="1" fill="#18140a" stroke="#c9a227" stroke-width="1.5"/><text x="113" y="126" font-size="6.5" fill="rgba(221,213,192,0.3)" font-family="Courier New">You</text>`;
+  html += `<rect x="144" y="118" width="9" height="7" rx="1" fill="#0a0b10" stroke="#161820" stroke-width="0.6" opacity="0.7"/><text x="157" y="126" font-size="6.5" fill="rgba(221,213,192,0.22)" font-family="Courier New">Unknown</text>`;
   svg.innerHTML = html;
-}
+}}
 
 // ═══════════════════════════════════════════
 // SCENE REFRESH
@@ -1196,7 +1286,12 @@ function refreshDirs() {
 }
 
 function refreshCombat(show) {
-  document.getElementById('combatPanel').classList.toggle('on',show);
+  // Show/hide enemy HP bar
+  const cp = document.getElementById('combatPanel');
+  cp.style.display = show ? 'flex' : 'none';
+  // Show/hide combat quick buttons in center
+  const cq = document.getElementById('combatQuick');
+  if(cq) cq.style.display = show ? 'flex' : 'none';
   document.getElementById('cStatus').textContent = show ? '⚔ IN COMBAT' : '';
   if(show&&G.combat) {
     document.getElementById('eName').textContent='⚔ '+G.combat.name.toUpperCase();
