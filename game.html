@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knights Templar: The Siege of the Undead — v5.2</title>
+<title>Knights Templar: The Siege of the Undead — v6.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
 
@@ -151,7 +151,20 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  position: relative;
+  z-index: 1;
 }
+.scene-bg-img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.scene-bg-img.loaded { opacity: 1; }
+.scene-bg-img.loaded + .scene-svg { background: transparent !important; }
 .scene-overlay {
   position: absolute;
   bottom: 0; left: 0; right: 0;
@@ -398,6 +411,14 @@ body {
 }
 @keyframes actionPulse { 0%,100%{box-shadow:0 0 4px rgba(94,196,212,0.2)} 50%{box-shadow:0 0 16px rgba(94,196,212,0.5)} }
 @keyframes scrollPulse { 0%,100%{box-shadow:0 0 4px rgba(160,120,255,0.2)} 50%{box-shadow:0 0 16px rgba(160,120,255,0.5)} }
+
+/* ═══ v6.0 TORCH FLICKER (applied via SVG animate) ═══ */
+@keyframes torchFlicker {
+  0%,100% { opacity: 0.85; }
+  25% { opacity: 1; }
+  50% { opacity: 0.75; }
+  75% { opacity: 0.95; }
+}
 
 /* ═══ COMBAT OVERLAY ═══ */
 .combat-overlay {
@@ -747,6 +768,7 @@ body {
 <div class="game-main" style="position:relative">
   <!-- SCENE ART -->
   <div class="scene-panel" id="scenePanel">
+    <img id="sceneBgImg" class="scene-bg-img" alt="" />
     <div id="sceneArt" class="scene-svg"></div>
     <div class="scene-vignette"></div>
     <div class="ambient-tint" id="ambientTint"></div>
@@ -854,8 +876,8 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v5.2 GAME ENGINE
-// Immersion Overhaul — Detail, Readability & Bug Fixes
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v6.0 GAME ENGINE
+// Photorealistic Texture Engine — SVG Turbulence, Animated Flames, Material Filters
 // ═══════════════════════════════════════════════════════════════
 
 // ─── GAME STATE ───
@@ -1055,7 +1077,50 @@ const ROOM_FX = {
   watchtower:{particles:'dust',tint:'rgba(150,170,200,0.04)'}
 };
 
-// ─── v5.1 EFFECT FUNCTIONS ───
+// ─── v6.0 PHOTOREALISTIC IMAGE SYSTEM ───
+// Place .webp images in an 'img/' folder next to game.html
+// Any room without an image falls back to procedural SVG art
+const IMG_PATH = 'img/';
+const ROOM_IMAGES = {
+  chapel:'chapel.webp', cloister:'cloister.webp', armory:'armory.webp',
+  scriptorium:'scriptorium.webp', barracks:'barracks.webp', infirmary:'infirmary.webp',
+  bellTower:'bellTower.webp', courtyard:'courtyard.webp', cryptEntrance:'cryptEntrance.webp',
+  catacombs:'catacombs.webp', necromancerLair:'necromancerLair.webp', grandHall:'grandHall.webp',
+  treasury:'treasury.webp', boneThrone:'boneThrone.webp', portraitGallery:'portraitGallery.webp',
+  dungeonDepths:'dungeonDepths.webp', watchtower:'watchtower.webp'
+};
+const ENEMY_IMAGES = {
+  risen:'enemy_risen.webp', peasant:'enemy_peasant.webp', necromancer:'enemy_necromancer.webp'
+};
+const SCENE_IMAGES = {
+  golden:'scene_golden.webp', death:'scene_death.webp', victory:'scene_victory.webp'
+};
+// Track which images actually loaded successfully
+const loadedImages = {};
+
+function preloadImage(key, filename) {
+  if (loadedImages[key] !== undefined) return; // already tried
+  const img = new Image();
+  img.onload = () => { loadedImages[key] = IMG_PATH + filename; };
+  img.onerror = () => { loadedImages[key] = false; };
+  img.src = IMG_PATH + filename;
+}
+
+function preloadRoomImages(roomId) {
+  // Preload current room
+  if (ROOM_IMAGES[roomId]) preloadImage(roomId, ROOM_IMAGES[roomId]);
+  // Preload adjacent rooms for smooth transitions
+  const exits = ROOMS[roomId]?.exits || {};
+  Object.values(exits).forEach(adjId => {
+    if (ROOM_IMAGES[adjId]) preloadImage(adjId, ROOM_IMAGES[adjId]);
+  });
+}
+
+// Preload all enemy + special scene images on game start
+function preloadAllSpecial() {
+  Object.entries(ENEMY_IMAGES).forEach(([k, f]) => preloadImage('enemy_' + k, f));
+  Object.entries(SCENE_IMAGES).forEach(([k, f]) => preloadImage('scene_' + k, f));
+}
 function spawnParticles(type) {
   const layer = document.getElementById('particleLayer');
   if (!layer) return;
@@ -1368,6 +1433,10 @@ function initGame() {
   document.getElementById('deathScreen').classList.remove('active');
   document.getElementById('winScreen').classList.remove('active');
 
+  // v6.0: Preload special scene images + starting room
+  preloadAllSpecial();
+  preloadRoomImages('chapel');
+
   enterRoom('chapel');
 }
 
@@ -1376,6 +1445,9 @@ function enterRoom(roomId) {
   STATE.currentRoom = roomId;
   STATE.visited.add(roomId);
   const room = ROOMS[roomId];
+
+  // v6.0: Preload this room's image + adjacent rooms
+  preloadRoomImages(roomId);
 
   // v5.1: Atmospheric effects
   roomTransition();
@@ -1489,7 +1561,13 @@ function startCombat(roomId, enemyType) {
 
   document.getElementById('combatOverlay').classList.add('active');
   document.getElementById('combatEnemyName').textContent = e.name;
-  document.getElementById('combatEnemyArt').innerHTML = renderEnemySVG(enemyType);
+  // v6.0: Use photorealistic enemy image if loaded, else SVG fallback
+  const enemyImgKey = 'enemy_' + enemyType;
+  if (loadedImages[enemyImgKey]) {
+    document.getElementById('combatEnemyArt').innerHTML = `<img src="${loadedImages[enemyImgKey]}" alt="${e.name}" style="width:100%;height:100%;object-fit:contain;border-radius:4px"/>`;
+  } else {
+    document.getElementById('combatEnemyArt').innerHTML = renderEnemySVG(enemyType);
+  }
   document.getElementById('combatLog').innerHTML = '';
   updateEnemyHP();
   updateButtons();
@@ -1580,6 +1658,7 @@ function endCombat(victory) {
     addLog('The Necromancer shrieks as his staff shatters! Dark energy implodes — the undead army collapses. The fortress is cleansed.', 'victory');
     playSound('victory');
     screenShake(true);
+    showSpecialScene('victory'); // v6.0: Show victory art if available
     checkAchievements();
     setTimeout(() => {
       document.getElementById('winStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Achievements: ' + STATE.achievements.size + '/8';
@@ -1726,6 +1805,7 @@ function checkGoldenArmor() {
     addLog('✦ You are now clad in the Armor of Saint Michael. You are INVINCIBLE. ✦', 'divine');
     screenShake(true);
     playSound('divine');
+    showSpecialScene('golden'); // v6.0: Show golden armor art if available
     updateHP();
     renderScene(STATE.currentRoom); // Re-render knight as golden
     checkAchievements();
@@ -1776,6 +1856,7 @@ function unlockAchieve(id) {
 function playerDeath() {
   addLog('You collapse. The darkness takes you.', 'death');
   playSound('death');
+  showSpecialScene('death'); // v6.0: Show death art if available
   setTimeout(() => {
     document.getElementById('deathStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Rooms: ' + STATE.visited.size + '/17';
     document.getElementById('deathScreen').classList.add('active');
@@ -2072,7 +2153,35 @@ function renderMap() {
 function renderScene(roomId) {
   const room = ROOMS[roomId];
   const el = document.getElementById('sceneArt');
-  el.innerHTML = getSceneSVG(room.type, roomId);
+  const bgImg = document.getElementById('sceneBgImg');
+
+  // Check if we have a loaded photorealistic image for this room
+  if (loadedImages[roomId]) {
+    bgImg.src = loadedImages[roomId];
+    bgImg.classList.add('loaded');
+    // Show minimal SVG overlay — just the knight character on transparent background
+    const w = 800, h = 280;
+    const isGolden = STATE.hasGoldenArmor;
+    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="background:transparent">
+      ${renderKnight(w * 0.15, h - 50)}
+    </svg>`;
+  } else {
+    // No image — full procedural SVG fallback
+    bgImg.classList.remove('loaded');
+    bgImg.removeAttribute('src');
+    el.innerHTML = getSceneSVG(room.type, roomId);
+  }
+}
+
+// Show a special scene image (golden armor, death, victory)
+function showSpecialScene(key) {
+  const bgImg = document.getElementById('sceneBgImg');
+  if (loadedImages['scene_' + key]) {
+    bgImg.src = loadedImages['scene_' + key];
+    bgImg.classList.add('loaded');
+    return true;
+  }
+  return false;
 }
 
 // Adds period-authentic detail to every room automatically
@@ -2115,12 +2224,56 @@ function getSceneSVG(type, roomId) {
   const defs = `<defs>
     <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     <filter id="heavyGlow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+
+    <!-- REALISTIC STONE via feTurbulence -->
+    <filter id="stoneFilter" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="6" seed="2" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="stone"><feFuncR type="linear" slope="0.14" intercept="0.08"/><feFuncG type="linear" slope="0.12" intercept="0.07"/><feFuncB type="linear" slope="0.09" intercept="0.06"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="stone" mode="overlay"/>
+    </filter>
+    <!-- ROUGH WALL texture -->
+    <filter id="roughStone" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.025" numOctaves="5" seed="8" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="tex"><feFuncR type="linear" slope="0.16" intercept="0.06"/><feFuncG type="linear" slope="0.14" intercept="0.055"/><feFuncB type="linear" slope="0.1" intercept="0.045"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="tex" mode="screen"/>
+    </filter>
+    <!-- FLOOR texture -->
+    <filter id="floorStone" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.05" numOctaves="4" seed="15" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="tex"><feFuncR type="linear" slope="0.09" intercept="0.04"/><feFuncG type="linear" slope="0.08" intercept="0.035"/><feFuncB type="linear" slope="0.06" intercept="0.03"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="tex" mode="screen"/>
+    </filter>
+    <!-- WOOD GRAIN -->
+    <filter id="woodGrain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="turbulence" baseFrequency="0.02 0.2" numOctaves="3" seed="5" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="wood"><feFuncR type="linear" slope="0.15" intercept="0.1"/><feFuncG type="linear" slope="0.1" intercept="0.07"/><feFuncB type="linear" slope="0.05" intercept="0.03"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="wood" mode="overlay"/>
+    </filter>
+    <!-- RUST METAL -->
+    <filter id="rustMetal" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="4" seed="12" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="rust"><feFuncR type="linear" slope="0.2" intercept="0.12"/><feFuncG type="linear" slope="0.1" intercept="0.06"/><feFuncB type="linear" slope="0.04" intercept="0.03"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="rust" mode="overlay"/>
+    </filter>
+    <!-- FABRIC -->
+    <filter id="fabricTex" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="turbulence" baseFrequency="0.15 0.08" numOctaves="2" seed="20" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="fab"><feFuncR type="linear" slope="0.1" intercept="0"/><feFuncG type="linear" slope="0.02" intercept="0"/><feFuncB type="linear" slope="0.02" intercept="0"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="fab" mode="screen"/>
+    </filter>
     <linearGradient id="stoneWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e1b18"/><stop offset="100%" stop-color="#100e0c"/></linearGradient>
     <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f0e0b"/><stop offset="100%" stop-color="#090808"/></linearGradient>
     <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a0e1a"/><stop offset="100%" stop-color="#06080e"/></linearGradient>
     <radialGradient id="candleGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(255,180,60,0.35)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
     <radialGradient id="neonGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(100,220,255,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
     <radialGradient id="evilGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(60,255,60,0.12)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+    <radialGradient id="warmLight" cx="50%" cy="90%"><stop offset="0%" stop-color="rgba(255,160,50,0.06)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
     <!-- Rich stone block pattern -->
     <pattern id="stoneTex" width="48" height="32" patternUnits="userSpaceOnUse">
       <rect width="48" height="32" fill="#141210"/>
@@ -2146,23 +2299,32 @@ function getSceneSVG(type, roomId) {
   </defs>`;
 
   // ─── Common detail helpers ───
-  const torch = (x, y) => `<rect x="${x}" y="${y}" width="6" height="24" fill="#3d2c1a" stroke="rgba(80,60,30,0.3)" stroke-width="0.5"/>
+  const torch = (x, y) => `<rect x="${x}" y="${y}" width="6" height="24" fill="#3d2c1a" stroke="rgba(80,60,30,0.3)" stroke-width="0.5" filter="url(#woodGrain)"/>
     <rect x="${x-1}" y="${y-2}" width="8" height="4" fill="rgba(80,60,30,0.4)"/>
-    <ellipse cx="${x+3}" cy="${y-8}" rx="8" ry="12" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
-    <ellipse cx="${x+3}" cy="${y-10}" rx="4" ry="6" fill="rgba(255,200,60,0.5)"/>
-    <circle cx="${x+3}" cy="${y-12}" r="2" fill="#ffd040"/>
-    <ellipse cx="${x+3}" cy="${y+30}" rx="60" ry="70" fill="url(#candleGlow)" opacity="0.5"/>`;
+    <ellipse cx="${x+3}" cy="${y-8}" rx="8" ry="12" fill="rgba(255,150,40,0.4)" filter="url(#glow)">
+      <animate attributeName="ry" values="12;10;13;11;12" dur="0.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;1;0.7;0.95;0.9" dur="1.2s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="${x+3}" cy="${y-10}" rx="4" ry="6" fill="rgba(255,200,60,0.5)">
+      <animate attributeName="ry" values="6;5;7;5.5;6" dur="0.6s" repeatCount="indefinite"/>
+    </ellipse>
+    <circle cx="${x+3}" cy="${y-12}" r="2" fill="#ffd040">
+      <animate attributeName="r" values="2;1.5;2.5;1.8;2" dur="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <ellipse cx="${x+3}" cy="${y+30}" rx="60" ry="70" fill="url(#candleGlow)" opacity="0.5">
+      <animate attributeName="opacity" values="0.5;0.4;0.55;0.42;0.5" dur="1.5s" repeatCount="indefinite"/>
+    </ellipse>`;
 
-  const wallShield = (x, y) => `<circle cx="${x}" cy="${y}" r="22" fill="#1c1814" stroke="rgba(184,147,58,0.2)" stroke-width="1.5"/>
-    <circle cx="${x}" cy="${y}" r="18" fill="rgba(139,0,0,0.06)"/>
-    <rect x="${x-2}" y="${y-16}" width="4" height="32" fill="rgba(139,0,0,0.35)"/>
-    <rect x="${x-10}" y="${y-2}" width="20" height="4" fill="rgba(139,0,0,0.35)"/>`;
+  const wallShield = (x, y) => `<circle cx="${x}" cy="${y}" r="22" fill="#1c1814" stroke="rgba(184,147,58,0.2)" stroke-width="1.5" filter="url(#rustMetal)"/>
+    <circle cx="${x}" cy="${y}" r="18" fill="rgba(139,0,0,0.08)"/>
+    <rect x="${x-2}" y="${y-16}" width="4" height="32" fill="rgba(139,0,0,0.4)"/>
+    <rect x="${x-10}" y="${y-2}" width="20" height="4" fill="rgba(139,0,0,0.4)"/>`;
 
   const banner = (x, y, torn) => `<rect x="${x}" y="${y}" width="3" height="8" fill="rgba(184,147,58,0.3)"/>
-    <rect x="${x-12}" y="${y+8}" width="27" height="${torn?55:70}" fill="rgba(139,0,0,0.12)" stroke="rgba(184,147,58,0.08)" stroke-width="0.5"/>
-    <rect x="${x-1}" y="${y+18}" width="5" height="25" fill="rgba(184,147,58,0.12)"/>
-    <rect x="${x-6}" y="${y+27}" width="15" height="4" fill="rgba(184,147,58,0.12)"/>
-    ${torn ? `<path d="M${x-12},${y+63} L${x-5},${y+58} L${x+3},${y+65} L${x+10},${y+55} L${x+15},${y+63}" fill="rgba(139,0,0,0.12)"/>` : ''}`;
+    <rect x="${x-12}" y="${y+8}" width="27" height="${torn?55:70}" fill="rgba(139,0,0,0.15)" stroke="rgba(184,147,58,0.08)" stroke-width="0.5" filter="url(#fabricTex)"/>
+    <rect x="${x-1}" y="${y+18}" width="5" height="25" fill="rgba(184,147,58,0.15)"/>
+    <rect x="${x-6}" y="${y+27}" width="15" height="4" fill="rgba(184,147,58,0.15)"/>
+    ${torn ? `<path d="M${x-12},${y+63} L${x-5},${y+58} L${x+3},${y+65} L${x+10},${y+55} L${x+15},${y+63}" fill="rgba(139,0,0,0.15)"/>` : ''}`;
 
   const cobweb = (x, y) => `<path d="M${x},${y} Q${x+20},${y+5} ${x+35},${y+30}" fill="none" stroke="rgba(200,200,200,0.04)" stroke-width="0.5"/>
     <path d="M${x},${y} Q${x+10},${y+15} ${x+8},${y+35}" fill="none" stroke="rgba(200,200,200,0.03)" stroke-width="0.5"/>
@@ -2171,11 +2333,15 @@ function getSceneSVG(type, roomId) {
   const bloodStain = (x, y, r) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*0.22}" fill="rgba(139,0,0,0.14)"/>
     <ellipse cx="${x+r*0.3}" cy="${y-r*0.1}" rx="${r*0.4}" ry="${r*0.12}" fill="rgba(139,0,0,0.08)"/>`;
 
-  const floor = `<rect x="0" y="230" width="${w}" height="50" fill="url(#floorGrad)"/>
-    <rect x="0" y="230" width="${w}" height="50" fill="url(#floorTex)"/>`;
+  const floor = `<rect x="0" y="230" width="${w}" height="50" fill="#0c0b09" filter="url(#floorStone)"/>
+    <rect x="0" y="230" width="${w}" height="50" fill="url(#floorTex)"/>
+    <!-- Floor edge shadow -->
+    <rect x="0" y="228" width="${w}" height="4" fill="rgba(0,0,0,0.3)"/>`;
 
-  const stoneWalls = `<rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
-    <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>`;
+  const stoneWalls = `<rect width="${w}" height="${h}" fill="#161310" filter="url(#roughStone)"/>
+    <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+    <!-- Warm ambient light from below -->
+    <rect width="${w}" height="${h}" fill="url(#warmLight)"/>`;
 
   let scene = '';
 
@@ -2288,7 +2454,7 @@ function getSceneSVG(type, roomId) {
 
     case 'armory':
       scene = `
-        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="#161310" filter="url(#roughStone)"/>
         <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
         <!-- Weapon racks -->
         ${[100,250,500,650].map(x => `
@@ -2308,7 +2474,7 @@ function getSceneSVG(type, roomId) {
         <ellipse cx="321" cy="210" rx="30" ry="20" fill="url(#candleGlow)"/>
         <!-- Debris -->
         ${[200,350,550].map(x => `<rect x="${x}" y="${250+Math.random()*15}" width="${15+Math.random()*20}" height="4" fill="rgba(25,22,16,0.5)" transform="rotate(${Math.random()*40-20} ${x} 255)"/>`).join('')}
-        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        <rect x="0" y="230" width="${w}" height="50" fill="#0c0b09" filter="url(#floorStone)"/><rect x="0" y="228" width="${w}" height="4" fill="rgba(0,0,0,0.3)"/>
         <!-- Torch -->
         <rect x="570" y="60" width="6" height="30" fill="#3a2a18"/>
         <ellipse cx="573" cy="55" rx="8" ry="12" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
@@ -2362,7 +2528,7 @@ function getSceneSVG(type, roomId) {
 
     case 'barracks':
       scene = `
-        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="#161310" filter="url(#roughStone)"/>
         <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
         <!-- Smashed bunks -->
         ${[80,250,500].map(x => `
@@ -2385,7 +2551,7 @@ function getSceneSVG(type, roomId) {
         <ellipse cx="402" cy="35" rx="7" ry="10" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
         <circle cx="402" cy="33" r="2.5" fill="#ffaa33"/>
         <ellipse cx="402" cy="100" rx="80" ry="80" fill="url(#candleGlow)" opacity="0.4"/>
-        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        <rect x="0" y="230" width="${w}" height="50" fill="#0c0b09" filter="url(#floorStone)"/><rect x="0" y="228" width="${w}" height="4" fill="rgba(0,0,0,0.3)"/>
         <!-- War planning table -->
         <rect x="150" y="210" width="60" height="4" fill="rgba(50,40,25,0.25)"/>
         <rect x="155" y="214" width="4" height="25" fill="rgba(50,40,25,0.2)"/>
@@ -2425,7 +2591,7 @@ function getSceneSVG(type, roomId) {
         <circle cx="485" cy="125" r="10" fill="rgba(180,170,150,0.08)"/>
         <!-- Lavender hint -->
         <ellipse cx="300" cy="160" rx="100" ry="60" fill="rgba(150,130,180,0.02)"/>
-        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        <rect x="0" y="230" width="${w}" height="50" fill="#0c0b09" filter="url(#floorStone)"/><rect x="0" y="228" width="${w}" height="4" fill="rgba(0,0,0,0.3)"/>
         ${renderKnight(200, 155)}
       `;
       break;
@@ -2720,9 +2886,9 @@ function getSceneSVG(type, roomId) {
 
     default:
       scene = `
-        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="#161310" filter="url(#roughStone)"/>
         <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
-        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        <rect x="0" y="230" width="${w}" height="50" fill="#0c0b09" filter="url(#floorStone)"/><rect x="0" y="228" width="${w}" height="4" fill="rgba(0,0,0,0.3)"/>
         ${renderKnight(400, 155)}
       `;
   }
