@@ -492,7 +492,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag neon">SVG Art</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v5.0 Live</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v5.1 Live</span>
         </div>
         <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
       </div>
@@ -519,7 +519,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
       <div id="gameLauncher">
         <button class="game-launch-btn" onclick="launchGame()">
           <div class="game-launch-title">KNIGHTS TEMPLAR</div>
-          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 5.0 —</div>
+          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 5.1 —</div>
           <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
         </button>
       </div>
@@ -537,13 +537,59 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
-        <span class="patch-version-tag">v5.0</span>
-        <span class="patch-version-name">Full Game Expansion</span>
+        <span class="patch-version-tag">v5.1</span>
+        <span class="patch-version-name">Atmospheric Overhaul</span>
         <span class="patch-date">March 2026</span>
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
+        <div class="patch-category">Particle Systems</div>
+        <ul class="patch-list">
+          <li>Floating dust motes in indoor rooms — drifting through candlelight</li>
+          <li>Rising embers in the Courtyard — animated fire particles from burning barrels</li>
+          <li>Creeping fog in the Crypt, Catacombs, and Necromancer's Lair — cold mist that drifts across the scene</li>
+          <li>Each of the 17 rooms now has a unique particle type assigned</li>
+        </ul>
+        <div class="patch-category">Screen Effects</div>
+        <ul class="patch-list">
+          <li>Screen shake on taking damage — light shake for small hits, heavy shake for big ones</li>
+          <li>Red damage flash overlay when hit — momentary crimson pulse across the viewport</li>
+          <li>Green heal flash when recovering HP — visual confirmation of restoration</li>
+          <li>Floating damage numbers — numbers rise and fade above the scene on every hit and heal</li>
+          <li>CRITICAL HIT numbers appear larger and gold-colored</li>
+          <li>Cinematic vignette — dark edges on scene art for depth and atmosphere</li>
+          <li>Per-room ambient color tinting — warm gold in chapel/treasury, cold blue in crypt/catacombs, sickly green in the Lair</li>
+        </ul>
+        <div class="patch-category">Combat Overhaul</div>
+        <ul class="patch-list">
+          <li>Full SVG enemy art rendered during combat — Risen Knight (cracked helm, glowing eyes, broken sword), Peasant Zombie (torn rags, pitchfork, screaming mouth), Necromancer (flowing robes, rune inscriptions, bone staff, burning eyes)</li>
+          <li>In-combat log showing blow-by-blow damage within the fight overlay</li>
+          <li>Visual feedback on every action — shake, flash, and floating numbers during fights</li>
+        </ul>
+        <div class="patch-category">Room Transitions</div>
+        <ul class="patch-list">
+          <li>Cinematic fade-in animation when entering a new room — slight zoom with opacity transition</li>
+          <li>Smooth particle swap — old particles clear, new room's atmosphere spawns on entry</li>
+        </ul>
+        <div class="patch-category">End Screen Stats</div>
+        <ul class="patch-list">
+          <li>Death screen now shows: Battles Won, Relics collected, Rooms explored</li>
+          <li>Victory screen now shows: Battles Won, Relics, Scrolls, Rooms, Achievements</li>
+          <li>Room exploration counter added to the map panel — tracks progress toward all 17 rooms</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v5.0</span>
+        <span class="patch-version-name">Full Game Expansion</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status prev">PREVIOUS</span>
+        <span class="patch-toggle">▶</span>
+      </div>
+      <div class="patch-body">
         <div class="patch-category">New Rooms (7 added — total: 17)</div>
         <ul class="patch-list">
           <li>Ossuary — walls of skulls in grotesque mosaic patterns</li>
@@ -743,7 +789,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
     <div style="font-size:1.1rem;font-weight:300;color:rgba(245,242,236,0.75);line-height:1.95;">
       <p>Knights Templar: The Siege of the Undead started as a Python assignment for IT 140 at Southern New Hampshire University. The brief was simple: build a text-based adventure with rooms, items, and win/lose conditions.</p>
       <p style="margin-top:1.2rem;">What it became is something much larger. Over five versions, the game grew from a terminal script into a feature-rich browser experience with hand-coded SVG artwork, procedural Web Audio chant music, a full combat system, NPC dialogue trees, hidden Bible verse scrolls, historical portraits, and an achievement system culminating in a Saint Michael the Archangel cutscene.</p>
-      <p style="margin-top:1.2rem;">The game is built entirely without external libraries — no game engine, no asset files, no audio downloads. Every sound is synthesized live using the Web Audio API. Every piece of artwork is hand-written SVG code following a strict cinematic dark-fantasy art direction inspired by Diablo and Batman Beyond.</p>
+      <p style="margin-top:1.2rem;">The game is built entirely without external libraries — no game engine, no asset files, no audio downloads. Every sound is synthesized live using the Web Audio API. Every piece of artwork is hand-written SVG code following a strict cinematic dark-fantasy art direction inspired by Diablo and Batman Beyond. Version 5.1 added animated particle systems, screen shake, floating damage numbers, per-room atmospheric tinting, and full SVG enemy art in combat.</p>
       <p style="margin-top:1.2rem;">The long-term goal is a full open-world 3D game. This browser version is the foundation — the design document, the lore, and the vision are all already built. The graphics are the next frontier.</p>
     </div>
     <div style="margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;">
