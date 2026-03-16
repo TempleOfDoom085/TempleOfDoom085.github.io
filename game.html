@@ -682,30 +682,289 @@ function saintMichaelSVG() {
 }
 
 function buildScene(name) {
-  const scenes = {
-    "Templar Chapel":{
-      sky:`<rect width="700" height="300" fill="#0e0a06"/><circle cx="500" cy="55" r="28" fill="#c9a227" opacity="0.12"/>`,
-      fog:`<ellipse cx="200" cy="290" rx="300" ry="60" fill="#1a0a00" opacity="0.5"/>`,
-      arch:`<rect width="700" height="300" fill="#0c0905"/><rect x="230" y="0" width="240" height="300" fill="#0e0b07"/><ellipse cx="350" cy="0" rx="120" ry="48" fill="#0e0b07"/><rect x="342" y="20" width="16" height="90" fill="#1a1408"/><rect x="318" y="62" width="64" height="10" fill="#1a1408"/><circle cx="350" cy="25" r="10" fill="#c9a227" opacity="0.8"/><ellipse cx="350" cy="35" rx="5" ry="10" fill="#ff8800" opacity="0.7"/><rect x="148" y="28" width="20" height="272" fill="#120e0a" rx="2"/><rect x="532" y="28" width="20" height="272" fill="#120e0a" rx="2"/><ellipse cx="158" cy="110" rx="8" ry="13" fill="#ff7700" opacity="0.8"/><ellipse cx="542" cy="110" rx="8" ry="13" fill="#ff7700" opacity="0.8"/><rect x="278" y="185" width="144" height="115" fill="#100d08"/><rect x="338" y="134" width="24" height="54" fill="#c9a227" opacity="0.75"/><rect x="318" y="152" width="64" height="10" fill="#c9a227" opacity="0.75"/>`,
-      fg:`<text x="350" y="294" text-anchor="middle" font-size="10" fill="#c9a227" opacity="0.4" font-family="Georgia,serif" letter-spacing="5">DEUS VULT</text>`
-    },
-    "Necromancer's Lair":{
-      sky:`<rect width="700" height="300" fill="#010204"/><ellipse cx="350" cy="150" rx="260" ry="180" fill="#3a0000" opacity="0.22"/>`,
-      fog:`<ellipse cx="350" cy="292" rx="380" ry="72" fill="#1a0000" opacity="0.5"/>`,
-      arch:`<rect width="700" height="300" fill="#060004"/><polygon points="350,20 375,82 442,82 386,122 408,185 350,145 292,185 314,122 258,82 325,82" fill="#1a0000" stroke="#cc0000" stroke-width="1.2" opacity="0.72"/><rect x="178" y="125" width="344" height="175" fill="#080002"/><rect x="198" y="113" width="24" height="187" fill="#0d0204"/><rect x="478" y="113" width="24" height="187" fill="#0d0204"/>`,
-      fg:`<text x="350" y="293" text-anchor="middle" font-size="11" fill="#cc0000" opacity="0.88" font-family="Georgia,serif" letter-spacing="6">THE NECROMANCER AWAITS</text>`
-    }
+  // Batman Beyond 60/30/10: 60% deep black/navy, 30% gold/crimson/warm, 10% electric ice blue
+  // All scenes use dramatic lighting, depth layers, atmospheric glow
+
+  const SCENES = {
+
+"Templar Chapel": {
+sky: `
+  <defs>
+    <radialGradient id="chapSky" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#1a0d04"/>
+      <stop offset="100%" stop-color="#06080f"/>
+    </radialGradient>
+    <radialGradient id="moonHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f0d060" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="700" height="300" fill="url(#chapSky)"/>
+  <!-- Moon -->
+  <circle cx="580" cy="48" r="30" fill="url(#moonHalo)"/>
+  <circle cx="580" cy="48" r="20" fill="#e8d870" opacity="0.82"/>
+  <circle cx="572" cy="42" r="13" fill="#06080f" opacity="0.35"/>
+  <!-- Stars -->
+  <circle cx="80" cy="30" r="1.5" fill="#fff" opacity="0.6"/>
+  <circle cx="200" cy="18" r="1" fill="#fff" opacity="0.5"/>
+  <circle cx="320" cy="12" r="1.5" fill="#c9a227" opacity="0.55"/>
+  <circle cx="420" cy="25" r="1" fill="#fff" opacity="0.5"/>
+  <circle cx="640" cy="20" r="1.5" fill="#fff" opacity="0.45"/>
+  <circle cx="150" cy="55" r="1" fill="#00d4ff" opacity="0.4"/>
+`,
+fog: `
+  <defs>
+    <radialGradient id="fogG1" cx="30%" cy="100%" r="60%">
+      <stop offset="0%" stop-color="#2a1200" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#06080f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fogG2" cx="75%" cy="100%" r="50%">
+      <stop offset="0%" stop-color="#1a0800" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#06080f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="700" height="300" fill="url(#fogG1)" opacity="0.9"/>
+  <rect width="700" height="300" fill="url(#fogG2)" opacity="0.7"/>
+`,
+arch: `
+  <defs>
+    <radialGradient id="torchL" cx="50%" cy="100%" r="80%">
+      <stop offset="0%" stop-color="#ff8800" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#ff4400" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="torchR" cx="50%" cy="100%" r="80%">
+      <stop offset="0%" stop-color="#ff8800" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#ff4400" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Rear wall -->
+  <rect width="700" height="300" fill="#0a0806"/>
+  <!-- Gothic nave arch -->
+  <rect x="220" y="0" width="260" height="300" fill="#0f0c09"/>
+  <path d="M220,0 Q220,-30 350,-30 Q480,-30 480,0 Z" fill="#0f0c09"/>
+  <!-- Arch stone detail -->
+  <path d="M220,0 Q220,-28 350,-28 Q480,-28 480,0" fill="none" stroke="#2a1e10" stroke-width="3"/>
+  <path d="M232,0 Q232,-18 350,-18 Q468,-18 468,0" fill="none" stroke="#1e1408" stroke-width="1.5"/>
+  <!-- Columns left -->
+  <rect x="138" y="0" width="28" height="300" fill="#130f0a" rx="3"/>
+  <rect x="142" y="0" width="4" height="300" fill="#1e1710" opacity="0.6"/>
+  <!-- Column cap left -->
+  <rect x="128" y="38" width="48" height="14" fill="#1a1510" rx="2"/>
+  <!-- Columns right -->
+  <rect x="534" y="0" width="28" height="300" fill="#130f0a" rx="3"/>
+  <rect x="554" y="0" width="4" height="300" fill="#1e1710" opacity="0.6"/>
+  <rect x="524" y="38" width="48" height="14" fill="#1a1510" rx="2"/>
+  <!-- Torch halos -->
+  <ellipse cx="166" cy="115" rx="55" ry="55" fill="url(#torchL)"/>
+  <ellipse cx="534" cy="115" rx="55" ry="55" fill="url(#torchR)"/>
+  <!-- Torch brackets -->
+  <rect x="157" y="98" width="18" height="4" fill="#3a2a14"/>
+  <rect x="162" y="80" width="6" height="22" fill="#2e2010"/>
+  <rect x="525" y="98" width="18" height="4" fill="#3a2a14"/>
+  <rect x="528" y="80" width="6" height="22" fill="#2e2010"/>
+  <!-- Torch flames -->
+  <ellipse cx="165" cy="78" rx="8" ry="14" fill="#ff7700" opacity="0.9"/>
+  <ellipse cx="165" cy="73" rx="5" ry="10" fill="#ffcc44" opacity="0.85"/>
+  <ellipse cx="165" cy="68" rx="3" ry="7" fill="#fff8e0" opacity="0.6"/>
+  <ellipse cx="531" cy="78" rx="8" ry="14" fill="#ff7700" opacity="0.9"/>
+  <ellipse cx="531" cy="73" rx="5" ry="10" fill="#ffcc44" opacity="0.85"/>
+  <ellipse cx="531" cy="68" rx="3" ry="7" fill="#fff8e0" opacity="0.6"/>
+  <!-- Altar back -->
+  <rect x="268" y="175" width="164" height="125" fill="#0e0a07"/>
+  <!-- Altar steps -->
+  <rect x="254" y="248" width="192" height="14" fill="#181410" rx="2"/>
+  <rect x="264" y="232" width="172" height="18" fill="#1c1812" rx="2"/>
+  <rect x="274" y="218" width="152" height="16" fill="#201e14" rx="2"/>
+  <!-- Altar cross illuminated -->
+  <rect x="343" y="176" width="14" height="58" fill="#c9a227" opacity="0.95"/>
+  <rect x="320" y="198" width="60" height="10" fill="#c9a227" opacity="0.95"/>
+  <!-- Cross glow -->
+  <ellipse cx="350" cy="205" rx="40" ry="40" fill="#c9a227" opacity="0.1"/>
+  <ellipse cx="350" cy="205" rx="20" ry="20" fill="#f0c040" opacity="0.08"/>
+  <!-- Floor -->
+  <rect x="0" y="268" width="700" height="32" fill="#0c0a07"/>
+  <line x1="0" y1="270" x2="700" y2="270" stroke="#1a1610" stroke-width="1"/>
+  <line x1="116" y1="270" x2="116" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
+  <line x1="232" y1="270" x2="232" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
+  <line x1="468" y1="270" x2="468" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
+  <line x1="584" y1="270" x2="584" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
+`,
+fg: `<text x="350" y="294" text-anchor="middle" font-size="10" fill="#c9a227" opacity="0.55" font-family="Georgia,serif" letter-spacing="6">DEUS VULT</text>`
+},
+
+"Necromancer's Lair": {
+sky: `
+  <defs>
+    <radialGradient id="lairSky" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#3a0008" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#1a0004" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#010204" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="700" height="300" fill="#010204"/>
+  <rect width="700" height="300" fill="url(#lairSky)"/>
+  <!-- Blood moon -->
+  <circle cx="350" cy="60" r="38" fill="#2a0008" opacity="0.9"/>
+  <circle cx="350" cy="60" r="28" fill="#8B0000" opacity="0.6"/>
+  <circle cx="350" cy="60" r="18" fill="#cc2200" opacity="0.4"/>
+  <circle cx="350" cy="60" r="8" fill="#ff4400" opacity="0.3"/>
+`,
+fog: `
+  <defs>
+    <radialGradient id="lairFog" cx="50%" cy="100%" r="70%">
+      <stop offset="0%" stop-color="#2a0004" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#010204" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="700" height="300" fill="url(#lairFog)"/>
+`,
+arch: `
+  <defs>
+    <radialGradient id="pentaGlow" cx="50%" cy="55%" r="45%">
+      <stop offset="0%" stop-color="#8B0000" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#8B0000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="700" height="300" fill="#060004"/>
+  <!-- Floor pentagram glow -->
+  <ellipse cx="350" cy="260" rx="220" ry="55" fill="url(#pentaGlow)"/>
+  <!-- Pentagram lines -->
+  <polygon points="350,165 394,220 376,282 324,282 306,220" fill="none" stroke="#cc0000" stroke-width="1.5" opacity="0.7"/>
+  <circle cx="350" cy="224" r="60" fill="none" stroke="#8B0000" stroke-width="0.8" opacity="0.5"/>
+  <!-- Candles -->
+  <rect x="348" y="157" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
+  <ellipse cx="350" cy="155" rx="5" ry="8" fill="#ff8800" opacity="0.9"/>
+  <ellipse cx="350" cy="158" rx="18" ry="18" fill="#ff5500" opacity="0.08"/>
+  <rect x="392" y="212" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
+  <ellipse cx="394" cy="210" rx="5" ry="8" fill="#ff6600" opacity="0.85"/>
+  <rect x="374" y="274" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
+  <ellipse cx="376" cy="272" rx="5" ry="8" fill="#ff7700" opacity="0.85"/>
+  <rect x="322" y="274" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
+  <ellipse cx="324" cy="272" rx="5" ry="8" fill="#ff7700" opacity="0.85"/>
+  <rect x="304" y="212" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
+  <ellipse cx="306" cy="210" rx="5" ry="8" fill="#ff6600" opacity="0.85"/>
+  <!-- Throne room walls -->
+  <rect x="160" y="80" width="380" height="220" fill="#080002" opacity="0.9"/>
+  <!-- Pillars -->
+  <rect x="168" y="80" width="26" height="220" fill="#0e0004" rx="2"/>
+  <rect x="506" y="80" width="26" height="220" fill="#0e0004" rx="2"/>
+  <!-- Pillar glow -->
+  <ellipse cx="181" cy="200" rx="20" ry="60" fill="#00d4ff" opacity="0.04"/>
+  <ellipse cx="519" cy="200" rx="20" ry="60" fill="#00d4ff" opacity="0.04"/>
+  <!-- Wall runes -->
+  <text x="240" y="140" font-size="14" fill="#00d4ff" opacity="0.25" font-family="serif">ᚠ ᚢ ᚦ ᚨ ᚱ</text>
+  <text x="380" y="160" font-size="12" fill="#8B0000" opacity="0.35" font-family="serif">ᛁ ᛃ ᛇ ᛈ</text>
+  <!-- Skull candles flanking -->
+  <ellipse cx="120" cy="188" rx="18" ry="18" fill="#180004" stroke="#660000" stroke-width="1.5"/>
+  <ellipse cx="114" cy="183" rx="4" ry="5" fill="#050002"/>
+  <ellipse cx="126" cy="183" rx="4" ry="5" fill="#050002"/>
+  <rect x="116" y="168" width="5" height="16" fill="#d0c8a8" opacity="0.75"/>
+  <ellipse cx="118" cy="166" rx="5" ry="9" fill="#ff5500" opacity="0.85"/>
+  <ellipse cx="118" cy="170" rx="22" ry="22" fill="#ff4400" opacity="0.07"/>
+  <ellipse cx="580" cy="188" rx="18" ry="18" fill="#180004" stroke="#660000" stroke-width="1.5"/>
+  <ellipse cx="574" cy="183" rx="4" ry="5" fill="#050002"/>
+  <ellipse cx="586" cy="183" rx="4" ry="5" fill="#050002"/>
+  <rect x="576" y="168" width="5" height="16" fill="#d0c8a8" opacity="0.75"/>
+  <ellipse cx="578" cy="166" rx="5" ry="9" fill="#ff5500" opacity="0.85"/>
+  <ellipse cx="578" cy="170" rx="22" ry="22" fill="#ff4400" opacity="0.07"/>
+`,
+fg: `<text x="350" y="294" text-anchor="middle" font-size="11" fill="#cc0000" opacity="0.92" font-family="Georgia,serif" letter-spacing="7">THE NECROMANCER AWAITS</text>`
+}
+
   };
 
+  // Generic room builder with dramatic lighting based on room character
   const h = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  const def = scenes[name] || {
-    sky:`<rect width="700" height="300" fill="#08090e"/>`,
-    fog:`<ellipse cx="350" cy="290" rx="380" ry="60" fill="#1a0900" opacity="0.4"/>`,
-    arch:`<rect width="700" height="300" fill="#0a0a0e"/><ellipse cx="${200+h%300}" cy="${100+h%100}" rx="60" ry="60" fill="#ff6600" opacity="0.04"/>`,
-    fg:`<text x="350" y="293" text-anchor="middle" font-size="10" fill="#c9a227" opacity="0.38" font-family="Georgia,serif" letter-spacing="4">${name.toUpperCase()}</text>`
+  if (SCENES[name]) return SCENES[name];
+
+  // Determine room atmosphere from name
+  const isDark   = name.includes('Crypt')||name.includes('Ossuary')||name.includes('Torture')||name.includes('Ritual')||name.includes('Bone');
+  const isWarm   = name.includes('Infirmary')||name.includes('Barracks')||name.includes('Armory')||name.includes('Grand');
+  const isOuter  = name.includes('Courtyard')||name.includes('Bell')||name.includes('Tower');
+  const isSecret = name.includes('Treasury')||name.includes('Gallery')||name.includes('Scriptorium');
+
+  const bgColor   = isDark ? '#04030a' : isWarm ? '#0c0906' : isOuter ? '#05080e' : '#080a0d';
+  const wallColor = isDark ? '#0a0408' : isWarm ? '#120e08' : isOuter ? '#090c14' : '#0c0e12';
+  const accentCol = isDark ? '#8B0000' : isWarm ? '#c9a227' : isOuter ? '#00d4ff' : '#c9a227';
+  const accentOp  = isDark ? 0.65 : isWarm ? 0.7 : isOuter ? 0.45 : 0.55;
+
+  // Torch positions vary by room hash
+  const torch1x = 120 + (h%80);
+  const torch2x = 580 - (h%80);
+  const torchY  = 90 + (h%60);
+
+  return {
+    sky: `
+      <defs>
+        <radialGradient id="genSky_${h}" cx="${40+h%20}%" cy="0%" r="80%">
+          <stop offset="0%" stop-color="${isDark?'#140008':isWarm?'#1a0c04':isOuter?'#060a18':'#08090e'}"/>
+          <stop offset="100%" stop-color="${bgColor}"/>
+        </radialGradient>
+      </defs>
+      <rect width="700" height="300" fill="url(#genSky_${h})"/>
+      ${isOuter ? `<circle cx="${350+(h%100)-50}" cy="${40+(h%30)}" r="${18+(h%12)}" fill="#c9a227" opacity="0.18"/>
+        <circle cx="${350+(h%100)-50}" cy="${40+(h%30)}" r="${10+(h%8)}" fill="#e8d870" opacity="0.7"/>` : ''}
+      ${isDark ? `<circle cx="${300+(h%120)}" cy="${30+(h%25)}" r="16" fill="#8B0000" opacity="0.4"/>` : ''}
+    `,
+    fog: `
+      <defs>
+        <radialGradient id="genFog_${h}" cx="${30+h%40}%" cy="100%" r="65%">
+          <stop offset="0%" stop-color="${isDark?'#1a0004':isWarm?'#1a0c02':isOuter?'#040814':'#0a0a0e'}" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="${bgColor}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="700" height="300" fill="url(#genFog_${h})"/>
+    `,
+    arch: `
+      <rect width="700" height="300" fill="${bgColor}"/>
+      <!-- Walls -->
+      <rect x="0" y="0" width="700" height="300" fill="${wallColor}" opacity="0.5"/>
+      <!-- Side walls darkening -->
+      <rect x="0" y="0" width="100" height="300" fill="#020204" opacity="0.6"/>
+      <rect x="600" y="0" width="100" height="300" fill="#020204" opacity="0.6"/>
+      <!-- Architectural element - arch or window -->
+      ${!isDark ? `
+        <rect x="270" y="0" width="160" height="200" fill="${wallColor}" rx="2"/>
+        <ellipse cx="350" cy="0" rx="80" ry="32" fill="${wallColor}"/>
+        <path d="M270,0 Q270,-28 350,-28 Q430,-28 430,0" fill="none" stroke="#1e1a14" stroke-width="2"/>
+      ` : `
+        <rect x="260" y="60" width="180" height="240" fill="${isDark?'#060208':'#080a0c'}" rx="2"/>
+        <ellipse cx="350" cy="60" rx="90" ry="36" fill="${isDark?'#060208':'#080a0c'}"/>
+        <ellipse cx="350" cy="180" rx="30" ry="10" fill="${accentCol}" opacity="0.06"/>
+      `}
+      <!-- Torch left -->
+      <rect x="${torch1x-3}" y="${torchY+14}" width="6" height="22" fill="#2e1e0c"/>
+      <rect x="${torch1x-9}" y="${torchY+12}" width="18" height="4" fill="#3a2810"/>
+      <ellipse cx="${torch1x}" cy="${torchY}" rx="9" ry="15" fill="#ff7700" opacity="0.92"/>
+      <ellipse cx="${torch1x}" cy="${torchY-5}" rx="6" ry="11" fill="#ffcc44" opacity="0.88"/>
+      <ellipse cx="${torch1x}" cy="${torchY-9}" rx="3.5" ry="7" fill="#fff5cc" opacity="0.65"/>
+      <ellipse cx="${torch1x}" cy="${torchY+8}" rx="40" ry="40" fill="#ff6600" opacity="0.09"/>
+      <!-- Torch right -->
+      <rect x="${torch2x-3}" y="${torchY+14}" width="6" height="22" fill="#2e1e0c"/>
+      <rect x="${torch2x-9}" y="${torchY+12}" width="18" height="4" fill="#3a2810"/>
+      <ellipse cx="${torch2x}" cy="${torchY}" rx="9" ry="15" fill="#ff7700" opacity="0.92"/>
+      <ellipse cx="${torch2x}" cy="${torchY-5}" rx="6" ry="11" fill="#ffcc44" opacity="0.88"/>
+      <ellipse cx="${torch2x}" cy="${torchY-9}" rx="3.5" ry="7" fill="#fff5cc" opacity="0.65"/>
+      <ellipse cx="${torch2x}" cy="${torchY+8}" rx="40" ry="40" fill="#ff6600" opacity="0.09"/>
+      <!-- Room-specific accent glow -->
+      <ellipse cx="350" cy="240" rx="180" ry="30" fill="${accentCol}" opacity="${accentOp*0.12}"/>
+      <!-- Floor -->
+      <rect x="0" y="268" width="700" height="32" fill="${wallColor}"/>
+      <line x1="0" y1="270" x2="700" y2="270" stroke="${accentCol}" stroke-width="0.8" opacity="0.2"/>
+      ${isDark ? `
+        <!-- Blood pool / rune on floor -->
+        <ellipse cx="350" cy="285" rx="80" ry="10" fill="#8B0000" opacity="0.25"/>
+        <text x="350" y="275" text-anchor="middle" font-size="9" fill="${accentCol}" opacity="0.4" font-family="serif" letter-spacing="2">ᚠ ᚢ ᚦ</text>
+      ` : ''}
+    `,
+    fg: `<text x="350" y="294" text-anchor="middle" font-size="10" fill="${accentCol}" opacity="${accentOp*0.9}" font-family="Georgia,serif" letter-spacing="4">${name.toUpperCase()}</text>`
   };
-  return def;
 }
+
 
 // ═══════════════════════════════════════════
 // GAME STATE
