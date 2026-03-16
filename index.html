@@ -492,7 +492,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag neon">SVG Art</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v6.0 Live</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v6.1 Live</span>
         </div>
         <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
       </div>
@@ -537,13 +537,64 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
-        <span class="patch-version-tag">v6.0</span>
-        <span class="patch-version-name">Photorealistic Texture Engine</span>
+        <span class="patch-version-tag">v6.1</span>
+        <span class="patch-version-name">Quest System & Character Overhaul</span>
         <span class="patch-date">March 2026</span>
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
+        <div class="patch-category">NPC Quest System</div>
+        <ul class="patch-list">
+          <li>5 fully-scripted quests given by NPCs — each with multi-step objectives, story dialogue, and meaningful gameplay rewards</li>
+          <li>The Blessed Blade — Brother Aldric blesses your longsword with Holy Water for +5 attack damage permanently</li>
+          <li>The Prisoner's Faith — Free Sir Edmund from his chains; his prayers reduce all incoming enemy damage by 3</li>
+          <li>The Lost Scriptures — Return 4 scrolls to Brother Matthias to unlock a secret passage directly to the Necromancer's Lair</li>
+          <li>The Merchant's Guilt — Prove your faith to Ezra the Blind; he reveals the Necromancer takes double damage below half health</li>
+          <li>The Final Stand — auto-triggers near the catacombs as the narrative climax leading to the boss fight</li>
+          <li>Quest log dropdown in the top bar — tracks active objectives with live progress counters and completed quests</li>
+          <li>Gold popup notifications for new quests and quest completions</li>
+          <li>Color-coded quest log messages in the game feed — quest descriptions, progress updates, completion text, and rewards each have distinct styling</li>
+          <li>New achievement: Questmaster — complete all 5 quests (total now 9 achievements)</li>
+        </ul>
+        <div class="patch-category">Character Art Overhaul</div>
+        <ul class="patch-list">
+          <li>Knight Templar completely rebuilt — solid steel armor with chest plate highlights, rounded pauldrons, chainmail skirt, detailed great helm with visor slit, breathing holes, and nose guard</li>
+          <li>Knight now carries a Templar shield on left arm and sword with crossguard, grip, and pommel on right hip</li>
+          <li>Leather belt with gold buckle, knee guards, gauntlets, sabatons, and a flowing crimson cape</li>
+          <li>Golden Armor version gets animated divine aura with pulsing rings and a floating halo</li>
+          <li>Risen Knight rebuilt — cracked rusted armor, dented helm, faded Templar cross, notched sword, pulsing cyan undead eyes, ethereal mist</li>
+          <li>Peasant Zombie rebuilt — rotting flesh, sunken cheeks, gaping jaw with teeth, skeletal arm with exposed bone, pitchfork weapon, animated buzzing flies</li>
+          <li>Necromancer rebuilt — flowing robes with skull rune symbols, gaunt skull-like face in deep hood, skeletal hands with bony fingers, skull-topped staff with animated green energy orb, floating energy wisps</li>
+        </ul>
+        <div class="patch-category">Historical Portraits</div>
+        <ul class="patch-list">
+          <li>Three portrait gallery paintings completely redrawn as detailed full-body SVG knight figures on aged parchment with gold borders</li>
+          <li>Hugues de Payens — Founder, depicted as elder knight with grey beard, white surcoat, sword planted at his side</li>
+          <li>Jacques de Molay — Last Grand Master, shown defiant in chains at the stake with animated flickering flames, battle scar across his cheek</li>
+          <li>André de Montbard — Fifth Grand Master replacing Philip IV, battle-ready crusader with raised sword and Templar shield</li>
+          <li>Each portrait now displays title, dates, and historically accurate multi-paragraph biography</li>
+        </ul>
+        <div class="patch-category">Visual & Readability</div>
+        <ul class="patch-list">
+          <li>All text contrast boosted 15-20% across the board — log text, room names, buttons, inventory, map legend</li>
+          <li>Panel backgrounds lightened for better contrast against dark scenes</li>
+          <li>Log text increased from 0.88rem to 1rem with brighter class-specific colors</li>
+          <li>Combat text now bold, lore text brighter amber, scroll text vivid purple</li>
+          <li>Direction buttons enlarged with stronger borders and hover effects</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v6.0</span>
+        <span class="patch-version-name">Photorealistic Texture Engine</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status prev">PREV</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body">
         <div class="patch-category">Hybrid Image Engine</div>
         <ul class="patch-list">
           <li>Photorealistic background system — drop AI-generated .webp images into img/ folder and rooms auto-upgrade from SVG to photo-real</li>
@@ -867,7 +918,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
     <div class="patch-roadmap">
       <div class="patch-roadmap-title">// Future Roadmap — The Path to Open World</div>
       <div class="roadmap-item">
-        <span class="roadmap-phase">v6.0 →</span>
+        <span class="roadmap-phase">v6.1 →</span>
         <span class="roadmap-desc">Equippable inventory, player stats (strength/faith/defense), save system, difficulty modes, more rooms and mini-bosses</span>
       </div>
       <div class="roadmap-item">
