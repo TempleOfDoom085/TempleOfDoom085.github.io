@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knights Templar: The Siege of the Undead — v5.1</title>
+<title>Knights Templar: The Siege of the Undead — v5.2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
 
@@ -53,7 +53,7 @@ body {
 }
 .game-title-bar {
   font-family: var(--heading);
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   color: var(--gold);
   letter-spacing: 0.12em;
   text-shadow: 0 0 12px var(--gold-glow);
@@ -70,14 +70,14 @@ body {
 }
 .hp-label {
   font-family: var(--ui);
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   color: var(--gold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .hp-bar-outer {
-  width: 140px;
-  height: 14px;
+  width: 160px;
+  height: 18px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 2px;
@@ -99,14 +99,14 @@ body {
 }
 .hp-text {
   font-family: var(--ui);
-  font-size: 0.65rem;
+  font-size: 0.78rem;
   color: var(--text-dim);
   min-width: 52px;
   text-align: right;
 }
 .inv-count {
   font-family: var(--ui);
-  font-size: 0.62rem;
+  font-size: 0.78rem;
   color: var(--gold-dim);
   letter-spacing: 0.08em;
 }
@@ -115,7 +115,7 @@ body {
   border: 1px solid rgba(255,255,255,0.1);
   color: var(--text-dim);
   padding: 4px 10px;
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   cursor: pointer;
   border-radius: 2px;
   transition: all 0.2s;
@@ -161,14 +161,14 @@ body {
 }
 .scene-room-name {
   font-family: var(--heading);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   color: var(--gold);
   text-shadow: 0 0 16px rgba(201,168,76,0.4);
   letter-spacing: 0.08em;
 }
 .scene-room-sub {
   font-family: var(--body);
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   color: var(--text-dim);
   font-style: italic;
   margin-top: 2px;
@@ -186,7 +186,7 @@ body {
 }
 .map-header {
   font-family: var(--ui);
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   color: var(--gold);
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -262,10 +262,10 @@ body {
 .log-line.item { color: var(--gold); }
 .log-line.npc { color: var(--neon); }
 .log-line.scroll { color: #d4a0ff; }
-.log-line.achievement { color: #ffd700; font-family: var(--ui); font-size: 0.82rem; letter-spacing: 0.04em; }
-.log-line.system { color: var(--text-faint); font-style: italic; font-size: 0.8rem; }
-.log-line.death { color: var(--crimson-bright); font-family: var(--heading); font-size: 1rem; text-align: center; }
-.log-line.victory { color: var(--gold); font-family: var(--heading); font-size: 1rem; text-align: center; }
+.log-line.achievement { color: #ffd700; font-family: var(--ui); font-size: 0.95rem; letter-spacing: 0.04em; }
+.log-line.system { color: var(--text-faint); font-style: italic; font-size: 0.92rem; }
+.log-line.death { color: var(--crimson-bright); font-family: var(--heading); font-size: 1.15rem; text-align: center; }
+.log-line.victory { color: var(--gold); font-family: var(--heading); font-size: 1.15rem; text-align: center; }
 .log-line.divine { color: #ffd700; font-family: var(--heading); text-align: center; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
 .log-separator {
   border: none;
@@ -288,7 +288,7 @@ body {
 }
 .inv-label {
   font-family: var(--ui);
-  font-size: 0.55rem;
+  font-size: 0.72rem;
   color: var(--gold-dim);
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -296,7 +296,7 @@ body {
 }
 .inv-item {
   font-family: var(--ui);
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   color: var(--text);
   padding: 3px 10px;
   background: rgba(184,147,58,0.06);
@@ -336,9 +336,9 @@ body {
 }
 .ctrl-btn {
   font-family: var(--ui);
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   letter-spacing: 0.08em;
-  padding: 7px 14px;
+  padding: 9px 18px;
   border: 1px solid rgba(184,147,58,0.25);
   background: rgba(184,147,58,0.04);
   color: var(--gold);
@@ -371,24 +371,33 @@ body {
   box-shadow: 0 0 10px rgba(180,40,40,0.3);
 }
 .ctrl-btn.action-btn {
-  border-color: rgba(94,196,212,0.3);
+  border-color: rgba(94,196,212,0.4);
   color: var(--neon);
-  background: rgba(94,196,212,0.04);
+  background: rgba(94,196,212,0.06);
+  animation: actionPulse 2s ease-in-out infinite;
+  font-size: 0.9rem;
+  padding: 10px 20px;
 }
 .ctrl-btn.action-btn:hover:not(:disabled) {
-  background: rgba(94,196,212,0.12);
+  background: rgba(94,196,212,0.15);
   border-color: var(--neon);
-  box-shadow: 0 0 10px var(--neon-dim);
+  box-shadow: 0 0 15px var(--neon-dim);
 }
 .ctrl-btn.special-btn {
-  border-color: rgba(160,120,255,0.3);
+  border-color: rgba(160,120,255,0.4);
   color: #c4a0ee;
-  background: rgba(160,120,255,0.04);
+  background: rgba(160,120,255,0.06);
+  animation: scrollPulse 2s ease-in-out infinite;
+  font-size: 0.9rem;
+  padding: 10px 20px;
 }
 .ctrl-btn.special-btn:hover:not(:disabled) {
-  background: rgba(160,120,255,0.12);
+  background: rgba(160,120,255,0.15);
   border-color: #c4a0ee;
+  box-shadow: 0 0 15px rgba(160,120,255,0.3);
 }
+@keyframes actionPulse { 0%,100%{box-shadow:0 0 4px rgba(94,196,212,0.2)} 50%{box-shadow:0 0 16px rgba(94,196,212,0.5)} }
+@keyframes scrollPulse { 0%,100%{box-shadow:0 0 4px rgba(160,120,255,0.2)} 50%{box-shadow:0 0 16px rgba(160,120,255,0.5)} }
 
 /* ═══ COMBAT OVERLAY ═══ */
 .combat-overlay {
@@ -405,7 +414,7 @@ body {
 .combat-overlay.active { display: flex; }
 .combat-title {
   font-family: var(--heading);
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   color: var(--crimson-bright);
   text-shadow: 0 0 20px rgba(180,40,40,0.5);
   letter-spacing: 0.15em;
@@ -417,7 +426,7 @@ body {
 }
 .combat-enemy-name {
   font-family: var(--ui);
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   color: var(--text);
 }
 .enemy-hp-bar-outer {
@@ -457,14 +466,14 @@ body {
 .npc-dialog.active { display: block; }
 .npc-dialog-name {
   font-family: var(--ui);
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   color: var(--neon);
   letter-spacing: 0.1em;
   margin-bottom: 6px;
   text-transform: uppercase;
 }
 .npc-dialog-text {
-  font-size: 0.88rem;
+  font-size: 1rem;
   color: var(--text);
   line-height: 1.65;
   font-style: italic;
@@ -477,7 +486,7 @@ body {
 }
 .npc-topic-btn {
   font-family: var(--ui);
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   padding: 4px 10px;
   border: 1px solid rgba(94,196,212,0.3);
   background: rgba(94,196,212,0.05);
@@ -530,7 +539,7 @@ body {
 }
 .achieve-popup-name {
   font-family: var(--ui);
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: #ffd700;
 }
 
@@ -557,14 +566,14 @@ body {
 }
 .scroll-ref {
   font-family: var(--ui);
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   color: var(--gold);
   letter-spacing: 0.15em;
   margin-bottom: 12px;
 }
 .scroll-verse {
   font-family: var(--body);
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: #d4cfc4;
   line-height: 1.8;
   font-style: italic;
@@ -598,12 +607,12 @@ body {
 .endscreen.active { display: flex; }
 .endscreen-title {
   font-family: var(--heading);
-  font-size: 2rem;
+  font-size: 2.2rem;
   letter-spacing: 0.15em;
 }
 .endscreen-sub {
   font-family: var(--body);
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--text-dim);
   font-style: italic;
   max-width: 400px;
@@ -612,7 +621,7 @@ body {
 }
 .endscreen-restart {
   font-family: var(--ui);
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   padding: 10px 30px;
   border: 2px solid var(--gold);
   background: rgba(184,147,58,0.08);
@@ -830,10 +839,10 @@ body {
   </div>
   <div class="ctrl-divider"></div>
   <div class="ctrl-group" id="actionGroup">
-    <button class="ctrl-btn action-btn" id="btnGrab" onclick="grabRelic()" style="display:none">✦ Take Relic</button>
-    <button class="ctrl-btn special-btn" id="btnScroll" onclick="readScroll()" style="display:none">📜 Read Scroll</button>
-    <button class="ctrl-btn action-btn" id="btnTalk" onclick="talkNPC()" style="display:none">💬 Talk</button>
-    <button class="ctrl-btn action-btn" id="btnPortrait" onclick="examinePortrait()" style="display:none">🖼 Examine</button>
+    <button class="ctrl-btn action-btn" id="btnGrab" onclick="grabRelic()" style="display:none">⚜ TAKE RELIC ⚜</button>
+    <button class="ctrl-btn special-btn" id="btnScroll" onclick="readScroll()" style="display:none">📜 READ SCROLL</button>
+    <button class="ctrl-btn action-btn" id="btnTalk" onclick="talkNPC()" style="display:none">💬 SPEAK</button>
+    <button class="ctrl-btn action-btn" id="btnPortrait" onclick="examinePortrait()" style="display:none">🖼 EXAMINE</button>
   </div>
 </div>
 
@@ -845,8 +854,8 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v5.1 GAME ENGINE
-// Atmospheric Overhaul — Particles, Screen Shake, Enemy Art, Effects
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v5.2 GAME ENGINE
+// Immersion Overhaul — Detail, Readability & Bug Fixes
 // ═══════════════════════════════════════════════════════════════
 
 // ─── GAME STATE ───
@@ -1441,11 +1450,23 @@ function enterRoom(roomId) {
     return; // Combat takes over
   }
 
+  // v5.2: Notify player of available items
+  if (room.relic) {
+    addLog(`⚜ The ${room.relic} is here — take it!`, 'item');
+  }
+  if (room.hasScroll && scrollPlacements[STATE.currentRoom] && !STATE.scrollsFound.includes(scrollPlacements[STATE.currentRoom].ref)) {
+    addLog(`📜 You sense a sacred scroll hidden in this room...`, 'scroll');
+  }
+  if (room.npc) {
+    addLog(`💬 ${NPCS[room.npc].name} is here.`, 'npc');
+  }
+  if (room.hasPortraits) {
+    addLog(`🖼 Three intact portraits hang on the wall. You can examine them.`, 'lore');
+  }
+
   updateButtons();
   checkAchievements();
 }
-
-// ═══ NAVIGATION ═══
 function go(dir) {
   if (STATE.inCombat) return;
   const room = ROOMS[STATE.currentRoom];
@@ -1569,6 +1590,17 @@ function endCombat(victory) {
 
   addLog(`The ${e.name} crumbles to dust. Victory.`, 'item');
   playSound('kill');
+  // v5.2: Notify player of available items in room after combat
+  const room = ROOMS[e.roomId];
+  if (room.relic) {
+    addLog(`⚜ You see the ${room.relic} nearby — take it!`, 'item');
+  }
+  if (room.hasScroll && scrollPlacements[e.roomId] && !STATE.scrollsFound.includes(scrollPlacements[e.roomId].ref)) {
+    addLog(`📜 A sacred scroll is hidden in this room...`, 'scroll');
+  }
+  if (room.npc) {
+    addLog(`💬 ${NPCS[room.npc].name} is here. You can speak with them.`, 'npc');
+  }
   updateButtons();
   checkAchievements();
 }
@@ -2043,46 +2075,171 @@ function renderScene(roomId) {
   el.innerHTML = getSceneSVG(room.type, roomId);
 }
 
+// Adds period-authentic detail to every room automatically
+function medievalDetail(type, w, h) {
+  let d = '';
+  // Stone wall cracks
+  d += `<line x1="${60+Math.random()*100}" y1="${30+Math.random()*40}" x2="${80+Math.random()*100}" y2="${80+Math.random()*50}" stroke="rgba(0,0,0,0.12)" stroke-width="0.7"/>`;
+  d += `<line x1="${w-160+Math.random()*100}" y1="${40+Math.random()*30}" x2="${w-140+Math.random()*80}" y2="${90+Math.random()*40}" stroke="rgba(0,0,0,0.1)" stroke-width="0.6"/>`;
+  // Moss / water stains on walls
+  d += `<ellipse cx="${50+Math.random()*120}" cy="${120+Math.random()*60}" rx="${8+Math.random()*12}" ry="${4+Math.random()*6}" fill="rgba(40,60,30,0.04)"/>`;
+  d += `<ellipse cx="${w-80+Math.random()*60}" cy="${100+Math.random()*80}" rx="${6+Math.random()*10}" ry="${3+Math.random()*5}" fill="rgba(40,60,30,0.03)"/>`;
+
+  if (type !== 'courtyard' && type !== 'tower' && type !== 'watchtower') {
+    // Indoor cobwebs
+    d += `<path d="M0,0 Q18,4 32,28" fill="none" stroke="rgba(200,200,200,0.04)" stroke-width="0.5"/>`;
+    d += `<path d="M0,0 Q8,14 7,30" fill="none" stroke="rgba(200,200,200,0.03)" stroke-width="0.4"/>`;
+    d += `<path d="M${w},0 Q${w-18},4 ${w-32},28" fill="none" stroke="rgba(200,200,200,0.04)" stroke-width="0.5"/>`;
+    // Rat on the floor
+    if (Math.random() > 0.5) {
+      const rx = 100 + Math.random() * (w-200);
+      d += `<ellipse cx="${rx}" cy="${238+Math.random()*8}" rx="4" ry="2.5" fill="rgba(60,50,40,0.12)"/>`;
+      d += `<path d="M${rx+4},${240} Q${rx+12},${238} ${rx+18},${240}" fill="none" stroke="rgba(60,50,40,0.08)" stroke-width="0.5"/>`;
+    }
+  }
+
+  // Scratches / claw marks on walls (undead damage)
+  if (type !== 'gallery' && type !== 'treasury') {
+    const sx = 30 + Math.random() * 100;
+    const sy = 80 + Math.random() * 60;
+    d += `<line x1="${sx}" y1="${sy}" x2="${sx+5}" y2="${sy+18}" stroke="rgba(80,70,60,0.06)" stroke-width="1"/>`;
+    d += `<line x1="${sx+4}" y1="${sy}" x2="${sx+9}" y2="${sy+18}" stroke="rgba(80,70,60,0.05)" stroke-width="0.8"/>`;
+    d += `<line x1="${sx+8}" y1="${sy}" x2="${sx+13}" y2="${sy+18}" stroke="rgba(80,70,60,0.04)" stroke-width="0.7"/>`;
+  }
+
+  return d;
+}
+
 function getSceneSVG(type, roomId) {
   const w = 800, h = 280;
   const defs = `<defs>
     <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     <filter id="heavyGlow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <linearGradient id="stoneWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1816"/><stop offset="100%" stop-color="#0e0d0b"/></linearGradient>
-    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d0c0a"/><stop offset="100%" stop-color="#080807"/></linearGradient>
+    <linearGradient id="stoneWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e1b18"/><stop offset="100%" stop-color="#100e0c"/></linearGradient>
+    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f0e0b"/><stop offset="100%" stop-color="#090808"/></linearGradient>
     <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a0e1a"/><stop offset="100%" stop-color="#06080e"/></linearGradient>
-    <radialGradient id="candleGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(255,180,60,0.3)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+    <radialGradient id="candleGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(255,180,60,0.35)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
     <radialGradient id="neonGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(100,220,255,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
     <radialGradient id="evilGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(60,255,60,0.12)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
-    <pattern id="stoneTex" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#141210"/><rect x="0" y="0" width="10" height="10" fill="rgba(255,255,255,0.015)"/><rect x="10" y="10" width="10" height="10" fill="rgba(255,255,255,0.01)"/></pattern>
+    <!-- Rich stone block pattern -->
+    <pattern id="stoneTex" width="48" height="32" patternUnits="userSpaceOnUse">
+      <rect width="48" height="32" fill="#141210"/>
+      <rect x="0" y="0" width="23" height="15" fill="rgba(255,255,255,0.02)" rx="1"/>
+      <rect x="25" y="0" width="23" height="15" fill="rgba(255,255,255,0.015)" rx="1"/>
+      <rect x="12" y="17" width="23" height="15" fill="rgba(255,255,255,0.018)" rx="1"/>
+      <rect x="37" y="17" width="11" height="15" fill="rgba(255,255,255,0.012)" rx="1"/>
+      <rect x="0" y="17" width="10" height="15" fill="rgba(255,255,255,0.014)" rx="1"/>
+      <line x1="0" y1="16" x2="48" y2="16" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+      <line x1="24" y1="0" x2="24" y2="16" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+      <line x1="12" y1="16" x2="12" y2="32" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+      <line x1="36" y1="16" x2="36" y2="32" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+    </pattern>
+    <!-- Floor flagstone pattern -->
+    <pattern id="floorTex" width="60" height="40" patternUnits="userSpaceOnUse">
+      <rect width="60" height="40" fill="#0c0b09"/>
+      <rect x="1" y="1" width="28" height="18" fill="rgba(255,255,255,0.012)" rx="1"/>
+      <rect x="31" y="1" width="28" height="18" fill="rgba(255,255,255,0.008)" rx="1"/>
+      <rect x="15" y="21" width="28" height="18" fill="rgba(255,255,255,0.01)" rx="1"/>
+      <line x1="0" y1="20" x2="60" y2="20" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      <line x1="30" y1="0" x2="30" y2="20" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+    </pattern>
   </defs>`;
+
+  // ─── Common detail helpers ───
+  const torch = (x, y) => `<rect x="${x}" y="${y}" width="6" height="24" fill="#3d2c1a" stroke="rgba(80,60,30,0.3)" stroke-width="0.5"/>
+    <rect x="${x-1}" y="${y-2}" width="8" height="4" fill="rgba(80,60,30,0.4)"/>
+    <ellipse cx="${x+3}" cy="${y-8}" rx="8" ry="12" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
+    <ellipse cx="${x+3}" cy="${y-10}" rx="4" ry="6" fill="rgba(255,200,60,0.5)"/>
+    <circle cx="${x+3}" cy="${y-12}" r="2" fill="#ffd040"/>
+    <ellipse cx="${x+3}" cy="${y+30}" rx="60" ry="70" fill="url(#candleGlow)" opacity="0.5"/>`;
+
+  const wallShield = (x, y) => `<circle cx="${x}" cy="${y}" r="22" fill="#1c1814" stroke="rgba(184,147,58,0.2)" stroke-width="1.5"/>
+    <circle cx="${x}" cy="${y}" r="18" fill="rgba(139,0,0,0.06)"/>
+    <rect x="${x-2}" y="${y-16}" width="4" height="32" fill="rgba(139,0,0,0.35)"/>
+    <rect x="${x-10}" y="${y-2}" width="20" height="4" fill="rgba(139,0,0,0.35)"/>`;
+
+  const banner = (x, y, torn) => `<rect x="${x}" y="${y}" width="3" height="8" fill="rgba(184,147,58,0.3)"/>
+    <rect x="${x-12}" y="${y+8}" width="27" height="${torn?55:70}" fill="rgba(139,0,0,0.12)" stroke="rgba(184,147,58,0.08)" stroke-width="0.5"/>
+    <rect x="${x-1}" y="${y+18}" width="5" height="25" fill="rgba(184,147,58,0.12)"/>
+    <rect x="${x-6}" y="${y+27}" width="15" height="4" fill="rgba(184,147,58,0.12)"/>
+    ${torn ? `<path d="M${x-12},${y+63} L${x-5},${y+58} L${x+3},${y+65} L${x+10},${y+55} L${x+15},${y+63}" fill="rgba(139,0,0,0.12)"/>` : ''}`;
+
+  const cobweb = (x, y) => `<path d="M${x},${y} Q${x+20},${y+5} ${x+35},${y+30}" fill="none" stroke="rgba(200,200,200,0.04)" stroke-width="0.5"/>
+    <path d="M${x},${y} Q${x+10},${y+15} ${x+8},${y+35}" fill="none" stroke="rgba(200,200,200,0.03)" stroke-width="0.5"/>
+    <path d="M${x+5},${y+10} Q${x+15},${y+12} ${x+25},${y+20}" fill="none" stroke="rgba(200,200,200,0.025)" stroke-width="0.4"/>`;
+
+  const bloodStain = (x, y, r) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*0.22}" fill="rgba(139,0,0,0.14)"/>
+    <ellipse cx="${x+r*0.3}" cy="${y-r*0.1}" rx="${r*0.4}" ry="${r*0.12}" fill="rgba(139,0,0,0.08)"/>`;
+
+  const floor = `<rect x="0" y="230" width="${w}" height="50" fill="url(#floorGrad)"/>
+    <rect x="0" y="230" width="${w}" height="50" fill="url(#floorTex)"/>`;
+
+  const stoneWalls = `<rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+    <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>`;
 
   let scene = '';
 
   switch(type) {
     case 'chapel':
       scene = `
-        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
-        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
-        <!-- Arched ceiling -->
-        <path d="M0,${h} L0,80 Q${w/2},-20 ${w},80 L${w},${h}" fill="rgba(20,18,14,0.8)"/>
-        <!-- Pillars -->
-        ${[150,350,450,650].map(x => `<rect x="${x}" y="40" width="18" height="240" fill="#1a1816" stroke="rgba(184,147,58,0.08)" stroke-width="0.5"/><rect x="${x-2}" y="36" width="22" height="8" fill="#1e1c18"/><rect x="${x-2}" y="${h-10}" width="22" height="10" fill="#1e1c18"/>`).join('')}
-        <!-- Stained glass window -->
-        <ellipse cx="${w/2}" cy="60" rx="50" ry="55" fill="none" stroke="rgba(184,147,58,0.2)" stroke-width="2"/>
-        <ellipse cx="${w/2}" cy="60" rx="45" ry="50" fill="rgba(139,0,0,0.08)"/>
-        <line x1="${w/2}" y1="15" x2="${w/2}" y2="105" stroke="rgba(184,147,58,0.15)" stroke-width="1.5"/>
-        <line x1="${w/2-40}" y1="60" x2="${w/2+40}" y2="60" stroke="rgba(184,147,58,0.15)" stroke-width="1.5"/>
-        <!-- Templar cross -->
-        <rect x="${w/2-3}" y="40" width="6" height="40" fill="rgba(139,0,0,0.5)" filter="url(#glow)"/>
-        <rect x="${w/2-12}" y="50" width="24" height="6" fill="rgba(139,0,0,0.5)" filter="url(#glow)"/>
-        <!-- Altar -->
-        <rect x="${w/2-40}" y="180" width="80" height="50" fill="#1e1a14" stroke="rgba(184,147,58,0.12)" stroke-width="1"/>
-        <rect x="${w/2-35}" y="175" width="70" height="8" fill="#221e16"/>
-        <!-- Candles -->
-        ${[w/2-25, w/2+20].map(x => `<rect x="${x}" y="160" width="3" height="15" fill="#d4c090"/><ellipse cx="${x+1.5}" cy="158" rx="4" ry="6" fill="rgba(255,180,60,0.5)" filter="url(#glow)"/><circle cx="${x+1.5}" cy="156" r="1.5" fill="#ffcc44"/>`).join('')}
-        <!-- Candlelight glow -->
-        <ellipse cx="${w/2}" cy="170" rx="120" ry="80" fill="url(#candleGlow)"/>
+        ${stoneWalls}
+        <!-- Arched ceiling with ribbed vault -->
+        <path d="M0,${h} L0,70 Q${w/2},-30 ${w},70 L${w},${h}" fill="rgba(18,16,12,0.8)"/>
+        <path d="M0,70 Q${w/4},30 ${w/2},-10 Q${w*3/4},30 ${w},70" fill="none" stroke="rgba(184,147,58,0.06)" stroke-width="1"/>
+        <!-- Stone pillars with capitals -->
+        ${[130,330,470,670].map(x => `<rect x="${x}" y="35" width="20" height="240" fill="#1c1a16" stroke="rgba(184,147,58,0.06)" stroke-width="0.5"/>
+          <rect x="${x-3}" y="32" width="26" height="10" fill="#201d18"/><rect x="${x-1}" y="27" width="22" height="7" fill="#1e1b16"/>
+          <rect x="${x-3}" y="${h-12}" width="26" height="12" fill="#201d18"/>`).join('')}
+        <!-- Grand stained glass rose window -->
+        <ellipse cx="${w/2}" cy="55" rx="52" ry="56" fill="none" stroke="rgba(184,147,58,0.22)" stroke-width="2.5"/>
+        <ellipse cx="${w/2}" cy="55" rx="46" ry="50" fill="rgba(139,0,0,0.07)"/>
+        <ellipse cx="${w/2}" cy="55" rx="46" ry="50" fill="rgba(200,180,100,0.02)"/>
+        <!-- Window tracery -->
+        <line x1="${w/2}" y1="8" x2="${w/2}" y2="102" stroke="rgba(184,147,58,0.13)" stroke-width="1.5"/>
+        <line x1="${w/2-42}" y1="55" x2="${w/2+42}" y2="55" stroke="rgba(184,147,58,0.13)" stroke-width="1.5"/>
+        <line x1="${w/2-30}" y1="20" x2="${w/2+30}" y2="90" stroke="rgba(184,147,58,0.06)" stroke-width="1"/>
+        <line x1="${w/2+30}" y1="20" x2="${w/2-30}" y2="90" stroke="rgba(184,147,58,0.06)" stroke-width="1"/>
+        <circle cx="${w/2}" cy="55" r="18" fill="none" stroke="rgba(184,147,58,0.08)" stroke-width="1"/>
+        <!-- Templar cross in window center -->
+        <rect x="${w/2-4}" y="36" width="8" height="38" fill="rgba(139,0,0,0.5)" filter="url(#glow)"/>
+        <rect x="${w/2-14}" y="48" width="28" height="7" fill="rgba(139,0,0,0.5)" filter="url(#glow)"/>
+        <!-- Torn Templar banners on pillars -->
+        ${banner(145, 50, true)}
+        ${banner(680, 50, true)}
+        <!-- Wall shields -->
+        ${wallShield(250, 100)}
+        ${wallShield(550, 95)}
+        <!-- Cobwebs in upper corners -->
+        ${cobweb(0, 0)}
+        ${cobweb(w-40, 0)}
+        <!-- Stone altar with carved cross -->
+        <rect x="${w/2-45}" y="176" width="90" height="55" fill="#1e1a14" stroke="rgba(184,147,58,0.12)" stroke-width="1"/>
+        <rect x="${w/2-40}" y="171" width="80" height="8" fill="#221e16"/>
+        <rect x="${w/2-2}" y="184" width="4" height="20" fill="rgba(184,147,58,0.1)"/>
+        <rect x="${w/2-7}" y="190" width="14" height="4" fill="rgba(184,147,58,0.1)"/>
+        <!-- Altar cloth (torn) -->
+        <rect x="${w/2-38}" y="172" width="76" height="5" fill="rgba(139,0,0,0.1)"/>
+        <!-- Altar candles with wax drips -->
+        ${[w/2-28, w/2+24].map(x => `<rect x="${x}" y="155" width="4" height="16" fill="#d4c090"/>
+          <rect x="${x+1}" y="165" width="2" height="8" fill="rgba(200,180,100,0.2)"/>
+          <ellipse cx="${x+2}" cy="152" rx="5" ry="7" fill="rgba(255,180,60,0.5)" filter="url(#glow)"/>
+          <circle cx="${x+2}" cy="150" r="2" fill="#ffd044"/>`).join('')}
+        <ellipse cx="${w/2}" cy="168" rx="130" ry="80" fill="url(#candleGlow)"/>
+        <!-- Shattered pews -->
+        ${[180,240,520,580].map(x => `<rect x="${x}" y="${218+Math.random()*12}" width="${30+Math.random()*20}" height="5" fill="rgba(40,30,18,0.4)" transform="rotate(${Math.random()*25-12} ${x+15} 225)"/>
+          <rect x="${x+5}" y="${225+Math.random()*8}" width="4" height="18" fill="rgba(40,30,18,0.3)" transform="rotate(${Math.random()*20-10} ${x+7} 234)"/>`).join('')}
+        <!-- Torches on pillars -->
+        ${torch(340, 90)}
+        ${torch(480, 90)}
+        <!-- Blood stains on floor -->
+        ${bloodStain(280, 248, 32)}
+        ${bloodStain(520, 252, 22)}
+        ${bloodStain(380, 255, 15)}
+        <!-- Floor -->
+        ${floor}
+        <!-- Knight -->
+        ${renderKnight(w/2 + 110, 155)}
+      `;
         <!-- Floor -->
         <rect x="0" y="230" width="${w}" height="50" fill="url(#floorGrad)"/>
         <!-- Blood stains -->
@@ -2116,6 +2273,15 @@ function getSceneSVG(type, roomId) {
         <!-- Moon -->
         <circle cx="650" cy="45" r="18" fill="rgba(200,210,220,0.08)" filter="url(#glow)"/>
         <circle cx="654" cy="42" r="14" fill="#0c0b09"/>
+        <!-- Fallen saint statue -->
+        <rect x="350" y="210" width="40" height="15" fill="rgba(160,150,130,0.06)" transform="rotate(-20 370 217)"/>
+        <circle cx="340" cy="205" r="8" fill="rgba(160,150,130,0.05)"/>
+        <!-- Dead roses in garden -->
+        ${[200,350,500].map(x => `<circle cx="${x}" cy="208" r="3" fill="rgba(80,30,30,0.08)"/><line x1="${x}" y1="208" x2="${x-2}" y2="195" stroke="rgba(50,40,20,0.15)" stroke-width="0.8"/>`).join('')}
+        <!-- Iron wall sconces (unlit) -->
+        ${[90,690].map(x => `<rect x="${x}" y="100" width="4" height="12" fill="rgba(80,70,60,0.15)"/><circle cx="${x+2}" cy="98" r="4" fill="rgba(30,25,20,0.2)"/>`).join('')}
+        <!-- Templar inscription on column -->
+        <text x="210" y="150" font-size="6" fill="rgba(184,147,58,0.06)" font-family="serif" letter-spacing="0.15em">DEUS VULT</text>
         ${renderKnight(350, 140)}
       `;
       break;
@@ -2148,6 +2314,19 @@ function getSceneSVG(type, roomId) {
         <ellipse cx="573" cy="55" rx="8" ry="12" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
         <circle cx="573" cy="52" r="3" fill="#ffaa33"/>
         <ellipse cx="573" cy="80" rx="50" ry="100" fill="url(#candleGlow)" opacity="0.5"/>
+        <!-- Additional wall details -->
+        ${wallShield(180, 80)}
+        ${banner(620, 40, false)}
+        <!-- Dented helmet on floor -->
+        <ellipse cx="460" cy="245" rx="10" ry="6" fill="rgba(90,85,75,0.15)"/>
+        <path d="M450,245 Q460,234 470,245" fill="rgba(90,85,75,0.12)"/>
+        <!-- Broken mace -->
+        <rect x="280" y="240" width="25" height="3" fill="rgba(100,90,75,0.2)" transform="rotate(-8 292 241)"/>
+        <circle cx="278" cy="240" r="5" fill="rgba(100,90,75,0.12)"/>
+        <!-- Chain hanging from ceiling -->
+        <line x1="700" y1="0" x2="695" y2="80" stroke="rgba(120,110,100,0.1)" stroke-width="1.5" stroke-dasharray="4 2"/>
+        <!-- Templar motto carved in stone -->
+        <text x="420" y="150" font-size="5" fill="rgba(184,147,58,0.05)" font-family="serif" letter-spacing="0.2em">NON NOBIS DOMINE</text>
         ${renderKnight(430, 155)}
       `;
       break;
@@ -2207,6 +2386,22 @@ function getSceneSVG(type, roomId) {
         <circle cx="402" cy="33" r="2.5" fill="#ffaa33"/>
         <ellipse cx="402" cy="100" rx="80" ry="80" fill="url(#candleGlow)" opacity="0.4"/>
         <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        <!-- War planning table -->
+        <rect x="150" y="210" width="60" height="4" fill="rgba(50,40,25,0.25)"/>
+        <rect x="155" y="214" width="4" height="25" fill="rgba(50,40,25,0.2)"/>
+        <rect x="202" y="214" width="4" height="25" fill="rgba(50,40,25,0.2)"/>
+        <!-- Scroll on table (battle plans) -->
+        <rect x="160" y="205" width="20" height="6" fill="rgba(210,200,170,0.06)" rx="2"/>
+        <!-- Stacked supply crates -->
+        <rect x="40" y="210" width="30" height="25" fill="rgba(60,45,25,0.2)" stroke="rgba(80,60,30,0.1)" stroke-width="0.5"/>
+        <rect x="48" y="195" width="25" height="18" fill="rgba(60,45,25,0.15)" stroke="rgba(80,60,30,0.08)" stroke-width="0.5"/>
+        <!-- Second torch -->
+        ${torch(140, 50)}
+        <!-- Templar banner (torn) -->
+        ${banner(580, 35, true)}
+        <!-- Scratched tally marks on wall near Edmund -->
+        ${[660,665,670,675,680].map(x => `<line x1="${x}" y1="100" x2="${x}" y2="112" stroke="rgba(200,190,170,0.06)" stroke-width="0.7"/>`).join('')}
+        <line x1="660" y1="106" x2="680" y2="106" stroke="rgba(200,190,170,0.05)" stroke-width="0.6"/>
         ${renderKnight(450, 155)}
       `;
       break;
@@ -2282,6 +2477,23 @@ function getSceneSVG(type, roomId) {
         <circle cx="420" cy="200" r="12" fill="#161412"/>
         <!-- Zombie silhouettes in distance -->
         ${[100,300,500,700].map(x => `<rect x="${x}" y="${100+Math.random()*20}" width="8" height="25" fill="rgba(100,200,220,0.04)"/>`).join('')}
+        <!-- Broken battering ram -->
+        <rect x="80" y="195" width="120" height="10" fill="rgba(60,45,25,0.25)" transform="rotate(-5 140 200)"/>
+        <circle cx="80" cy="200" r="14" fill="rgba(60,45,25,0.2)" stroke="rgba(80,60,30,0.12)" stroke-width="1"/>
+        <circle cx="80" cy="200" r="6" fill="rgba(40,30,15,0.3)"/>
+        <!-- Arrows stuck in ground -->
+        ${[300,480,550,650].map(x => `<line x1="${x}" y1="${165+Math.random()*30}" x2="${x+3}" y2="${155+Math.random()*25}" stroke="rgba(100,80,50,0.2)" stroke-width="1.2"/>
+          <polygon points="${x+1},${152+Math.random()*20} ${x+4},${155+Math.random()*20} ${x+2.5},${148+Math.random()*20}" fill="rgba(100,90,80,0.15)"/>`).join('')}
+        <!-- Fallen knight body -->
+        <rect x="520" y="210" width="35" height="10" fill="rgba(90,85,75,0.1)" rx="3"/>
+        <circle cx="515" cy="212" r="6" fill="rgba(90,85,75,0.08)"/>
+        ${wallShield(560, 215)}
+        <!-- Broken siege ladder against wall -->
+        <rect x="720" y="95" width="4" height="120" fill="rgba(60,45,25,0.18)" transform="rotate(-15 722 155)"/>
+        <rect x="740" y="95" width="4" height="120" fill="rgba(60,45,25,0.18)" transform="rotate(-15 742 155)"/>
+        ${[0,1,2,3].map(i => `<rect x="718" y="${108+i*25}" width="28" height="3" fill="rgba(60,45,25,0.12)" transform="rotate(-15 732 ${109+i*25})"/>`).join('')}
+        <!-- Templar war banner (damaged) -->
+        ${banner(50, 65, true)}
         ${renderKnight(400, 150)}
       `;
       break;
@@ -2515,7 +2727,7 @@ function getSceneSVG(type, roomId) {
       `;
   }
 
-  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">${defs}${scene}</svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">${defs}${scene}${medievalDetail(type, w, h)}</svg>`;
 }
 
 // ─── KNIGHT CHARACTER ───
