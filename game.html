@@ -2,1625 +2,2395 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Knights Templar: The Siege of the Undead</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knights Templar: The Siege of the Undead — v5.0</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --black:#08090e;--dark:#0d0e16;--gold:#c9a227;--gold2:#f0c040;
-  --ice:#00d4ff;--crimson:#8B0000;--paper:#ddd5c0;
-  --mono:'Courier New',monospace;
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #08080a;
+  --panel: #0d0d10;
+  --panel-border: rgba(184,147,58,0.18);
+  --gold: #c9a84c;
+  --gold-dim: rgba(184,147,58,0.35);
+  --gold-glow: rgba(201,168,76,0.25);
+  --crimson: #8B0000;
+  --crimson-bright: #cc2222;
+  --neon: #5ec4d4;
+  --neon-dim: rgba(94,196,212,0.15);
+  --text: #d4cfc4;
+  --text-dim: rgba(212,207,196,0.5);
+  --text-faint: rgba(212,207,196,0.25);
+  --hp-green: #4a8;
+  --hp-orange: #c84;
+  --hp-red: #c44;
+  --heading: 'Cinzel Decorative', 'Cinzel', serif;
+  --body: 'IM Fell English', serif;
+  --ui: 'Cinzel', serif;
 }
-html,body{width:100%;height:100%;background:var(--black);color:var(--paper);font-family:var(--mono);overflow-x:hidden;}
 
-/* MUSIC CONTROL */
-#musicBar{
-  position:fixed;top:0;left:0;right:0;z-index:200;
-  display:flex;align-items:center;gap:10px;
-  padding:6px 16px;background:rgba(8,9,14,0.95);
-  border-bottom:1px solid rgba(201,162,39,0.2);
-  font-size:0.65rem;letter-spacing:0.1em;
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
 }
-#musicLabel{color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;}
-#musicTrack{color:rgba(221,213,192,0.5);font-style:italic;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mbtn{
-  background:none;border:1px solid rgba(201,162,39,0.3);color:var(--gold);
-  font-family:var(--mono);font-size:0.6rem;padding:3px 10px;cursor:pointer;
-  letter-spacing:0.1em;transition:all 0.2s;
+
+/* ═══ TOP BAR ═══ */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, #111114 0%, #0a0a0d 100%);
+  border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+  min-height: 44px;
 }
-.mbtn:hover{background:rgba(201,162,39,0.1);}
-#volSlider{width:60px;accent-color:var(--gold);cursor:pointer;}
-#ytHolder{position:fixed;bottom:-200px;left:-200px;width:1px;height:1px;pointer-events:none;}
-
-/* TITLE */
-#titleScreen{
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;text-align:center;position:relative;overflow:hidden;padding:2rem;
-  padding-top:40px;
+.game-title-bar {
+  font-family: var(--heading);
+  font-size: 0.85rem;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 12px var(--gold-glow);
 }
-#titleCanvas{position:absolute;inset:0;width:100%;height:100%;}
-.t-h1{position:relative;z-index:2;font-size:clamp(1.8rem,5vw,3rem);letter-spacing:0.2em;color:var(--gold2);text-shadow:0 0 40px rgba(240,192,64,0.6);line-height:1.1;margin-bottom:0.3rem;}
-.t-sub{position:relative;z-index:2;font-size:0.75rem;letter-spacing:0.4em;color:var(--ice);opacity:0.6;margin-bottom:0.3rem;}
-.t-auth{position:relative;z-index:2;font-size:0.68rem;letter-spacing:0.18em;color:rgba(221,213,192,0.4);margin-bottom:2rem;}
-.btn-start{
-  position:relative;z-index:2;padding:1rem 3.5rem;border:2px solid var(--gold);
-  color:var(--gold2);background:rgba(201,162,39,0.07);font-family:var(--mono);
-  font-size:0.9rem;letter-spacing:0.25em;cursor:pointer;text-transform:uppercase;
-  transition:all 0.3s;animation:tpulse 2.5s ease-in-out infinite;
+.top-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
-.btn-start:hover{background:rgba(201,162,39,0.2);box-shadow:0 0 30px rgba(201,162,39,0.5);}
-@keyframes tpulse{0%,100%{box-shadow:0 0 10px rgba(201,162,39,0.3)}50%{box-shadow:0 0 30px rgba(201,162,39,0.7)}}
-
-/* GAME */
-#gameScreen{display:none;flex-direction:column;min-height:100vh;padding-top:34px;}
-#gameScreen.active{display:flex;}
-
-/* SCENE */
-#scene{position:relative;height:300px;overflow:hidden;flex-shrink:0;background:#05060a;border-bottom:2px solid rgba(201,162,39,0.12);}
-.plyr{position:absolute;inset:0;width:100%;height:100%;transition:transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);}
-#lSky{z-index:1;}#lFog{z-index:2;}#lArch{z-index:3;}#lKnight{z-index:4;}#lFg{z-index:5;}#lZombies{z-index:6;pointer-events:none;}
-
-#roomTag{position:absolute;top:10px;left:14px;font-size:0.85rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 12px rgba(201,162,39,0.9);z-index:10;}
-#loreTag{position:absolute;top:10px;right:14px;max-width:200px;font-size:0.6rem;line-height:1.55;color:rgba(221,213,192,0.48);font-style:italic;text-align:right;z-index:10;}
-#npcHint{position:absolute;bottom:94px;left:14px;z-index:12;font-size:0.68rem;color:var(--ice);cursor:pointer;background:rgba(8,9,14,0.75);padding:3px 8px;border:1px solid rgba(0,212,255,0.25);display:none;}
-#paintingHint{position:absolute;bottom:70px;left:14px;z-index:12;font-size:0.68rem;color:#aaa;cursor:pointer;background:rgba(8,9,14,0.75);padding:3px 8px;border:1px solid rgba(160,160,160,0.25);display:none;}
-#noteHint{position:absolute;bottom:46px;left:14px;z-index:12;font-size:0.68rem;color:var(--gold);cursor:pointer;background:rgba(8,9,14,0.75);padding:3px 8px;border:1px solid rgba(201,162,39,0.25);display:none;}
-#itemArea{position:absolute;bottom:10px;right:12px;z-index:15;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
-#itemLabel{font-size:0.75rem;color:#a8e6a3;letter-spacing:0.1em;text-shadow:0 0 8px rgba(168,230,163,0.6);min-height:18px;}
-#grabBtn{display:none;padding:7px 18px;border:1px solid #a8e6a3;color:#a8e6a3;background:rgba(168,230,163,0.1);font-family:var(--mono);font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;animation:gpulse 1.3s ease-in-out infinite;}
-#grabBtn:hover{background:rgba(168,230,163,0.25);}
-@keyframes gpulse{0%,100%{box-shadow:0 0 4px rgba(168,230,163,0.2)}50%{box-shadow:0 0 16px rgba(168,230,163,0.8)}}
-
-#fxBlood{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(150,0,0,0.75),transparent 70%);opacity:0;z-index:20;pointer-events:none;transition:opacity 0.07s;}
-#fxGold{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(255,200,0,0.4),transparent 70%);opacity:0;z-index:20;pointer-events:none;transition:opacity 0.15s;}
-#fxIce{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,212,255,0.25),transparent 70%);opacity:0;z-index:20;pointer-events:none;transition:opacity 0.12s;}
-#fxSaint{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(255,220,100,0.7),rgba(255,150,0,0.3) 50%,transparent 80%);opacity:0;z-index:21;pointer-events:none;transition:opacity 0.3s;}
-.shake{animation:shake 0.35s ease-in-out;}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-
-/* MODALS */
-.modal-wrap{display:none;position:absolute;inset:0;z-index:55;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);}
-.modal-wrap.show{display:flex;}
-.modal-card{background:#0e0c08;border:1px solid rgba(201,162,39,0.4);max-width:480px;width:92%;padding:1.8rem;text-align:center;}
-.modal-icon{font-size:1.6rem;margin-bottom:0.8rem;}
-.modal-title{font-size:0.78rem;letter-spacing:0.2em;color:var(--gold);margin-bottom:0.9rem;text-transform:uppercase;}
-.modal-body{font-size:0.9rem;line-height:1.9;color:rgba(221,213,192,0.85);font-style:italic;margin-bottom:1.4rem;font-family:Georgia,serif;max-height:200px;overflow-y:auto;}
-.modal-close{padding:0.6rem 2rem;border:1px solid rgba(201,162,39,0.4);color:var(--gold);background:none;font-family:var(--mono);font-size:0.74rem;cursor:pointer;letter-spacing:0.1em;}
-.modal-close:hover{background:rgba(201,162,39,0.1);}
-#npcModal .modal-card{background:#080c14;border-color:rgba(0,212,255,0.35);}
-#npcTitle{font-size:0.85rem;color:var(--ice);margin-bottom:0.5rem;letter-spacing:0.1em;text-transform:uppercase;}
-#npcText{font-size:0.88rem;line-height:1.85;color:rgba(221,213,192,0.8);text-align:left;margin-bottom:1rem;font-family:Georgia,serif;min-height:80px;max-height:160px;overflow-y:auto;}
-#npcIn{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(0,212,255,0.2);color:var(--paper);font-family:var(--mono);font-size:0.75rem;padding:7px 10px;outline:none;margin-bottom:0.7rem;}
-#npcIn:focus{border-color:var(--ice);}
-
-/* SAINT */
-#saintModal{display:none;position:absolute;inset:0;z-index:60;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:2rem;}
-#saintModal.show{display:flex;background:radial-gradient(ellipse at 50% 40%,rgba(255,200,50,0.25),rgba(8,9,14,0.97));}
-#saintSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-#saintTxt{position:relative;z-index:2;font-size:clamp(0.9rem,2.5vw,1.2rem);color:var(--gold2);letter-spacing:0.12em;line-height:2;text-shadow:0 0 20px rgba(240,192,64,0.8);max-width:500px;margin-bottom:2rem;}
-#saintBtn{position:relative;z-index:2;padding:0.8rem 3rem;border:2px solid var(--gold2);color:var(--gold2);background:rgba(240,192,64,0.08);font-family:var(--mono);font-size:0.85rem;cursor:pointer;letter-spacing:0.2em;text-transform:uppercase;}
-
-/* END */
-#endOverlay{display:none;position:absolute;inset:0;z-index:50;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.92);text-align:center;padding:2rem;}
-#endOverlay.show{display:flex;}
-#endH{font-size:clamp(1.6rem,4vw,2.4rem);margin-bottom:1rem;letter-spacing:0.18em;}
-#endP{font-size:0.85rem;color:rgba(221,213,192,0.6);margin-bottom:1.8rem;line-height:1.9;max-width:460px;}
-.btn-end{padding:0.8rem 2.5rem;border:1px solid var(--gold);color:var(--gold);background:none;font-family:var(--mono);font-size:0.85rem;letter-spacing:0.15em;cursor:pointer;text-transform:uppercase;}
-.btn-end:hover{background:rgba(201,162,39,0.12);}
-
-/* LOWER */
-#lower{display:flex;flex-direction:column;flex:1;background:var(--dark);}
-#statusBar{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid rgba(201,162,39,0.08);flex-wrap:wrap;}
-.hp-lbl{font-size:0.74rem;letter-spacing:0.15em;color:rgba(221,213,192,0.35);text-transform:uppercase;}
-#hpWrap{flex:1;max-width:150px;height:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(139,0,0,0.25);}
-#hpFill{height:100%;background:var(--crimson);transition:width 0.4s,background 0.4s;}
-#hpNum{font-size:0.74rem;color:var(--crimson);min-width:52px;}
-#invincTag{font-size:0.68rem;color:#ffd700;display:none;animation:goldGlow 1.2s ease-in-out infinite;}
-@keyframes goldGlow{0%,100%{text-shadow:0 0 5px rgba(255,215,0,0.4)}50%{text-shadow:0 0 15px rgba(255,215,0,0.9)}}
-#cStatus{font-size:0.72rem;letter-spacing:0.1em;color:var(--ice);text-transform:uppercase;}
-#relicCnt{font-size:0.72rem;letter-spacing:0.1em;color:var(--gold);margin-left:auto;}
-
-/* MAP - fog of war style, compact */
-#mapWrap{padding:6px 10px 4px;border-bottom:1px solid rgba(201,162,39,0.08);}
-#mapSvg{width:100%;display:block;max-height:130px;}
-
-/* CENTER CONTROL ZONE */
-#controlZone{
-  display:flex;align-items:center;gap:10px;padding:8px 14px;
-  border-bottom:1px solid rgba(201,162,39,0.08);
-  background:linear-gradient(180deg,rgba(13,14,22,0.95),rgba(8,9,14,0.98));
+.hp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-#actionBtns{
-  display:flex;flex-direction:column;gap:4px;min-width:100px;
-  align-items:flex-start;
+.hp-label {
+  font-family: var(--ui);
+  font-size: 0.65rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
-#dirPad{
-  display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,36px);
-  gap:3px;flex-shrink:0;
+.hp-bar-outer {
+  width: 140px;
+  height: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
 }
-.db{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.08em;padding:0;
-  border:1px solid rgba(0,212,255,0.22);color:rgba(0,212,255,0.7);background:rgba(0,212,255,0.04);
-  cursor:pointer;text-transform:uppercase;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
-.db:hover:not(:disabled){background:rgba(0,212,255,0.12);border-color:var(--ice);color:#fff;}
-.db:disabled{opacity:0.1;cursor:not-allowed;}
-.db.center-blank{border:none;background:none;cursor:default;}
-#quickInfo{flex:1;display:flex;flex-direction:column;gap:6px;}
-#miniStatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hp-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, var(--hp-green), #6c8);
+  transition: width 0.5s ease, background 0.5s ease;
+  border-radius: 1px;
+  position: relative;
+}
+.hp-bar-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+}
+.hp-text {
+  font-family: var(--ui);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  min-width: 52px;
+  text-align: right;
+}
+.inv-count {
+  font-family: var(--ui);
+  font-size: 0.62rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.08em;
+}
+.btn-audio, .btn-fullscreen {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim);
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+  font-family: var(--ui);
+}
+.btn-audio:hover, .btn-fullscreen:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
 
-#invRow{display:flex;flex-wrap:wrap;gap:4px;padding:5px 12px;border-bottom:1px solid rgba(201,162,39,0.06);min-height:28px;align-items:center;}
-.ilbl{font-size:0.68rem;color:rgba(221,213,192,0.25);letter-spacing:0.12em;margin-right:4px;text-transform:uppercase;}
-.ibadge{font-size:0.65rem;padding:2px 7px;border:1px solid rgba(201,162,39,0.32);color:rgba(201,162,39,0.8);}
-.ibadge.saint{border-color:#ffd700;color:#ffd700;}
+/* ═══ MAIN GAME AREA ═══ */
+.game-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
 
-#log{flex:1;overflow-y:auto;padding:8px 14px;font-size:0.78rem;line-height:1.8;min-height:90px;max-height:140px;}
-#log::-webkit-scrollbar{width:2px;}
-#log::-webkit-scrollbar-thumb{background:var(--gold);}
-.ls{color:var(--ice);}.lr{color:var(--gold2);}.li{color:#a8e6a3;}
-.le{color:rgba(221,213,192,0.28);}.la{color:#a8e6a3;font-weight:bold;}
-.lw{color:var(--gold2);font-weight:bold;}.ll{color:#ff5555;font-weight:bold;}
-.lc{color:rgba(221,213,192,0.38);}.lco{color:#ff9944;}.llr{color:rgba(200,180,255,0.65);font-style:italic;}
-.lev{color:#ff6688;}.lhe{color:#88ffaa;}.lnote{color:var(--gold);font-style:italic;}
-.lnpc{color:var(--ice);}.lsaint{color:#ffd700;font-weight:bold;}
+/* ═══ SCENE ART ═══ */
+.scene-panel {
+  grid-column: 1;
+  grid-row: 1;
+  height: 280px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
+  background: #060608;
+}
+.scene-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.scene-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 20px;
+  background: linear-gradient(transparent, rgba(6,6,8,0.95));
+  pointer-events: none;
+}
+.scene-room-name {
+  font-family: var(--heading);
+  font-size: 1.1rem;
+  color: var(--gold);
+  text-shadow: 0 0 16px rgba(201,168,76,0.4);
+  letter-spacing: 0.08em;
+}
+.scene-room-sub {
+  font-family: var(--body);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 2px;
+}
 
-#combatPanel{display:none;flex-direction:column;border-top:1px solid rgba(139,0,0,0.35);background:rgba(139,0,0,0.05);}
-#combatPanel.on{display:flex;}
-#combatHdr{padding:6px 14px;font-size:0.74rem;letter-spacing:0.14em;color:var(--crimson);text-transform:uppercase;border-bottom:1px solid rgba(139,0,0,0.18);display:flex;justify-content:space-between;align-items:center;}
-#eHpRow{display:flex;align-items:center;gap:6px;}
-#eHpBar{width:80px;height:5px;background:rgba(255,255,255,0.05);}
-#eHpFill{height:100%;background:#cc2200;transition:width 0.3s;}
-#eHpNum{font-size:0.65rem;color:#cc2200;margin-left:5px;}
-#combatBtns{display:flex;gap:6px;padding:8px 14px;}
-.cb{flex:1;padding:8px 4px;font-family:var(--mono);font-size:0.74rem;letter-spacing:0.1em;text-transform:uppercase;border:1px solid;cursor:pointer;background:none;transition:all 0.2s;}
-.cb-a{border-color:rgba(139,0,0,0.45);color:#ff8844;}.cb-a:hover{background:rgba(139,0,0,0.18);}
-.cb-d{border-color:rgba(0,212,255,0.28);color:var(--ice);}.cb-d:hover{background:rgba(0,212,255,0.08);}
-.cb-f{border-color:rgba(221,213,192,0.12);color:rgba(221,213,192,0.38);}.cb-f:hover{background:rgba(221,213,192,0.04);}
+/* ═══ MAP PANEL ═══ */
+.map-panel {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  background: var(--panel);
+  border-left: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.map-header {
+  font-family: var(--ui);
+  font-size: 0.6rem;
+  color: var(--gold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(184,147,58,0.1);
+  text-align: center;
+}
+.map-svg-wrap {
+  flex: 1;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.map-svg-wrap svg {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+}
+.map-legend {
+  padding: 6px 10px 8px;
+  border-top: 1px solid rgba(184,147,58,0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--ui);
+  font-size: 0.5rem;
+  color: var(--text-faint);
+  letter-spacing: 0.06em;
+}
+.map-legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+}
 
-/* dirGrid replaced by dirPad */
-.db{font-family:var(--mono);font-size:0.74rem;letter-spacing:0.1em;padding:8px 4px;border:1px solid rgba(0,212,255,0.18);color:rgba(0,212,255,0.65);background:none;cursor:pointer;text-transform:uppercase;transition:all 0.2s;}
-.db:hover:not(:disabled){background:rgba(0,212,255,0.07);border-color:var(--ice);}
-.db:disabled{opacity:0.1;cursor:not-allowed;}
+/* ═══ LOG PANEL ═══ */
+.log-panel {
+  grid-column: 1;
+  grid-row: 2;
+  overflow-y: auto;
+  padding: 12px 20px;
+  border-right: 1px solid var(--panel-border);
+  background: linear-gradient(180deg, #0a0a0d 0%, var(--bg) 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.log-panel::-webkit-scrollbar { width: 3px; }
+.log-panel::-webkit-scrollbar-track { background: transparent; }
+.log-panel::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
 
-#inputRow{display:flex;gap:5px;padding:7px 12px;border-top:1px solid rgba(201,162,39,0.06);}
-#cmdIn{flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(0,212,255,0.16);color:var(--paper);font-family:var(--mono);font-size:0.76rem;padding:7px 10px;outline:none;}
-#cmdIn:focus{border-color:var(--ice);}
-#cmdSend{background:none;border:1px solid var(--ice);color:var(--ice);font-family:var(--mono);font-size:0.7rem;padding:7px 14px;cursor:pointer;text-transform:uppercase;}
-#cmdSend:hover{background:rgba(0,212,255,0.07);}
-#fsBtn{background:none;border:1px solid rgba(221,213,192,0.12);color:rgba(221,213,192,0.35);font-family:var(--mono);font-size:0.65rem;padding:7px 9px;cursor:pointer;}
-#fsBtn:hover{border-color:var(--gold);color:var(--gold);}
+.log-line {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text);
+  opacity: 0;
+  animation: fadeLogIn 0.4s ease forwards;
+}
+@keyframes fadeLogIn { to { opacity: 1; } }
 
-#achievePanel{position:fixed;top:40px;right:10px;z-index:80;max-width:260px;}
-.achieve-pop{background:#0a0c08;border:1px solid var(--gold);padding:10px 14px;margin-bottom:6px;font-size:0.72rem;animation:achIn 0.4s ease-out,achOut 0.4s ease-in 3.6s forwards;border-left:3px solid var(--gold2);}
-.achieve-pop.saint{border-color:#ffd700;border-left-color:#ffd700;background:#0e0c04;}
-@keyframes achIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-@keyframes achOut{from{opacity:1}to{opacity:0;pointer-events:none}}
-.ach-name{color:var(--gold2);letter-spacing:0.1em;margin-bottom:2px;}
-.ach-desc{color:rgba(221,213,192,0.5);font-size:0.65rem;}
+.log-line.lore { color: #a89870; font-style: italic; }
+.log-line.combat { color: var(--crimson-bright); }
+.log-line.heal { color: var(--hp-green); }
+.log-line.item { color: var(--gold); }
+.log-line.npc { color: var(--neon); }
+.log-line.scroll { color: #d4a0ff; }
+.log-line.achievement { color: #ffd700; font-family: var(--ui); font-size: 0.82rem; letter-spacing: 0.04em; }
+.log-line.system { color: var(--text-faint); font-style: italic; font-size: 0.8rem; }
+.log-line.death { color: var(--crimson-bright); font-family: var(--heading); font-size: 1rem; text-align: center; }
+.log-line.victory { color: var(--gold); font-family: var(--heading); font-size: 1rem; text-align: center; }
+.log-line.divine { color: #ffd700; font-family: var(--heading); text-align: center; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+.log-separator {
+  border: none;
+  border-top: 1px solid rgba(184,147,58,0.08);
+  margin: 6px 0;
+}
+
+/* ═══ INVENTORY BAR ═══ */
+.inventory-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: #0c0c0f;
+  border-top: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+  overflow-x: auto;
+  min-height: 36px;
+}
+.inv-label {
+  font-family: var(--ui);
+  font-size: 0.55rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.inv-item {
+  font-family: var(--ui);
+  font-size: 0.6rem;
+  color: var(--text);
+  padding: 3px 10px;
+  background: rgba(184,147,58,0.06);
+  border: 1px solid rgba(184,147,58,0.15);
+  border-radius: 2px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.inv-item.scroll-item {
+  border-color: rgba(160,120,255,0.25);
+  background: rgba(160,120,255,0.06);
+  color: #c4a0ee;
+}
+
+/* ═══ CONTROLS BAR ═══ */
+.controls-bar {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, #0e0e12 0%, #0a0a0d 100%);
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+.ctrl-group {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.ctrl-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(184,147,58,0.15);
+  margin: 0 6px;
+}
+.ctrl-btn {
+  font-family: var(--ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  padding: 7px 14px;
+  border: 1px solid rgba(184,147,58,0.25);
+  background: rgba(184,147,58,0.04);
+  color: var(--gold);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ctrl-btn:hover:not(:disabled) {
+  background: rgba(184,147,58,0.12);
+  border-color: var(--gold);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.ctrl-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ctrl-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.ctrl-btn.combat-btn {
+  border-color: rgba(180,40,40,0.4);
+  color: var(--crimson-bright);
+  background: rgba(180,40,40,0.06);
+}
+.ctrl-btn.combat-btn:hover:not(:disabled) {
+  background: rgba(180,40,40,0.15);
+  border-color: var(--crimson-bright);
+  box-shadow: 0 0 10px rgba(180,40,40,0.3);
+}
+.ctrl-btn.action-btn {
+  border-color: rgba(94,196,212,0.3);
+  color: var(--neon);
+  background: rgba(94,196,212,0.04);
+}
+.ctrl-btn.action-btn:hover:not(:disabled) {
+  background: rgba(94,196,212,0.12);
+  border-color: var(--neon);
+  box-shadow: 0 0 10px var(--neon-dim);
+}
+.ctrl-btn.special-btn {
+  border-color: rgba(160,120,255,0.3);
+  color: #c4a0ee;
+  background: rgba(160,120,255,0.04);
+}
+.ctrl-btn.special-btn:hover:not(:disabled) {
+  background: rgba(160,120,255,0.12);
+  border-color: #c4a0ee;
+}
+
+/* ═══ COMBAT OVERLAY ═══ */
+.combat-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(4,4,6,0.85);
+  z-index: 20;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.combat-overlay.active { display: flex; }
+.combat-title {
+  font-family: var(--heading);
+  font-size: 1.3rem;
+  color: var(--crimson-bright);
+  text-shadow: 0 0 20px rgba(180,40,40,0.5);
+  letter-spacing: 0.15em;
+  animation: combatPulse 2s ease-in-out infinite;
+}
+@keyframes combatPulse {
+  0%,100% { text-shadow: 0 0 10px rgba(180,40,40,0.3); }
+  50% { text-shadow: 0 0 30px rgba(180,40,40,0.7); }
+}
+.combat-enemy-name {
+  font-family: var(--ui);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.enemy-hp-bar-outer {
+  width: 200px;
+  height: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(180,40,40,0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.enemy-hp-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #922, #c44);
+  transition: width 0.4s ease;
+}
+.combat-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ═══ NPC DIALOG ═══ */
+.npc-dialog {
+  display: none;
+  position: absolute;
+  bottom: 60px;
+  left: 20px;
+  right: 220px;
+  background: var(--panel);
+  border: 1px solid var(--neon);
+  padding: 16px 20px;
+  z-index: 15;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 0 20px rgba(94,196,212,0.1);
+}
+.npc-dialog.active { display: block; }
+.npc-dialog-name {
+  font-family: var(--ui);
+  font-size: 0.72rem;
+  color: var(--neon);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.npc-dialog-text {
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.65;
+  font-style: italic;
+}
+.npc-dialog-topics {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.npc-topic-btn {
+  font-family: var(--ui);
+  font-size: 0.6rem;
+  padding: 4px 10px;
+  border: 1px solid rgba(94,196,212,0.3);
+  background: rgba(94,196,212,0.05);
+  color: var(--neon);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.06em;
+}
+.npc-topic-btn:hover {
+  background: rgba(94,196,212,0.15);
+  border-color: var(--neon);
+}
+.npc-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* ═══ ACHIEVEMENT POPUP ═══ */
+.achieve-popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #1a1508, #0d0d10);
+  border: 1px solid var(--gold);
+  padding: 14px 20px;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 0 30px var(--gold-glow);
+  animation: achieveSlide 0.5s ease;
+  max-width: 300px;
+}
+@keyframes achieveSlide {
+  from { transform: translateX(100px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.achieve-popup.show { display: block; }
+.achieve-popup-title {
+  font-family: var(--heading);
+  font-size: 0.7rem;
+  color: var(--gold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.achieve-popup-name {
+  font-family: var(--ui);
+  font-size: 0.85rem;
+  color: #ffd700;
+}
+
+/* ═══ SCROLL DISPLAY ═══ */
+.scroll-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(4,4,6,0.9);
+  z-index: 25;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.scroll-overlay.active { display: flex; }
+.scroll-parchment {
+  width: 320px;
+  padding: 32px;
+  background: linear-gradient(135deg, #2a2218, #1a1610);
+  border: 2px solid var(--gold);
+  text-align: center;
+  box-shadow: 0 0 40px rgba(201,168,76,0.2);
+}
+.scroll-ref {
+  font-family: var(--ui);
+  font-size: 0.72rem;
+  color: var(--gold);
+  letter-spacing: 0.15em;
+  margin-bottom: 12px;
+}
+.scroll-verse {
+  font-family: var(--body);
+  font-size: 1rem;
+  color: #d4cfc4;
+  line-height: 1.8;
+  font-style: italic;
+}
+.scroll-close {
+  font-family: var(--ui);
+  font-size: 0.65rem;
+  padding: 8px 20px;
+  border: 1px solid var(--gold);
+  background: rgba(184,147,58,0.08);
+  color: var(--gold);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.scroll-close:hover { background: rgba(184,147,58,0.2); }
+
+/* ═══ GAME OVER / WIN ═══ */
+.endscreen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(4,4,6,0.95);
+  z-index: 30;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.endscreen.active { display: flex; }
+.endscreen-title {
+  font-family: var(--heading);
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+}
+.endscreen-sub {
+  font-family: var(--body);
+  font-size: 1rem;
+  color: var(--text-dim);
+  font-style: italic;
+  max-width: 400px;
+  text-align: center;
+  line-height: 1.7;
+}
+.endscreen-restart {
+  font-family: var(--ui);
+  font-size: 0.75rem;
+  padding: 10px 30px;
+  border: 2px solid var(--gold);
+  background: rgba(184,147,58,0.08);
+  color: var(--gold);
+  cursor: pointer;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+.endscreen-restart:hover {
+  background: rgba(184,147,58,0.2);
+  box-shadow: 0 0 20px var(--gold-glow);
+}
+
+/* ═══ PORTRAIT OVERLAY ═══ */
+.portrait-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(4,4,6,0.92);
+  z-index: 25;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.portrait-overlay.active { display: flex; }
+.portrait-frame {
+  width: 250px;
+  height: 300px;
+  border: 3px solid var(--gold);
+  background: #1a1508;
+  box-shadow: 0 0 30px var(--gold-glow);
+  overflow: hidden;
+}
+.portrait-name {
+  font-family: var(--heading);
+  font-size: 0.9rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-top: 8px;
+}
+.portrait-desc {
+  font-family: var(--body);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  font-style: italic;
+  max-width: 350px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 700px) {
+  .game-main { grid-template-columns: 1fr; }
+  .map-panel {
+    grid-column: 1;
+    grid-row: auto;
+    max-height: 160px;
+    border-left: none;
+    border-top: 1px solid var(--panel-border);
+  }
+  .scene-panel { height: 200px; border-right: none; }
+  .log-panel { border-right: none; min-height: 120px; }
+  .npc-dialog { right: 20px; }
+}
 </style>
 </head>
 <body>
 
-<!-- MUSIC BAR -->
-<div id="musicBar">
-  <span id="musicLabel">♪ Music</span>
-  <span id="musicTrack">Templar Chant — loading...</span>
-  <button class="mbtn" id="playPauseBtn" onclick="toggleMusic()">▶ Play</button>
-  <input type="range" id="volSlider" min="0" max="100" value="40" oninput="setVol(this.value)" title="Volume">
-  <span style="font-size:0.58rem;color:rgba(221,213,192,0.3);">vol</span>
-</div>
-<div id="ytHolder">
-  <div id="ytPlayer"></div>
-</div>
-
-<div id="achievePanel"></div>
-
-<!-- TITLE -->
-<div id="titleScreen">
-  <canvas id="titleCanvas"></canvas>
-  <div class="t-h1">KNIGHTS TEMPLAR</div>
-  <div class="t-h1" style="font-size:clamp(1rem,2.8vw,1.6rem);letter-spacing:0.38em;color:var(--ice);text-shadow:0 0 20px rgba(0,212,255,0.5)">THE SIEGE OF THE UNDEAD</div>
-  <div class="t-sub" style="margin-top:0.5rem">— VERSION V —</div>
-  <div class="t-auth">A Text Adventure by Brian Temple</div>
-  <button class="btn-start" id="startBtn" onclick="startGame()">⚔ &nbsp; BEGIN THE SIEGE &nbsp; ⚔</button>
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead</div>
+  <div class="top-stats">
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar-outer"><div class="hp-bar-inner" id="hpBar" style="width:100%"></div></div>
+      <span class="hp-text" id="hpText">100 / 100</span>
+    </div>
+    <span class="inv-count" id="relicCount">Relics: 0/6</span>
+    <span class="inv-count" id="scrollCount">Scrolls: 0/8</span>
+    <button class="btn-audio" id="btnAudio" onclick="toggleAudio()">♪ Music</button>
+    <button class="btn-fullscreen" onclick="toggleFS()">⛶</button>
+  </div>
 </div>
 
-<!-- GAME -->
-<div id="gameScreen">
-  <div id="scene">
-    <svg class="plyr" id="lSky" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
-    <svg class="plyr" id="lFog" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
-    <svg class="plyr" id="lArch" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
-    <svg class="plyr" id="lKnight" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
-    <svg class="plyr" id="lFg" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
-    <svg class="plyr" id="lZombies" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div id="roomTag"></div>
-    <div id="loreTag"></div>
-    <div id="npcHint" onclick="talkNPC()"></div>
-    <div id="paintingHint" onclick="viewPainting()">🖼 A portrait hangs on the wall…</div>
-    <div id="noteHint" onclick="openNote()"></div>
-    <!-- itemArea moved to controlZone -->
-    <div id="fxBlood"></div><div id="fxGold"></div><div id="fxIce"></div><div id="fxSaint"></div>
-    <div id="endOverlay">
-      <h2 id="endH"></h2><p id="endP"></p>
-      <button class="btn-end" onclick="restartGame()">⚔ Try Again ⚔</button>
-    </div>
-    <!-- NOTE MODAL -->
-    <div id="noteModal" class="modal-wrap">
-      <div class="modal-card">
-        <div class="modal-icon">📜</div>
-        <div id="noteRef" class="modal-title"></div>
-        <div id="noteText" class="modal-body"></div>
-        <button class="modal-close" onclick="closeModal('noteModal')">✝ Close</button>
-      </div>
-    </div>
-    <!-- PAINTING MODAL -->
-    <div id="paintModal" class="modal-wrap">
-      <div class="modal-card">
-        <div class="modal-icon">🖼</div>
-        <div id="paintTitle" class="modal-title"></div>
-        <div id="paintBody" class="modal-body"></div>
-        <button class="modal-close" onclick="closeModal('paintModal')">Close</button>
-      </div>
-    </div>
-    <!-- NPC MODAL -->
-    <div id="npcModal" class="modal-wrap">
-      <div class="modal-card">
-        <div class="modal-icon">💬</div>
-        <div id="npcTitle"></div>
-        <div id="npcText"></div>
-        <input id="npcIn" placeholder="ask about relics / scrolls / enemy / order…" autocomplete="off"/>
-        <div style="display:flex;gap:8px;">
-          <button onclick="sendNPC()" style="padding:6px 16px;border:1px solid var(--ice);color:var(--ice);background:none;font-family:var(--mono);font-size:0.7rem;cursor:pointer;">Ask</button>
-          <button onclick="closeModal('npcModal')" style="padding:6px 16px;border:1px solid rgba(221,213,192,0.2);color:rgba(221,213,192,0.4);background:none;font-family:var(--mono);font-size:0.7rem;cursor:pointer;">Leave</button>
-        </div>
-      </div>
-    </div>
-    <!-- SAINT MICHAEL -->
-    <div id="saintModal">
-      <svg id="saintSvg" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div id="saintTxt"></div>
-      <button id="saintBtn" onclick="closeSaint()">Continue</button>
+<!-- INVENTORY BAR -->
+<div class="inventory-bar">
+  <span class="inv-label">Inventory:</span>
+  <div id="invDisplay" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+</div>
+
+<!-- MAIN GAME AREA -->
+<div class="game-main" style="position:relative">
+  <!-- SCENE ART -->
+  <div class="scene-panel">
+    <div id="sceneArt" class="scene-svg"></div>
+    <div class="scene-overlay">
+      <div class="scene-room-name" id="roomName">Templar Chapel</div>
+      <div class="scene-room-sub" id="roomSub">Where your journey begins...</div>
     </div>
   </div>
 
-  <div id="lower">
-    <!-- CONTROL ZONE: d-pad center + action buttons + status -->
-    <div id="controlZone">
-      <!-- LEFT: Action buttons (grab + combat) -->
-      <div id="actionBtns">
-        <!-- Grab relic -->
-        <div id="itemArea" style="position:static;z-index:auto;align-items:flex-start;">
-          <div id="itemLabel"></div>
-          <button id="grabBtn" onclick="doGrab()" style="display:none;">⚔ Take Relic</button>
-        </div>
-        <!-- Combat actions (shown during combat) -->
-        <div id="combatQuick" style="display:none;flex-direction:column;gap:4px;">
-          <button class="cb cb-a" onclick="doFight('attack')" style="padding:6px 4px;font-size:0.68rem;">⚔ ATTACK</button>
-          <button class="cb cb-d" onclick="doFight('defend')" style="padding:6px 4px;font-size:0.68rem;">🛡 DEFEND</button>
-          <button class="cb cb-f" onclick="doFight('flee')" style="padding:6px 4px;font-size:0.68rem;">↩ FLEE</button>
-        </div>
-      </div>
-
-      <!-- CENTER: D-PAD -->
-      <div id="dirPad">
-        <div class="db center-blank"></div>
-        <button class="db" id="bN" onclick="move('North')">↑</button>
-        <div class="db center-blank"></div>
-        <button class="db" id="bW" onclick="move('West')">←</button>
-        <div class="db center-blank" style="background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.1);">
-          <span style="font-size:0.55rem;color:rgba(201,162,39,0.4);font-family:var(--mono);">✦</span>
-        </div>
-        <button class="db" id="bE" onclick="move('East')">→</button>
-        <div class="db center-blank"></div>
-        <button class="db" id="bS" onclick="move('South')">↓</button>
-        <div class="db center-blank"></div>
-      </div>
-
-      <!-- RIGHT: Status -->
-      <div id="quickInfo">
-        <div id="miniStatus">
-          <span class="hp-lbl">HP</span>
-          <div id="hpWrap"><div id="hpFill" style="width:100%"></div></div>
-          <span id="hpNum">100/100</span>
-          <span id="invincTag">⚔ BLESSED ⚔</span>
-          <span id="cStatus"></span>
-          <span id="relicCnt" style="margin-left:auto;">Relics 0/6</span>
-        </div>
-        <div id="invRow" style="border:none;padding:0;min-height:auto;">
-          <span class="ilbl">Relics:</span>
-          <span id="invEmpty" style="font-size:0.62rem;color:rgba(221,213,192,0.18)">none collected</span>
-        </div>
-      </div>
-    </div>
-    <!-- FOG OF WAR MAP -->
-    <div id="mapWrap"><svg id="mapSvg" viewBox="0 0 640 130" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <!-- LOG -->
-    <div id="log"></div>
-    <!-- COMBAT STATUS (enemy hp bar - kept for logic) -->
-    <div id="combatPanel" style="display:none;flex-direction:column;border-top:1px solid rgba(139,0,0,0.35);background:rgba(139,0,0,0.05);">
-      <div id="combatHdr">
-        <span id="eName">⚔ COMBAT</span>
-        <div id="eHpRow">
-          <span style="font-size:0.65rem;color:rgba(221,213,192,0.35);margin-right:5px">ENEMY</span>
-          <div id="eHpBar"><div id="eHpFill" style="width:100%"></div></div>
-          <span id="eHpNum"></span>
-        </div>
-      </div>
-    </div>
-    <!-- INPUT -->
-    <div id="inputRow">
-      <input id="cmdIn" placeholder="attack · go north · get · read · talk monk…" autocomplete="off"/>
-      <button id="cmdSend" onclick="submit()">ENTER</button>
-      <button id="fsBtn" onclick="toggleFS()">⛶</button>
+  <!-- MAP PANEL -->
+  <div class="map-panel">
+    <div class="map-header">Fortress Map</div>
+    <div class="map-svg-wrap" id="mapContainer"></div>
+    <div class="map-legend">
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#c9a84c"></div>Current</div>
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#4a8"></div>Relic</div>
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#5ec4d4"></div>Visited</div>
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#922"></div>Boss</div>
     </div>
   </div>
+
+  <!-- LOG PANEL -->
+  <div class="log-panel" id="logPanel"></div>
+
+  <!-- COMBAT OVERLAY -->
+  <div class="combat-overlay" id="combatOverlay">
+    <div class="combat-title">⚔ COMBAT ⚔</div>
+    <div class="combat-enemy-name" id="combatEnemyName"></div>
+    <div class="enemy-hp-bar-outer"><div class="enemy-hp-bar-inner" id="enemyHpBar" style="width:100%"></div></div>
+    <span class="hp-text" id="enemyHpText"></span>
+    <div class="combat-actions">
+      <button class="ctrl-btn combat-btn" onclick="combatAction('attack')">⚔ Attack</button>
+      <button class="ctrl-btn combat-btn" onclick="combatAction('defend')">🛡 Defend</button>
+      <button class="ctrl-btn combat-btn" onclick="combatAction('flee')">🏃 Flee</button>
+    </div>
+  </div>
+
+  <!-- SCROLL OVERLAY -->
+  <div class="scroll-overlay" id="scrollOverlay">
+    <div class="scroll-parchment">
+      <div class="scroll-ref" id="scrollRef"></div>
+      <div class="scroll-verse" id="scrollVerse"></div>
+    </div>
+    <button class="scroll-close" onclick="closeScroll()">Continue</button>
+  </div>
+
+  <!-- NPC DIALOG -->
+  <div class="npc-dialog" id="npcDialog">
+    <button class="npc-close-btn" onclick="closeNPC()">✕</button>
+    <div class="npc-dialog-name" id="npcName"></div>
+    <div class="npc-dialog-text" id="npcText"></div>
+    <div class="npc-dialog-topics" id="npcTopics"></div>
+  </div>
+
+  <!-- PORTRAIT OVERLAY -->
+  <div class="portrait-overlay" id="portraitOverlay">
+    <div class="portrait-frame" id="portraitFrame"></div>
+    <div class="portrait-name" id="portraitName"></div>
+    <div class="portrait-desc" id="portraitDesc"></div>
+    <button class="scroll-close" onclick="closePortrait()">Continue</button>
+  </div>
+
+  <!-- ENDSCREEN -->
+  <div class="endscreen" id="deathScreen">
+    <div class="endscreen-title" style="color:var(--crimson-bright);text-shadow:0 0 30px rgba(180,40,40,0.5);">☠ You Have Fallen ☠</div>
+    <div class="endscreen-sub">The undead have claimed another soul. The fortress grows darker still...</div>
+    <button class="endscreen-restart" onclick="restartGame()">⚔ Rise Again</button>
+  </div>
+  <div class="endscreen" id="winScreen">
+    <div class="endscreen-title" style="color:var(--gold);text-shadow:0 0 30px var(--gold-glow);">✝ Victory ✝</div>
+    <div class="endscreen-sub">The Necromancer is destroyed. The fortress is cleansed. The Order endures. Deus Vult.</div>
+    <button class="endscreen-restart" onclick="restartGame()">⚔ Play Again</button>
+  </div>
+</div>
+
+<!-- CONTROLS BAR -->
+<div class="controls-bar" id="controlsBar">
+  <div class="ctrl-group" id="navGroup">
+    <button class="ctrl-btn" id="btnN" onclick="go('north')">↑ North</button>
+    <button class="ctrl-btn" id="btnS" onclick="go('south')">↓ South</button>
+    <button class="ctrl-btn" id="btnE" onclick="go('east')">→ East</button>
+    <button class="ctrl-btn" id="btnW" onclick="go('west')">← West</button>
+  </div>
+  <div class="ctrl-divider"></div>
+  <div class="ctrl-group" id="actionGroup">
+    <button class="ctrl-btn action-btn" id="btnGrab" onclick="grabRelic()" style="display:none">✦ Take Relic</button>
+    <button class="ctrl-btn special-btn" id="btnScroll" onclick="readScroll()" style="display:none">📜 Read Scroll</button>
+    <button class="ctrl-btn action-btn" id="btnTalk" onclick="talkNPC()" style="display:none">💬 Talk</button>
+    <button class="ctrl-btn action-btn" id="btnPortrait" onclick="examinePortrait()" style="display:none">🖼 Examine</button>
+  </div>
+</div>
+
+<!-- ACHIEVEMENT POPUP -->
+<div class="achieve-popup" id="achievePopup">
+  <div class="achieve-popup-title">✦ Achievement Unlocked</div>
+  <div class="achieve-popup-name" id="achieveName"></div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════
-// YOUTUBE MUSIC PLAYER
-// ═══════════════════════════════════════════
-var ytPlayer = null;
-var musicReady = false;
-var musicPlaying = false;
-var pendingPlay = false;
+// ═══════════════════════════════════════════════════════════════
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v5.0 GAME ENGINE
+// ═══════════════════════════════════════════════════════════════
 
-// Load YouTube IFrame API
-var tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-document.head.appendChild(tag);
+// ─── GAME STATE ───
+const STATE = {
+  currentRoom: 'chapel',
+  hp: 100,
+  maxHp: 100,
+  inventory: [],
+  scrollsFound: [],
+  visited: new Set(),
+  enemiesDefeated: new Set(),
+  battlesWon: 0,
+  inCombat: false,
+  currentEnemy: null,
+  enemyHp: 0,
+  enemyMaxHp: 0,
+  npcsSpoken: new Set(),
+  portraitsExamined: new Set(),
+  hasGoldenArmor: false,
+  necromancerDead: false,
+  achievements: new Set(),
+  audioPlaying: false,
+  audioCtx: null,
+  defending: false
+};
 
-function onYouTubeIframeAPIReady() {
-  ytPlayer = new YT.Player('ytPlayer', {
-    height: '1', width: '1',
-    videoId: '_xaj8QSJZ0E',
-    playerVars: {
-      autoplay: 0, loop: 1, playlist: '_xaj8QSJZ0E',
-      controls: 0, disablekb: 1, fs: 0, modestbranding: 1
-    },
-    events: {
-      onReady: function(e) {
-        musicReady = true;
-        e.target.setVolume(40);
-        document.getElementById('musicTrack').textContent = 'Templar Crusader Chant — Ready';
-        if (pendingPlay) { e.target.playVideo(); musicPlaying = true; updateMusicBtn(); }
-      },
-      onStateChange: function(e) {
-        if (e.data === YT.PlayerState.PLAYING) {
-          musicPlaying = true;
-          document.getElementById('musicTrack').textContent = '♪ Templar Crusader Chant — Playing';
-        } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
-          musicPlaying = false;
-          document.getElementById('musicTrack').textContent = 'Templar Crusader Chant — Paused';
-        }
-        updateMusicBtn();
-      },
-      onError: function() {
-        document.getElementById('musicTrack').textContent = 'Music unavailable in this region';
-      }
-    }
-  });
-}
+// ─── SACRED SCROLLS ───
+const SCROLLS = [
+  { ref: 'Isaiah 6:8', text: 'Then I heard the voice of the Lord saying, "Whom shall I send? And who will go for us?" And I said, "Here am I. Send me!"' },
+  { ref: 'Romans 14:8', text: 'If we live, we live for the Lord; and if we die, we die for the Lord. So, whether we live or die, we belong to the Lord.' },
+  { ref: 'Joel 2:32', text: 'And everyone who calls on the name of the Lord will be saved.' },
+  { ref: 'Romans 5:8', text: 'But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.' },
+  { ref: 'Romans 3:23', text: 'For all have sinned and fall short of the glory of God.' },
+  { ref: 'John 14:6', text: 'Jesus answered, "I am the way and the truth and the life. No one comes to the Father except through me."' },
+  { ref: 'Psalm 23:4', text: 'Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.' },
+  { ref: 'Deuteronomy 31:6', text: 'Be strong and courageous. Do not be afraid or terrified because of them, for the Lord your God goes with you; he will never leave you nor forsake you.' }
+];
 
-function toggleMusic() {
-  if (!musicReady) { pendingPlay = true; document.getElementById('musicTrack').textContent = 'Loading...'; return; }
-  if (musicPlaying) { ytPlayer.pauseVideo(); }
-  else { ytPlayer.playVideo(); }
-}
-
-function setVol(v) {
-  if (ytPlayer && musicReady) ytPlayer.setVolume(parseInt(v));
-}
-
-function updateMusicBtn() {
-  document.getElementById('playPauseBtn').textContent = musicPlaying ? '⏸ Pause' : '▶ Play';
-}
-
-function startMusic() {
-  if (musicReady && !musicPlaying) { ytPlayer.playVideo(); }
-  else if (!musicReady) { pendingPlay = true; }
-}
-
-// ═══════════════════════════════════════════
-// GAME DATA
-// ═══════════════════════════════════════════
+// ─── ROOMS ───
 const ROOMS = {
-  "Templar Chapel":     {North:"Cloister Walk", East:"Armory", West:"Scriptorium"},
-  "Cloister Walk":      {South:"Templar Chapel", North:"Courtyard", item:"rosary of iron", zombie:true},
-  "Armory":             {West:"Templar Chapel", East:"Barracks", item:"templar longsword", zombie:true},
-  "Scriptorium":        {East:"Templar Chapel", West:"Crypt Entrance", item:"illuminated map", zombie:true},
-  "Barracks":           {West:"Armory", North:"Infirmary", item:"chainmail hauberk", zombie:true},
-  "Infirmary":          {South:"Barracks", East:"Bell Tower", item:"holy water", heal:true},
-  "Bell Tower":         {West:"Infirmary", North:"Courtyard", item:"blessed candles", zombie:true},
-  "Crypt Entrance":     {East:"Scriptorium", North:"Necromancer's Lair", South:"Ossuary", zombie:true, trap:true},
-  "Courtyard":          {South:"Cloister Walk", West:"Bell Tower", East:"Treasury", item:null, event:true},
-  "Ossuary":            {North:"Crypt Entrance", West:"Torture Chamber", item:"skull of the martyr", zombie:true},
-  "Torture Chamber":    {East:"Ossuary", North:"Ritual Circle", zombie:true, trap:true},
-  "Ritual Circle":      {South:"Torture Chamber", East:"Bone Throne Room", zombie:true},
-  "Bone Throne Room":   {West:"Ritual Circle", North:"Necromancer's Lair", zombie:true},
-  "Treasury":           {West:"Courtyard", South:"Grand Hall", item:"templar seal", zombie:true},
-  "Grand Hall":         {North:"Treasury", East:"Portrait Gallery", zombie:true, event:true},
-  "Portrait Gallery":   {West:"Grand Hall"},
-  "Necromancer's Lair": {South:"Crypt Entrance", East:"Bone Throne Room"}
+  chapel: {
+    name: 'Templar Chapel',
+    sub: 'Where your journey begins...',
+    lore: 'The chapel stands ravaged — the altar overturned, pews shattered. Candlelight flickers across bloodstained stone. A lone Templar cross still hangs upon the eastern wall, defiant against the darkness that has consumed this place.',
+    exits: { north: 'cloister', east: 'armory', south: 'courtyard' },
+    relic: null, enemy: null, hasScroll: false, npc: null,
+    type: 'chapel'
+  },
+  cloister: {
+    name: 'Cloister Walk',
+    sub: 'Stone arches line the silent corridor...',
+    lore: 'A vaulted stone corridor surrounds a ruined garden. Dead ivy clings to the columns. The moon casts long shadows through the broken arches. Somewhere in the darkness, something shuffles.',
+    exits: { south: 'chapel', east: 'scriptorium', north: 'bellTower', west: 'grandHall' },
+    relic: null, enemy: 'risen', hasScroll: false, npc: null,
+    type: 'cloister'
+  },
+  armory: {
+    name: 'Armory',
+    sub: 'Weapons of a fallen Order...',
+    lore: 'Racks of rusted swords and dented shields line the walls. The armory has been looted — but not entirely. A Templar longsword gleams faintly beneath a pile of broken halberds, as though it was hidden on purpose.',
+    exits: { west: 'chapel', north: 'scriptorium', east: 'barracks' },
+    relic: 'Templar Longsword', enemy: 'peasant', hasScroll: false, npc: null,
+    type: 'armory'
+  },
+  scriptorium: {
+    name: 'Scriptorium',
+    sub: 'Ancient texts scatter the stone floor...',
+    lore: 'Writing desks overturned, ink spilled like blood across ancient manuscripts. A single candle burns impossibly — untouched by the destruction around it. Illuminated texts glow faintly in the dark, their gold leaf catching the flame.',
+    exits: { south: 'armory', west: 'cloister', east: 'infirmary' },
+    relic: 'Illuminated Map', enemy: null, hasScroll: false, npc: null,
+    type: 'scriptorium'
+  },
+  barracks: {
+    name: 'Barracks',
+    sub: 'Bunks overturned, armor scattered...',
+    lore: 'Rows of bunks lie smashed and bloodied. Chainmail hangs from hooks. Against the far wall, a figure in battered armor sits chained — alive, barely. He looks up with hollow eyes.',
+    exits: { west: 'armory', north: 'infirmary', east: 'dungeonDepths' },
+    relic: 'Chainmail Hauberk', enemy: 'risen', hasScroll: false, npc: 'edmund',
+    type: 'barracks'
+  },
+  infirmary: {
+    name: 'Infirmary',
+    sub: 'The scent of herbs lingers...',
+    lore: 'Stone beds with thin mattresses, shelves of dried herbs and shattered glass vials. A brazier still smolders. The air smells of lavender and blood. An old monk tends to a wound that will never fully heal.',
+    exits: { west: 'scriptorium', south: 'barracks' },
+    relic: 'Holy Water', enemy: null, hasScroll: false, npc: 'aldric',
+    type: 'infirmary', heals: true
+  },
+  bellTower: {
+    name: 'Bell Tower',
+    sub: 'High above the fortress...',
+    lore: 'Spiral stairs lead to a crumbling platform. The great bronze bell hangs cracked and still. From here you can see the entire fortress — and the tide of undead stretching to the horizon. The wind carries whispers.',
+    exits: { south: 'cloister', east: 'watchtower' },
+    relic: 'Blessed Candles', enemy: 'peasant', hasScroll: false, npc: null,
+    type: 'tower'
+  },
+  courtyard: {
+    name: 'Courtyard',
+    sub: 'Open ground — danger everywhere...',
+    lore: 'The central courtyard is a killing field. Broken siege equipment litters the cobblestones. Fires burn in scattered barrels. The undead prowl in packs here — this is their hunting ground.',
+    exits: { north: 'chapel', east: 'cryptEntrance', south: 'grandHall', west: 'portraitGallery' },
+    relic: null, enemy: 'peasant', hasScroll: false, npc: null,
+    type: 'courtyard', hasEvent: true
+  },
+  cryptEntrance: {
+    name: 'Crypt Entrance',
+    sub: 'The air grows cold...',
+    lore: 'Ancient runes glow faintly on the archway — a warning to the living. Steps descend into absolute darkness. The temperature drops with every step. Something ancient waits below.',
+    exits: { west: 'courtyard', south: 'catacombs', east: 'boneThrone' },
+    relic: null, enemy: 'risen', hasScroll: false, npc: null,
+    type: 'crypt', hasTrap: true
+  },
+  catacombs: {
+    name: 'Forgotten Catacombs',
+    sub: 'Bones of the faithful line the walls...',
+    lore: 'Thousands of skulls stare from alcoves carved into the stone. The catacombs stretch deeper than any map shows. Candles flicker in skull sconces — lit by no living hand. The dead here are restless.',
+    exits: { north: 'cryptEntrance', east: 'necromancerLair' },
+    relic: null, enemy: 'risen', hasScroll: false, npc: null,
+    type: 'catacombs'
+  },
+  necromancerLair: {
+    name: "Necromancer's Lair",
+    sub: 'The source of all darkness...',
+    lore: 'A vast circular chamber of black stone. Runic circles pulse with sickly green light. At the center, the Necromancer stands — robes flowing with dark energy, bone staff raised, skull face burning with ice-white eyes. This is the final battle.',
+    exits: { west: 'catacombs' },
+    relic: null, enemy: 'necromancer', hasScroll: false, npc: null,
+    type: 'lair'
+  },
+  grandHall: {
+    name: 'Grand Hall',
+    sub: 'A feast long abandoned...',
+    lore: 'An enormous banquet hall — the great oak table overturned, goblets scattered. Tattered Templar tapestries hang from iron rods. At the far end, a spectral figure drifts between the shadows. The air shimmers.',
+    exits: { east: 'cloister', north: 'courtyard', south: 'treasury' },
+    relic: null, enemy: null, hasScroll: false, npc: 'matthias',
+    type: 'hall'
+  },
+  treasury: {
+    name: 'Treasury',
+    sub: 'Gold shelves and locked chests...',
+    lore: 'A reinforced vault — gold-plated shelves hold coins, jeweled chalices, and locked iron chests. The Templar Seal sits atop a stone pedestal, glowing faintly. A blind man sits cross-legged before it, as if guarding something only he can see.',
+    exits: { north: 'grandHall', east: 'boneThrone' },
+    relic: 'Rosary of Iron', enemy: null, hasScroll: false, npc: 'ezra',
+    type: 'treasury'
+  },
+  boneThrone: {
+    name: 'Bone Throne Room',
+    sub: 'A throne built from human bones...',
+    lore: 'A grotesque throne constructed from hundreds of human bones dominates the chamber. A crown of skulls sits upon the armrest. The walls are scratched with tally marks — counting the dead. Dark energy pulses from the throne itself.',
+    exits: { west: 'cryptEntrance', south: 'treasury' },
+    relic: null, enemy: 'risen', hasScroll: false, npc: null,
+    type: 'throne'
+  },
+  portraitGallery: {
+    name: 'Portrait Gallery',
+    sub: 'Three paintings stare back at you...',
+    lore: 'A long corridor lined with oil paintings in gilded frames. Most are slashed beyond recognition — but three remain intact, watching from the canvas with eerie stillness. Historical figures frozen in time.',
+    exits: { east: 'courtyard' },
+    relic: null, enemy: null, hasScroll: false, npc: null,
+    type: 'gallery', hasPortraits: true
+  },
+  dungeonDepths: {
+    name: 'Dungeon Depths',
+    sub: 'Chains rattle in the darkness...',
+    lore: 'Iron cages hang from the ceiling. Chains and shackles rust on the walls. The dungeon was not just for prisoners — it was a place of interrogation. Dried blood stains the stone floor in patterns that speak of ritual.',
+    exits: { west: 'barracks', south: 'catacombs' },
+    relic: null, enemy: 'risen', hasScroll: false, npc: null,
+    type: 'dungeon'
+  },
+  watchtower: {
+    name: 'Watchtower',
+    sub: 'The highest point of the fortress...',
+    lore: 'A narrow tower rising above all else. Arrow slits look out over endless darkness. A signal fire sits unlit — there is no one left to signal. But from here, you can see everything: the courtyard, the chapel, and the Necromancer\'s fell glow.',
+    exits: { west: 'bellTower' },
+    relic: null, enemy: 'peasant', hasScroll: false, npc: null,
+    type: 'watchtower'
+  }
 };
-const VILLAIN = "Necromancer's Lair";
-const REQUIRED = 6;
 
+// ─── MAP LAYOUT (grid positions for drawing) ───
+const MAP_POS = {
+  watchtower:     { x: 4, y: 0 },
+  bellTower:      { x: 2, y: 0 },
+  cloister:       { x: 2, y: 1 },
+  grandHall:      { x: 1, y: 1 },
+  scriptorium:    { x: 3, y: 1 },
+  chapel:         { x: 2, y: 2 },
+  armory:         { x: 3, y: 2 },
+  infirmary:      { x: 4, y: 1 },
+  portraitGallery:{ x: 0, y: 3 },
+  courtyard:      { x: 1, y: 3 },
+  barracks:       { x: 4, y: 2 },
+  cryptEntrance:  { x: 2, y: 3 },
+  dungeonDepths:  { x: 5, y: 2 },
+  boneThrone:     { x: 3, y: 3 },
+  treasury:       { x: 1, y: 4 },
+  catacombs:      { x: 2, y: 4 },
+  necromancerLair:{ x: 3, y: 4 }
+};
+
+// ─── ENEMIES ───
+const ENEMIES = {
+  risen: { name: 'Risen Knight', hp: 45, dmgMin: 6, dmgMax: 14, type: 'risen' },
+  peasant: { name: 'Peasant Zombie', hp: 30, dmgMin: 4, dmgMax: 10, type: 'peasant' },
+  necromancer: { name: 'The Necromancer', hp: 120, dmgMin: 12, dmgMax: 25, type: 'necromancer' }
+};
+
+// ─── NPCS ───
 const NPCS = {
-  "Infirmary":        {id:"monk",     name:"Brother Aldric",   title:"Old Monk",              icon:"🧙"},
-  "Barracks":         {id:"knight",   name:"Sir Edmund",       title:"Prisoner Knight",        icon:"⛓"},
-  "Grand Hall":       {id:"ghost",    name:"The Fallen",       title:"Ghost of a Templar",     icon:"👻"},
-  "Treasury":         {id:"merchant", name:"Ezra the Blind",   title:"Merchant",               icon:"🧳"}
-};
-
-const PAINTINGS = [
-  {title:"Hugues de Payens — Founder, First Grand Master",
-   body:"Hugues de Payens founded the Knights Templar around 1119 AD in Jerusalem, dedicated to protecting Christian pilgrims. He served as the Order's first Grand Master. His devotion was absolute — Non nobis, Domine — Not unto us, O Lord."},
-  {title:"Jacques de Molay — The Last Grand Master",
-   body:"Jacques de Molay led the Order until its tragic end. On October 13, 1307, Philip IV ordered mass arrests. After years of torture, de Molay was burned at the stake March 18, 1314. His final curse on King and Pope — both died before the year was out."},
-  {title:"Philip IV of France — The Destroyer",
-   body:"Philip IV, 'Philip the Fair,' orchestrated the downfall of the Knights Templar in 1307. Deeply in debt and covetous of their wealth, he condemned them on fabricated charges. His betrayal ended over 200 years of Templar history."}
-];
-
-const ALL_SCROLLS = [
-  {ref:"Isaiah 6:8",         text:'"Then I heard the voice of the Lord saying, \'Whom shall I send? And who will go for us?\' And I said, \'Here am I. Send me!\'"'},
-  {ref:"Romans 14:8",        text:'"If we live, we live for the Lord; and if we die, we die for the Lord. So, whether we live or die, we belong to the Lord."'},
-  {ref:"Joel 2:32",          text:'"And everyone who calls on the name of the Lord will be saved."'},
-  {ref:"Romans 5:8",         text:'"But God demonstrates his own love for us in this: While we were still sinners, Christ died for us."'},
-  {ref:"Romans 3:23",        text:'"For all have sinned and fall short of the glory of God."'},
-  {ref:"John 14:6",          text:'"Jesus answered, \'I am the way and the truth and the life. No one comes to the Father except through me.\'"'},
-  {ref:"Psalm 23:4",         text:'"Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me."'},
-  {ref:"Deuteronomy 31:6",   text:'"Be strong and courageous. Do not be afraid, for the Lord your God goes with you; he will never leave you nor forsake you."'}
-];
-
-const LORE = {
-  "Templar Chapel":"The chapel reeks of ash. The knights who prayed here are gone — their armor stacked like hollow men.",
-  "Cloister Walk":"Scratch marks scar the stone pillars. A rosary lies coiled in a pool of black ichor.",
-  "Armory":"Swords line the walls like steel teeth. One glows faintly — still blessed from the armorer's last rite.",
-  "Scriptorium":"Manuscripts curl at the edges, singed. The scholars tried to burn the necromantic texts. They failed.",
-  "Barracks":"Dried blood traces a path toward the door. Some fought back. Not enough.",
-  "Infirmary":"The surgeon's tools are still laid out in perfect order. Someone believed in miracles here.",
-  "Bell Tower":"The bell has not rung in seven days. When it does, the dead return — or rise fully.",
-  "Crypt Entrance":"The Necromancer's will presses at the back of your skull. The darkness breathes.",
-  "Courtyard":"Open sky — but the clouds move wrong. Circling. Unnatural. The eye of the storm.",
-  "Ossuary":"Floor-to-ceiling walls of skulls in grotesque mosaic. Some are fresh.",
-  "Torture Chamber":"Iron maidens, racks, braziers still warm with coals. Something was done here recently.",
-  "Ritual Circle":"A massive pentagram burned into the stone. Black-flame candles at each point. The air hums.",
-  "Bone Throne Room":"A throne constructed entirely of human bones. It faces the Lair. Empty — for now.",
-  "Treasury":"Gold and silver artifacts line the shelves. The wealth here was taken from the dead.",
-  "Grand Hall":"Tapestries of Templar victories hang in tatters. The banquet table is overturned.",
-  "Portrait Gallery":"Three portraits hang here, their subjects watching you with painted eyes that seem too alive.",
-  "Necromancer's Lair":"Ancient runes blaze crimson. The air tastes of grave soil. Something vast turns its gaze upon you."
-};
-
-const NPC_LINES = {
-  monk:{
-    default:"*the old monk looks up, eyes hollow but kind* Brother... you still live? God's mercy. I am Brother Aldric. Ask me what you need.",
-    relics:"The six sacred relics were scattered when the curse struck. Rosary in the Cloister Walk. Longsword in the Armory. Map in the Scriptorium. Hauberk in the Barracks. Holy Water in the Infirmary. Candles in the Bell Tower. Skull in the Ossuary. Seal in the Treasury.",
-    scrolls:"Brother Marcus hid scripture throughout the fortress before he fell. He said the Word would protect whoever found it. Look where men once gathered — and in the darkest places.",
-    enemy:"The Necromancer was once one of us. A Templar scholar who went too deep into forbidden texts. He found something. Something that answered back.",
-    order:"The Order was founded to protect God's people. We failed here. But YOU can end this. Collect the relics. Face what waits in the Lair.",
-    default2:"*whispers* 'The Lord is my shepherd...' Go with God, brother."
+  aldric: {
+    name: 'Brother Aldric',
+    greeting: 'You live... thank the Lord. I am Brother Aldric, the last monk of this infirmary. I have seen much darkness consume this fortress. Ask me what you will — I may yet be of service.',
+    topics: {
+      fortress: 'This fortress stood for two hundred years as a bastion of the Order. It fell in a single night when the Necromancer breached the crypt seals. The dead rose from their tombs and slaughtered everyone in their beds.',
+      necromancer: 'He was once a scholar — a brilliant one. He came seeking the relics of our Order, claiming academic interest. When we refused him entry to the crypt, he returned with dark power beyond reckoning.',
+      relics: 'The six sacred relics of this fortress were scattered during the attack. Each one carries power blessed by the Order. If you gather them all... there may yet be hope.',
+      healing: 'Rest here. I will tend your wounds as best I can. The herbs are running low, but faith sustains.'
+    }
   },
-  knight:{
-    default:"*rattling chains* A living man? I am Sir Edmund of Bruges, captured in the first wave. Ask quickly — before the dead return.",
-    relics:"The Skull of the Martyr is in the Ossuary — the Necromancer prizes it greatly. The Templar Seal is in the Treasury. The others are scattered through the upper fortress.",
-    scrolls:"There is a scroll near me — I could not reach it. Find them all. They carry real power here. I've felt it.",
-    enemy:"He comes from the Bone Throne Room to gloat. Tall. Robes like shadow. Eyes like cold fire. His staff has a skull on top that he talks to.",
-    order:"We were betrayed by our own complacency. We grew rich and forgot why we drew our swords. Don't make our mistake.",
-    default2:"*pulls at chains* If you make it back — get me OUT of here. Please."
+  edmund: {
+    name: 'Sir Edmund of Bruges',
+    greeting: 'Aye... another living soul. I am Sir Edmund, Knight of the Order, taken prisoner when the barracks fell. My chains are strong but my faith is stronger. Ask me what you need, brother.',
+    topics: {
+      relics: 'I know the locations of several relics — the longsword was hidden in the armory by the quartermaster before he fell. The holy water remains in the infirmary. The rosary... the treasury, if the blind merchant has not already claimed it.',
+      necromancer: 'I saw him raise the first wave. He stood in the courtyard and the ground itself cracked open. Knights I had trained with for decades crawled out of their graves, turned against us. His staff is the source — destroy it and his army falls.',
+      escape: 'I cannot leave these chains, but you can end this. Gather the relics, find the scrolls of faith hidden throughout this place, and face him. The Order depends on you.',
+      battle: 'Fight with honor, but fight smart. The Risen Knights still have muscle memory — they will parry. The peasant dead are slower but they swarm. And the Necromancer... he heals from the dark energy in his lair. Strike fast.'
+    }
   },
-  ghost:{
-    default:"*a translucent Templar flickers* I am what remains of Brother Matthias. I cannot leave this hall. But I can see things the living cannot. Ask me.",
-    relics:"The Templar Seal is in the Treasury — the merchant knows where exactly. The Skull of the Martyr is in the Ossuary, guarded by something terrible.",
-    scrolls:"The scrolls pulse with divine light only I can see. There are eight of them. Each one weakens the Necromancer's grip. Collect them all... and something extraordinary will happen.",
-    enemy:"When you face him — remember. He fears the name of God above all things. His power comes from the absence of faith. Your faith IS your armor.",
-    order:"Do you know what we fought for? Not gold. Not land. We fought so that anyone could walk to Jerusalem safely. That is worth dying for. Worth dying AGAIN for.",
-    default2:"*fades slightly* Find the scrolls. Trust in the Lord. And strike true."
+  matthias: {
+    name: 'Brother Matthias',
+    greeting: 'Do not be alarmed... I am what remains of Brother Matthias, scribe of this Order. My body has long since turned to dust, but my spirit lingers. The scrolls... you must find the scrolls.',
+    topics: {
+      scrolls: 'Eight sacred verses are hidden throughout this fortress. Each one was inscribed by our founder and blessed with divine protection. They are hidden — you will not see them on any map. Enter every room, search every shadow.',
+      armor: 'There is an ancient prophecy among the Templars. He who gathers all six relics and reads all eight sacred scrolls will be visited by Saint Michael the Archangel himself. The divine armor he bestows makes one... invincible.',
+      order: 'We were the Knights Templar — sworn to protect the faithful, guard the holy relics, and hold the line against darkness. We failed in our watch. But you carry our cross now. Do not fail.',
+      paintings: 'The portrait gallery to the west of the courtyard holds three paintings of our history. Hugues de Payens, our founder. Jacques de Molay, our last Grand Master. And Philip IV... the king who destroyed us. Examine them all.'
+    }
   },
-  merchant:{
-    default:"*a blind old man counting coins by touch* Footsteps that don't drag. You're alive. Good. I am Ezra. Ask me what you need. I charge nothing now — what use is gold to the dead?",
-    relics:"The Templar Seal is in this room — in the locked chest. Defeat the guardian to claim it. The others are scattered through the fortress above.",
-    scrolls:"Sacred scripture, hidden like seeds. Check dark corners, near bodies, behind furniture. The Word of God tends to end up where people prayed last.",
-    enemy:"I sold the Necromancer ancient texts before he fell. I didn't know what he intended. That guilt is mine to carry. End him.",
-    order:"The Templars were the greatest force for good this world has known. Ruthless when needed, merciful when possible, fearless before death. Be worthy of that name today.",
-    default2:"*presses a small coin into your hand* For luck. Go with God."
+  ezra: {
+    name: 'Ezra the Blind',
+    greeting: 'Ah... I hear footsteps. Living footsteps. How unusual. I am Ezra. I once sold books and curiosities to scholars. One of those scholars... became the monster that rules this place. My guilt is my prison.',
+    topics: {
+      necromancer: 'His name was Alaric. A quiet man. Brilliant. He purchased three forbidden texts from me — The Codex of Bone, The Litany of Unmaking, and the Black Psalter. I did not know what they contained. Or perhaps... I did not want to know.',
+      treasury: 'These treasures belong to the Order. The Templar Seal on that pedestal is the most sacred artifact here — it was worn by Jacques de Molay himself before his execution. The rosary beside it was forged from iron nails of the True Cross.',
+      redemption: 'I cannot undo what I have done. But I can tell you this — the Necromancer fears faith more than steel. The scrolls, the relics, the prayers of the righteous... these are your true weapons. Steel alone will not be enough.',
+      blindness: 'I was not always blind. When Alaric returned and I saw what he had become, I gouged out my own eyes so I would never have to witness his work again. Some things... are worse than darkness.'
+    }
   }
 };
 
+// ─── PORTRAITS ───
+const PORTRAITS = {
+  hugues: {
+    name: 'Hugues de Payens',
+    desc: 'Founder and First Grand Master of the Knights Templar, circa 1119. He established the Order to protect Christian pilgrims traveling to the Holy Land.'
+  },
+  jacques: {
+    name: 'Jacques de Molay',
+    desc: 'The last Grand Master of the Knights Templar. Arrested on Friday the 13th, 1307, and burned at the stake in 1314. His final curse echoes through history.'
+  },
+  philip: {
+    name: 'Philip IV of France',
+    desc: 'The king who orchestrated the destruction of the Templar Order in 1307. Driven by greed and jealousy, he convinced the Pope to disband the most powerful military order in Christendom.'
+  }
+};
+
+// ─── ACHIEVEMENTS ───
 const ACHIEVEMENTS = {
-  explorer:    {name:"🗺 Explorer",      desc:"Visited every room in the fortress"},
-  hunter:      {name:"💀 Relic Hunter",  desc:"Collected all 6 sacred relics"},
-  warrior:     {name:"⚔ Master Knight", desc:"Won 10 battles"},
-  necro:       {name:"☠ Necromancer Slain", desc:"Destroyed the Necromancer"},
-  enlightened: {name:"✝ Enlightened",   desc:"Read all 8 sacred scrolls"},
-  saint:       {name:"🌟 Blessed by Saint Michael", desc:"Received the Golden Armor of Heaven", isSaint:true},
-  talks:       {name:"🗣 Lorekeeper",    desc:"Spoke with all 4 NPCs"},
-  paintings:   {name:"🖼 Historian",     desc:"Examined all three portraits"}
+  explorer:    { icon: '🗺', name: 'Explorer — Visit every room' },
+  relicHunter: { icon: '💀', name: 'Relic Hunter — Collect all 6 relics' },
+  masterKnight:{ icon: '⚔', name: 'Master Knight — Win 10 battles' },
+  necroSlain:  { icon: '☠', name: 'Necromancer Slain — Destroy the final boss' },
+  enlightened: { icon: '✝', name: 'Enlightened — Read all 8 sacred scrolls' },
+  blessed:     { icon: '🌟', name: 'Blessed by Saint Michael — Earn the golden armor' },
+  lorekeeper:  { icon: '🗣', name: 'Lorekeeper — Speak with all 4 NPCs' },
+  historian:   { icon: '🖼', name: 'Historian — Examine all three portraits' }
 };
 
-const EVENTS = [
-  {msg:"A rotting hand erupts from the ground and slashes your leg!", dmg:12},
-  {msg:"You find a hidden flask of holy water — your wounds close.", heal:18},
-  {msg:"A zombie archer's bolt grazes your shoulder!", dmg:8},
-  {msg:"A dying knight presses blessed bandages into your hands. +15 HP", heal:15},
-  {msg:"The floor collapses — you twist your ankle.", dmg:10},
-  {msg:"You find consecrated bread in a hidden alcove. +20 HP", heal:20},
-  {msg:"A spectral scream shatters your focus.", dmg:7}
+// ─── COURTYARD EVENTS ───
+const COURTYARD_EVENTS = [
+  { text: 'A barrel explodes nearby! Shrapnel tears through the air.', dmg: 10 },
+  { text: 'You find a fallen knight\'s flask. The blessed water soothes your wounds.', heal: 20 },
+  { text: 'An arrow whistles past your head — a warning from the ramparts.', dmg: 5 },
+  { text: 'A stray dog appears, barks once, and vanishes into the smoke. An omen.', dmg: 0 },
+  { text: 'You stumble upon a cache of dried meat and bread. Strength returns.', heal: 15 },
+  { text: 'The ground shakes — the Necromancer\'s power surges through the stone.', dmg: 8 },
+  { text: 'Moonlight breaks through the clouds. For a moment, you feel peace.', heal: 10 }
 ];
 
-const ZNAMES_K = ["Risen Knight","Tomb Guardian","Undead Crusader","Fallen Templar"];
-const ZNAMES_P = ["Plague Peasant","Rotting Serf","Cursed Villager","Undead Thrall"];
+let scrollPlacements = {};
 
-const MAP_FIXED = {
-  "Necromancer's Lair":[280,15], "Bone Throne Room":[490,15],
-  "Crypt Entrance":[175,50],    "Ritual Circle":[385,50],
-  "Courtyard":[280,50],         "Treasury":[490,50],
-  "Ossuary":[175,85],           "Torture Chamber":[175,120],
-  "Bell Tower":[70,85],         "Cloister Walk":[280,85],
-  "Infirmary":[70,120],         "Grand Hall":[490,85],
-  "Scriptorium":[70,155],       "Templar Chapel":[280,120],
-  "Armory":[490,120],           "Barracks":[490,155],
-  "Portrait Gallery":[595,85]
-};
-const MAP_CONN = [
-  ["Necromancer's Lair","Crypt Entrance"],["Necromancer's Lair","Bone Throne Room"],
-  ["Crypt Entrance","Scriptorium"],["Crypt Entrance","Ossuary"],
-  ["Ossuary","Torture Chamber"],["Torture Chamber","Ritual Circle"],
-  ["Ritual Circle","Bone Throne Room"],
-  ["Templar Chapel","Cloister Walk"],["Templar Chapel","Armory"],["Templar Chapel","Scriptorium"],
-  ["Cloister Walk","Courtyard"],["Courtyard","Bell Tower"],["Courtyard","Treasury"],
-  ["Infirmary","Bell Tower"],["Infirmary","Barracks"],["Armory","Barracks"],
-  ["Treasury","Grand Hall"],["Grand Hall","Portrait Gallery"]
-];
+// ═══ INITIALIZATION ═══
+function initGame() {
+  // Reset state
+  STATE.currentRoom = 'chapel';
+  STATE.hp = 100;
+  STATE.maxHp = 100;
+  STATE.inventory = [];
+  STATE.scrollsFound = [];
+  STATE.visited = new Set();
+  STATE.enemiesDefeated = new Set();
+  STATE.battlesWon = 0;
+  STATE.inCombat = false;
+  STATE.currentEnemy = null;
+  STATE.npcsSpoken = new Set();
+  STATE.portraitsExamined = new Set();
+  STATE.hasGoldenArmor = false;
+  STATE.necromancerDead = false;
+  STATE.achievements = new Set();
+  STATE.defending = false;
 
-// ═══════════════════════════════════════════
-// WEB AUDIO SFX (keep for sound effects)
-// ═══════════════════════════════════════════
-let actx = null;
-function ac() { if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
-function tone(f,t,d,v=0.15,dl=0){try{const a=ac(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.type=t;o.frequency.value=f;g.gain.setValueAtTime(0,a.currentTime+dl);g.gain.linearRampToValueAtTime(v,a.currentTime+dl+0.02);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dl+d);o.start(a.currentTime+dl);o.stop(a.currentTime+dl+d+0.05);}catch(e){}}
-function noise(d,v=0.06,f=200){try{const a=ac(),b=a.createBuffer(1,a.sampleRate*d,a.sampleRate),dt=b.getChannelData(0);for(let i=0;i<dt.length;i++)dt[i]=(Math.random()*2-1);const s=a.createBufferSource();s.buffer=b;const fl=a.createBiquadFilter();fl.type='bandpass';fl.frequency.value=f;fl.Q.value=0.5;const g=a.createGain();g.gain.setValueAtTime(v,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);s.connect(fl);fl.connect(g);g.connect(a.destination);s.start();}catch(e){}}
-
-const sfx = {
-  step:   ()=>noise(0.1,0.04,120),
-  sword:  ()=>{noise(0.14,0.1,800);tone(440,'sawtooth',0.1,0.2);tone(220,'sawtooth',0.12,0.12,0.06);},
-  groan:  ()=>{tone(80,'sine',0.6,0.1);tone(65,'sine',0.5,0.08,0.18);},
-  pickup: ()=>{[523,659,784].forEach((f,i)=>tone(f,'sine',0.12,0.15,i*0.1));},
-  hit:    ()=>{noise(0.16,0.18,300);tone(120,'sawtooth',0.18,0.12);},
-  win:    ()=>{[523,659,784,1047].forEach((f,i)=>tone(f,'sine',0.3,0.2,i*0.12));},
-  death:  ()=>{[200,150,100,70].forEach((f,i)=>tone(f,'sawtooth',0.35,0.18,i*0.14));noise(0.7,0.12,80);},
-  bell:   ()=>{tone(220,'sine',2.2,0.28);tone(330,'sine',1.6,0.14,0.06);},
-  scroll: ()=>{[440,550,660].forEach((f,i)=>tone(f,'sine',0.2,0.1,i*0.1));},
-  saint:  ()=>{[523,659,784,1047,1319].forEach((f,i)=>tone(f,'sine',1.5,0.25,i*0.08));}
-};
-
-function ambience(n) {
-  if(n==='Bell Tower') sfx.bell();
-  else if(n===VILLAIN||n==='Crypt Entrance'||n==='Ossuary') { sfx.groan(); }
-  else noise(0.22,0.022,80);
-}
-
-// ═══════════════════════════════════════════
-// SVG ARTWORK
-// ═══════════════════════════════════════════
-function knightSVG(x,y,sc=1,golden=false) {
-  const s=golden?'#d4a017':'#d8d0b8', c=golden?'#ffd700':'#8B0000',
-        h=golden?'#c8a020':'#7a7868', cp=golden?'#d4a017':'#8B0000',
-        ar=golden?'#d4a820':'#6a6860';
-  return `<g transform="translate(${x},${y}) scale(${sc})">
-    <ellipse cx="0" cy="5" rx="38" ry="8" fill="#1a0f00" opacity="0.45"/>
-    <path d="M8,-120 Q60,-90 80,-30 Q90,20 70,60 Q40,80 20,70 Q10,50 14,0 Z" fill="${cp}" opacity="0.9"/>
-    <rect x="-14" y="-10" width="12" height="55" fill="#3a3830" rx="2"/>
-    <rect x="2" y="-10" width="12" height="55" fill="#3a3830" rx="2"/>
-    <ellipse cx="-8" cy="38" rx="8" ry="6" fill="${ar}"/>
-    <ellipse cx="8" cy="38" rx="8" ry="6" fill="${ar}"/>
-    <rect x="-15" y="42" width="13" height="14" fill="#2a2820" rx="2"/>
-    <rect x="2" y="42" width="13" height="14" fill="#2a2820" rx="2"/>
-    <rect x="-20" y="-90" width="40" height="82" fill="${s}" rx="3"/>
-    <rect x="-4" y="-82" width="8" height="36" fill="${c}"/>
-    <rect x="-16" y="-70" width="32" height="8" fill="${c}"/>
-    <rect x="-34" y="-92" width="16" height="50" fill="#4a4840" rx="3"/>
-    <rect x="18" y="-92" width="16" height="50" fill="#4a4840" rx="3"/>
-    <ellipse cx="-24" cy="-92" rx="12" ry="7" fill="${ar}"/>
-    <ellipse cx="24" cy="-92" rx="12" ry="7" fill="${ar}"/>
-    <rect x="-38" y="-44" width="10" height="16" fill="${ar}" rx="2"/>
-    <line x1="-33" y1="-28" x2="-26" y2="50" stroke="${golden?'#ffd700':'#9a9888'}" stroke-width="4" stroke-linecap="round"/>
-    <rect x="-42" y="-36" width="22" height="5" fill="${golden?'#c8a020':'#8a8070'}" rx="1"/>
-    <rect x="28" y="-68" width="10" height="16" fill="${ar}" rx="2"/>
-    <rect x="-18" y="-140" width="36" height="52" fill="${h}" rx="4"/>
-    <rect x="-14" y="-148" width="28" height="12" fill="${golden?'#d4a820':'#8a8878'}" rx="3"/>
-    <rect x="-13" y="-122" width="8" height="2" fill="#1a1818" rx="1"/>
-    <rect x="-3" y="-122" width="8" height="2" fill="#1a1818" rx="1"/>
-    <rect x="5" y="-122" width="8" height="2" fill="#1a1818" rx="1"/>
-    <rect x="-13" y="-116" width="8" height="2" fill="#1a1818" rx="1"/>
-    <rect x="-2" y="-138" width="4" height="20" fill="${c}" opacity="0.7"/>
-    <rect x="-8" y="-132" width="16" height="4" fill="${c}" opacity="0.7"/>
-    ${golden?'<ellipse cx="0" cy="-100" rx="55" ry="70" fill="#ffd700" opacity="0.04"/>':''}
-  </g>`;
-}
-
-function kZombie(x,y,sc=1) {
-  return `<g transform="translate(${x},${y}) scale(${sc})">
-    <ellipse cx="0" cy="5" rx="30" ry="6" fill="#0a0800" opacity="0.4"/>
-    <rect x="-18" y="-80" width="36" height="72" fill="#3a3018" rx="2"/>
-    <rect x="-3" y="-72" width="6" height="20" fill="#3a0000" opacity="0.7"/>
-    <rect x="-10" y="-64" width="20" height="5" fill="#3a0000" opacity="0.7"/>
-    <rect x="-30" y="-82" width="13" height="46" fill="#2e2814" rx="2"/>
-    <rect x="17" y="-82" width="13" height="46" fill="#2e2814" rx="2"/>
-    <path d="M-24,-36 Q-32,-28 -36,-18 M-28,-34 Q-34,-24 -32,-12" fill="none" stroke="#2a2010" stroke-width="3" stroke-linecap="round"/>
-    <path d="M24,-36 Q32,-28 36,-18 M28,-34 Q34,-24 32,-12" fill="none" stroke="#2a2010" stroke-width="3" stroke-linecap="round"/>
-    <rect x="-14" y="-130" width="28" height="44" fill="#3a3018" rx="3"/>
-    <rect x="-12" y="-118" width="24" height="12" fill="#0c0c06" rx="1"/>
-    <ellipse cx="-5" cy="-114" rx="4" ry="5" fill="#00d4ff" opacity="0.9"/>
-    <ellipse cx="5" cy="-114" rx="4" ry="5" fill="#00d4ff" opacity="0.9"/>
-    <ellipse cx="-5" cy="-114" rx="2.5" ry="3" fill="#88eeff"/>
-    <ellipse cx="5" cy="-114" rx="2.5" ry="3" fill="#88eeff"/>
-    <rect x="-12" y="-8" width="10" height="48" fill="#2a2416" rx="2"/>
-    <rect x="2" y="-8" width="10" height="48" fill="#2a2416" rx="2"/>
-    <line x1="-28" y1="-28" x2="-18" y2="40" stroke="#5a4820" stroke-width="3" stroke-linecap="round"/>
-  </g>`;
-}
-
-function pZombie(x,y,sc=1) {
-  return `<g transform="translate(${x},${y}) scale(${sc})">
-    <path d="M-16,-75 Q-22,-40 -20,45 Q0,52 20,45 Q22,-40 16,-75 Z" fill="#2a2016" opacity="0.95"/>
-    <rect x="-10" y="-4" width="8" height="52" fill="#1e1c0e" rx="2"/>
-    <rect x="2" y="-4" width="8" height="52" fill="#1e1c0e" rx="2"/>
-    <line x1="-16" y1="-68" x2="-40" y2="-20" stroke="#1e1c0e" stroke-width="10" stroke-linecap="round"/>
-    <line x1="16" y1="-68" x2="40" y2="-20" stroke="#1e1c0e" stroke-width="10" stroke-linecap="round"/>
-    <line x1="40" y1="-20" x2="52" y2="55" stroke="#4a3818" stroke-width="4" stroke-linecap="round"/>
-    <line x1="38" y1="-24" x2="34" y2="-44" stroke="#6a5830" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="42" y1="-24" x2="40" y2="-46" stroke="#6a5830" stroke-width="2.5" stroke-linecap="round"/>
-    <ellipse cx="0" cy="-100" rx="16" ry="16" fill="#1e1c0e"/>
-    <ellipse cx="-5" cy="-102" rx="4" ry="5" fill="#00d4ff" opacity="0.9"/>
-    <ellipse cx="5" cy="-102" rx="4" ry="5" fill="#00d4ff" opacity="0.9"/>
-    <ellipse cx="-5" cy="-102" rx="2.5" ry="3.5" fill="#88eeff"/>
-    <ellipse cx="5" cy="-102" rx="2.5" ry="3.5" fill="#88eeff"/>
-  </g>`;
-}
-
-function necroSVG(x,y) {
-  return `<g transform="translate(${x},${y})">
-    <ellipse cx="0" cy="10" rx="80" ry="20" fill="#2a0010" opacity="0.4"/>
-    <path d="M-40,-140 Q-80,-80 -90,60 Q-50,85 0,88 Q50,85 90,60 Q80,-80 40,-140 Z" fill="#0e0008" opacity="0.98"/>
-    <path d="M-40,-130 Q-70,-120 -72,-100 Q-60,-90 -44,-100 Z" fill="#2a2418"/>
-    <path d="M40,-130 Q70,-120 72,-100 Q60,-90 44,-100 Z" fill="#2a2418"/>
-    <line x1="-58" y1="-118" x2="-64" y2="-130" stroke="#3a3020" stroke-width="2" stroke-linecap="round"/>
-    <line x1="58" y1="-118" x2="64" y2="-130" stroke="#3a3020" stroke-width="2" stroke-linecap="round"/>
-    <line x1="55" y1="-120" x2="70" y2="80" stroke="#2a2418" stroke-width="7" stroke-linecap="round"/>
-    <ellipse cx="52" cy="-132" rx="18" ry="18" fill="#1e1c10" stroke="#2e2c18" stroke-width="1.5"/>
-    <ellipse cx="47" cy="-136" rx="5" ry="6" fill="#00d4ff" opacity="0.85"/>
-    <ellipse cx="57" cy="-136" rx="5" ry="6" fill="#00d4ff" opacity="0.85"/>
-    <ellipse cx="47" cy="-136" rx="3" ry="4" fill="#88eeff"/>
-    <ellipse cx="57" cy="-136" rx="3" ry="4" fill="#88eeff"/>
-    <ellipse cx="52" cy="-132" rx="28" ry="28" fill="#00d4ff" opacity="0.06"/>
-    <ellipse cx="0" cy="-165" rx="26" ry="26" fill="#14100a"/>
-    <path d="M-26,-178 Q-20,-220 0,-225 Q20,-220 26,-178 Z" fill="#1a0008"/>
-    <ellipse cx="0" cy="-222" rx="4" ry="5" fill="#8B0000" opacity="0.8"/>
-    <ellipse cx="-10" cy="-168" rx="7" ry="8" fill="#040208"/>
-    <ellipse cx="10" cy="-168" rx="7" ry="8" fill="#040208"/>
-    <ellipse cx="-10" cy="-168" rx="5" ry="6" fill="#00d4ff" opacity="0.95"/>
-    <ellipse cx="10" cy="-168" rx="5" ry="6" fill="#00d4ff" opacity="0.95"/>
-    <ellipse cx="-10" cy="-168" rx="3" ry="4" fill="white" opacity="0.8"/>
-    <ellipse cx="10" cy="-168" rx="3" ry="4" fill="white" opacity="0.8"/>
-    <rect x="-14" y="-147" width="28" height="10" fill="#080408" rx="2"/>
-  </g>`;
-}
-
-function saintMichaelSVG() {
-  return `<g transform="translate(350,230)">
-    <ellipse cx="0" cy="-60" rx="200" ry="180" fill="#ffd700" opacity="0.06"/>
-    <path d="M-20,-80 Q-120,-60 -160,-20 Q-140,30 -80,-10 Q-60,-30 -20,-40 Z" fill="#ffd700" opacity="0.85"/>
-    <path d="M20,-80 Q120,-60 160,-20 Q140,30 80,-10 Q60,-30 20,-40 Z" fill="#ffd700" opacity="0.85"/>
-    <rect x="-18" y="-85" width="36" height="78" fill="#d4a017" rx="3"/>
-    <rect x="-4" y="-78" width="8" height="34" fill="#ffd700" opacity="0.8"/>
-    <rect x="-14" y="-66" width="28" height="8" fill="#ffd700" opacity="0.8"/>
-    <rect x="-32" y="-88" width="15" height="46" fill="#c09010" rx="3"/>
-    <rect x="17" y="-88" width="15" height="46" fill="#c09010" rx="3"/>
-    <rect x="-14" y="-6" width="12" height="54" fill="#b08010" rx="2"/>
-    <rect x="2" y="-6" width="12" height="54" fill="#b08010" rx="2"/>
-    <line x1="-30" y1="-42" x2="-18" y2="55" stroke="#ffd700" stroke-width="5" stroke-linecap="round"/>
-    <line x1="-30" y1="-42" x2="-18" y2="55" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-    <ellipse cx="-26" cy="-50" rx="10" ry="18" fill="#ff8800" opacity="0.7"/>
-    <ellipse cx="-24" cy="-58" rx="7" ry="14" fill="#ffcc00" opacity="0.7"/>
-    <ellipse cx="0" cy="-108" rx="18" ry="18" fill="#f0d080"/>
-    <ellipse cx="0" cy="-116" rx="24" ry="8" fill="none" stroke="#ffd700" stroke-width="2" opacity="0.8"/>
-    <rect x="-16" y="-132" width="32" height="28" fill="#d4a820" rx="3"/>
-    <rect x="-12" y="-140" width="24" height="12" fill="#e0b830" rx="2"/>
-  </g>`;
-}
-
-function buildScene(name) {
-  // Batman Beyond 60/30/10: 60% deep black/navy, 30% gold/crimson/warm, 10% electric ice blue
-  // All scenes use dramatic lighting, depth layers, atmospheric glow
-
-  const SCENES = {
-
-"Templar Chapel": {
-sky: `
-  <defs>
-    <radialGradient id="chapSky" cx="50%" cy="0%" r="80%">
-      <stop offset="0%" stop-color="#1a0d04"/>
-      <stop offset="100%" stop-color="#06080f"/>
-    </radialGradient>
-    <radialGradient id="moonHalo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#f0d060" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="700" height="300" fill="url(#chapSky)"/>
-  <!-- Moon -->
-  <circle cx="580" cy="48" r="30" fill="url(#moonHalo)"/>
-  <circle cx="580" cy="48" r="20" fill="#e8d870" opacity="0.82"/>
-  <circle cx="572" cy="42" r="13" fill="#06080f" opacity="0.35"/>
-  <!-- Stars -->
-  <circle cx="80" cy="30" r="1.5" fill="#fff" opacity="0.6"/>
-  <circle cx="200" cy="18" r="1" fill="#fff" opacity="0.5"/>
-  <circle cx="320" cy="12" r="1.5" fill="#c9a227" opacity="0.55"/>
-  <circle cx="420" cy="25" r="1" fill="#fff" opacity="0.5"/>
-  <circle cx="640" cy="20" r="1.5" fill="#fff" opacity="0.45"/>
-  <circle cx="150" cy="55" r="1" fill="#00d4ff" opacity="0.4"/>
-`,
-fog: `
-  <defs>
-    <radialGradient id="fogG1" cx="30%" cy="100%" r="60%">
-      <stop offset="0%" stop-color="#2a1200" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#06080f" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="fogG2" cx="75%" cy="100%" r="50%">
-      <stop offset="0%" stop-color="#1a0800" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#06080f" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="700" height="300" fill="url(#fogG1)" opacity="0.9"/>
-  <rect width="700" height="300" fill="url(#fogG2)" opacity="0.7"/>
-`,
-arch: `
-  <defs>
-    <radialGradient id="torchL" cx="50%" cy="100%" r="80%">
-      <stop offset="0%" stop-color="#ff8800" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="#ff4400" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="torchR" cx="50%" cy="100%" r="80%">
-      <stop offset="0%" stop-color="#ff8800" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="#ff4400" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <!-- Rear wall -->
-  <rect width="700" height="300" fill="#0a0806"/>
-  <!-- Gothic nave arch -->
-  <rect x="220" y="0" width="260" height="300" fill="#0f0c09"/>
-  <path d="M220,0 Q220,-30 350,-30 Q480,-30 480,0 Z" fill="#0f0c09"/>
-  <!-- Arch stone detail -->
-  <path d="M220,0 Q220,-28 350,-28 Q480,-28 480,0" fill="none" stroke="#2a1e10" stroke-width="3"/>
-  <path d="M232,0 Q232,-18 350,-18 Q468,-18 468,0" fill="none" stroke="#1e1408" stroke-width="1.5"/>
-  <!-- Columns left -->
-  <rect x="138" y="0" width="28" height="300" fill="#130f0a" rx="3"/>
-  <rect x="142" y="0" width="4" height="300" fill="#1e1710" opacity="0.6"/>
-  <!-- Column cap left -->
-  <rect x="128" y="38" width="48" height="14" fill="#1a1510" rx="2"/>
-  <!-- Columns right -->
-  <rect x="534" y="0" width="28" height="300" fill="#130f0a" rx="3"/>
-  <rect x="554" y="0" width="4" height="300" fill="#1e1710" opacity="0.6"/>
-  <rect x="524" y="38" width="48" height="14" fill="#1a1510" rx="2"/>
-  <!-- Torch halos -->
-  <ellipse cx="166" cy="115" rx="55" ry="55" fill="url(#torchL)"/>
-  <ellipse cx="534" cy="115" rx="55" ry="55" fill="url(#torchR)"/>
-  <!-- Torch brackets -->
-  <rect x="157" y="98" width="18" height="4" fill="#3a2a14"/>
-  <rect x="162" y="80" width="6" height="22" fill="#2e2010"/>
-  <rect x="525" y="98" width="18" height="4" fill="#3a2a14"/>
-  <rect x="528" y="80" width="6" height="22" fill="#2e2010"/>
-  <!-- Torch flames -->
-  <ellipse cx="165" cy="78" rx="8" ry="14" fill="#ff7700" opacity="0.9"/>
-  <ellipse cx="165" cy="73" rx="5" ry="10" fill="#ffcc44" opacity="0.85"/>
-  <ellipse cx="165" cy="68" rx="3" ry="7" fill="#fff8e0" opacity="0.6"/>
-  <ellipse cx="531" cy="78" rx="8" ry="14" fill="#ff7700" opacity="0.9"/>
-  <ellipse cx="531" cy="73" rx="5" ry="10" fill="#ffcc44" opacity="0.85"/>
-  <ellipse cx="531" cy="68" rx="3" ry="7" fill="#fff8e0" opacity="0.6"/>
-  <!-- Altar back -->
-  <rect x="268" y="175" width="164" height="125" fill="#0e0a07"/>
-  <!-- Altar steps -->
-  <rect x="254" y="248" width="192" height="14" fill="#181410" rx="2"/>
-  <rect x="264" y="232" width="172" height="18" fill="#1c1812" rx="2"/>
-  <rect x="274" y="218" width="152" height="16" fill="#201e14" rx="2"/>
-  <!-- Altar cross illuminated -->
-  <rect x="343" y="176" width="14" height="58" fill="#c9a227" opacity="0.95"/>
-  <rect x="320" y="198" width="60" height="10" fill="#c9a227" opacity="0.95"/>
-  <!-- Cross glow -->
-  <ellipse cx="350" cy="205" rx="40" ry="40" fill="#c9a227" opacity="0.1"/>
-  <ellipse cx="350" cy="205" rx="20" ry="20" fill="#f0c040" opacity="0.08"/>
-  <!-- Floor -->
-  <rect x="0" y="268" width="700" height="32" fill="#0c0a07"/>
-  <line x1="0" y1="270" x2="700" y2="270" stroke="#1a1610" stroke-width="1"/>
-  <line x1="116" y1="270" x2="116" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
-  <line x1="232" y1="270" x2="232" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
-  <line x1="468" y1="270" x2="468" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
-  <line x1="584" y1="270" x2="584" y2="300" stroke="#141210" stroke-width="0.5" opacity="0.5"/>
-`,
-fg: `<text x="350" y="294" text-anchor="middle" font-size="10" fill="#c9a227" opacity="0.55" font-family="Georgia,serif" letter-spacing="6">DEUS VULT</text>`
-},
-
-"Necromancer's Lair": {
-sky: `
-  <defs>
-    <radialGradient id="lairSky" cx="50%" cy="50%" r="65%">
-      <stop offset="0%" stop-color="#3a0008" stop-opacity="0.8"/>
-      <stop offset="60%" stop-color="#1a0004" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#010204" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="700" height="300" fill="#010204"/>
-  <rect width="700" height="300" fill="url(#lairSky)"/>
-  <!-- Blood moon -->
-  <circle cx="350" cy="60" r="38" fill="#2a0008" opacity="0.9"/>
-  <circle cx="350" cy="60" r="28" fill="#8B0000" opacity="0.6"/>
-  <circle cx="350" cy="60" r="18" fill="#cc2200" opacity="0.4"/>
-  <circle cx="350" cy="60" r="8" fill="#ff4400" opacity="0.3"/>
-`,
-fog: `
-  <defs>
-    <radialGradient id="lairFog" cx="50%" cy="100%" r="70%">
-      <stop offset="0%" stop-color="#2a0004" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#010204" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="700" height="300" fill="url(#lairFog)"/>
-`,
-arch: `
-  <defs>
-    <radialGradient id="pentaGlow" cx="50%" cy="55%" r="45%">
-      <stop offset="0%" stop-color="#8B0000" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#8B0000" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="700" height="300" fill="#060004"/>
-  <!-- Floor pentagram glow -->
-  <ellipse cx="350" cy="260" rx="220" ry="55" fill="url(#pentaGlow)"/>
-  <!-- Pentagram lines -->
-  <polygon points="350,165 394,220 376,282 324,282 306,220" fill="none" stroke="#cc0000" stroke-width="1.5" opacity="0.7"/>
-  <circle cx="350" cy="224" r="60" fill="none" stroke="#8B0000" stroke-width="0.8" opacity="0.5"/>
-  <!-- Candles -->
-  <rect x="348" y="157" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
-  <ellipse cx="350" cy="155" rx="5" ry="8" fill="#ff8800" opacity="0.9"/>
-  <ellipse cx="350" cy="158" rx="18" ry="18" fill="#ff5500" opacity="0.08"/>
-  <rect x="392" y="212" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
-  <ellipse cx="394" cy="210" rx="5" ry="8" fill="#ff6600" opacity="0.85"/>
-  <rect x="374" y="274" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
-  <ellipse cx="376" cy="272" rx="5" ry="8" fill="#ff7700" opacity="0.85"/>
-  <rect x="322" y="274" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
-  <ellipse cx="324" cy="272" rx="5" ry="8" fill="#ff7700" opacity="0.85"/>
-  <rect x="304" y="212" width="5" height="14" fill="#e8dcc0" opacity="0.8"/>
-  <ellipse cx="306" cy="210" rx="5" ry="8" fill="#ff6600" opacity="0.85"/>
-  <!-- Throne room walls -->
-  <rect x="160" y="80" width="380" height="220" fill="#080002" opacity="0.9"/>
-  <!-- Pillars -->
-  <rect x="168" y="80" width="26" height="220" fill="#0e0004" rx="2"/>
-  <rect x="506" y="80" width="26" height="220" fill="#0e0004" rx="2"/>
-  <!-- Pillar glow -->
-  <ellipse cx="181" cy="200" rx="20" ry="60" fill="#00d4ff" opacity="0.04"/>
-  <ellipse cx="519" cy="200" rx="20" ry="60" fill="#00d4ff" opacity="0.04"/>
-  <!-- Wall runes -->
-  <text x="240" y="140" font-size="14" fill="#00d4ff" opacity="0.25" font-family="serif">ᚠ ᚢ ᚦ ᚨ ᚱ</text>
-  <text x="380" y="160" font-size="12" fill="#8B0000" opacity="0.35" font-family="serif">ᛁ ᛃ ᛇ ᛈ</text>
-  <!-- Skull candles flanking -->
-  <ellipse cx="120" cy="188" rx="18" ry="18" fill="#180004" stroke="#660000" stroke-width="1.5"/>
-  <ellipse cx="114" cy="183" rx="4" ry="5" fill="#050002"/>
-  <ellipse cx="126" cy="183" rx="4" ry="5" fill="#050002"/>
-  <rect x="116" y="168" width="5" height="16" fill="#d0c8a8" opacity="0.75"/>
-  <ellipse cx="118" cy="166" rx="5" ry="9" fill="#ff5500" opacity="0.85"/>
-  <ellipse cx="118" cy="170" rx="22" ry="22" fill="#ff4400" opacity="0.07"/>
-  <ellipse cx="580" cy="188" rx="18" ry="18" fill="#180004" stroke="#660000" stroke-width="1.5"/>
-  <ellipse cx="574" cy="183" rx="4" ry="5" fill="#050002"/>
-  <ellipse cx="586" cy="183" rx="4" ry="5" fill="#050002"/>
-  <rect x="576" y="168" width="5" height="16" fill="#d0c8a8" opacity="0.75"/>
-  <ellipse cx="578" cy="166" rx="5" ry="9" fill="#ff5500" opacity="0.85"/>
-  <ellipse cx="578" cy="170" rx="22" ry="22" fill="#ff4400" opacity="0.07"/>
-`,
-fg: `<text x="350" y="294" text-anchor="middle" font-size="11" fill="#cc0000" opacity="0.92" font-family="Georgia,serif" letter-spacing="7">THE NECROMANCER AWAITS</text>`
-}
-
-  };
-
-  // Generic room builder with dramatic lighting based on room character
-  const h = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  if (SCENES[name]) return SCENES[name];
-
-  // Determine room atmosphere from name
-  const isDark   = name.includes('Crypt')||name.includes('Ossuary')||name.includes('Torture')||name.includes('Ritual')||name.includes('Bone');
-  const isWarm   = name.includes('Infirmary')||name.includes('Barracks')||name.includes('Armory')||name.includes('Grand');
-  const isOuter  = name.includes('Courtyard')||name.includes('Bell')||name.includes('Tower');
-  const isSecret = name.includes('Treasury')||name.includes('Gallery')||name.includes('Scriptorium');
-
-  const bgColor   = isDark ? '#04030a' : isWarm ? '#0c0906' : isOuter ? '#05080e' : '#080a0d';
-  const wallColor = isDark ? '#0a0408' : isWarm ? '#120e08' : isOuter ? '#090c14' : '#0c0e12';
-  const accentCol = isDark ? '#8B0000' : isWarm ? '#c9a227' : isOuter ? '#00d4ff' : '#c9a227';
-  const accentOp  = isDark ? 0.65 : isWarm ? 0.7 : isOuter ? 0.45 : 0.55;
-
-  // Torch positions vary by room hash
-  const torch1x = 120 + (h%80);
-  const torch2x = 580 - (h%80);
-  const torchY  = 90 + (h%60);
-
-  return {
-    sky: `
-      <defs>
-        <radialGradient id="genSky_${h}" cx="${40+h%20}%" cy="0%" r="80%">
-          <stop offset="0%" stop-color="${isDark?'#140008':isWarm?'#1a0c04':isOuter?'#060a18':'#08090e'}"/>
-          <stop offset="100%" stop-color="${bgColor}"/>
-        </radialGradient>
-      </defs>
-      <rect width="700" height="300" fill="url(#genSky_${h})"/>
-      ${isOuter ? `<circle cx="${350+(h%100)-50}" cy="${40+(h%30)}" r="${18+(h%12)}" fill="#c9a227" opacity="0.18"/>
-        <circle cx="${350+(h%100)-50}" cy="${40+(h%30)}" r="${10+(h%8)}" fill="#e8d870" opacity="0.7"/>` : ''}
-      ${isDark ? `<circle cx="${300+(h%120)}" cy="${30+(h%25)}" r="16" fill="#8B0000" opacity="0.4"/>` : ''}
-    `,
-    fog: `
-      <defs>
-        <radialGradient id="genFog_${h}" cx="${30+h%40}%" cy="100%" r="65%">
-          <stop offset="0%" stop-color="${isDark?'#1a0004':isWarm?'#1a0c02':isOuter?'#040814':'#0a0a0e'}" stop-opacity="0.75"/>
-          <stop offset="100%" stop-color="${bgColor}" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <rect width="700" height="300" fill="url(#genFog_${h})"/>
-    `,
-    arch: `
-      <rect width="700" height="300" fill="${bgColor}"/>
-      <!-- Walls -->
-      <rect x="0" y="0" width="700" height="300" fill="${wallColor}" opacity="0.5"/>
-      <!-- Side walls darkening -->
-      <rect x="0" y="0" width="100" height="300" fill="#020204" opacity="0.6"/>
-      <rect x="600" y="0" width="100" height="300" fill="#020204" opacity="0.6"/>
-      <!-- Architectural element - arch or window -->
-      ${!isDark ? `
-        <rect x="270" y="0" width="160" height="200" fill="${wallColor}" rx="2"/>
-        <ellipse cx="350" cy="0" rx="80" ry="32" fill="${wallColor}"/>
-        <path d="M270,0 Q270,-28 350,-28 Q430,-28 430,0" fill="none" stroke="#1e1a14" stroke-width="2"/>
-      ` : `
-        <rect x="260" y="60" width="180" height="240" fill="${isDark?'#060208':'#080a0c'}" rx="2"/>
-        <ellipse cx="350" cy="60" rx="90" ry="36" fill="${isDark?'#060208':'#080a0c'}"/>
-        <ellipse cx="350" cy="180" rx="30" ry="10" fill="${accentCol}" opacity="0.06"/>
-      `}
-      <!-- Torch left -->
-      <rect x="${torch1x-3}" y="${torchY+14}" width="6" height="22" fill="#2e1e0c"/>
-      <rect x="${torch1x-9}" y="${torchY+12}" width="18" height="4" fill="#3a2810"/>
-      <ellipse cx="${torch1x}" cy="${torchY}" rx="9" ry="15" fill="#ff7700" opacity="0.92"/>
-      <ellipse cx="${torch1x}" cy="${torchY-5}" rx="6" ry="11" fill="#ffcc44" opacity="0.88"/>
-      <ellipse cx="${torch1x}" cy="${torchY-9}" rx="3.5" ry="7" fill="#fff5cc" opacity="0.65"/>
-      <ellipse cx="${torch1x}" cy="${torchY+8}" rx="40" ry="40" fill="#ff6600" opacity="0.09"/>
-      <!-- Torch right -->
-      <rect x="${torch2x-3}" y="${torchY+14}" width="6" height="22" fill="#2e1e0c"/>
-      <rect x="${torch2x-9}" y="${torchY+12}" width="18" height="4" fill="#3a2810"/>
-      <ellipse cx="${torch2x}" cy="${torchY}" rx="9" ry="15" fill="#ff7700" opacity="0.92"/>
-      <ellipse cx="${torch2x}" cy="${torchY-5}" rx="6" ry="11" fill="#ffcc44" opacity="0.88"/>
-      <ellipse cx="${torch2x}" cy="${torchY-9}" rx="3.5" ry="7" fill="#fff5cc" opacity="0.65"/>
-      <ellipse cx="${torch2x}" cy="${torchY+8}" rx="40" ry="40" fill="#ff6600" opacity="0.09"/>
-      <!-- Room-specific accent glow -->
-      <ellipse cx="350" cy="240" rx="180" ry="30" fill="${accentCol}" opacity="${accentOp*0.12}"/>
-      <!-- Floor -->
-      <rect x="0" y="268" width="700" height="32" fill="${wallColor}"/>
-      <line x1="0" y1="270" x2="700" y2="270" stroke="${accentCol}" stroke-width="0.8" opacity="0.2"/>
-      ${isDark ? `
-        <!-- Blood pool / rune on floor -->
-        <ellipse cx="350" cy="285" rx="80" ry="10" fill="#8B0000" opacity="0.25"/>
-        <text x="350" y="275" text-anchor="middle" font-size="9" fill="${accentCol}" opacity="0.4" font-family="serif" letter-spacing="2">ᚠ ᚢ ᚦ</text>
-      ` : ''}
-    `,
-    fg: `<text x="350" y="294" text-anchor="middle" font-size="10" fill="${accentCol}" opacity="${accentOp*0.9}" font-family="Georgia,serif" letter-spacing="4">${name.toUpperCase()}</text>`
-  };
-}
-
-
-// ═══════════════════════════════════════════
-// GAME STATE
-// ═══════════════════════════════════════════
-let G = {};
-
-function initState() {
-  const eligible = Object.keys(ROOMS).filter(r => r !== VILLAIN && r !== 'Templar Chapel' && r !== 'Portrait Gallery');
-  const shuffled = [...eligible].sort(()=>Math.random()-0.5);
-  const noteRooms = {};
-  ALL_SCROLLS.forEach((sc,i) => { if(shuffled[i]) noteRooms[shuffled[i]] = sc; });
-
-  G = {
-    cur: 'Templar Chapel',
-    inv: [],
-    visited: new Set(['Templar Chapel']),
-    roomData: JSON.parse(JSON.stringify(ROOMS)),
-    over: false,
-    hp: 100, maxHp: 100,
-    combat: null,
-    cleared: new Set(),
-    noteRooms,
-    readNotes: new Set(),
-    paintings: new Set(),
-    npcsTalked: new Set(),
-    achievements: new Set(),
-    battlesWon: 0,
-    invincible: false,
-    saintActive: false,
-    activeNPC: null
-  };
-}
-
-// ═══════════════════════════════════════════
-// TYPEWRITER LOG
-// ═══════════════════════════════════════════
-let twQ = [], twBusy = false;
-function log(txt, cls, fast=false) { twQ.push({txt,cls,fast}); if(!twBusy) twNext(); }
-function twNext() {
-  if(!twQ.length) { twBusy=false; return; }
-  twBusy = true;
-  const {txt,cls,fast} = twQ.shift();
-  const el = document.getElementById('log');
-  const d = document.createElement('div');
-  if(cls) d.className = cls;
-  el.appendChild(d);
-  if(fast) { d.textContent=txt; el.scrollTop=el.scrollHeight; setTimeout(twNext,25); return; }
-  let i = 0;
-  function tick() {
-    if(i<txt.length) { d.textContent+=txt[i++]; el.scrollTop=el.scrollHeight; setTimeout(tick,13); }
-    else { el.scrollTop=el.scrollHeight; setTimeout(twNext,28); }
-  }
-  tick();
-}
-
-// ═══════════════════════════════════════════
-// ACHIEVEMENTS
-// ═══════════════════════════════════════════
-function unlock(id) {
-  if(G.achievements.has(id)) return;
-  G.achievements.add(id);
-  const a = ACHIEVEMENTS[id];
-  const p = document.getElementById('achievePanel');
-  const el = document.createElement('div');
-  el.className = 'achieve-pop' + (a.isSaint?' saint':'');
-  el.innerHTML = `<div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div>`;
-  p.appendChild(el);
-  setTimeout(()=>el.remove(), 4200);
-  log('🏆 Achievement: ' + a.name, 'lsaint', true);
-}
-
-function checkAchievements() {
-  if(G.visited.size >= Object.keys(ROOMS).length) unlock('explorer');
-  if(G.inv.length >= REQUIRED) unlock('hunter');
-  if(G.battlesWon >= 10) unlock('warrior');
-  if(G.readNotes.size >= ALL_SCROLLS.length) unlock('enlightened');
-  if(G.paintings.size >= PAINTINGS.length) unlock('paintings');
-  if(G.npcsTalked.size >= Object.keys(NPCS).length) unlock('talks');
-  if(G.readNotes.size >= ALL_SCROLLS.length && G.inv.length >= REQUIRED && !G.achievements.has('saint')) {
-    triggerSaint();
-  }
-}
-
-// ═══════════════════════════════════════════
-// SAINT MICHAEL
-// ═══════════════════════════════════════════
-function triggerSaint() {
-  if(G.saintActive) return;
-  G.saintActive = true;
-  sfx.saint();
-  fx('fxSaint', 2000);
-  setTimeout(()=>{
-    const m = document.getElementById('saintModal');
-    document.getElementById('saintSvg').innerHTML = saintMichaelSVG();
-    document.getElementById('saintTxt').innerHTML =
-      'THE HEAVENS OPEN<br><br>Saint Michael the Archangel descends<br><br>"Knight of the Lord — your faith is proven.<br>Take my armor. You are invincible."';
-    m.classList.add('show');
-  }, 800);
-}
-
-function closeSaint() {
-  document.getElementById('saintModal').classList.remove('show');
-  G.invincible = true;
-  document.getElementById('invincTag').style.display = 'inline';
-  const row = document.getElementById('invRow');
-  const b = document.createElement('span');
-  b.className = 'ibadge saint';
-  b.textContent = "⚔ Saint Michael's Armor";
-  row.appendChild(b);
-  document.getElementById('invEmpty').style.display = 'none';
-  unlock('saint');
-  log("⚔ SAINT MICHAEL'S ARMOR BESTOWED — You are invincible!", 'lsaint');
-  refreshHP();
-}
-
-// ═══════════════════════════════════════════
-// MAP
-// ═══════════════════════════════════════════
-function renderMap() {
-  const svg = document.getElementById('mapSvg');
-  const RW=58, RH=16;
-  // Compact fog-of-war map: 640x130
-  let html = `<rect width="640" height="130" fill="#05060a" rx="3"/>`;
-
-  // Connections - only show if BOTH rooms visited
-  MAP_CONN.forEach(([a,b])=>{
-    const pa=MAP_FIXED[a], pb=MAP_FIXED[b];
-    if(!pa||!pb) return;
-    const aVis=G.visited.has(a)||a===G.cur;
-    const bVis=G.visited.has(b)||b===G.cur;
-    // Scale positions to fit 640x130
-    const ax=pa[0]*0.95+10, ay=Math.round(pa[1]*0.7)+8;
-    const bx=pb[0]*0.95+10, by=Math.round(pb[1]*0.7)+8;
-    if(aVis&&bVis){
-      // Full connection - both visited
-      const isV=a===VILLAIN||b===VILLAIN;
-      html += `<line x1="${ax}" y1="${ay+RH/2}" x2="${bx}" y2="${by+RH/2}" stroke="${isV?'#5a0000':'#252830'}" stroke-width="1.5" opacity="0.8"/>`;
-    } else if(aVis||bVis){
-      // Partial - one visited, show path but blurred
-      const ax2=pa[0]*0.95+10+RW/2, ay2=Math.round(pa[1]*0.7)+8+RH/2;
-      const bx2=pb[0]*0.95+10+RW/2, by2=Math.round(pb[1]*0.7)+8+RH/2;
-      html += `<line x1="${ax2}" y1="${ay2}" x2="${bx2}" y2="${by2}" stroke="#1a1e28" stroke-width="1" opacity="0.5" stroke-dasharray="3 4"/>`;
-    }
+  // Reset room enemies
+  Object.keys(ROOMS).forEach(k => {
+    const orig = k === 'armory' ? 'peasant' : k === 'cloister' ? 'risen' :
+      k === 'barracks' ? 'risen' : k === 'bellTower' ? 'peasant' :
+      k === 'courtyard' ? 'peasant' : k === 'cryptEntrance' ? 'risen' :
+      k === 'catacombs' ? 'risen' : k === 'boneThrone' ? 'risen' :
+      k === 'dungeonDepths' ? 'risen' : k === 'watchtower' ? 'peasant' :
+      k === 'necromancerLair' ? 'necromancer' : null;
+    ROOMS[k].enemy = orig;
   });
 
-  // Rooms
-  Object.keys(MAP_FIXED).forEach(name=>{
-    const pos=MAP_FIXED[name]; if(!pos) return;
-    const cx=pos[0]*0.95+10, cy=Math.round(pos[1]*0.7)+8;
-    const isCur=name===G.cur;
-    const isVil=name===VILLAIN;
-    const isVis=G.visited.has(name);
-    const isClr=G.cleared.has(name);
-    const hasItem=G.roomData[name]&&G.roomData[name].item;
-    const npc=NPCS[name];
+  // Reset relics
+  ROOMS.armory.relic = 'Templar Longsword';
+  ROOMS.scriptorium.relic = 'Illuminated Map';
+  ROOMS.barracks.relic = 'Chainmail Hauberk';
+  ROOMS.infirmary.relic = 'Holy Water';
+  ROOMS.bellTower.relic = 'Blessed Candles';
+  ROOMS.treasury.relic = 'Rosary of Iron';
 
-    if(isCur){
-      // Current room — fully visible, glowing
-      html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="#18140a" stroke="#c9a227" stroke-width="1.8"/>`;
-      html += `<rect x="${cx}" y="${cy}" width="${RW}" height="2" rx="1" fill="#c9a227" opacity="0.9"/>`;
-      // Pulse ring
-      html += `<rect x="${cx-2}" y="${cy-2}" width="${RW+4}" height="${RH+4}" rx="3" fill="none" stroke="#c9a227" stroke-width="0.5" opacity="0.3"/>`;
-      html += `<text x="${cx+RW/2}" y="${cy+11}" text-anchor="middle" font-size="7" fill="#f0c040" font-family="Courier New" font-weight="bold">YOU</text>`;
-      if(hasItem) html += `<circle cx="${cx+RW-4}" cy="${cy+4}" r="3" fill="#a8e6a3" opacity="0.9"/>`;
-      if(npc&&!G.npcsTalked.has(npc.id)) html += `<circle cx="${cx+4}" cy="${cy+4}" r="3" fill="#00d4ff" opacity="0.8"/>`;
-    } else if(isVis||isClr){
-      // Visited — show with appropriate color
-      let fill='#0c0d14', stroke='#22243a', tc='rgba(201,162,39,0.52)';
-      if(isVil)      { fill='#120002'; stroke='#5a0000'; tc='rgba(255,80,80,0.65)'; }
-      else if(isClr) { fill='#050c12'; stroke='rgba(0,212,255,0.28)'; tc='rgba(0,212,255,0.5)'; }
-      else if(name==='Infirmary') { fill='#04100a'; stroke='#183818'; tc='rgba(100,220,140,0.55)'; }
-      html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.8"/>`;
-      if(isVil) html += `<rect x="${cx}" y="${cy}" width="${RW}" height="2" rx="1" fill="#8B0000" opacity="0.7"/>`;
-      html += `<text x="${cx+RW/2}" y="${cy+11}" text-anchor="middle" font-size="6.5" fill="${tc}" font-family="Courier New">${name.length>10?name.slice(0,9)+'…':name}</text>`;
-      if(hasItem) html += `<circle cx="${cx+RW-4}" cy="${cy+4}" r="2.5" fill="#a8e6a3" opacity="0.8"/>`;
-      if(npc&&!G.npcsTalked.has(npc.id)) html += `<circle cx="${cx+4}" cy="${cy+4}" r="2.5" fill="#00d4ff" opacity="0.7"/>`;
+  // Randomize scroll placement (8 scrolls in random rooms, no map indicator)
+  const roomKeys = Object.keys(ROOMS);
+  Object.keys(ROOMS).forEach(k => ROOMS[k].hasScroll = false);
+  scrollPlacements = {};
+  const shuffled = roomKeys.sort(() => Math.random() - 0.5).slice(0, 8);
+  shuffled.forEach((roomKey, i) => {
+    ROOMS[roomKey].hasScroll = true;
+    scrollPlacements[roomKey] = SCROLLS[i];
+  });
+
+  // Clear UI
+  document.getElementById('logPanel').innerHTML = '';
+  document.getElementById('combatOverlay').classList.remove('active');
+  document.getElementById('scrollOverlay').classList.remove('active');
+  document.getElementById('npcDialog').classList.remove('active');
+  document.getElementById('portraitOverlay').classList.remove('active');
+  document.getElementById('deathScreen').classList.remove('active');
+  document.getElementById('winScreen').classList.remove('active');
+
+  enterRoom('chapel');
+}
+
+// ═══ ENTER ROOM ═══
+function enterRoom(roomId) {
+  STATE.currentRoom = roomId;
+  STATE.visited.add(roomId);
+  const room = ROOMS[roomId];
+
+  // Update scene
+  document.getElementById('roomName').textContent = room.name;
+  document.getElementById('roomSub').textContent = room.sub;
+  renderScene(roomId);
+  renderMap();
+  updateHP();
+  updateInventory();
+
+  // Log separator if not first room
+  if (document.getElementById('logPanel').children.length > 0) {
+    addSeparator();
+  }
+
+  // Room entry lore
+  addLog(room.lore, 'lore');
+
+  // Infirmary healing
+  if (room.heals && STATE.hp < STATE.maxHp) {
+    const heal = 25 + Math.floor(Math.random() * 16);
+    STATE.hp = Math.min(STATE.maxHp, STATE.hp + heal);
+    addLog(`Brother Aldric tends your wounds. You recover ${heal} HP.`, 'heal');
+    playSound('heal');
+    updateHP();
+  }
+
+  // Crypt trap
+  if (room.hasTrap && !STATE.visited.has('cryptEntrance_trapped')) {
+    STATE.visited.add('cryptEntrance_trapped');
+    const dmg = 8 + Math.floor(Math.random() * 11);
+    STATE.hp -= dmg;
+    addLog(`The ancient runes flare with dark energy! A runic trap deals ${dmg} damage.`, 'combat');
+    playSound('trap');
+    updateHP();
+    if (STATE.hp <= 0) { playerDeath(); return; }
+  }
+
+  // Courtyard random event
+  if (room.hasEvent) {
+    const evt = COURTYARD_EVENTS[Math.floor(Math.random() * COURTYARD_EVENTS.length)];
+    if (evt.dmg > 0) {
+      STATE.hp -= evt.dmg;
+      addLog(evt.text + ` (-${evt.dmg} HP)`, 'combat');
+      updateHP();
+      if (STATE.hp <= 0) { playerDeath(); return; }
+    } else if (evt.heal > 0) {
+      STATE.hp = Math.min(STATE.maxHp, STATE.hp + evt.heal);
+      addLog(evt.text + ` (+${evt.heal} HP)`, 'heal');
+      updateHP();
     } else {
-      // UNVISITED — fog of war: show shape but NO name, blurred/dark
-      // Only show if adjacent to a visited room
-      const isAdjacent = MAP_CONN.some(([a,b])=>(a===name&&G.visited.has(b))||(b===name&&G.visited.has(a)));
-      if(isAdjacent){
-        // Adjacent — show as mystery room with ? 
-        html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="#0a0b10" stroke="#161820" stroke-width="0.6" opacity="0.7"/>`;
-        html += `<text x="${cx+RW/2}" y="${cy+11}" text-anchor="middle" font-size="8" fill="rgba(221,213,192,0.18)" font-family="Courier New">???</text>`;
-      } else {
-        // Far away — barely visible outline only
-        html += `<rect x="${cx}" y="${cy}" width="${RW}" height="${RH}" rx="2" fill="#07080c" stroke="#0f1018" stroke-width="0.4" opacity="0.4"/>`;
-      }
+      addLog(evt.text, 'lore');
     }
-  });
-
-  // Legend - compact
-  html += `<circle cx="10" cy="122" r="3" fill="#a8e6a3" opacity="0.8"/><text x="17" y="126" font-size="6.5" fill="rgba(221,213,192,0.3)" font-family="Courier New">Relic</text>`;
-  html += `<circle cx="58" cy="122" r="3" fill="#00d4ff" opacity="0.7"/><text x="65" y="126" font-size="6.5" fill="rgba(221,213,192,0.3)" font-family="Courier New">NPC</text>`;
-  html += `<rect x="100" y="118" width="9" height="7" rx="1" fill="#18140a" stroke="#c9a227" stroke-width="1.5"/><text x="113" y="126" font-size="6.5" fill="rgba(221,213,192,0.3)" font-family="Courier New">You</text>`;
-  html += `<rect x="144" y="118" width="9" height="7" rx="1" fill="#0a0b10" stroke="#161820" stroke-width="0.6" opacity="0.7"/><text x="157" y="126" font-size="6.5" fill="rgba(221,213,192,0.22)" font-family="Courier New">Unknown</text>`;
-  svg.innerHTML = html;
-}}
-
-// ═══════════════════════════════════════════
-// SCENE REFRESH
-// ═══════════════════════════════════════════
-function refreshScene() {
-  const art = buildScene(G.cur);
-  document.getElementById('lSky').innerHTML = art.sky;
-  document.getElementById('lFog').innerHTML = art.fog;
-  document.getElementById('lArch').innerHTML = art.arch;
-  document.getElementById('lFg').innerHTML = art.fg;
-  document.getElementById('roomTag').textContent = G.cur;
-  document.getElementById('loreTag').textContent = LORE[G.cur] ? '"' + LORE[G.cur] + '"' : '';
-
-  // Knight
-  document.getElementById('lKnight').innerHTML = (G.cur===VILLAIN) ? '' : knightSVG(190,285,0.78,G.invincible);
-
-  // Zombies
-  const needsZ = G.roomData[G.cur] && G.roomData[G.cur].zombie && !G.cleared.has(G.cur);
-  if(G.cur===VILLAIN) drawZombies(1,'necro');
-  else if(needsZ)     drawZombies(1,'mix');
-  else                drawZombies(0);
-
-  // Hints
-  const npc = NPCS[G.cur];
-  const nel = document.getElementById('npcHint');
-  if(npc) { nel.textContent = npc.icon + ' ' + npc.name + ' is here — type: talk ' + npc.id; nel.style.display='block'; }
-  else nel.style.display='none';
-  document.getElementById('paintingHint').style.display = (G.cur==='Portrait Gallery') ? 'block' : 'none';
-  const note = G.noteRooms[G.cur];
-  const noel = document.getElementById('noteHint');
-  if(note && !G.readNotes.has(G.cur)) { noel.textContent='A worn scroll lies nearby — type: read'; noel.style.display='block'; }
-  else noel.style.display='none';
-
-  refreshGrabBtn();
-
-  // Parallax
-  ['lSky','lFog','lArch','lFg'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    el.style.transform=`translateX(${(i+1)*14}px)`;
-    requestAnimationFrame(()=>setTimeout(()=>el.style.transform='translateX(0)',8));
-  });
-}
-
-function refreshGrabBtn() {
-  const room=G.roomData[G.cur], hasItem=room&&room.item, inC=!!G.combat;
-  const btn=document.getElementById('grabBtn'), lbl=document.getElementById('itemLabel');
-  if(hasItem&&!G.over&&!inC) { lbl.textContent='✦ '+room.item; btn.style.display='block'; }
-  else { lbl.textContent=hasItem&&inC?'✦ '+room.item+' (defeat enemy first)':''; btn.style.display='none'; }
-}
-
-function refreshHP() {
-  const pct=Math.max(0,G.hp/G.maxHp*100), fill=document.getElementById('hpFill');
-  if(G.invincible) { fill.style.width='100%'; fill.style.background='#ffd700'; document.getElementById('hpNum').textContent='BLESSED'; }
-  else { fill.style.width=pct+'%'; fill.style.background=pct>60?'#8B0000':pct>30?'#cc4400':'#ff2200'; document.getElementById('hpNum').textContent=Math.max(0,G.hp)+'/'+G.maxHp; }
-}
-
-function refreshInv() {
-  const row=document.getElementById('invRow');
-  row.querySelectorAll('.ibadge:not(.saint)').forEach(e=>e.remove());
-  const em=document.getElementById('invEmpty');
-  if(!G.inv.length&&!G.invincible) { em.style.display=''; return; }
-  em.style.display='none';
-  G.inv.forEach(it=>{ const b=document.createElement('span'); b.className='ibadge'; b.textContent=it; row.appendChild(b); });
-  document.getElementById('relicCnt').textContent='Relics '+G.inv.length+'/'+REQUIRED;
-}
-
-function refreshDirs() {
-  const r=G.roomData[G.cur], locked=G.over||!!G.combat;
-  [{id:'bN',d:'North'},{id:'bS',d:'South'},{id:'bE',d:'East'},{id:'bW',d:'West'}].forEach(({id,d})=>{
-    document.getElementById(id).disabled=(!r[d]||locked);
-  });
-}
-
-function refreshCombat(show) {
-  // Show/hide enemy HP bar
-  const cp = document.getElementById('combatPanel');
-  cp.style.display = show ? 'flex' : 'none';
-  // Show/hide combat quick buttons in center
-  const cq = document.getElementById('combatQuick');
-  if(cq) cq.style.display = show ? 'flex' : 'none';
-  document.getElementById('cStatus').textContent = show ? '⚔ IN COMBAT' : '';
-  if(show&&G.combat) {
-    document.getElementById('eName').textContent='⚔ '+G.combat.name.toUpperCase();
-    const pct=Math.max(0,G.combat.hp/G.combat.maxHp*100);
-    document.getElementById('eHpFill').style.width=pct+'%';
-    document.getElementById('eHpNum').textContent=G.combat.hp+'/'+G.combat.maxHp;
   }
-}
 
-// ═══════════════════════════════════════════
-// ZOMBIES
-// ═══════════════════════════════════════════
-let zTimers = [];
-function drawZombies(count, type) {
-  zTimers.forEach(clearInterval); zTimers=[];
-  const svg=document.getElementById('lZombies');
-  if(!count) { svg.innerHTML=''; return; }
-  if(type==='necro') { svg.innerHTML=necroSVG(350,290); return; }
-  const isK=Math.random()>0.5;
-  svg.innerHTML=`<g id="zg0">${isK?kZombie(0,0,0.82):pZombie(0,0,0.78)}</g>`;
-  const el=svg.querySelector('#zg0'); if(!el) return;
-  let t=0,dir=1;
-  el.setAttribute('transform','translate(520,274)');
-  const id=setInterval(()=>{ t+=dir*0.32; if(t>8||t<-8)dir*=-1; el.setAttribute('transform',`translate(${520+t},274)`); },55);
-  zTimers.push(id);
-}
+  // Enemy encounter
+  if (room.enemy && !STATE.enemiesDefeated.has(roomId)) {
+    const e = ENEMIES[room.enemy];
+    addLog(`A ${e.name} emerges from the shadows!`, 'combat');
+    playSound('encounter');
+    startCombat(roomId, room.enemy);
+    return; // Combat takes over
+  }
 
-// ═══════════════════════════════════════════
-// FX
-// ═══════════════════════════════════════════
-function fx(id,ms) { const e=document.getElementById(id); e.style.opacity='1'; setTimeout(()=>e.style.opacity='0',ms); }
-function shake() { const s=document.getElementById('scene'); s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake'); }
-function showEnd(title,msg,win) {
-  document.getElementById('endH').textContent=title;
-  document.getElementById('endH').style.color=win?'#f0c040':'#ff4444';
-  document.getElementById('endP').textContent=msg;
-  document.getElementById('endOverlay').classList.add('show');
-}
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-
-// ═══════════════════════════════════════════
-// NOTES / PAINTINGS / NPC
-// ═══════════════════════════════════════════
-function openNote() {
-  const note=G.noteRooms[G.cur]; if(!note) return;
-  sfx.scroll(); G.readNotes.add(G.cur);
-  document.getElementById('noteRef').textContent=note.ref;
-  document.getElementById('noteText').textContent=note.text;
-  document.getElementById('noteModal').classList.add('show');
-  document.getElementById('noteHint').style.display='none';
-  log('You unroll a weathered scroll and read by torchlight…','lnote');
-  log(note.ref,'lnote');
-  renderMap(); checkAchievements();
-}
-
-function viewPainting() {
-  if(G.cur!=='Portrait Gallery') return;
-  const idx=G.paintings.size%PAINTINGS.length;
-  const p=PAINTINGS[idx]; G.paintings.add(idx);
-  document.getElementById('paintTitle').textContent=p.title;
-  document.getElementById('paintBody').textContent=p.body;
-  document.getElementById('paintModal').classList.add('show');
-  log('You study the portrait carefully…','lnote');
-  renderMap(); checkAchievements();
-}
-
-function talkNPC() {
-  const npc=NPCS[G.cur]; if(!npc) return;
-  G.npcsTalked.add(npc.id); G.activeNPC=npc;
-  document.getElementById('npcTitle').textContent=npc.icon+' '+npc.name+' — '+npc.title;
-  document.getElementById('npcTitle').style.cssText='font-size:0.85rem;color:var(--ice);margin-bottom:0.5rem;letter-spacing:0.1em;text-transform:uppercase;';
-  document.getElementById('npcText').textContent=NPC_LINES[npc.id].default;
-  document.getElementById('npcModal').classList.add('show');
-  document.getElementById('npcIn').focus();
-  log('You approach '+npc.name+'…','lnpc',true);
+  updateButtons();
   checkAchievements();
 }
 
-function sendNPC() {
-  const npc=G.activeNPC; if(!npc) return;
-  const input=document.getElementById('npcIn');
-  const msg=input.value.trim().toLowerCase(); input.value='';
-  if(!msg) return;
-  const lines=NPC_LINES[npc.id];
-  let reply=lines.default2;
-  if(msg.includes('relic')||msg.includes('item'))                          reply=lines.relics;
-  else if(msg.includes('scroll')||msg.includes('scripture')||msg.includes('prayer')) reply=lines.scrolls;
-  else if(msg.includes('enemy')||msg.includes('necro')||msg.includes('boss'))        reply=lines.enemy;
-  else if(msg.includes('order')||msg.includes('templar')||msg.includes('knight'))    reply=lines.order;
-  document.getElementById('npcText').textContent=reply;
-}
-
-// ═══════════════════════════════════════════
-// COMBAT
-// ═══════════════════════════════════════════
-function startCombat() {
-  const isK=Math.random()>0.5;
-  const names=isK?ZNAMES_K:ZNAMES_P;
-  const name=names[Math.floor(Math.random()*names.length)];
-  const hp=(G.cur===VILLAIN)?150:(18+Math.floor(Math.random()*22));
-  G.combat={name,hp,maxHp:hp};
-  sfx.groan();
-  log('⚔ A '+name+' rises before you! Defeat it to claim the relic.','lco');
-  refreshCombat(true); refreshDirs(); refreshGrabBtn();
-}
-
-function doFight(action) {
-  if(!G.combat||G.over) return;
-  if(action==='attack') {
-    sfx.sword();
-    const pdmg=G.invincible?9999:(8+Math.floor(Math.random()*14));
-    const crit=G.invincible||Math.random()<0.2;
-    const total=crit?pdmg*2:pdmg;
-    G.combat.hp=Math.max(0,G.combat.hp-total);
-    log(G.invincible?'⚔ DIVINE STRIKE — ONE HIT!':crit?'⚔ CRITICAL! You deal '+total+' damage!':'You strike for '+total+' damage.','lco');
-    refreshCombat(!!G.combat);
-    if(G.combat.hp<=0) { endCombat(); return; }
-    if(!G.invincible) enemyStrike(false);
-    else log("The blow glances off Saint Michael's golden armor.",'lco');
-  } else if(action==='defend') {
-    if(G.invincible) { log('You are invincible — attack!','le',true); return; }
-    fx('fxIce',280); log('You raise your shield — bracing for the blow.','lco'); enemyStrike(true);
-  } else if(action==='flee') {
-    if(G.invincible) { log("Saint Michael's blessing makes flight unnecessary!",'le',true); return; }
-    shake(); sfx.hit();
-    const fd=10+Math.floor(Math.random()*8); G.hp=Math.max(1,G.hp-fd);
-    log('You retreat! The '+G.combat.name+' strikes you for '+fd+' as you flee.','lev');
-    G.combat=null; refreshCombat(false); refreshHP(); refreshDirs(); refreshGrabBtn();
+// ═══ NAVIGATION ═══
+function go(dir) {
+  if (STATE.inCombat) return;
+  const room = ROOMS[STATE.currentRoom];
+  if (room.exits[dir]) {
+    playSound('step');
+    enterRoom(room.exits[dir]);
+  } else {
+    addLog('There is no passage in that direction.', 'system');
   }
-  refreshCombat(!!G.combat); refreshHP();
 }
 
-function enemyStrike(def) {
-  const base=6+Math.floor(Math.random()*10), dmg=def?Math.floor(base*0.28):base;
-  shake(); sfx.hit(); fx('fxBlood',280);
-  G.hp=Math.max(0,G.hp-dmg);
-  log(def?'The '+G.combat.name+' strikes — your shield holds! '+dmg+' damage.':'The '+G.combat.name+' attacks for '+dmg+'!','lco');
-  refreshHP();
-  if(G.hp<=0) playerDied();
+// ═══ COMBAT ═══
+function startCombat(roomId, enemyType) {
+  const e = ENEMIES[enemyType];
+  STATE.inCombat = true;
+  STATE.currentEnemy = { roomId, type: enemyType, ...e };
+  STATE.enemyHp = e.hp;
+  STATE.enemyMaxHp = e.hp;
+  STATE.defending = false;
+
+  document.getElementById('combatOverlay').classList.add('active');
+  document.getElementById('combatEnemyName').textContent = e.name;
+  updateEnemyHP();
+  updateButtons();
 }
 
-function endCombat() {
-  const isN=(G.cur===VILLAIN);
-  sfx.pickup(); fx('fxGold',450);
-  log('The '+G.combat.name+(isN?' DESTROYED! THE FORTRESS IS FREED!':' crumbles to ash. Path cleared!'),'la');
-  if(isN) unlock('necro');
-  G.battlesWon++; G.cleared.add(G.cur); G.combat=null;
-  refreshCombat(false); refreshDirs(); drawZombies(0); renderMap(); refreshGrabBtn();
-  checkAchievements(); if(isN) checkEnd();
-}
+function combatAction(action) {
+  if (!STATE.inCombat) return;
+  const e = STATE.currentEnemy;
 
-// ═══════════════════════════════════════════
-// GRAB
-// ═══════════════════════════════════════════
-function doGrab() {
-  const room=G.roomData[G.cur];
-  if(!room||!room.item||G.over||G.combat) return;
-  const item=room.item;
-  sfx.pickup(); fx('fxGold',550);
-  G.inv.push(item); room.item=null;
-  log('⚔ "'+item+'" claimed! ('+G.inv.length+'/'+REQUIRED+')','la');
-  refreshScene(); refreshInv(); refreshGrabBtn(); renderMap(); checkAchievements(); checkEnd();
-}
+  if (action === 'attack') {
+    STATE.defending = false;
+    let dmg = 8 + Math.floor(Math.random() * 20);
+    const crit = Math.random() < 0.2;
+    if (crit) dmg = Math.floor(dmg * 1.8);
+    if (STATE.hasGoldenArmor) dmg = STATE.enemyMaxHp; // One-hit with golden armor
+    STATE.enemyHp -= dmg;
+    addLog(`You strike the ${e.name} for ${dmg} damage${crit ? ' — CRITICAL HIT!' : '.'}`, 'combat');
+    playSound('sword');
 
-// ═══════════════════════════════════════════
-// MOVEMENT
-// ═══════════════════════════════════════════
-function enterRoom(name) {
-  G.cur=name; G.visited.add(name);
-  ambience(name);
-  refreshScene(); renderMap(); refreshDirs(); refreshInv();
-  log('► '+name,'lr');
-  if(LORE[name]) log(LORE[name],'llr');
-  if(G.noteRooms[name]&&!G.readNotes.has(name)) log('📜 You notice a weathered scroll tucked in the shadows…','lnote');
-
-  if(G.roomData[name].heal&&!G.invincible) {
-    const hp=25+Math.floor(Math.random()*15); sfx.pickup(); fx('fxGold',400);
-    G.hp=Math.min(G.maxHp,G.hp+hp);
-    log('The Infirmary restores '+hp+' HP.','lhe'); refreshHP();
-  }
-  if(G.roomData[name].trap&&!G.invincible) {
-    shake(); sfx.hit(); fx('fxBlood',220);
-    const td=8+Math.floor(Math.random()*10); G.hp=Math.max(1,G.hp-td);
-    log('A runic trap scorches you for '+td+' damage!','lev'); refreshHP();
-  } else if(G.roomData[name].trap&&G.invincible) {
-    log("The runic trap flares — Saint Michael's armor absorbs it.",'lhe');
-  }
-  if(G.roomData[name].event&&Math.random()<0.5&&!G.invincible) {
-    const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
-    log('— '+ev.msg,'lev');
-    if(ev.dmg) { shake(); sfx.hit(); fx('fxBlood',200); G.hp=Math.max(1,G.hp-ev.dmg); refreshHP(); }
-    if(ev.heal) { sfx.pickup(); fx('fxGold',280); G.hp=Math.min(G.maxHp,G.hp+ev.heal); refreshHP(); }
-  }
-
-  if(name===VILLAIN&&!G.cleared.has(name)) setTimeout(()=>startCombat(),350);
-  else if(G.roomData[name].zombie&&!G.cleared.has(name)) setTimeout(()=>startCombat(),350);
-  checkAchievements(); checkEnd();
-}
-
-function move(dir) {
-  if(!G.roomData[G.cur][dir]||G.over||G.combat) return;
-  sfx.step(); log('> go '+dir.toLowerCase(),'lc',true);
-  enterRoom(G.roomData[G.cur][dir]);
-}
-
-// ═══════════════════════════════════════════
-// END CONDITIONS
-// ═══════════════════════════════════════════
-function playerDied() {
-  sfx.death(); shake(); fx('fxBlood',700);
-  log('You have fallen. The undead claim you.','ll');
-  G.over=true; G.combat=null; refreshCombat(false); refreshDirs(); refreshGrabBtn();
-  document.getElementById('cmdIn').disabled=true;
-  setTimeout(()=>showEnd('YOU HAVE FALLEN','Your HP reached zero. Use Defend, seek the Infirmary, find the sacred scrolls.',false),500);
-}
-
-function checkEnd() {
-  if(G.inv.length>=REQUIRED&&G.cleared.has(VILLAIN)) {
-    unlock('hunter'); sfx.win(); fx('fxGold',1200);
-    log('★ ALL RELICS AND THE NECROMANCER DESTROYED! ★','lw');
-    log('DEUS VULT. THE ORDER ENDURES.','lw');
-    G.over=true; G.combat=null; refreshCombat(false); refreshDirs(); refreshGrabBtn();
-    document.getElementById('cmdIn').disabled=true;
-    setTimeout(()=>showEnd('⚔ DEUS VULT ⚔','All 6 sacred relics recovered and the Necromancer destroyed. The fortress is free. You are legend.',true),800);
-    return true;
-  }
-  return false;
-}
-
-// ═══════════════════════════════════════════
-// TEXT INPUT
-// ═══════════════════════════════════════════
-function processCmd(raw) {
-  const cmd=raw.trim().toLowerCase().replace(/\s+/g,' ');
-  if(!cmd||G.over) return;
-  log('> '+raw,'lc',true);
-  if(cmd==='attack'||cmd==='a')  { doFight('attack'); return; }
-  if(cmd==='defend'||cmd==='d')  { doFight('defend'); return; }
-  if(cmd==='flee'||cmd==='f')    { doFight('flee'); return; }
-  if(cmd==='read'||cmd==='scroll'||cmd==='note') { openNote(); return; }
-  if(cmd==='examine'||cmd==='portrait'||cmd==='paintings'||cmd==='look') { viewPainting(); return; }
-  const tm=cmd.match(/^talk\s+(\w+)/);
-  if(tm) {
-    const npcE=Object.entries(NPCS).find(([r,n])=>n.id===tm[1]&&r===G.cur);
-    if(npcE) talkNPC(); else log('There is no '+tm[1]+' here.','le',true);
+    if (STATE.enemyHp <= 0) {
+      endCombat(true);
+      return;
+    }
+  } else if (action === 'defend') {
+    STATE.defending = true;
+    addLog('You raise your shield and brace for impact.', 'system');
+    playSound('defend');
+  } else if (action === 'flee') {
+    STATE.defending = false;
+    const fleeDmg = 5 + Math.floor(Math.random() * 8);
+    STATE.hp -= fleeDmg;
+    addLog(`You turn and flee! The ${e.name} strikes you as you run. (-${fleeDmg} HP)`, 'combat');
+    updateHP();
+    STATE.inCombat = false;
+    document.getElementById('combatOverlay').classList.remove('active');
+    // Go back to previous room if possible
+    const room = ROOMS[STATE.currentRoom];
+    const exits = Object.values(room.exits);
+    if (exits.length > 0) {
+      const fleeRoom = exits[Math.floor(Math.random() * exits.length)];
+      if (STATE.hp <= 0) { playerDeath(); return; }
+      enterRoom(fleeRoom);
+    }
     return;
   }
-  const am=cmd.match(/^ask\s+(\w+)\s+about\s+(.+)/);
-  if(am) {
-    const npcE=Object.entries(NPCS).find(([r,n])=>n.id===am[1]&&r===G.cur);
-    if(npcE) { G.activeNPC=npcE[1]; talkNPC(); setTimeout(()=>{ document.getElementById('npcIn').value=am[2]; sendNPC(); },300); }
-    else log('There is no '+am[1]+' here.','le',true);
+
+  // Enemy counterattack
+  if (STATE.inCombat) {
+    let eDmg = e.dmgMin + Math.floor(Math.random() * (e.dmgMax - e.dmgMin + 1));
+    if (STATE.defending) eDmg = Math.floor(eDmg * 0.28);
+    if (STATE.hasGoldenArmor) eDmg = 0;
+    STATE.hp -= eDmg;
+    if (eDmg > 0) {
+      addLog(`The ${e.name} strikes back for ${eDmg} damage${STATE.defending ? ' (blocked!)' : '.'}`, 'combat');
+    } else {
+      addLog(`The ${e.name}'s attack bounces harmlessly off your divine armor.`, 'combat');
+    }
+    playSound('hit');
+    updateHP();
+    updateEnemyHP();
+
+    if (STATE.hp <= 0) {
+      STATE.inCombat = false;
+      document.getElementById('combatOverlay').classList.remove('active');
+      playerDeath();
+    }
+  }
+}
+
+function endCombat(victory) {
+  const e = STATE.currentEnemy;
+  STATE.inCombat = false;
+  STATE.enemiesDefeated.add(e.roomId);
+  STATE.battlesWon++;
+  ROOMS[e.roomId].enemy = null;
+  document.getElementById('combatOverlay').classList.remove('active');
+
+  if (e.type === 'necromancer') {
+    STATE.necromancerDead = true;
+    addLog('The Necromancer shrieks as his staff shatters! Dark energy implodes — the undead army collapses. The fortress is cleansed.', 'victory');
+    playSound('victory');
+    checkAchievements();
+    setTimeout(() => {
+      document.getElementById('winScreen').classList.add('active');
+    }, 2000);
     return;
   }
-  const dm={north:'North',south:'South',east:'East',west:'West'};
-  if(cmd.startsWith('go ')) {
-    const w=cmd.slice(3);
-    if(!dm[w]) { log('Unknown direction.','le',true); return; }
-    if(G.combat) { log('Defeat the enemy first!','le',true); return; }
-    move(dm[w]); return;
-  }
-  if(cmd.startsWith('get')||cmd==='take') {
-    if(G.combat) { log('Defeat the enemy first!','le',true); return; }
-    doGrab(); return;
-  }
-  log('Try: attack(a) / defend(d) / flee(f) / go [dir] / get / read / talk [npc]','le',true);
+
+  addLog(`The ${e.name} crumbles to dust. Victory.`, 'item');
+  playSound('kill');
+  updateButtons();
+  checkAchievements();
 }
 
-function submit() { const i=document.getElementById('cmdIn'); processCmd(i.value); i.value=''; }
-function toggleFS() { const e=document.getElementById('gameScreen'); if(!document.fullscreenElement) e.requestFullscreen&&e.requestFullscreen(); else document.exitFullscreen&&document.exitFullscreen(); }
-
-// ═══════════════════════════════════════════
-// TITLE CANVAS
-// ═══════════════════════════════════════════
-function initTitle() {
-  const cv=document.getElementById('titleCanvas');
-  const ctx=cv.getContext('2d');
-  function rsz() { cv.width=cv.offsetWidth; cv.height=cv.offsetHeight; }
-  rsz(); window.addEventListener('resize',rsz);
-  const pts=[];
-  for(let i=0;i<65;i++) pts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-0.5)*0.28,vy:-(Math.random()*0.45+0.12),r:Math.random()*2+0.5,life:Math.random(),col:Math.random()>0.5?'201,162,39':'0,212,255'});
-  function frame() {
-    ctx.clearRect(0,0,cv.width,cv.height);
-    pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.life-=0.0025; if(p.life<=0||p.y<0){p.y=cv.height+5;p.x=Math.random()*cv.width;p.life=0.7+Math.random()*0.3;} ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba('+p.col+','+p.life+')';ctx.fill(); });
-    requestAnimationFrame(frame);
-  }
-  frame();
+// ═══ RELICS ═══
+function grabRelic() {
+  const room = ROOMS[STATE.currentRoom];
+  if (!room.relic) return;
+  STATE.inventory.push(room.relic);
+  addLog(`You claim the ${room.relic}. Its weight feels righteous.`, 'item');
+  playSound('pickup');
+  room.relic = null;
+  updateInventory();
+  updateButtons();
+  renderMap();
+  checkAchievements();
+  checkGoldenArmor();
 }
 
-// ═══════════════════════════════════════════
-// START / RESTART
-// ═══════════════════════════════════════════
-function startGame() {
-  initState();
-  document.getElementById('titleScreen').style.display='none';
-  const gs=document.getElementById('gameScreen');
-  gs.style.display='flex'; gs.classList.add('active');
-  document.getElementById('cmdIn').disabled=false;
-  ['endOverlay','noteModal','paintModal','npcModal','saintModal'].forEach(id=>document.getElementById(id).classList.remove('show'));
-  document.getElementById('log').innerHTML='';
-  document.getElementById('relicCnt').textContent='Relics 0/6';
-  document.getElementById('invincTag').style.display='none';
-  refreshHP(); refreshInv();
-  startMusic(); // Start the Templar music!
-  enterRoom('Templar Chapel');
-  log('Collect 6 relics. Find 8 hidden scrolls. Talk to NPCs. Defeat the Necromancer.','ls');
-  log('ATTACK(a) DEFEND(d) FLEE(f) | go [dir] | get | read | talk [name] | ask [name] about [topic]','ls');
+// ═══ SCROLLS ═══
+function readScroll() {
+  const room = ROOMS[STATE.currentRoom];
+  if (!room.hasScroll) return;
+  const scroll = scrollPlacements[STATE.currentRoom];
+  if (!scroll || STATE.scrollsFound.includes(scroll.ref)) return;
+
+  STATE.scrollsFound.push(scroll.ref);
+  room.hasScroll = false;
+  document.getElementById('scrollRef').textContent = scroll.ref;
+  document.getElementById('scrollVerse').textContent = scroll.text;
+  document.getElementById('scrollOverlay').classList.add('active');
+  addLog(`You discover a sacred scroll: ${scroll.ref}`, 'scroll');
+  playSound('scroll');
+  updateInventory();
+  updateButtons();
+  checkAchievements();
+  checkGoldenArmor();
+}
+
+function closeScroll() {
+  document.getElementById('scrollOverlay').classList.remove('active');
+}
+
+// ═══ NPCS ═══
+function talkNPC() {
+  const room = ROOMS[STATE.currentRoom];
+  if (!room.npc) return;
+  const npc = NPCS[room.npc];
+  STATE.npcsSpoken.add(room.npc);
+
+  document.getElementById('npcName').textContent = npc.name;
+  document.getElementById('npcText').textContent = npc.greeting;
+
+  const topicsEl = document.getElementById('npcTopics');
+  topicsEl.innerHTML = '';
+  Object.keys(npc.topics).forEach(topic => {
+    const btn = document.createElement('button');
+    btn.className = 'npc-topic-btn';
+    btn.textContent = topic;
+    btn.onclick = () => askNPC(room.npc, topic);
+    topicsEl.appendChild(btn);
+  });
+
+  document.getElementById('npcDialog').classList.add('active');
+  addLog(`You speak with ${npc.name}.`, 'npc');
+  checkAchievements();
+}
+
+function askNPC(npcId, topic) {
+  const npc = NPCS[npcId];
+  document.getElementById('npcText').textContent = npc.topics[topic];
+
+  // Special: Aldric healing topic
+  if (npcId === 'aldric' && topic === 'healing') {
+    const heal = 20 + Math.floor(Math.random() * 15);
+    STATE.hp = Math.min(STATE.maxHp, STATE.hp + heal);
+    addLog(`Brother Aldric\'s care restores ${heal} HP.`, 'heal');
+    playSound('heal');
+    updateHP();
+  }
+}
+
+function closeNPC() {
+  document.getElementById('npcDialog').classList.remove('active');
+}
+
+// ═══ PORTRAITS ═══
+function examinePortrait() {
+  if (STATE.currentRoom !== 'portraitGallery') return;
+  const keys = ['hugues', 'jacques', 'philip'];
+  const unseen = keys.filter(k => !STATE.portraitsExamined.has(k));
+  if (unseen.length === 0) {
+    addLog('You have already examined all three portraits.', 'system');
+    return;
+  }
+  const key = unseen[0];
+  STATE.portraitsExamined.add(key);
+  const p = PORTRAITS[key];
+
+  document.getElementById('portraitName').textContent = p.name;
+  document.getElementById('portraitDesc').textContent = p.desc;
+  document.getElementById('portraitFrame').innerHTML = renderPortraitSVG(key);
+  document.getElementById('portraitOverlay').classList.add('active');
+  addLog(`You examine the portrait of ${p.name}.`, 'lore');
+  checkAchievements();
+}
+
+function closePortrait() {
+  document.getElementById('portraitOverlay').classList.remove('active');
+}
+
+// ═══ GOLDEN ARMOR CHECK ═══
+function checkGoldenArmor() {
+  if (STATE.hasGoldenArmor) return;
+  if (STATE.inventory.length >= 6 && STATE.scrollsFound.length >= 8) {
+    STATE.hasGoldenArmor = true;
+    STATE.hp = STATE.maxHp;
+    addLog('', 'divine');
+    addLog('✦ The heavens open. A golden light fills the fortress. ✦', 'divine');
+    addLog('Saint Michael the Archangel descends — wings of gold, sword of flame, halo of pure light.', 'divine');
+    addLog('"You have proven your faith, knight. Take my armor and end this darkness."', 'divine');
+    addLog('✦ You are now clad in the Armor of Saint Michael. You are INVINCIBLE. ✦', 'divine');
+    playSound('divine');
+    updateHP();
+    checkAchievements();
+  }
+}
+
+// ═══ ACHIEVEMENTS ═══
+function checkAchievements() {
+  if (STATE.visited.size >= 17 && !STATE.achievements.has('explorer')) {
+    unlockAchieve('explorer');
+  }
+  if (STATE.inventory.length >= 6 && !STATE.achievements.has('relicHunter')) {
+    unlockAchieve('relicHunter');
+  }
+  if (STATE.battlesWon >= 10 && !STATE.achievements.has('masterKnight')) {
+    unlockAchieve('masterKnight');
+  }
+  if (STATE.necromancerDead && !STATE.achievements.has('necroSlain')) {
+    unlockAchieve('necroSlain');
+  }
+  if (STATE.scrollsFound.length >= 8 && !STATE.achievements.has('enlightened')) {
+    unlockAchieve('enlightened');
+  }
+  if (STATE.hasGoldenArmor && !STATE.achievements.has('blessed')) {
+    unlockAchieve('blessed');
+  }
+  if (STATE.npcsSpoken.size >= 4 && !STATE.achievements.has('lorekeeper')) {
+    unlockAchieve('lorekeeper');
+  }
+  if (STATE.portraitsExamined.size >= 3 && !STATE.achievements.has('historian')) {
+    unlockAchieve('historian');
+  }
+}
+
+function unlockAchieve(id) {
+  STATE.achievements.add(id);
+  const a = ACHIEVEMENTS[id];
+  addLog(`${a.icon} ACHIEVEMENT UNLOCKED: ${a.name}`, 'achievement');
+  playSound('achieve');
+
+  const popup = document.getElementById('achievePopup');
+  document.getElementById('achieveName').textContent = `${a.icon} ${a.name}`;
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 3500);
+}
+
+// ═══ DEATH ═══
+function playerDeath() {
+  addLog('You collapse. The darkness takes you.', 'death');
+  playSound('death');
+  setTimeout(() => {
+    document.getElementById('deathScreen').classList.add('active');
+  }, 1500);
 }
 
 function restartGame() {
-  initState();
-  ['endOverlay','noteModal','paintModal','npcModal','saintModal','combatPanel'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){el.classList.remove('show');el.classList.remove('on');}
-  });
-  document.getElementById('log').innerHTML='';
-  document.getElementById('cmdIn').disabled=false;
-  document.getElementById('relicCnt').textContent='Relics 0/6';
-  document.getElementById('invincTag').style.display='none';
-  refreshHP(); refreshInv();
-  enterRoom('Templar Chapel');
-  log('The fortress resets. The dead rise again. Deus Vult.','ls');
+  initGame();
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('cmdIn').addEventListener('keydown',e=>{ if(e.key==='Enter') submit(); });
-  document.getElementById('npcIn').addEventListener('keydown',e=>{ if(e.key==='Enter') sendNPC(); });
-  initTitle();
+// ═══ UI UPDATES ═══
+function updateHP() {
+  STATE.hp = Math.max(0, Math.min(STATE.maxHp, STATE.hp));
+  const pct = (STATE.hp / STATE.maxHp) * 100;
+  const bar = document.getElementById('hpBar');
+  bar.style.width = pct + '%';
+  if (pct > 50) bar.style.background = 'linear-gradient(90deg, #4a8, #6c8)';
+  else if (pct > 25) bar.style.background = 'linear-gradient(90deg, #c84, #da6)';
+  else bar.style.background = 'linear-gradient(90deg, #a33, #c44)';
+  document.getElementById('hpText').textContent = `${STATE.hp} / ${STATE.maxHp}`;
+}
+
+function updateInventory() {
+  document.getElementById('relicCount').textContent = `Relics: ${STATE.inventory.length}/6`;
+  document.getElementById('scrollCount').textContent = `Scrolls: ${STATE.scrollsFound.length}/8`;
+
+  const invEl = document.getElementById('invDisplay');
+  invEl.innerHTML = '';
+  STATE.inventory.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'inv-item';
+    el.textContent = item;
+    invEl.appendChild(el);
+  });
+  STATE.scrollsFound.forEach(ref => {
+    const el = document.createElement('div');
+    el.className = 'inv-item scroll-item';
+    el.textContent = ref;
+    invEl.appendChild(el);
+  });
+}
+
+function updateButtons() {
+  const room = ROOMS[STATE.currentRoom];
+
+  // Direction buttons
+  ['north','south','east','west'].forEach(dir => {
+    const btn = document.getElementById('btn' + dir.charAt(0).toUpperCase() + dir.slice(1));
+    btn.disabled = !room.exits[dir] || STATE.inCombat;
+  });
+
+  // Action buttons
+  document.getElementById('btnGrab').style.display = (room.relic && !STATE.inCombat) ? 'inline-block' : 'none';
+  document.getElementById('btnScroll').style.display = (room.hasScroll && !STATE.inCombat && scrollPlacements[STATE.currentRoom] && !STATE.scrollsFound.includes(scrollPlacements[STATE.currentRoom]?.ref)) ? 'inline-block' : 'none';
+  document.getElementById('btnTalk').style.display = (room.npc && !STATE.inCombat) ? 'inline-block' : 'none';
+  document.getElementById('btnPortrait').style.display = (room.hasPortraits && !STATE.inCombat) ? 'inline-block' : 'none';
+}
+
+function updateEnemyHP() {
+  const pct = Math.max(0, (STATE.enemyHp / STATE.enemyMaxHp) * 100);
+  document.getElementById('enemyHpBar').style.width = pct + '%';
+  document.getElementById('enemyHpText').textContent = `${Math.max(0, STATE.enemyHp)} / ${STATE.enemyMaxHp}`;
+}
+
+function addLog(text, cls) {
+  const el = document.createElement('div');
+  el.className = 'log-line' + (cls ? ' ' + cls : '');
+  el.textContent = text;
+  document.getElementById('logPanel').appendChild(el);
+  document.getElementById('logPanel').scrollTop = 999999;
+}
+
+function addSeparator() {
+  const el = document.createElement('hr');
+  el.className = 'log-separator';
+  document.getElementById('logPanel').appendChild(el);
+}
+
+// ═══ AUDIO ENGINE ═══
+function getAudioCtx() {
+  if (!STATE.audioCtx) {
+    STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return STATE.audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    if (type === 'sword') {
+      // Metallic slash
+      const noise = ctx.createBufferSource();
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (d.length * 0.15));
+      noise.buffer = buf;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2000;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      noise.connect(hp).connect(g).connect(ctx.destination);
+      noise.start(now); noise.stop(now + 0.15);
+    } else if (type === 'hit') {
+      const osc = ctx.createOscillator(); osc.frequency.value = 80;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'pickup' || type === 'scroll') {
+      const osc = ctx.createOscillator(); osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'encounter') {
+      const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 0.4);
+    } else if (type === 'heal') {
+      [523, 659, 784].forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, now + i * 0.1);
+        g.gain.linearRampToValueAtTime(0.1, now + i * 0.1 + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+        o.connect(g).connect(ctx.destination); o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3);
+      });
+    } else if (type === 'death') {
+      const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(30, now + 1.5);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 1.5);
+    } else if (type === 'victory' || type === 'divine') {
+      [523, 659, 784, 1047].forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, now + i * 0.15);
+        g.gain.linearRampToValueAtTime(0.12, now + i * 0.15 + 0.08);
+        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.5);
+        o.connect(g).connect(ctx.destination); o.start(now + i * 0.15); o.stop(now + i * 0.15 + 0.5);
+      });
+    } else if (type === 'achieve') {
+      [659, 784, 1047].forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.08, now + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.4);
+        o.connect(g).connect(ctx.destination); o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.4);
+      });
+    } else if (type === 'step') {
+      const noise = ctx.createBufferSource();
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (d.length * 0.3));
+      noise.buffer = buf;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 600;
+      const g = ctx.createGain(); g.gain.value = 0.08;
+      noise.connect(lp).connect(g).connect(ctx.destination); noise.start(now); noise.stop(now + 0.08);
+    } else if (type === 'defend') {
+      const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = 220;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.12, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'kill') {
+      const osc = ctx.createOscillator(); osc.type = 'square';
+      osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'trap') {
+      const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.3);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(g).connect(ctx.destination); osc.start(now); osc.stop(now + 0.3);
+    }
+  } catch(e) {}
+}
+
+// ═══ GREGORIAN CHANT ENGINE ═══
+let chantNodes = [];
+function toggleAudio() {
+  if (STATE.audioPlaying) {
+    chantNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+    chantNodes = [];
+    STATE.audioPlaying = false;
+    document.getElementById('btnAudio').textContent = '♪ Music';
+    return;
+  }
+
+  STATE.audioPlaying = true;
+  document.getElementById('btnAudio').textContent = '■ Stop';
+  const ctx = getAudioCtx();
+
+  // Dorian drone
+  const droneFreqs = [110, 146.83, 164.81, 220]; // A2, D3, E3, A3
+  droneFreqs.forEach(f => {
+    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = f;
+    const g = ctx.createGain(); g.gain.value = 0.025;
+    osc.connect(g).connect(ctx.destination);
+    osc.start();
+    chantNodes.push(osc);
+  });
+
+  // Melodic chant voice
+  const dorianScale = [220, 246.94, 261.63, 293.66, 329.63, 349.23, 392, 440];
+  function chantNote() {
+    if (!STATE.audioPlaying) return;
+    const ctx2 = getAudioCtx();
+    const freq = dorianScale[Math.floor(Math.random() * dorianScale.length)];
+    const dur = 1.5 + Math.random() * 2;
+    const osc = ctx2.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+    const g = ctx2.createGain();
+    const now = ctx2.currentTime;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.04, now + 0.3);
+    g.gain.linearRampToValueAtTime(0.035, now + dur - 0.4);
+    g.gain.linearRampToValueAtTime(0, now + dur);
+    osc.connect(g).connect(ctx2.destination);
+    osc.start(now); osc.stop(now + dur);
+    setTimeout(chantNote, dur * 1000 + Math.random() * 800);
+  }
+  chantNote();
+}
+
+// ═══ FULLSCREEN ═══
+function toggleFS() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// ═══ MAP RENDERER ═══
+function renderMap() {
+  const cellW = 32, cellH = 24, padX = 8, padY = 8;
+  const maxX = Math.max(...Object.values(MAP_POS).map(p => p.x));
+  const maxY = Math.max(...Object.values(MAP_POS).map(p => p.y));
+  const svgW = (maxX + 1) * cellW + padX * 2;
+  const svgH = (maxY + 1) * cellH + padY * 2;
+
+  let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">`;
+
+  // Draw connections
+  svg += `<g stroke="rgba(184,147,58,0.15)" stroke-width="1">`;
+  Object.keys(ROOMS).forEach(id => {
+    const room = ROOMS[id];
+    const pos = MAP_POS[id];
+    if (!pos) return;
+    const cx = padX + pos.x * cellW + cellW / 2;
+    const cy = padY + pos.y * cellH + cellH / 2;
+    Object.values(room.exits).forEach(targetId => {
+      const tpos = MAP_POS[targetId];
+      if (!tpos) return;
+      const tx = padX + tpos.x * cellW + cellW / 2;
+      const ty = padY + tpos.y * cellH + cellH / 2;
+      svg += `<line x1="${cx}" y1="${cy}" x2="${tx}" y2="${ty}"/>`;
+    });
+  });
+  svg += `</g>`;
+
+  // Draw rooms
+  Object.keys(ROOMS).forEach(id => {
+    const room = ROOMS[id];
+    const pos = MAP_POS[id];
+    if (!pos) return;
+    const x = padX + pos.x * cellW + cellW / 2;
+    const y = padY + pos.y * cellH + cellH / 2;
+    const visited = STATE.visited.has(id);
+    const current = STATE.currentRoom === id;
+    const hasRelic = room.relic !== null;
+    const isBoss = id === 'necromancerLair';
+
+    let fill = 'rgba(255,255,255,0.08)';
+    let stroke = 'rgba(255,255,255,0.12)';
+    let r = 6;
+
+    if (current) { fill = '#c9a84c'; stroke = '#c9a84c'; r = 8; }
+    else if (isBoss && visited) { fill = '#922'; stroke = '#c44'; }
+    else if (isBoss) { fill = 'rgba(150,30,30,0.4)'; stroke = '#922'; }
+    else if (hasRelic && visited) { fill = '#4a8'; stroke = '#6c8'; }
+    else if (visited) { fill = 'rgba(94,196,212,0.4)'; stroke = '#5ec4d4'; }
+
+    if (!visited && !current) {
+      svg += `<rect x="${x-5}" y="${y-4}" width="10" height="8" rx="1" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>`;
+    } else {
+      svg += `<rect x="${x-6}" y="${y-4}" width="12" height="8" rx="1" fill="${fill}" stroke="${stroke}" stroke-width="${current ? 1.5 : 0.5}"/>`;
+      if (current) {
+        svg += `<rect x="${x-8}" y="${y-6}" width="16" height="12" rx="2" fill="none" stroke="${stroke}" stroke-width="0.5" opacity="0.4"/>`;
+      }
+    }
+  });
+
+  svg += `</svg>`;
+  document.getElementById('mapContainer').innerHTML = svg;
+}
+
+// ═══ SCENE RENDERER — Rich SVG Art ═══
+function renderScene(roomId) {
+  const room = ROOMS[roomId];
+  const el = document.getElementById('sceneArt');
+  el.innerHTML = getSceneSVG(room.type, roomId);
+}
+
+function getSceneSVG(type, roomId) {
+  const w = 800, h = 280;
+  const defs = `<defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="heavyGlow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="stoneWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1816"/><stop offset="100%" stop-color="#0e0d0b"/></linearGradient>
+    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d0c0a"/><stop offset="100%" stop-color="#080807"/></linearGradient>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a0e1a"/><stop offset="100%" stop-color="#06080e"/></linearGradient>
+    <radialGradient id="candleGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(255,180,60,0.3)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+    <radialGradient id="neonGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(100,220,255,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+    <radialGradient id="evilGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(60,255,60,0.12)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+    <pattern id="stoneTex" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#141210"/><rect x="0" y="0" width="10" height="10" fill="rgba(255,255,255,0.015)"/><rect x="10" y="10" width="10" height="10" fill="rgba(255,255,255,0.01)"/></pattern>
+  </defs>`;
+
+  let scene = '';
+
+  switch(type) {
+    case 'chapel':
+      scene = `
+        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Arched ceiling -->
+        <path d="M0,${h} L0,80 Q${w/2},-20 ${w},80 L${w},${h}" fill="rgba(20,18,14,0.8)"/>
+        <!-- Pillars -->
+        ${[150,350,450,650].map(x => `<rect x="${x}" y="40" width="18" height="240" fill="#1a1816" stroke="rgba(184,147,58,0.08)" stroke-width="0.5"/><rect x="${x-2}" y="36" width="22" height="8" fill="#1e1c18"/><rect x="${x-2}" y="${h-10}" width="22" height="10" fill="#1e1c18"/>`).join('')}
+        <!-- Stained glass window -->
+        <ellipse cx="${w/2}" cy="60" rx="50" ry="55" fill="none" stroke="rgba(184,147,58,0.2)" stroke-width="2"/>
+        <ellipse cx="${w/2}" cy="60" rx="45" ry="50" fill="rgba(139,0,0,0.08)"/>
+        <line x1="${w/2}" y1="15" x2="${w/2}" y2="105" stroke="rgba(184,147,58,0.15)" stroke-width="1.5"/>
+        <line x1="${w/2-40}" y1="60" x2="${w/2+40}" y2="60" stroke="rgba(184,147,58,0.15)" stroke-width="1.5"/>
+        <!-- Templar cross -->
+        <rect x="${w/2-3}" y="40" width="6" height="40" fill="rgba(139,0,0,0.5)" filter="url(#glow)"/>
+        <rect x="${w/2-12}" y="50" width="24" height="6" fill="rgba(139,0,0,0.5)" filter="url(#glow)"/>
+        <!-- Altar -->
+        <rect x="${w/2-40}" y="180" width="80" height="50" fill="#1e1a14" stroke="rgba(184,147,58,0.12)" stroke-width="1"/>
+        <rect x="${w/2-35}" y="175" width="70" height="8" fill="#221e16"/>
+        <!-- Candles -->
+        ${[w/2-25, w/2+20].map(x => `<rect x="${x}" y="160" width="3" height="15" fill="#d4c090"/><ellipse cx="${x+1.5}" cy="158" rx="4" ry="6" fill="rgba(255,180,60,0.5)" filter="url(#glow)"/><circle cx="${x+1.5}" cy="156" r="1.5" fill="#ffcc44"/>`).join('')}
+        <!-- Candlelight glow -->
+        <ellipse cx="${w/2}" cy="170" rx="120" ry="80" fill="url(#candleGlow)"/>
+        <!-- Floor -->
+        <rect x="0" y="230" width="${w}" height="50" fill="url(#floorGrad)"/>
+        <!-- Blood stains -->
+        <ellipse cx="280" cy="250" rx="30" ry="6" fill="rgba(139,0,0,0.12)"/>
+        <ellipse cx="520" cy="255" rx="20" ry="4" fill="rgba(139,0,0,0.08)"/>
+        <!-- Scattered debris -->
+        ${[200,300,500,600].map(x => `<rect x="${x}" y="${240+Math.random()*20}" width="${8+Math.random()*15}" height="3" fill="rgba(30,26,20,0.6)" transform="rotate(${Math.random()*30-15} ${x} 250)"/>`).join('')}
+        <!-- Knight character -->
+        ${renderKnight(w/2 + 100, 160)}
+      `;
+      break;
+
+    case 'cloister':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#0c0b09"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Arched colonnade -->
+        ${[0,1,2,3,4,5].map(i => {
+          const x = 80 + i * 120;
+          return `
+            <rect x="${x}" y="30" width="14" height="220" fill="#181614" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/>
+            <path d="M${x-50},90 Q${x+7},20 ${x+64},90" fill="none" stroke="rgba(184,147,58,0.12)" stroke-width="1.5"/>
+            <rect x="${x-1}" y="26" width="16" height="8" fill="#1c1a16"/>
+          `;
+        }).join('')}
+        <!-- Moonlight shafts -->
+        ${[200,440].map(x => `<polygon points="${x},0 ${x+60},0 ${x+80},${h} ${x+20},${h}" fill="rgba(180,200,220,0.02)"/>`).join('')}
+        <!-- Dead garden -->
+        <rect x="100" y="200" width="${w-200}" height="80" fill="rgba(15,13,10,0.8)" stroke="rgba(100,80,50,0.1)" stroke-width="0.5"/>
+        ${[160,280,400,520].map(x => `<line x1="${x}" y1="200" x2="${x+5}" y2="170" stroke="rgba(60,50,30,0.3)" stroke-width="1"/><line x1="${x+3}" y1="180" x2="${x+15}" y2="165" stroke="rgba(60,50,30,0.2)" stroke-width="0.5"/>`).join('')}
+        <!-- Moon -->
+        <circle cx="650" cy="45" r="18" fill="rgba(200,210,220,0.08)" filter="url(#glow)"/>
+        <circle cx="654" cy="42" r="14" fill="#0c0b09"/>
+        ${renderKnight(350, 140)}
+      `;
+      break;
+
+    case 'armory':
+      scene = `
+        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Weapon racks -->
+        ${[100,250,500,650].map(x => `
+          <rect x="${x}" y="50" width="8" height="200" fill="#1c1814"/>
+          <rect x="${x+40}" y="50" width="8" height="200" fill="#1c1814"/>
+          <rect x="${x-5}" y="50" width="58" height="6" fill="#201c16"/>
+          <!-- Swords on rack -->
+          ${[0,1,2].map(j => `<rect x="${x+10+j*12}" y="${60+j*10}" width="2" height="60" fill="rgba(160,155,145,0.3)" transform="rotate(${5-j*5} ${x+11+j*12} ${90+j*10})"/>`).join('')}
+        `).join('')}
+        <!-- Shield on wall -->
+        <circle cx="400" cy="100" r="30" fill="#1a1614" stroke="rgba(184,147,58,0.2)" stroke-width="1.5"/>
+        <rect x="397" y="75" width="6" height="50" fill="rgba(139,0,0,0.4)"/>
+        <rect x="380" y="97" width="40" height="6" fill="rgba(139,0,0,0.4)"/>
+        <!-- Glowing longsword -->
+        <rect x="320" y="200" width="3" height="50" fill="rgba(201,168,76,0.6)" filter="url(#glow)"/>
+        <rect x="314" y="248" width="15" height="4" fill="rgba(201,168,76,0.4)"/>
+        <ellipse cx="321" cy="210" rx="30" ry="20" fill="url(#candleGlow)"/>
+        <!-- Debris -->
+        ${[200,350,550].map(x => `<rect x="${x}" y="${250+Math.random()*15}" width="${15+Math.random()*20}" height="4" fill="rgba(25,22,16,0.5)" transform="rotate(${Math.random()*40-20} ${x} 255)"/>`).join('')}
+        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        <!-- Torch -->
+        <rect x="570" y="60" width="6" height="30" fill="#3a2a18"/>
+        <ellipse cx="573" cy="55" rx="8" ry="12" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
+        <circle cx="573" cy="52" r="3" fill="#ffaa33"/>
+        <ellipse cx="573" cy="80" rx="50" ry="100" fill="url(#candleGlow)" opacity="0.5"/>
+        ${renderKnight(430, 155)}
+      `;
+      break;
+
+    case 'scriptorium':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#0e0d0a"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Writing desks -->
+        ${[150,400].map(x => `
+          <rect x="${x}" y="170" width="100" height="60" fill="#1a1610" stroke="rgba(184,147,58,0.1)" stroke-width="0.5"/>
+          <rect x="${x+5}" y="165" width="90" height="8" fill="#1e1a14"/>
+          <!-- Scattered papers -->
+          ${[0,1,2].map(j => `<rect x="${x+10+j*25}" y="${160-j*5}" width="18" height="24" fill="rgba(210,200,170,0.06)" transform="rotate(${Math.random()*20-10} ${x+19+j*25} ${170-j*5})"/>`).join('')}
+        `).join('')}
+        <!-- Candle on desk (the one that burns impossibly) -->
+        <rect x="445" y="140" width="4" height="25" fill="#d4c090"/>
+        <ellipse cx="447" cy="135" rx="8" ry="12" fill="rgba(255,180,60,0.5)" filter="url(#glow)"/>
+        <circle cx="447" cy="133" r="2" fill="#ffcc44"/>
+        <ellipse cx="447" cy="160" rx="80" ry="60" fill="url(#candleGlow)"/>
+        <!-- Ink spills -->
+        <ellipse cx="200" cy="200" rx="25" ry="8" fill="rgba(20,15,30,0.5)"/>
+        <ellipse cx="500" cy="220" rx="18" ry="5" fill="rgba(139,0,0,0.12)"/>
+        <!-- Bookshelf -->
+        <rect x="620" y="30" width="120" height="220" fill="#161210"/>
+        ${[0,1,2,3,4].map(j => `<rect x="625" y="${40+j*42}" width="110" height="6" fill="#1a1614"/>${[0,1,2,3].map(k => `<rect x="${630+k*26}" y="${48+j*42}" width="20" height="35" fill="rgba(${80+Math.random()*40},${50+Math.random()*30},${30+Math.random()*20},0.3)"/>`).join('')}`).join('')}
+        <!-- Illuminated text glow -->
+        <ellipse cx="190" cy="172" rx="15" ry="10" fill="rgba(201,168,76,0.1)" filter="url(#glow)"/>
+        <rect x="0" y="245" width="${w}" height="35" fill="url(#floorGrad)"/>
+        ${renderKnight(300, 155)}
+      `;
+      break;
+
+    case 'barracks':
+      scene = `
+        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Smashed bunks -->
+        ${[80,250,500].map(x => `
+          <rect x="${x}" y="180" width="100" height="40" fill="#1a1610" transform="rotate(${Math.random()*8-4} ${x+50} 200)"/>
+          <rect x="${x+5}" y="175" width="8" height="50" fill="#1c1814"/>
+          <rect x="${x+87}" y="175" width="8" height="50" fill="#1c1814"/>
+        `).join('')}
+        <!-- Chainmail on hooks -->
+        <rect x="650" y="50" width="4" height="10" fill="rgba(184,147,58,0.3)"/>
+        <path d="M640,60 Q652,100 664,60" fill="none" stroke="rgba(160,155,145,0.25)" stroke-width="2"/>
+        <!-- Blood -->
+        <ellipse cx="300" cy="240" rx="40" ry="8" fill="rgba(139,0,0,0.15)"/>
+        <!-- Chained figure (Sir Edmund) -->
+        <rect x="680" y="130" width="40" height="80" fill="rgba(80,75,65,0.15)" rx="4"/>
+        <circle cx="700" cy="120" r="12" fill="rgba(200,190,170,0.08)"/>
+        <line x1="690" y1="140" x2="670" y2="120" stroke="rgba(120,110,100,0.2)" stroke-width="1.5"/>
+        <line x1="710" y1="140" x2="730" y2="120" stroke="rgba(120,110,100,0.2)" stroke-width="1.5"/>
+        <!-- Torch -->
+        <rect x="400" y="40" width="5" height="25" fill="#3a2a18"/>
+        <ellipse cx="402" cy="35" rx="7" ry="10" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
+        <circle cx="402" cy="33" r="2.5" fill="#ffaa33"/>
+        <ellipse cx="402" cy="100" rx="80" ry="80" fill="url(#candleGlow)" opacity="0.4"/>
+        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        ${renderKnight(450, 155)}
+      `;
+      break;
+
+    case 'infirmary':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#0e0c09"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Stone beds -->
+        ${[100,300].map(x => `<rect x="${x}" y="190" width="120" height="30" fill="#1a1816" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/><rect x="${x+10}" y="185" width="100" height="8" fill="rgba(140,130,110,0.08)"/>`).join('')}
+        <!-- Herb shelves -->
+        <rect x="550" y="40" width="180" height="180" fill="#141210"/>
+        ${[0,1,2,3].map(j => `<rect x="555" y="${50+j*42}" width="170" height="5" fill="#1a1816"/>${[0,1,2,3,4].map(k => `<circle cx="${570+k*32}" cy="${65+j*42}" r="${4+Math.random()*3}" fill="rgba(${40+Math.random()*40},${60+Math.random()*40},${30+Math.random()*20},0.25)"/>`).join('')}`).join('')}
+        <!-- Brazier -->
+        <rect x="450" y="200" width="30" height="25" fill="#2a1a0a" stroke="rgba(184,147,58,0.15)" stroke-width="1"/>
+        <ellipse cx="465" cy="198" rx="18" ry="8" fill="rgba(255,100,20,0.2)" filter="url(#glow)"/>
+        <ellipse cx="465" cy="195" rx="10" ry="4" fill="rgba(255,150,40,0.3)"/>
+        <ellipse cx="465" cy="180" rx="40" ry="30" fill="url(#candleGlow)"/>
+        <!-- Brother Aldric figure -->
+        <rect x="470" y="135" width="30" height="60" fill="rgba(60,50,35,0.2)" rx="3"/>
+        <circle cx="485" cy="125" r="10" fill="rgba(180,170,150,0.08)"/>
+        <!-- Lavender hint -->
+        <ellipse cx="300" cy="160" rx="100" ry="60" fill="rgba(150,130,180,0.02)"/>
+        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        ${renderKnight(200, 155)}
+      `;
+      break;
+
+    case 'tower': case 'watchtower':
+      scene = `
+        <rect width="${w}" height="${h}" fill="url(#skyGrad)"/>
+        <!-- Stars -->
+        ${Array(30).fill(0).map(() => `<circle cx="${Math.random()*w}" cy="${Math.random()*120}" r="${0.5+Math.random()}" fill="rgba(200,210,220,${0.1+Math.random()*0.3})"/>`).join('')}
+        <!-- Moon -->
+        <circle cx="120" cy="50" r="25" fill="rgba(200,210,220,0.1)" filter="url(#glow)"/>
+        <circle cx="125" cy="47" r="20" fill="rgba(200,210,220,0.06)"/>
+        <!-- Distant landscape -->
+        <path d="M0,200 Q100,170 200,190 Q350,160 500,185 Q650,165 ${w},180 L${w},${h} L0,${h}" fill="#0a0908"/>
+        <!-- Tower walls -->
+        <rect x="200" y="100" width="400" height="180" fill="#141210" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/>
+        <!-- Crenellations -->
+        ${[0,1,2,3,4,5,6].map(i => `<rect x="${210+i*55}" y="85" width="30" height="20" fill="#161412"/>`).join('')}
+        <!-- Arrow slits -->
+        ${[280,400,520].map(x => `<rect x="${x}" y="130" width="4" height="25" fill="rgba(10,14,26,0.8)"/>`).join('')}
+        <!-- Great bell -->
+        <path d="M380,120 Q400,105 420,120 L425,160 Q400,170 375,160 Z" fill="rgba(160,130,60,0.15)" stroke="rgba(184,147,58,0.2)" stroke-width="1"/>
+        <!-- Undead horde hint in distance -->
+        ${Array(15).fill(0).map(() => `<rect x="${Math.random()*w}" y="${185+Math.random()*10}" width="2" height="5" fill="rgba(100,200,220,0.06)"/>`).join('')}
+        ${renderKnight(400, 155)}
+      `;
+      break;
+
+    case 'courtyard':
+      scene = `
+        <rect width="${w}" height="${h}" fill="url(#skyGrad)"/>
+        <!-- Stars -->
+        ${Array(20).fill(0).map(() => `<circle cx="${Math.random()*w}" cy="${Math.random()*80}" r="${0.5+Math.random()*0.8}" fill="rgba(200,210,220,${0.1+Math.random()*0.2})"/>`).join('')}
+        <!-- Walls in background -->
+        <rect x="0" y="80" width="${w}" height="20" fill="#141210"/>
+        ${[0,1,2,3,4,5,6,7,8].map(i => `<rect x="${i*90+10}" y="65" width="50" height="20" fill="#161412"/>`).join('')}
+        <!-- Ground -->
+        <rect x="0" y="140" width="${w}" height="140" fill="#0d0c09"/>
+        <!-- Cobblestones hint -->
+        ${Array(40).fill(0).map(() => { const x = Math.random()*w; const y = 150+Math.random()*100; return `<rect x="${x}" y="${y}" width="${6+Math.random()*8}" height="${4+Math.random()*5}" fill="rgba(255,255,255,0.01)" rx="1"/>` }).join('')}
+        <!-- Fire barrels -->
+        ${[200,600].map(x => `
+          <rect x="${x}" y="170" width="25" height="35" fill="#2a1a0a" rx="3"/>
+          <ellipse cx="${x+12}" cy="165" rx="15" ry="10" fill="rgba(255,120,20,0.25)" filter="url(#glow)"/>
+          <ellipse cx="${x+12}" cy="160" rx="8" ry="5" fill="rgba(255,180,40,0.3)"/>
+        `).join('')}
+        <!-- Siege debris -->
+        <rect x="350" y="180" width="80" height="20" fill="#1a1610" transform="rotate(-12 390 190)"/>
+        <circle cx="420" cy="200" r="12" fill="#161412"/>
+        <!-- Zombie silhouettes in distance -->
+        ${[100,300,500,700].map(x => `<rect x="${x}" y="${100+Math.random()*20}" width="8" height="25" fill="rgba(100,200,220,0.04)"/>`).join('')}
+        ${renderKnight(400, 150)}
+      `;
+      break;
+
+    case 'crypt':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#080706"/>
+        <!-- Glowing runes on archway -->
+        <path d="M250,${h} L250,50 Q400,-10 550,50 L550,${h}" fill="none" stroke="rgba(100,200,220,0.15)" stroke-width="2"/>
+        ${[280,320,360,400,440,480,520].map(x => `<text x="${x}" y="${30+Math.abs(400-x)*0.3}" font-size="14" fill="rgba(100,200,220,0.2)" filter="url(#glow)" font-family="serif">ᚱ</text>`).join('')}
+        <!-- Steps descending -->
+        ${[0,1,2,3,4].map(i => `<rect x="${300+i*10}" y="${160+i*25}" width="${200-i*20}" height="20" fill="rgba(${16-i*2},${14-i*2},${12-i*2},0.9)" stroke="rgba(255,255,255,0.02)" stroke-width="0.5"/>`).join('')}
+        <!-- Darkness below -->
+        <rect x="310" y="200" width="180" height="80" fill="rgba(0,0,0,0.5)"/>
+        <!-- Cold mist -->
+        <ellipse cx="400" cy="220" rx="150" ry="40" fill="rgba(100,200,220,0.04)"/>
+        <!-- Ice glow -->
+        <ellipse cx="400" cy="40" rx="80" ry="40" fill="url(#neonGlow)"/>
+        <!-- Torch brackets -->
+        ${[200,600].map(x => `<rect x="${x}" y="70" width="5" height="25" fill="#3a2a18"/><ellipse cx="${x+2}" cy="65" rx="6" ry="9" fill="rgba(255,150,40,0.3)" filter="url(#glow)"/>`).join('')}
+        ${renderKnight(400, 130)}
+      `;
+      break;
+
+    case 'catacombs':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#060504"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Skull alcoves -->
+        ${Array(24).fill(0).map((_, i) => {
+          const x = 40 + (i % 8) * 95;
+          const y = 30 + Math.floor(i / 8) * 80;
+          return `<rect x="${x}" y="${y}" width="30" height="35" fill="rgba(20,18,14,0.6)" rx="15" ry="15"/>
+                  <circle cx="${x+10}" cy="${y+14}" r="3" fill="rgba(200,190,170,0.06)"/>
+                  <circle cx="${x+20}" cy="${y+14}" r="3" fill="rgba(200,190,170,0.06)"/>
+                  <ellipse cx="${x+15}" cy="${y+22}" rx="4" ry="3" fill="rgba(0,0,0,0.3)"/>`;
+        }).join('')}
+        <!-- Candles in skull sconces -->
+        ${[200,400,600].map(x => `
+          <circle cx="${x}" cy="120" r="10" fill="rgba(200,190,170,0.04)"/>
+          <rect x="${x-1}" y="108" width="3" height="10" fill="#d4c090"/>
+          <ellipse cx="${x}" cy="105" rx="4" ry="6" fill="rgba(255,180,60,0.35)" filter="url(#glow)"/>
+        `).join('')}
+        <rect x="0" y="250" width="${w}" height="30" fill="url(#floorGrad)"/>
+        ${renderKnight(350, 155)}
+      `;
+      break;
+
+    case 'lair':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#040306"/>
+        <!-- Runic circle -->
+        <ellipse cx="400" cy="200" rx="180" ry="60" fill="none" stroke="rgba(60,255,60,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <ellipse cx="400" cy="200" rx="140" ry="45" fill="none" stroke="rgba(60,255,60,0.1)" stroke-width="1"/>
+        <!-- Rune symbols -->
+        ${[250,320,400,480,550].map(x => `<text x="${x}" y="195" font-size="18" fill="rgba(60,255,60,0.2)" filter="url(#glow)" font-family="serif">☠</text>`).join('')}
+        <!-- Evil glow -->
+        <ellipse cx="400" cy="140" rx="200" ry="120" fill="url(#evilGlow)"/>
+        <!-- Necromancer figure -->
+        <g transform="translate(400,80)">
+          <!-- Robes -->
+          <path d="M-25,30 L-40,120 L40,120 L25,30" fill="rgba(20,10,30,0.7)" stroke="rgba(60,255,60,0.1)" stroke-width="0.5"/>
+          <!-- Hood -->
+          <path d="M-15,0 Q0,-20 15,0 L20,30 L-20,30" fill="rgba(15,8,25,0.8)"/>
+          <!-- Glowing eyes -->
+          <circle cx="-5" cy="12" r="2.5" fill="rgba(200,240,255,0.8)" filter="url(#heavyGlow)"/>
+          <circle cx="5" cy="12" r="2.5" fill="rgba(200,240,255,0.8)" filter="url(#heavyGlow)"/>
+          <!-- Staff -->
+          <line x1="30" y1="-10" x2="35" y2="120" stroke="rgba(180,170,150,0.3)" stroke-width="2.5"/>
+          <!-- Skull on staff -->
+          <circle cx="29" cy="-15" r="7" fill="rgba(200,190,170,0.15)" stroke="rgba(200,190,170,0.1)" stroke-width="0.5"/>
+          <circle cx="26" cy="-17" r="1.5" fill="rgba(200,240,255,0.5)"/>
+          <circle cx="32" cy="-17" r="1.5" fill="rgba(200,240,255,0.5)"/>
+          <!-- Bone pauldrons -->
+          <ellipse cx="-22" cy="30" rx="8" ry="5" fill="rgba(200,190,170,0.08)"/>
+          <ellipse cx="22" cy="30" rx="8" ry="5" fill="rgba(200,190,170,0.08)"/>
+        </g>
+        <!-- Black pillars -->
+        ${[100,700].map(x => `<rect x="${x}" y="20" width="16" height="260" fill="#0a0810" stroke="rgba(60,255,60,0.05)" stroke-width="0.5"/>`).join('')}
+        ${renderKnight(200, 140)}
+      `;
+      break;
+
+    case 'hall':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#0c0a08"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Great table (overturned) -->
+        <rect x="200" y="170" width="350" height="20" fill="#2a2218" transform="rotate(-8 375 180)" stroke="rgba(184,147,58,0.08)" stroke-width="0.5"/>
+        <rect x="220" y="185" width="12" height="50" fill="#2a2218" transform="rotate(-8 226 210)"/>
+        <rect x="520" y="185" width="12" height="50" fill="#2a2218" transform="rotate(-8 526 210)"/>
+        <!-- Scattered goblets -->
+        ${[250,350,480].map(x => `<ellipse cx="${x}" cy="${200+Math.random()*15}" rx="5" ry="3" fill="rgba(184,147,58,0.1)" transform="rotate(${Math.random()*40} ${x} 205)"/>`).join('')}
+        <!-- Tapestries -->
+        ${[100,650].map(x => `
+          <rect x="${x}" y="30" width="60" height="120" fill="rgba(139,0,0,0.08)" stroke="rgba(184,147,58,0.1)" stroke-width="0.5"/>
+          <rect x="${x+20}" y="50" width="4" height="30" fill="rgba(139,0,0,0.15)"/>
+          <rect x="${x+12}" y="60" width="20" height="4" fill="rgba(139,0,0,0.15)"/>
+          <!-- Tattered effect -->
+          <path d="M${x},150 L${x+15},145 L${x+30},152 L${x+45},143 L${x+60},150" fill="none" stroke="rgba(139,0,0,0.06)" stroke-width="1"/>
+        `).join('')}
+        <!-- Ghost shimmer (Brother Matthias) -->
+        <ellipse cx="600" cy="120" rx="25" ry="50" fill="rgba(94,196,212,0.03)" filter="url(#glow)"/>
+        <ellipse cx="600" cy="100" rx="8" ry="10" fill="rgba(94,196,212,0.04)"/>
+        <rect x="0" y="245" width="${w}" height="35" fill="url(#floorGrad)"/>
+        ${renderKnight(350, 155)}
+      `;
+      break;
+
+    case 'treasury':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#0e0c08"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Gold shelves -->
+        ${[0,1,2].map(i => `
+          <rect x="50" y="${40+i*70}" width="${w-100}" height="8" fill="rgba(184,147,58,0.08)"/>
+          ${Array(6).fill(0).map((_, j) => `<circle cx="${100+j*120}" cy="${35+i*70}" r="${5+Math.random()*4}" fill="rgba(184,147,58,${0.05+Math.random()*0.1})"/>`).join('')}
+        `).join('')}
+        <!-- Templar Seal pedestal -->
+        <rect x="370" y="180" width="60" height="50" fill="#1a1610" stroke="rgba(184,147,58,0.2)" stroke-width="1"/>
+        <circle cx="400" cy="170" r="20" fill="rgba(184,147,58,0.08)" stroke="rgba(184,147,58,0.25)" stroke-width="1.5" filter="url(#glow)"/>
+        <rect x="397" y="155" width="6" height="30" fill="rgba(184,147,58,0.2)"/>
+        <rect x="387" y="167" width="26" height="6" fill="rgba(184,147,58,0.2)"/>
+        <ellipse cx="400" cy="170" rx="40" ry="30" fill="url(#candleGlow)"/>
+        <!-- Locked chests -->
+        ${[150,600].map(x => `<rect x="${x}" y="210" width="50" height="30" fill="#1e1a12" stroke="rgba(184,147,58,0.15)" stroke-width="1" rx="2"/><rect x="${x+20}" y="218" width="10" height="10" fill="rgba(184,147,58,0.1)" rx="5"/>`).join('')}
+        <!-- Ezra sitting -->
+        <g transform="translate(550,170)">
+          <rect x="-12" y="0" width="24" height="40" fill="rgba(80,70,55,0.12)" rx="3"/>
+          <circle cx="0" cy="-12" r="10" fill="rgba(180,170,150,0.06)"/>
+        </g>
+        <rect x="0" y="250" width="${w}" height="30" fill="url(#floorGrad)"/>
+        ${renderKnight(250, 155)}
+      `;
+      break;
+
+    case 'throne':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#080607"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Bone throne -->
+        <g transform="translate(400,60)">
+          <!-- Back -->
+          <rect x="-40" y="0" width="80" height="120" fill="rgba(200,190,170,0.04)" rx="5"/>
+          <!-- Bone columns -->
+          ${[-35,-20,-5,10,25].map(x => `<rect x="${x}" y="5" width="6" height="110" fill="rgba(200,190,170,0.06)"/>`).join('')}
+          <!-- Skull crown -->
+          <circle cx="-15" cy="-5" r="8" fill="rgba(200,190,170,0.06)"/>
+          <circle cx="0" cy="-10" r="9" fill="rgba(200,190,170,0.07)"/>
+          <circle cx="15" cy="-5" r="8" fill="rgba(200,190,170,0.06)"/>
+          <!-- Seat -->
+          <rect x="-35" y="120" width="70" height="20" fill="rgba(200,190,170,0.05)"/>
+          <!-- Armrests -->
+          <rect x="-50" y="90" width="18" height="50" fill="rgba(200,190,170,0.04)" rx="3"/>
+          <rect x="32" y="90" width="18" height="50" fill="rgba(200,190,170,0.04)" rx="3"/>
+        </g>
+        <!-- Skull crown on armrest -->
+        <circle cx="440" cy="148" r="7" fill="rgba(200,190,170,0.06)" stroke="rgba(184,147,58,0.15)" stroke-width="0.5"/>
+        <!-- Tally marks on walls -->
+        ${Array(30).fill(0).map(() => {
+          const x = Math.random()*150; const y = 40+Math.random()*180;
+          return `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+8}" stroke="rgba(200,190,170,0.04)" stroke-width="0.5"/>`;
+        }).join('')}
+        ${Array(30).fill(0).map(() => {
+          const x = 650+Math.random()*150; const y = 40+Math.random()*180;
+          return `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+8}" stroke="rgba(200,190,170,0.04)" stroke-width="0.5"/>`;
+        }).join('')}
+        <!-- Dark energy pulse -->
+        <ellipse cx="400" cy="150" rx="60" ry="30" fill="rgba(139,0,0,0.05)" filter="url(#glow)"/>
+        <rect x="0" y="250" width="${w}" height="30" fill="url(#floorGrad)"/>
+        ${renderKnight(250, 155)}
+      `;
+      break;
+
+    case 'gallery':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#0e0c09"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Three portrait frames -->
+        ${[{x:150,label:'I'},{x:380,label:'II'},{x:610,label:'III'}].map(p => `
+          <rect x="${p.x-45}" y="40" width="90" height="120" fill="#1a1508" stroke="rgba(184,147,58,0.3)" stroke-width="2"/>
+          <rect x="${p.x-40}" y="45" width="80" height="110" fill="rgba(184,147,58,0.03)"/>
+          <text x="${p.x}" y="180" font-family="var(--ui)" font-size="12" fill="rgba(184,147,58,0.3)" text-anchor="middle">${p.label}</text>
+        `).join('')}
+        <!-- Slashed paintings (background) -->
+        ${[50,280,500,720].map(x => `
+          <rect x="${x}" y="50" width="40" height="55" fill="rgba(30,25,18,0.3)"/>
+          <line x1="${x+5}" y1="55" x2="${x+35}" y2="100" stroke="rgba(139,0,0,0.08)" stroke-width="1"/>
+        `).join('')}
+        <!-- Ambient light -->
+        ${[150,380,610].map(x => `<ellipse cx="${x}" cy="100" rx="60" ry="50" fill="url(#candleGlow)" opacity="0.3"/>`).join('')}
+        <rect x="0" y="245" width="${w}" height="35" fill="url(#floorGrad)"/>
+        ${renderKnight(380, 165)}
+      `;
+      break;
+
+    case 'dungeon':
+      scene = `
+        <rect width="${w}" height="${h}" fill="#060505"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <!-- Iron cages hanging -->
+        ${[180,450].map(x => `
+          <line x1="${x+15}" y1="0" x2="${x+15}" y2="30" stroke="rgba(120,110,100,0.2)" stroke-width="1"/>
+          <rect x="${x}" y="30" width="30" height="40" fill="none" stroke="rgba(120,110,100,0.15)" stroke-width="1.5"/>
+          <line x1="${x}" y1="45" x2="${x+30}" y2="45" stroke="rgba(120,110,100,0.08)" stroke-width="0.5"/>
+        `).join('')}
+        <!-- Chains on walls -->
+        ${[100,300,550,700].map(x => `
+          <circle cx="${x}" cy="${60+Math.random()*30}" r="3" fill="none" stroke="rgba(120,110,100,0.12)" stroke-width="1"/>
+          <line x1="${x}" y1="${65+Math.random()*30}" x2="${x+10}" y2="${110+Math.random()*30}" stroke="rgba(120,110,100,0.08)" stroke-width="1" stroke-dasharray="3 2"/>
+        `).join('')}
+        <!-- Blood stains (ritual patterns) -->
+        <circle cx="400" cy="220" r="40" fill="none" stroke="rgba(139,0,0,0.08)" stroke-width="1"/>
+        <circle cx="400" cy="220" r="25" fill="none" stroke="rgba(139,0,0,0.06)" stroke-width="0.5"/>
+        <!-- Floor stains -->
+        <ellipse cx="350" cy="240" rx="60" ry="10" fill="rgba(139,0,0,0.06)"/>
+        <!-- Torch (dim) -->
+        <rect x="620" y="80" width="5" height="20" fill="#3a2a18"/>
+        <ellipse cx="622" cy="76" rx="5" ry="7" fill="rgba(255,150,40,0.2)" filter="url(#glow)"/>
+        <rect x="0" y="255" width="${w}" height="25" fill="url(#floorGrad)"/>
+        ${renderKnight(350, 155)}
+      `;
+      break;
+
+    default:
+      scene = `
+        <rect width="${w}" height="${h}" fill="url(#stoneWall)"/>
+        <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
+        <rect x="0" y="240" width="${w}" height="40" fill="url(#floorGrad)"/>
+        ${renderKnight(400, 155)}
+      `;
+  }
+
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">${defs}${scene}</svg>`;
+}
+
+// ─── KNIGHT CHARACTER ───
+function renderKnight(x, y) {
+  const golden = STATE.hasGoldenArmor;
+  const armorColor = golden ? 'rgba(201,168,76,0.7)' : 'rgba(140,135,125,0.35)';
+  const armorStroke = golden ? 'rgba(255,215,0,0.5)' : 'rgba(160,155,145,0.15)';
+  const crossColor = golden ? 'rgba(255,215,0,0.6)' : 'rgba(139,0,0,0.5)';
+  const capeColor = golden ? 'rgba(255,215,0,0.15)' : 'rgba(139,0,0,0.15)';
+  const glowFilter = golden ? 'filter="url(#heavyGlow)"' : '';
+
+  return `<g transform="translate(${x},${y})" ${glowFilter}>
+    <!-- Cape -->
+    <path d="M-8,5 L-18,70 Q-5,75 5,70 L15,75 L8,5" fill="${capeColor}"/>
+    <!-- Body / surcoat -->
+    <rect x="-10" y="0" width="20" height="45" fill="${armorColor}" stroke="${armorStroke}" stroke-width="0.5" rx="2"/>
+    <!-- Templar cross on chest -->
+    <rect x="-1.5" y="8" width="3" height="20" fill="${crossColor}"/>
+    <rect x="-6" y="14" width="12" height="3" fill="${crossColor}"/>
+    <!-- Great helm -->
+    <rect x="-8" y="-22" width="16" height="22" fill="${armorColor}" stroke="${armorStroke}" stroke-width="0.5" rx="3"/>
+    <rect x="-6" y="-12" width="12" height="2" fill="rgba(0,0,0,0.4)"/>
+    <!-- Visor slit -->
+    <rect x="-5" y="-10" width="10" height="1.5" fill="rgba(0,0,0,0.6)"/>
+    <!-- Helm top -->
+    <rect x="-9" y="-24" width="18" height="4" fill="${armorColor}" rx="2"/>
+    <!-- Shoulders -->
+    <rect x="-16" y="-2" width="12" height="8" fill="${armorColor}" rx="2"/>
+    <rect x="4" y="-2" width="12" height="8" fill="${armorColor}" rx="2"/>
+    <!-- Arms -->
+    <rect x="-18" y="6" width="8" height="30" fill="${armorColor}" rx="2"/>
+    <rect x="10" y="6" width="8" height="30" fill="${armorColor}" rx="2"/>
+    <!-- Sword at side -->
+    <rect x="18" y="10" width="2" height="35" fill="rgba(180,175,165,0.4)"/>
+    <rect x="15" y="8" width="8" height="3" fill="rgba(184,147,58,0.3)"/>
+    <!-- Legs -->
+    <rect x="-8" y="45" width="7" height="25" fill="${armorColor}" rx="1"/>
+    <rect x="1" y="45" width="7" height="25" fill="${armorColor}" rx="1"/>
+    <!-- Boots -->
+    <rect x="-9" y="68" width="9" height="5" fill="rgba(60,50,35,0.4)" rx="1"/>
+    <rect x="0" y="68" width="9" height="5" fill="rgba(60,50,35,0.4)" rx="1"/>
+    ${golden ? `<!-- Divine aura --><ellipse cx="0" cy="20" rx="35" ry="55" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1"/><ellipse cx="0" cy="20" rx="28" ry="45" fill="rgba(255,215,0,0.03)"/>` : ''}
+  </g>`;
+}
+
+// ─── PORTRAIT SVG ───
+function renderPortraitSVG(key) {
+  const w = 250, h = 300;
+  let figure = '';
+
+  if (key === 'hugues') {
+    figure = `
+      <!-- Hugues de Payens -->
+      <rect x="80" y="80" width="90" height="130" fill="rgba(180,170,150,0.06)"/>
+      <circle cx="125" cy="65" r="25" fill="rgba(180,170,150,0.06)"/>
+      <rect x="122" y="100" width="6" height="40" fill="rgba(139,0,0,0.3)"/>
+      <rect x="112" y="115" width="26" height="5" fill="rgba(139,0,0,0.3)"/>
+      <text x="125" y="250" font-family="serif" font-size="11" fill="rgba(184,147,58,0.5)" text-anchor="middle">c. 1119</text>
+    `;
+  } else if (key === 'jacques') {
+    figure = `
+      <!-- Jacques de Molay -->
+      <rect x="80" y="80" width="90" height="130" fill="rgba(180,170,150,0.06)"/>
+      <circle cx="125" cy="65" r="25" fill="rgba(180,170,150,0.06)"/>
+      <!-- Flames -->
+      ${[100,115,130,145].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="15" fill="rgba(255,120,20,0.1)"/>`).join('')}
+      <text x="125" y="270" font-family="serif" font-size="11" fill="rgba(184,147,58,0.5)" text-anchor="middle">1314</text>
+    `;
+  } else {
+    figure = `
+      <!-- Philip IV -->
+      <rect x="85" y="70" width="80" height="120" fill="rgba(60,40,100,0.06)"/>
+      <circle cx="125" cy="55" r="22" fill="rgba(180,170,150,0.06)"/>
+      <!-- Crown -->
+      <path d="M105,38 L110,28 L118,35 L125,24 L132,35 L140,28 L145,38" fill="rgba(184,147,58,0.15)" stroke="rgba(184,147,58,0.2)" stroke-width="0.5"/>
+      <text x="125" y="250" font-family="serif" font-size="11" fill="rgba(184,147,58,0.5)" text-anchor="middle">1307</text>
+    `;
+  }
+
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+    <rect width="${w}" height="${h}" fill="#1a1508"/>
+    ${figure}
+  </svg>`;
+}
+
+// ═══ KEYBOARD CONTROLS ═══
+document.addEventListener('keydown', (e) => {
+  if (STATE.inCombat) {
+    if (e.key === 'a' || e.key === '1') combatAction('attack');
+    if (e.key === 'd' || e.key === '2') combatAction('defend');
+    if (e.key === 'f' || e.key === '3') combatAction('flee');
+    return;
+  }
+  if (e.key === 'ArrowUp' || e.key === 'w') go('north');
+  if (e.key === 'ArrowDown' || e.key === 's') go('south');
+  if (e.key === 'ArrowRight' || e.key === 'e' || e.key === 'd') go('east');
+  if (e.key === 'ArrowLeft' || e.key === 'a') go('west');
+  if (e.key === 'g') grabRelic();
+  if (e.key === 'r') readScroll();
+  if (e.key === 't') talkNPC();
+  if (e.key === 'x') examinePortrait();
 });
+
+// ═══ START ═══
+initGame();
 </script>
 </body>
 </html>
