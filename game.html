@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knights Templar: The Siege of the Undead — v6.0</title>
+<title>Knights Templar: The Siege of the Undead — v6.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
 
@@ -564,6 +564,115 @@ body {
   color: #ffd700;
 }
 
+/* ═══ QUEST SYSTEM ═══ */
+.quest-popup {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: linear-gradient(180deg, #1a1610 0%, #0e0c08 100%);
+  border: 1px solid rgba(184,147,58,0.4);
+  padding: 12px 28px;
+  z-index: 100;
+  text-align: center;
+  opacity: 0;
+  transition: all 0.5s ease;
+  box-shadow: 0 4px 30px rgba(184,147,58,0.15);
+  pointer-events: none;
+}
+.quest-popup.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.quest-popup-icon { font-size: 1.4rem; }
+.quest-popup-title {
+  font-family: var(--ui);
+  font-size: 0.65rem;
+  color: var(--gold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.quest-popup-name {
+  font-family: var(--heading);
+  font-size: 1rem;
+  color: var(--text);
+}
+.quest-log-toggle {
+  background: rgba(184,147,58,0.08);
+  border: 1px solid rgba(184,147,58,0.25);
+  color: var(--gold);
+  font-family: var(--ui);
+  font-size: 0.72rem;
+  padding: 5px 12px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+.quest-log-toggle:hover { background: rgba(184,147,58,0.15); border-color: var(--gold); }
+.quest-log-panel {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: rgba(10,10,14,0.98);
+  border: 1px solid var(--panel-border);
+  border-top: none;
+  z-index: 50;
+  overflow-y: auto;
+  padding: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.quest-log-panel.open { display: block; }
+.quest-log-header {
+  font-family: var(--ui);
+  font-size: 0.72rem;
+  color: var(--gold);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(184,147,58,0.15);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.quest-log-close {
+  background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem;
+}
+.quest-log-close:hover { color: var(--text); }
+.quest-entry {
+  padding: 8px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(184,147,58,0.1);
+  background: rgba(184,147,58,0.03);
+}
+.quest-entry.completed {
+  opacity: 0.5;
+  border-color: rgba(184,147,58,0.06);
+}
+.quest-entry-header {
+  font-family: var(--ui);
+  font-size: 0.82rem;
+  color: var(--gold);
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+.quest-obj {
+  font-family: var(--body);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 2px 0 2px 12px;
+  line-height: 1.5;
+}
+.quest-obj.done { color: var(--neon); text-decoration: line-through; opacity: 0.7; }
+.log-line.quest { color: var(--gold); font-family: var(--ui); font-size: 1rem; letter-spacing: 0.04em; }
+.log-line.quest-desc { color: var(--text-dim); font-style: italic; font-size: 0.9rem; line-height: 1.6; }
+.log-line.quest-progress { color: var(--neon); font-family: var(--ui); font-size: 0.9rem; }
+.log-line.quest-complete { color: var(--text); font-style: italic; font-size: 0.95rem; line-height: 1.6; }
+.log-line.quest-reward { color: #ffd700; font-family: var(--ui); font-size: 0.95rem; }
+
 /* ═══ SCROLL DISPLAY ═══ */
 .scroll-overlay {
   display: none;
@@ -759,7 +868,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v6.0b</span></div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v6.1</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -769,6 +878,16 @@ body {
     <span class="inv-count" id="relicCount">Relics: 0/6</span>
     <span class="inv-count" id="scrollCount">Scrolls: 0/8</span>
     <button class="btn-audio" id="btnAudio" onclick="toggleAudio()">♪ Music</button>
+    <div style="position:relative">
+      <button class="quest-log-toggle" onclick="toggleQuestLog()">📋 Quests</button>
+      <div class="quest-log-panel" id="questLogPanel">
+        <div class="quest-log-header">
+          <span>Quest Log</span>
+          <button class="quest-log-close" onclick="toggleQuestLog()">✕</button>
+        </div>
+        <div id="questLogEntries"></div>
+      </div>
+    </div>
     <button class="btn-fullscreen" onclick="toggleFS()">⛶</button>
   </div>
 </div>
@@ -885,6 +1004,13 @@ body {
   </div>
 </div>
 
+<!-- QUEST POPUP -->
+<div class="quest-popup" id="questPopup">
+  <div class="quest-popup-icon" id="questPopupIcon">⚔</div>
+  <div class="quest-popup-title" id="questPopupTitle">New Quest</div>
+  <div class="quest-popup-name" id="questPopupName"></div>
+</div>
+
 <!-- ACHIEVEMENT POPUP -->
 <div class="achieve-popup" id="achievePopup">
   <div class="achieve-popup-title">✦ Achievement Unlocked</div>
@@ -893,7 +1019,7 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v6.0 GAME ENGINE
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v6.1 GAME ENGINE
 // Photorealistic Texture Engine — SVG Turbulence, Animated Flames, Material Filters
 // ═══════════════════════════════════════════════════════════════
 
@@ -918,7 +1044,10 @@ const STATE = {
   achievements: new Set(),
   audioPlaying: false,
   audioCtx: null,
-  defending: false
+  defending: false,
+  activeQuests: [],
+  completedQuests: new Set(),
+  questFlags: {}  // misc flags for quest progress
 };
 
 // ─── SACRED SCROLLS ───
@@ -1477,6 +1606,179 @@ const NPCS = {
   }
 };
 
+// ─── QUEST SYSTEM ───
+const QUESTS = {
+  blessedBlade: {
+    id: 'blessedBlade',
+    name: 'The Blessed Blade',
+    giver: 'aldric',
+    icon: '⚔',
+    desc: 'Brother Aldric senses a dark corruption spreading from the crypt. He asks you to retrieve the Holy Water from the infirmary shelves and use it to cleanse the Templar Longsword in the armory — creating a weapon that can truly wound the undead.',
+    objectives: [
+      { id: 'getWater', text: 'Retrieve the Holy Water relic', check: () => STATE.inventory.includes('Holy Water') },
+      { id: 'getSword', text: 'Retrieve the Templar Longsword relic', check: () => STATE.inventory.includes('Templar Longsword') },
+      { id: 'return', text: 'Return to Brother Aldric with both relics', check: () => STATE.currentRoom === 'infirmary' && STATE.inventory.includes('Holy Water') && STATE.inventory.includes('Templar Longsword') && STATE.questFlags.blessedBladeReady }
+    ],
+    reward: { type: 'buff', key: 'blessedBlade', text: 'Your Templar Longsword is now blessed — +5 damage to all attacks!' },
+    complete: 'Brother Aldric takes the Holy Water and anoints the Longsword, murmuring a prayer in Latin. The blade glows faintly white for a moment. "It is done. This blade will now cut deeper into the undead flesh. Strike true, knight."'
+  },
+  prisonersFaith: {
+    id: 'prisonersFaith',
+    name: "The Prisoner's Faith",
+    giver: 'edmund',
+    icon: '⛓',
+    desc: 'Sir Edmund has been chained in the barracks since the fortress fell. He tells you that a key to his chains was taken by the Risen Knight in the cloister. Defeat the Risen Knight and search for the key, then return to free Edmund.',
+    objectives: [
+      { id: 'defeatRisen', text: 'Defeat the Risen Knight in the Cloister', check: () => STATE.enemiesDefeated.has('cloister') },
+      { id: 'freeEdmund', text: 'Return to Sir Edmund in the Barracks', check: () => STATE.currentRoom === 'barracks' && STATE.enemiesDefeated.has('cloister') && STATE.questFlags.edmundReady }
+    ],
+    reward: { type: 'buff', key: 'edmundAlly', text: 'Sir Edmund fights beside you in spirit — enemies deal 3 less damage!' },
+    complete: 'You use the rusted key to unlock Sir Edmund\'s chains. He falls to his knees, then rises — a knight once more. "I cannot fight as I once did... but my prayers will shield you. Go, brother. Finish what we started."'
+  },
+  lostScriptures: {
+    id: 'lostScriptures',
+    name: 'The Lost Scriptures',
+    giver: 'matthias',
+    icon: '📜',
+    desc: 'The ghost of Brother Matthias is tormented. He hid three specific scrolls before he died but cannot remember where. He begs you to find at least 4 of the 8 sacred scrolls to ease his spirit and unlock the secret he guards.',
+    objectives: [
+      { id: 'find4scrolls', text: 'Find 4 sacred scrolls (currently: 0/4)', check: () => STATE.scrollsFound.length >= 4 },
+      { id: 'returnMatthias', text: 'Return to Brother Matthias in the Grand Hall', check: () => STATE.currentRoom === 'grandHall' && STATE.scrollsFound.length >= 4 && STATE.questFlags.matthiasReady }
+    ],
+    reward: { type: 'reveal', key: 'secretPassage', text: 'Matthias reveals a hidden passage — the Dungeon Depths now connects to the Necromancer\'s Lair!' },
+    complete: 'Brother Matthias reads the scrolls you\'ve found, his ghostly form growing brighter with each verse. "Yes... YES. The words return to me. I remember now — there is a passage. A secret way into the Necromancer\'s lair, through the dungeon depths. I have opened it for you. Go with God, knight."'
+  },
+  merchantsGuilt: {
+    id: 'merchantsGuilt',
+    name: "The Merchant's Guilt",
+    giver: 'ezra',
+    icon: '👁',
+    desc: 'Ezra the Blind is consumed by guilt for selling the forbidden texts that created the Necromancer. He knows the Necromancer\'s true weakness — but will only reveal it if you prove your faith by collecting 3 relics first.',
+    objectives: [
+      { id: 'get3relics', text: 'Collect 3 sacred relics (currently: 0/3)', check: () => STATE.inventory.length >= 3 },
+      { id: 'returnEzra', text: 'Return to Ezra in the Treasury', check: () => STATE.currentRoom === 'treasury' && STATE.inventory.length >= 3 && STATE.questFlags.ezraReady }
+    ],
+    reward: { type: 'buff', key: 'necroWeakness', text: 'Ezra reveals the Necromancer\'s weakness — he takes double damage when below half health!' },
+    complete: 'Ezra runs his fingers over each relic, trembling. "You carry the faith of the Order with you. I believe now... you can end this." He leans close. "The Necromancer draws power from his staff. When his strength wanes below half, the staff\'s connection weakens. Strike hard then — he will fall twice as fast. This is my penance. Go."'
+  },
+  finalStand: {
+    id: 'finalStand',
+    name: 'The Final Stand',
+    giver: 'auto',
+    icon: '☠',
+    desc: 'The Necromancer awaits in his lair. All paths lead here. Gather your strength, your relics, your faith — and end this.',
+    objectives: [
+      { id: 'reachLair', text: 'Enter the Necromancer\'s Lair', check: () => STATE.visited.has('necromancerLair') },
+      { id: 'slayNecro', text: 'Destroy the Necromancer', check: () => STATE.necromancerDead }
+    ],
+    reward: { type: 'achievement', key: 'questmaster', text: 'You have completed the Final Stand! The fortress is saved.' },
+    complete: ''
+  }
+};
+
+// Quest helper functions
+function giveQuest(questId) {
+  if (STATE.activeQuests.includes(questId) || STATE.completedQuests.has(questId)) return false;
+  STATE.activeQuests.push(questId);
+  const q = QUESTS[questId];
+  addLog(``, 'quest');
+  addLog(`${q.icon} NEW QUEST: ${q.name}`, 'quest');
+  addLog(q.desc, 'quest-desc');
+  playSound('scroll');
+  showQuestPopup(q);
+  updateQuestLog();
+  return true;
+}
+
+function checkQuestProgress() {
+  STATE.activeQuests.forEach(qId => {
+    const q = QUESTS[qId];
+    q.objectives.forEach(obj => {
+      if (!STATE.questFlags['obj_' + qId + '_' + obj.id] && obj.check()) {
+        STATE.questFlags['obj_' + qId + '_' + obj.id] = true;
+        addLog(`✓ Quest Updated: ${obj.text.replace(/\(currently:.*?\)/,'').trim()}`, 'quest-progress');
+        playSound('pickup');
+      }
+    });
+  });
+  updateQuestLog();
+}
+
+function completeQuest(questId) {
+  if (STATE.completedQuests.has(questId)) return;
+  const q = QUESTS[questId];
+  STATE.completedQuests.add(questId);
+  STATE.activeQuests = STATE.activeQuests.filter(id => id !== questId);
+
+  if (q.complete) {
+    addLog(``, 'quest');
+    addLog(q.complete, 'quest-complete');
+  }
+  addLog(`${q.icon} QUEST COMPLETE: ${q.name}`, 'quest');
+  addLog(`⭐ ${q.reward.text}`, 'quest-reward');
+  playSound('achieve');
+  showQuestPopup(q, true);
+
+  // Apply reward
+  if (q.reward.key === 'blessedBlade') STATE.questFlags.blessedBladeBuff = true;
+  if (q.reward.key === 'edmundAlly') STATE.questFlags.edmundAllyBuff = true;
+  if (q.reward.key === 'necroWeakness') STATE.questFlags.necroWeaknessBuff = true;
+  if (q.reward.key === 'secretPassage') {
+    // Open shortcut: dungeonDepths <-> necromancerLair
+    ROOMS.dungeonDepths.exits.south = 'necromancerLair';
+    ROOMS.necromancerLair.exits.north = 'dungeonDepths';
+    STATE.questFlags.secretPassageOpen = true;
+  }
+
+  updateQuestLog();
+  checkAchievements();
+}
+
+function showQuestPopup(q, isComplete) {
+  const popup = document.getElementById('questPopup');
+  document.getElementById('questPopupIcon').textContent = isComplete ? '⭐' : q.icon;
+  document.getElementById('questPopupTitle').textContent = isComplete ? 'Quest Complete!' : 'New Quest';
+  document.getElementById('questPopupName').textContent = q.name;
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 4000);
+}
+
+function updateQuestLog() {
+  const el = document.getElementById('questLogEntries');
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (STATE.activeQuests.length === 0 && STATE.completedQuests.size === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-style:italic;font-size:0.85rem;padding:8px">Speak with the inhabitants of the fortress to receive quests.</div>';
+    return;
+  }
+
+  STATE.activeQuests.forEach(qId => {
+    const q = QUESTS[qId];
+    const div = document.createElement('div');
+    div.className = 'quest-entry active';
+    let objHtml = q.objectives.map(obj => {
+      const done = STATE.questFlags['obj_' + qId + '_' + obj.id];
+      let label = obj.text;
+      // Update dynamic counts
+      if (qId === 'lostScriptures' && obj.id === 'find4scrolls') label = `Find 4 sacred scrolls (currently: ${STATE.scrollsFound.length}/4)`;
+      if (qId === 'merchantsGuilt' && obj.id === 'get3relics') label = `Collect 3 sacred relics (currently: ${STATE.inventory.length}/3)`;
+      return `<div class="quest-obj ${done?'done':''}">${done?'✓':'○'} ${label}</div>`;
+    }).join('');
+    div.innerHTML = `<div class="quest-entry-header">${q.icon} ${q.name}</div>${objHtml}`;
+    el.appendChild(div);
+  });
+
+  // Show completed quests (collapsed)
+  STATE.completedQuests.forEach(qId => {
+    const q = QUESTS[qId];
+    const div = document.createElement('div');
+    div.className = 'quest-entry completed';
+    div.innerHTML = `<div class="quest-entry-header">⭐ ${q.name} <span style="color:var(--gold);font-size:0.7rem">COMPLETE</span></div>`;
+    el.appendChild(div);
+  });
+}
+
 // ─── PORTRAITS ───
 const PORTRAITS = {
   hugues: {
@@ -1508,7 +1810,8 @@ const ACHIEVEMENTS = {
   enlightened: { icon: '✝', name: 'Enlightened — Read all 8 sacred scrolls' },
   blessed:     { icon: '🌟', name: 'Blessed by Saint Michael — Earn the golden armor' },
   lorekeeper:  { icon: '🗣', name: 'Lorekeeper — Speak with all 4 NPCs' },
-  historian:   { icon: '🖼', name: 'Historian — Examine all three portraits' }
+  historian:   { icon: '🖼', name: 'Historian — Examine all three portraits' },
+  questmaster: { icon: '📋', name: 'Questmaster — Complete all 5 quests' }
 };
 
 // ─── COURTYARD EVENTS ───
@@ -1543,6 +1846,9 @@ function initGame() {
   STATE.necromancerDead = false;
   STATE.achievements = new Set();
   STATE.defending = false;
+  STATE.activeQuests = [];
+  STATE.completedQuests = new Set();
+  STATE.questFlags = {};
 
   // Reset room enemies
   Object.keys(ROOMS).forEach(k => {
@@ -1563,6 +1869,10 @@ function initGame() {
   ROOMS.bellTower.relic = 'Blessed Candles';
   ROOMS.treasury.relic = 'Rosary of Iron';
 
+  // Reset secret passage (quest reward)
+  delete ROOMS.dungeonDepths.exits.south;
+  delete ROOMS.necromancerLair.exits.north;
+
   // Randomize scroll placement (8 scrolls in random rooms, no map indicator)
   const roomKeys = Object.keys(ROOMS);
   Object.keys(ROOMS).forEach(k => ROOMS[k].hasScroll = false);
@@ -1581,6 +1891,8 @@ function initGame() {
   document.getElementById('portraitOverlay').classList.remove('active');
   document.getElementById('deathScreen').classList.remove('active');
   document.getElementById('winScreen').classList.remove('active');
+  document.getElementById('questLogPanel').classList.remove('open');
+  updateQuestLog();
 
   // v6.0: Preload special scene images + starting room
   preloadAllSpecial();
@@ -1687,6 +1999,8 @@ function enterRoom(roomId) {
 
   updateButtons();
   checkAchievements();
+  checkQuestProgress();
+  checkQuestCompletions();
 }
 function go(dir) {
   if (STATE.inCombat) return;
@@ -1729,8 +2043,18 @@ function combatAction(action) {
   if (action === 'attack') {
     STATE.defending = false;
     let dmg = 8 + Math.floor(Math.random() * 20);
+    // Quest buff: Blessed Blade (+5 damage)
+    if (STATE.questFlags.blessedBladeBuff) dmg += 5;
     const crit = Math.random() < 0.2;
     if (crit) dmg = Math.floor(dmg * 1.8);
+    // Quest buff: Necromancer weakness (double damage below half HP)
+    if (STATE.questFlags.necroWeaknessBuff && e.type === 'necromancer' && STATE.enemyHp <= STATE.enemyMaxHp / 2) {
+      dmg = Math.floor(dmg * 2);
+      if (!STATE.questFlags._necroWeakShown) {
+        addLog('The Necromancer\'s staff flickers — his weakness exposed!', 'quest-progress');
+        STATE.questFlags._necroWeakShown = true;
+      }
+    }
     if (STATE.hasGoldenArmor) dmg = STATE.enemyMaxHp; // One-hit with golden armor
     STATE.enemyHp -= dmg;
     const msg = `You strike the ${e.name} for ${dmg} damage${crit ? ' — CRITICAL HIT!' : '.'}`;
@@ -1772,6 +2096,8 @@ function combatAction(action) {
   if (STATE.inCombat) {
     let eDmg = e.dmgMin + Math.floor(Math.random() * (e.dmgMax - e.dmgMin + 1));
     if (STATE.defending) eDmg = Math.floor(eDmg * 0.28);
+    // Quest buff: Edmund's prayers reduce damage by 3
+    if (STATE.questFlags.edmundAllyBuff && eDmg > 0) eDmg = Math.max(1, eDmg - 3);
     if (STATE.hasGoldenArmor) eDmg = 0;
     STATE.hp -= eDmg;
     if (eDmg > 0) {
@@ -1810,7 +2136,7 @@ function endCombat(victory) {
     showSpecialScene('victory'); // v6.0: Show victory art if available
     checkAchievements();
     setTimeout(() => {
-      document.getElementById('winStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Achievements: ' + STATE.achievements.size + '/8';
+      document.getElementById('winStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Quests: ' + STATE.completedQuests.size + '/5<br>Achievements: ' + STATE.achievements.size + '/9';
       document.getElementById('winScreen').classList.add('active');
     }, 2000);
     return;
@@ -1831,6 +2157,7 @@ function endCombat(victory) {
   }
   updateButtons();
   checkAchievements();
+  checkQuestProgress();
 }
 
 // ═══ RELICS ═══
@@ -1846,6 +2173,7 @@ function grabRelic() {
   renderMap();
   checkAchievements();
   checkGoldenArmor();
+  checkQuestProgress();
 }
 
 // ═══ SCROLLS ═══
@@ -1866,6 +2194,7 @@ function readScroll() {
   updateButtons();
   checkAchievements();
   checkGoldenArmor();
+  checkQuestProgress();
 }
 
 function closeScroll() {
@@ -1894,6 +2223,13 @@ function talkNPC() {
 
   document.getElementById('npcDialog').classList.add('active');
   addLog(`You speak with ${npc.name}.`, 'npc');
+
+  // Offer quest if NPC has one
+  const npcQuests = { aldric: 'blessedBlade', edmund: 'prisonersFaith', matthias: 'lostScriptures', ezra: 'merchantsGuilt' };
+  if (npcQuests[room.npc]) {
+    giveQuest(npcQuests[room.npc]);
+  }
+
   checkAchievements();
 }
 
@@ -1914,6 +2250,54 @@ function askNPC(npcId, topic) {
 
 function closeNPC() {
   document.getElementById('npcDialog').classList.remove('active');
+}
+
+function toggleQuestLog() {
+  document.getElementById('questLogPanel').classList.toggle('open');
+  updateQuestLog();
+}
+
+// Check if player is at the right NPC to turn in a quest
+function checkQuestCompletions() {
+  const room = ROOMS[STATE.currentRoom];
+
+  // Blessed Blade: return to Aldric with both relics
+  if (STATE.activeQuests.includes('blessedBlade') && STATE.currentRoom === 'infirmary'
+      && STATE.inventory.includes('Holy Water') && STATE.inventory.includes('Templar Longsword')) {
+    STATE.questFlags.blessedBladeReady = true;
+    completeQuest('blessedBlade');
+  }
+
+  // Prisoner's Faith: return to Edmund after defeating cloister Risen Knight
+  if (STATE.activeQuests.includes('prisonersFaith') && STATE.currentRoom === 'barracks'
+      && STATE.enemiesDefeated.has('cloister')) {
+    STATE.questFlags.edmundReady = true;
+    completeQuest('prisonersFaith');
+  }
+
+  // Lost Scriptures: return to Matthias with 4+ scrolls
+  if (STATE.activeQuests.includes('lostScriptures') && STATE.currentRoom === 'grandHall'
+      && STATE.scrollsFound.length >= 4) {
+    STATE.questFlags.matthiasReady = true;
+    completeQuest('lostScriptures');
+  }
+
+  // Merchant's Guilt: return to Ezra with 3+ relics
+  if (STATE.activeQuests.includes('merchantsGuilt') && STATE.currentRoom === 'treasury'
+      && STATE.inventory.length >= 3) {
+    STATE.questFlags.ezraReady = true;
+    completeQuest('merchantsGuilt');
+  }
+
+  // Final Stand: auto-given when entering necromancer's lair area
+  if (STATE.visited.has('catacombs') && !STATE.activeQuests.includes('finalStand') && !STATE.completedQuests.has('finalStand')) {
+    giveQuest('finalStand');
+  }
+
+  // Final Stand: auto-complete on necromancer death
+  if (STATE.activeQuests.includes('finalStand') && STATE.necromancerDead) {
+    completeQuest('finalStand');
+  }
 }
 
 // ═══ PORTRAITS ═══
@@ -1989,6 +2373,9 @@ function checkAchievements() {
   if (STATE.portraitsExamined.size >= 3 && !STATE.achievements.has('historian')) {
     unlockAchieve('historian');
   }
+  if (STATE.completedQuests.size >= 5 && !STATE.achievements.has('questmaster')) {
+    unlockAchieve('questmaster');
+  }
 }
 
 function unlockAchieve(id) {
@@ -2009,7 +2396,7 @@ function playerDeath() {
   playSound('death');
   showSpecialScene('death'); // v6.0: Show death art if available
   setTimeout(() => {
-    document.getElementById('deathStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Rooms: ' + STATE.visited.size + '/17';
+    document.getElementById('deathStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/5<br>Rooms: ' + STATE.visited.size + '/17';
     document.getElementById('deathScreen').classList.add('active');
   }, 1500);
 }
