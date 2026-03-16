@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knights Templar: The Siege of the Undead — v6.1</title>
+<title>Knights Templar: The Siege of the Undead — v6.2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
 
@@ -565,6 +565,53 @@ body {
 }
 
 /* ═══ QUEST SYSTEM ═══ */
+/* ─── v6.2 Stats Display ─── */
+.stats-display {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.stat-item {
+  font-family: var(--ui);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border: 1px solid rgba(184,147,58,0.15);
+  background: rgba(184,147,58,0.04);
+  color: var(--text-dim);
+}
+.stat-atk { color: var(--crimson-bright); border-color: rgba(180,40,40,0.2); }
+.stat-def { color: var(--neon); border-color: rgba(94,196,212,0.2); }
+.stat-xp { color: #c4a0ee; border-color: rgba(160,120,255,0.2); }
+/* ─── Ability Buttons ─── */
+.combat-abilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.ability-btn {
+  font-size: 0.72rem !important;
+  padding: 5px 10px !important;
+  border-color: rgba(201,168,76,0.4) !important;
+  color: #ffd700 !important;
+  background: rgba(201,168,76,0.08) !important;
+  animation: actionPulse 2s ease-in-out infinite;
+}
+.ability-btn:hover:not(:disabled) {
+  background: rgba(201,168,76,0.2) !important;
+  box-shadow: 0 0 12px rgba(201,168,76,0.3);
+}
+.ability-btn.on-cooldown {
+  opacity: 0.35;
+  animation: none;
+  color: var(--text-dim) !important;
+  border-color: rgba(184,147,58,0.1) !important;
+}
+/* ─── Log line types ─── */
+.log-line.xp { color: #c4a0ee; font-family: var(--ui); font-size: 0.85rem; }
+.log-line.level { color: #ffd700; font-family: var(--ui); font-size: 1.05rem; text-shadow: 0 0 15px rgba(255,215,0,0.4); }
 .quest-popup {
   position: fixed;
   top: 60px;
@@ -868,7 +915,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v6.1</span></div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v6.2</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -877,6 +924,7 @@ body {
     </div>
     <span class="inv-count" id="relicCount">Relics: 0/6</span>
     <span class="inv-count" id="scrollCount">Scrolls: 0/8</span>
+    <div class="stats-display" id="statsDisplay"></div>
     <button class="btn-audio" id="btnAudio" onclick="toggleAudio()">♪ Music</button>
     <div style="position:relative">
       <button class="quest-log-toggle" onclick="toggleQuestLog()">📋 Quests</button>
@@ -943,6 +991,7 @@ body {
       <button class="ctrl-btn combat-btn" onclick="combatAction('defend')">🛡 Defend</button>
       <button class="ctrl-btn combat-btn" onclick="combatAction('flee')">🏃 Flee</button>
     </div>
+    <div class="combat-abilities" id="combatAbilities"></div>
   </div>
 
   <!-- SCROLL OVERLAY -->
@@ -1019,7 +1068,7 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v6.1 GAME ENGINE
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v6.2 GAME ENGINE
 // Photorealistic Texture Engine — SVG Turbulence, Animated Flames, Material Filters
 // ═══════════════════════════════════════════════════════════════
 
@@ -1047,7 +1096,13 @@ const STATE = {
   defending: false,
   activeQuests: [],
   completedQuests: new Set(),
-  questFlags: {}  // misc flags for quest progress
+  questFlags: {},  // misc flags for quest progress
+  // v6.2: Equipment & Level system
+  xp: 0,
+  level: 1,
+  abilityCooldowns: {},  // { abilityKey: turnsRemaining }
+  rosaryUsed: false,     // Rosary of Iron can cheat death once per combat
+  revealedRooms: false   // Illuminated Map reveals all rooms
 };
 
 // ─── SACRED SCROLLS ───
@@ -1557,10 +1612,272 @@ const MAP_POS = {
 
 // ─── ENEMIES ───
 const ENEMIES = {
-  risen: { name: 'Risen Knight', hp: 45, dmgMin: 6, dmgMax: 14, type: 'risen' },
-  peasant: { name: 'Peasant Zombie', hp: 30, dmgMin: 4, dmgMax: 10, type: 'peasant' },
-  necromancer: { name: 'The Necromancer', hp: 120, dmgMin: 12, dmgMax: 25, type: 'necromancer' }
+  risen: { name: 'Risen Knight', hp: 45, dmgMin: 6, dmgMax: 14, type: 'risen', xp: 25 },
+  peasant: { name: 'Peasant Zombie', hp: 30, dmgMin: 4, dmgMax: 10, type: 'peasant', xp: 15 },
+  necromancer: { name: 'The Necromancer', hp: 120, dmgMin: 12, dmgMax: 25, type: 'necromancer', xp: 100 }
 };
+
+// ─── v6.2 RELIC EQUIPMENT SYSTEM ───
+// Each relic provides: passive stat bonuses + an active combat ability
+const RELIC_STATS = {
+  'Templar Longsword': {
+    icon: '⚔', slot: 'weapon',
+    passive: { atk: 4, def: 0 },
+    desc: '+4 ATK',
+    ability: {
+      name: 'Power Strike',
+      icon: '💥',
+      desc: 'Deal 2.5x damage this attack',
+      cooldown: 3,
+      key: 'powerStrike'
+    }
+  },
+  'Chainmail Hauberk': {
+    icon: '🛡', slot: 'armor',
+    passive: { atk: 0, def: 5 },
+    desc: '+5 DEF',
+    ability: {
+      name: 'Iron Wall',
+      icon: '🏰',
+      desc: 'Block all damage this turn',
+      cooldown: 4,
+      key: 'ironWall'
+    }
+  },
+  'Holy Water': {
+    icon: '💧', slot: 'consumable',
+    passive: { atk: 0, def: 0 },
+    desc: 'Healing ability',
+    ability: {
+      name: 'Divine Heal',
+      icon: '✚',
+      desc: 'Restore 25-40 HP',
+      cooldown: 4,
+      key: 'divineHeal'
+    }
+  },
+  'Blessed Candles': {
+    icon: '🕯', slot: 'trinket',
+    passive: { atk: 2, def: 2 },
+    desc: '+2 ATK, +2 DEF',
+    ability: {
+      name: 'Holy Light',
+      icon: '☀',
+      desc: 'Reveal enemy weakness — next attack is a guaranteed critical',
+      cooldown: 5,
+      key: 'holyLight'
+    }
+  },
+  'Rosary of Iron': {
+    icon: '📿', slot: 'trinket2',
+    passive: { atk: 1, def: 3 },
+    desc: '+1 ATK, +3 DEF',
+    ability: {
+      name: 'Martyr\'s Resolve',
+      icon: '✝',
+      desc: 'Once per combat — survive a killing blow with 1 HP',
+      cooldown: 0,
+      key: 'martyrResolve'
+    }
+  },
+  'Illuminated Map': {
+    icon: '🗺', slot: 'utility',
+    passive: { atk: 0, def: 0 },
+    desc: 'Reveals map details',
+    ability: {
+      name: 'Cartographer\'s Eye',
+      icon: '👁',
+      desc: 'Reveal all rooms, relics, and enemies on the fortress map',
+      cooldown: 0,
+      key: 'cartographerEye'
+    }
+  }
+};
+
+// XP thresholds for each level
+const XP_TABLE = [0, 0, 30, 75, 140, 230, 350, 500, 700, 999];
+// Level bonuses: each level gives +5 maxHP, +1 ATK, +1 DEF
+const LEVEL_ATK_BONUS = 1;
+const LEVEL_DEF_BONUS = 1;
+const LEVEL_HP_BONUS = 5;
+
+function getPlayerStats() {
+  let atk = 5 + (STATE.level - 1) * LEVEL_ATK_BONUS;
+  let def = 2 + (STATE.level - 1) * LEVEL_DEF_BONUS;
+  STATE.inventory.forEach(relic => {
+    const rs = RELIC_STATS[relic];
+    if (rs) {
+      atk += rs.passive.atk;
+      def += rs.passive.def;
+    }
+  });
+  // Quest buffs
+  if (STATE.questFlags.blessedBladeBuff) atk += 5;
+  if (STATE.questFlags.edmundAllyBuff) def += 3;
+  return { atk, def };
+}
+
+function gainXP(amount) {
+  STATE.xp += amount;
+  addLog(`+${amount} XP`, 'xp');
+  // Check level up
+  while (STATE.level < XP_TABLE.length - 1 && STATE.xp >= XP_TABLE[STATE.level + 1]) {
+    STATE.level++;
+    STATE.maxHp += LEVEL_HP_BONUS;
+    STATE.hp = Math.min(STATE.hp + LEVEL_HP_BONUS, STATE.maxHp);
+    addLog(``, 'level');
+    addLog(`⬆ LEVEL UP! You are now Level ${STATE.level}`, 'level');
+    addLog(`+${LEVEL_HP_BONUS} Max HP, +${LEVEL_ATK_BONUS} ATK, +${LEVEL_DEF_BONUS} DEF`, 'level');
+    playSound('achieve');
+    screenShake(false);
+    updateHP();
+    updateStatsDisplay();
+  }
+  updateStatsDisplay();
+}
+
+function updateStatsDisplay() {
+  const stats = getPlayerStats();
+  const el = document.getElementById('statsDisplay');
+  if (el) {
+    el.innerHTML = `<span class="stat-item">LVL ${STATE.level}</span><span class="stat-item stat-atk">ATK ${stats.atk}</span><span class="stat-item stat-def">DEF ${stats.def}</span><span class="stat-item stat-xp">XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}</span>`;
+  }
+}
+
+function tickCooldowns() {
+  Object.keys(STATE.abilityCooldowns).forEach(key => {
+    if (STATE.abilityCooldowns[key] > 0) STATE.abilityCooldowns[key]--;
+  });
+}
+
+function useAbility(key) {
+  if (!STATE.inCombat && key !== 'cartographerEye') return;
+  if (STATE.abilityCooldowns[key] > 0) {
+    addLog(`That ability is on cooldown (${STATE.abilityCooldowns[key]} turns).`, 'system');
+    return;
+  }
+
+  const e = STATE.currentEnemy;
+
+  if (key === 'powerStrike') {
+    STATE.defending = false;
+    const stats = getPlayerStats();
+    let dmg = stats.atk + Math.floor(Math.random() * 15);
+    dmg = Math.floor(dmg * 2.5);
+    if (STATE.questFlags.necroWeaknessBuff && e.type === 'necromancer' && STATE.enemyHp <= STATE.enemyMaxHp / 2) dmg *= 2;
+    if (STATE.hasGoldenArmor) dmg = STATE.enemyMaxHp;
+    STATE.enemyHp -= dmg;
+    addLog(`💥 POWER STRIKE! You smash the ${e.name} for ${dmg} damage!`, 'combat');
+    combatLogMsg(`💥 ${dmg} POWER STRIKE!`);
+    floatDamage(`-${dmg} POW!`, '#ffd700');
+    playSound('sword');
+    screenShake(true);
+    STATE.abilityCooldowns[key] = RELIC_STATS['Templar Longsword'].ability.cooldown;
+    if (STATE.enemyHp <= 0) { endCombat(true); return; }
+    enemyCounterattack();
+  }
+  else if (key === 'ironWall') {
+    STATE.questFlags._ironWallActive = true;
+    addLog('🏰 IRON WALL! You brace behind your chainmail — all damage blocked this turn!', 'system');
+    combatLogMsg('🏰 Iron Wall active!');
+    playSound('defend');
+    STATE.abilityCooldowns[key] = RELIC_STATS['Chainmail Hauberk'].ability.cooldown;
+    enemyCounterattack();
+  }
+  else if (key === 'divineHeal') {
+    const heal = 25 + Math.floor(Math.random() * 16);
+    STATE.hp = Math.min(STATE.maxHp, STATE.hp + heal);
+    addLog(`✚ DIVINE HEAL! Holy Water restores ${heal} HP!`, 'heal');
+    combatLogMsg(`✚ +${heal} HP`);
+    floatDamage(`+${heal}`, '#4a8');
+    damageFlash('healed');
+    playSound('heal');
+    updateHP();
+    STATE.abilityCooldowns[key] = RELIC_STATS['Holy Water'].ability.cooldown;
+    enemyCounterattack();
+  }
+  else if (key === 'holyLight') {
+    STATE.questFlags._guaranteedCrit = true;
+    addLog('☀ HOLY LIGHT! The candles flare — the enemy\'s weakness is exposed! Your next attack will be a critical strike.', 'divine');
+    combatLogMsg('☀ Next attack = CRITICAL!');
+    playSound('scroll');
+    STATE.abilityCooldowns[key] = RELIC_STATS['Blessed Candles'].ability.cooldown;
+    // No enemy counterattack — it's a buff turn
+  }
+  else if (key === 'cartographerEye') {
+    STATE.revealedRooms = true;
+    addLog('👁 The Illuminated Map glows — all rooms, relics, and enemies are now visible on the fortress map!', 'item');
+    playSound('scroll');
+    renderMap();
+  }
+
+  updateCombatAbilities();
+  updateStatsDisplay();
+}
+
+function enemyCounterattack() {
+  if (!STATE.inCombat) return;
+  const e = STATE.currentEnemy;
+  const stats = getPlayerStats();
+  let eDmg = e.dmgMin + Math.floor(Math.random() * (e.dmgMax - e.dmgMin + 1));
+  // Apply DEF reduction
+  eDmg = Math.max(1, eDmg - Math.floor(stats.def * 0.35));
+  if (STATE.defending) eDmg = Math.floor(eDmg * 0.28);
+  if (STATE.questFlags._ironWallActive) { eDmg = 0; STATE.questFlags._ironWallActive = false; }
+  if (STATE.hasGoldenArmor) eDmg = 0;
+  STATE.hp -= eDmg;
+  if (eDmg > 0) {
+    addLog(`The ${e.name} strikes back for ${eDmg} damage.`, 'combat');
+    combatLogMsg(`☠ ${e.name}: ${eDmg}`);
+    screenShake(eDmg > 10); damageFlash('hit'); floatDamage('-' + eDmg, '#c44');
+  } else {
+    addLog(`The ${e.name}'s attack is completely blocked!`, 'combat');
+    combatLogMsg('🛡 Blocked!');
+  }
+  playSound('hit');
+  updateHP();
+  updateEnemyHP();
+  tickCooldowns();
+  updateCombatAbilities();
+
+  if (STATE.hp <= 0) {
+    // Rosary of Iron: cheat death once per combat
+    if (STATE.inventory.includes('Rosary of Iron') && !STATE.rosaryUsed) {
+      STATE.rosaryUsed = true;
+      STATE.hp = 1;
+      updateHP();
+      addLog(`✝ MARTYR'S RESOLVE! The Rosary of Iron flares with divine light — you refuse to fall! (1 HP)`, 'divine');
+      combatLogMsg('✝ Cheated death!');
+      floatDamage('SAVED!', '#ffd700');
+      playSound('divine');
+      screenShake(true);
+      return;
+    }
+    STATE.inCombat = false;
+    document.getElementById('combatOverlay').classList.remove('active');
+    playerDeath();
+  }
+}
+
+function updateCombatAbilities() {
+  const el = document.getElementById('combatAbilities');
+  if (!el) return;
+  el.innerHTML = '';
+  STATE.inventory.forEach(relic => {
+    const rs = RELIC_STATS[relic];
+    if (!rs || !rs.ability) return;
+    if (rs.ability.key === 'cartographerEye') return; // Not a combat ability
+    if (rs.ability.key === 'martyrResolve') return; // Passive, not active
+    const cd = STATE.abilityCooldowns[rs.ability.key] || 0;
+    const btn = document.createElement('button');
+    btn.className = 'ctrl-btn ability-btn' + (cd > 0 ? ' on-cooldown' : '');
+    btn.onclick = () => useAbility(rs.ability.key);
+    btn.disabled = cd > 0;
+    btn.innerHTML = cd > 0 ? `${rs.ability.icon} ${rs.ability.name} (${cd})` : `${rs.ability.icon} ${rs.ability.name}`;
+    btn.title = rs.ability.desc;
+    el.appendChild(btn);
+  });
+}
 
 // ─── NPCS ───
 const NPCS = {
@@ -1849,6 +2166,11 @@ function initGame() {
   STATE.activeQuests = [];
   STATE.completedQuests = new Set();
   STATE.questFlags = {};
+  STATE.xp = 0;
+  STATE.level = 1;
+  STATE.abilityCooldowns = {};
+  STATE.rosaryUsed = false;
+  STATE.revealedRooms = false;
 
   // Reset room enemies
   Object.keys(ROOMS).forEach(k => {
@@ -1898,6 +2220,7 @@ function initGame() {
   preloadAllSpecial();
   preloadRoomImages('chapel');
 
+  updateStatsDisplay();
   enterRoom('chapel');
 }
 
@@ -2021,6 +2344,10 @@ function startCombat(roomId, enemyType) {
   STATE.enemyHp = e.hp;
   STATE.enemyMaxHp = e.hp;
   STATE.defending = false;
+  STATE.rosaryUsed = false;
+  STATE.abilityCooldowns = {};
+  STATE.questFlags._ironWallActive = false;
+  STATE.questFlags._guaranteedCrit = false;
 
   document.getElementById('combatOverlay').classList.add('active');
   document.getElementById('combatEnemyName').textContent = e.name;
@@ -2034,6 +2361,8 @@ function startCombat(roomId, enemyType) {
   document.getElementById('combatLog').innerHTML = '';
   updateEnemyHP();
   updateButtons();
+  updateCombatAbilities();
+  updateStatsDisplay();
 }
 
 function combatAction(action) {
@@ -2042,10 +2371,12 @@ function combatAction(action) {
 
   if (action === 'attack') {
     STATE.defending = false;
-    let dmg = 8 + Math.floor(Math.random() * 20);
-    // Quest buff: Blessed Blade (+5 damage)
-    if (STATE.questFlags.blessedBladeBuff) dmg += 5;
-    const crit = Math.random() < 0.2;
+    const stats = getPlayerStats();
+    let dmg = stats.atk + Math.floor(Math.random() * 15);
+    // Quest buff: Blessed Blade (+5 damage) — already in getPlayerStats()
+    let crit = Math.random() < 0.2;
+    // Holy Light guaranteed crit
+    if (STATE.questFlags._guaranteedCrit) { crit = true; STATE.questFlags._guaranteedCrit = false; }
     if (crit) dmg = Math.floor(dmg * 1.8);
     // Quest buff: Necromancer weakness (double damage below half HP)
     if (STATE.questFlags.necroWeaknessBuff && e.type === 'necromancer' && STATE.enemyHp <= STATE.enemyMaxHp / 2) {
@@ -2094,10 +2425,12 @@ function combatAction(action) {
 
   // Enemy counterattack
   if (STATE.inCombat) {
+    const stats = getPlayerStats();
     let eDmg = e.dmgMin + Math.floor(Math.random() * (e.dmgMax - e.dmgMin + 1));
+    // Apply DEF reduction
+    eDmg = Math.max(1, eDmg - Math.floor(stats.def * 0.35));
     if (STATE.defending) eDmg = Math.floor(eDmg * 0.28);
-    // Quest buff: Edmund's prayers reduce damage by 3
-    if (STATE.questFlags.edmundAllyBuff && eDmg > 0) eDmg = Math.max(1, eDmg - 3);
+    if (STATE.questFlags._ironWallActive) { eDmg = 0; STATE.questFlags._ironWallActive = false; }
     if (STATE.hasGoldenArmor) eDmg = 0;
     STATE.hp -= eDmg;
     if (eDmg > 0) {
@@ -2111,11 +2444,25 @@ function combatAction(action) {
     playSound('hit');
     updateHP();
     updateEnemyHP();
+    tickCooldowns();
+    updateCombatAbilities();
 
     if (STATE.hp <= 0) {
-      STATE.inCombat = false;
-      document.getElementById('combatOverlay').classList.remove('active');
-      playerDeath();
+      // Rosary of Iron: cheat death once per combat
+      if (STATE.inventory.includes('Rosary of Iron') && !STATE.rosaryUsed) {
+        STATE.rosaryUsed = true;
+        STATE.hp = 1;
+        updateHP();
+        addLog(`✝ MARTYR'S RESOLVE! The Rosary of Iron flares — you refuse to fall! (1 HP)`, 'divine');
+        combatLogMsg('✝ Cheated death!');
+        floatDamage('SAVED!', '#ffd700');
+        playSound('divine');
+        screenShake(true);
+      } else {
+        STATE.inCombat = false;
+        document.getElementById('combatOverlay').classList.remove('active');
+        playerDeath();
+      }
     }
   }
 }
@@ -2125,8 +2472,12 @@ function endCombat(victory) {
   STATE.inCombat = false;
   STATE.enemiesDefeated.add(e.roomId);
   STATE.battlesWon++;
+  STATE.rosaryUsed = false; // Reset rosary for next combat
   ROOMS[e.roomId].enemy = null;
   document.getElementById('combatOverlay').classList.remove('active');
+
+  // Grant XP
+  gainXP(ENEMIES[e.type]?.xp || 20);
 
   if (e.type === 'necromancer') {
     STATE.necromancerDead = true;
@@ -2136,7 +2487,7 @@ function endCombat(victory) {
     showSpecialScene('victory'); // v6.0: Show victory art if available
     checkAchievements();
     setTimeout(() => {
-      document.getElementById('winStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Quests: ' + STATE.completedQuests.size + '/5<br>Achievements: ' + STATE.achievements.size + '/9';
+      document.getElementById('winStats').innerHTML = 'Level: ' + STATE.level + '<br>XP: ' + STATE.xp + '<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Quests: ' + STATE.completedQuests.size + '/5<br>Achievements: ' + STATE.achievements.size + '/9';
       document.getElementById('winScreen').classList.add('active');
     }, 2000);
     return;
@@ -2164,12 +2515,23 @@ function endCombat(victory) {
 function grabRelic() {
   const room = ROOMS[STATE.currentRoom];
   if (!room.relic) return;
-  STATE.inventory.push(room.relic);
-  addLog(`You claim the ${room.relic}. Its weight feels righteous.`, 'item');
+  const relicName = room.relic;
+  STATE.inventory.push(relicName);
+  addLog(`You claim the ${relicName}. Its weight feels righteous.`, 'item');
+  // Announce relic stats
+  const rs = RELIC_STATS[relicName];
+  if (rs) {
+    addLog(`${rs.icon} ${rs.desc}${rs.ability ? ' | Ability: ' + rs.ability.name + ' — ' + rs.ability.desc : ''}`, 'quest-reward');
+    // Auto-activate Illuminated Map
+    if (rs.ability && rs.ability.key === 'cartographerEye') {
+      useAbility('cartographerEye');
+    }
+  }
   playSound('pickup');
   room.relic = null;
   updateInventory();
   updateButtons();
+  updateStatsDisplay();
   renderMap();
   checkAchievements();
   checkGoldenArmor();
@@ -2396,7 +2758,7 @@ function playerDeath() {
   playSound('death');
   showSpecialScene('death'); // v6.0: Show death art if available
   setTimeout(() => {
-    document.getElementById('deathStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/5<br>Rooms: ' + STATE.visited.size + '/17';
+    document.getElementById('deathStats').innerHTML = 'Level: ' + STATE.level + ' (XP: ' + STATE.xp + ')<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/5<br>Rooms: ' + STATE.visited.size + '/17';
     document.getElementById('deathScreen').classList.add('active');
   }, 1500);
 }
@@ -2680,7 +3042,17 @@ function renderMap() {
     else if (visited) { fill = 'rgba(94,196,212,0.4)'; stroke = '#5ec4d4'; }
 
     if (!visited && !current) {
-      svg += `<rect x="${x-5}" y="${y-4}" width="10" height="8" rx="1" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>`;
+      if (STATE.revealedRooms) {
+        // Illuminated Map: show unvisited rooms with details
+        let revealFill = 'rgba(160,120,255,0.15)';
+        let revealStroke = 'rgba(160,120,255,0.3)';
+        if (isBoss) { revealFill = 'rgba(150,30,30,0.3)'; revealStroke = '#922'; }
+        else if (hasRelic) { revealFill = 'rgba(70,170,130,0.2)'; revealStroke = '#4a8'; }
+        else if (room.enemy && !STATE.enemiesDefeated.has(id)) { revealFill = 'rgba(180,40,40,0.15)'; revealStroke = 'rgba(180,40,40,0.4)'; }
+        svg += `<rect x="${x-6}" y="${y-4}" width="12" height="8" rx="1" fill="${revealFill}" stroke="${revealStroke}" stroke-width="0.5" stroke-dasharray="2 1"/>`;
+      } else {
+        svg += `<rect x="${x-5}" y="${y-4}" width="10" height="8" rx="1" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>`;
+      }
     } else {
       svg += `<rect x="${x-6}" y="${y-4}" width="12" height="8" rx="1" fill="${fill}" stroke="${stroke}" stroke-width="${current ? 1.5 : 0.5}"/>`;
       if (current) {
