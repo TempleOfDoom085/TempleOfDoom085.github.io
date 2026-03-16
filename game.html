@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knights Templar: The Siege of the Undead — v5.0</title>
+<title>Knights Templar: The Siege of the Undead — v5.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
 
@@ -669,17 +669,45 @@ body {
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
   .game-main { grid-template-columns: 1fr; }
-  .map-panel {
-    grid-column: 1;
-    grid-row: auto;
-    max-height: 160px;
-    border-left: none;
-    border-top: 1px solid var(--panel-border);
-  }
+  .map-panel { grid-column: 1; grid-row: auto; max-height: 160px; border-left: none; border-top: 1px solid var(--panel-border); }
   .scene-panel { height: 200px; border-right: none; }
   .log-panel { border-right: none; min-height: 120px; }
   .npc-dialog { right: 20px; }
 }
+
+/* ═══ v5.1 — ATMOSPHERIC SYSTEMS ═══ */
+@keyframes shakeHit { 0%,100%{transform:translate(0)} 10%{transform:translate(-4px,2px)} 20%{transform:translate(3px,-3px)} 30%{transform:translate(-3px,1px)} 40%{transform:translate(2px,-2px)} 50%{transform:translate(-1px,2px)} }
+.shake { animation: shakeHit 0.4s ease; }
+.shake-heavy { animation: shakeHit 0.6s ease; }
+
+@keyframes roomFadeIn { from{opacity:0;transform:scale(1.02)} to{opacity:1;transform:scale(1)} }
+.scene-entering { animation: roomFadeIn 0.5s ease; }
+
+@keyframes floatUp { 0%{opacity:1;transform:translateY(0) scale(1)} 70%{opacity:0.8} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
+.float-dmg { position:absolute; font-family:var(--heading); font-weight:700; pointer-events:none; animation:floatUp 1.2s ease-out forwards; z-index:40; text-shadow:0 0 10px currentColor; font-size:1.2rem; }
+
+@keyframes dmgFlash { 0%{opacity:0.3} 100%{opacity:0} }
+.damage-flash { position:absolute; inset:0; z-index:5; pointer-events:none; opacity:0; }
+.damage-flash.hit { background:rgba(200,30,30,0.15); animation:dmgFlash 0.3s ease; }
+.damage-flash.healed { background:rgba(40,180,80,0.1); animation:dmgFlash 0.5s ease; }
+
+.scene-vignette { position:absolute; inset:0; pointer-events:none; z-index:1; box-shadow:inset 0 0 80px 30px rgba(0,0,0,0.6); }
+.ambient-tint { position:absolute; inset:0; pointer-events:none; z-index:1; opacity:0.15; transition:background 0.8s ease; }
+
+.particle-layer { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:2; }
+@keyframes dustDrift { 0%{transform:translate(0,0);opacity:0} 15%{opacity:0.6} 85%{opacity:0.4} 100%{transform:translate(60px,-80px);opacity:0} }
+@keyframes emberRise { 0%{transform:translate(0,0) scale(1);opacity:0.8} 50%{opacity:1} 100%{transform:translate(20px,-120px) scale(0.3);opacity:0} }
+@keyframes fogDrift { 0%{transform:translateX(-100px);opacity:0} 30%{opacity:0.15} 70%{opacity:0.1} 100%{transform:translateX(200px);opacity:0} }
+.particle { position:absolute; border-radius:50%; }
+.particle-dust { background:rgba(180,170,150,0.3); animation:dustDrift linear infinite; }
+.particle-ember { background:rgba(255,160,40,0.8); animation:emberRise linear infinite; }
+.particle-fog { background:rgba(100,200,220,0.08); animation:fogDrift linear infinite; filter:blur(15px); }
+
+.combat-enemy-art { width:140px; height:160px; margin:4px 0; }
+.combat-log { max-width:380px; max-height:70px; overflow-y:auto; font-size:0.72rem; color:var(--text-dim); text-align:center; line-height:1.4; margin-top:4px; }
+.combat-log::-webkit-scrollbar { display:none; }
+.endscreen-stats { font-family:var(--ui); font-size:0.62rem; color:var(--gold-dim); letter-spacing:0.06em; text-align:center; line-height:2; }
+.map-room-count { font-family:var(--ui); font-size:0.48rem; color:var(--text-faint); text-align:center; padding:3px 0 5px; border-top:1px solid rgba(184,147,58,0.06); }
 </style>
 </head>
 <body>
@@ -709,8 +737,12 @@ body {
 <!-- MAIN GAME AREA -->
 <div class="game-main" style="position:relative">
   <!-- SCENE ART -->
-  <div class="scene-panel">
+  <div class="scene-panel" id="scenePanel">
     <div id="sceneArt" class="scene-svg"></div>
+    <div class="scene-vignette"></div>
+    <div class="ambient-tint" id="ambientTint"></div>
+    <div class="particle-layer" id="particleLayer"></div>
+    <div class="damage-flash" id="damageFlash"></div>
     <div class="scene-overlay">
       <div class="scene-room-name" id="roomName">Templar Chapel</div>
       <div class="scene-room-sub" id="roomSub">Where your journey begins...</div>
@@ -727,6 +759,7 @@ body {
       <div class="map-legend-item"><div class="map-legend-dot" style="background:#5ec4d4"></div>Visited</div>
       <div class="map-legend-item"><div class="map-legend-dot" style="background:#922"></div>Boss</div>
     </div>
+    <div class="map-room-count" id="mapRoomCount">Explored: 0 / 17</div>
   </div>
 
   <!-- LOG PANEL -->
@@ -735,9 +768,11 @@ body {
   <!-- COMBAT OVERLAY -->
   <div class="combat-overlay" id="combatOverlay">
     <div class="combat-title">⚔ COMBAT ⚔</div>
+    <div class="combat-enemy-art" id="combatEnemyArt"></div>
     <div class="combat-enemy-name" id="combatEnemyName"></div>
     <div class="enemy-hp-bar-outer"><div class="enemy-hp-bar-inner" id="enemyHpBar" style="width:100%"></div></div>
     <span class="hp-text" id="enemyHpText"></span>
+    <div class="combat-log" id="combatLog"></div>
     <div class="combat-actions">
       <button class="ctrl-btn combat-btn" onclick="combatAction('attack')">⚔ Attack</button>
       <button class="ctrl-btn combat-btn" onclick="combatAction('defend')">🛡 Defend</button>
@@ -774,11 +809,13 @@ body {
   <div class="endscreen" id="deathScreen">
     <div class="endscreen-title" style="color:var(--crimson-bright);text-shadow:0 0 30px rgba(180,40,40,0.5);">☠ You Have Fallen ☠</div>
     <div class="endscreen-sub">The undead have claimed another soul. The fortress grows darker still...</div>
+    <div class="endscreen-stats" id="deathStats"></div>
     <button class="endscreen-restart" onclick="restartGame()">⚔ Rise Again</button>
   </div>
   <div class="endscreen" id="winScreen">
     <div class="endscreen-title" style="color:var(--gold);text-shadow:0 0 30px var(--gold-glow);">✝ Victory ✝</div>
     <div class="endscreen-sub">The Necromancer is destroyed. The fortress is cleansed. The Order endures. Deus Vult.</div>
+    <div class="endscreen-stats" id="winStats"></div>
     <button class="endscreen-restart" onclick="restartGame()">⚔ Play Again</button>
   </div>
 </div>
@@ -808,7 +845,8 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v5.0 GAME ENGINE
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v5.1 GAME ENGINE
+// Atmospheric Overhaul — Particles, Screen Shake, Enemy Art, Effects
 // ═══════════════════════════════════════════════════════════════
 
 // ─── GAME STATE ───
@@ -986,6 +1024,169 @@ const ROOMS = {
     type: 'watchtower'
   }
 };
+
+// ─── v5.1 ROOM ATMOSPHERE DATA ───
+const ROOM_FX = {
+  chapel:{particles:'dust',tint:'rgba(255,180,60,0.06)'},
+  cloister:{particles:'dust',tint:'rgba(150,170,200,0.04)'},
+  armory:{particles:'dust',tint:'rgba(255,180,60,0.04)'},
+  scriptorium:{particles:'dust',tint:'rgba(255,200,100,0.05)'},
+  barracks:{particles:'dust',tint:'rgba(255,150,60,0.04)'},
+  infirmary:{particles:'dust',tint:'rgba(100,180,100,0.04)'},
+  bellTower:{particles:'dust',tint:'rgba(150,170,200,0.05)'},
+  courtyard:{particles:'ember',tint:'rgba(255,120,40,0.05)'},
+  cryptEntrance:{particles:'fog',tint:'rgba(100,200,220,0.05)'},
+  catacombs:{particles:'fog',tint:'rgba(100,200,220,0.04)'},
+  necromancerLair:{particles:'fog',tint:'rgba(60,255,60,0.05)'},
+  grandHall:{particles:'dust',tint:'rgba(100,150,200,0.03)'},
+  treasury:{particles:'dust',tint:'rgba(201,168,76,0.06)'},
+  boneThrone:{particles:'dust',tint:'rgba(139,0,0,0.05)'},
+  portraitGallery:{particles:'dust',tint:'rgba(201,168,76,0.04)'},
+  dungeonDepths:{particles:'dust',tint:'rgba(139,0,0,0.04)'},
+  watchtower:{particles:'dust',tint:'rgba(150,170,200,0.04)'}
+};
+
+// ─── v5.1 EFFECT FUNCTIONS ───
+function spawnParticles(type) {
+  const layer = document.getElementById('particleLayer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  const count = type === 'ember' ? 16 : type === 'fog' ? 7 : 10;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    if (type === 'dust') {
+      p.classList.add('particle-dust');
+      p.style.width = (1 + Math.random() * 2) + 'px';
+      p.style.height = p.style.width;
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = (20 + Math.random() * 60) + '%';
+      p.style.animationDuration = (5 + Math.random() * 8) + 's';
+      p.style.animationDelay = Math.random() * 6 + 's';
+    } else if (type === 'ember') {
+      p.classList.add('particle-ember');
+      p.style.width = (1 + Math.random() * 2.5) + 'px';
+      p.style.height = p.style.width;
+      p.style.left = (20 + Math.random() * 60) + '%';
+      p.style.bottom = '10%';
+      p.style.animationDuration = (2.5 + Math.random() * 4) + 's';
+      p.style.animationDelay = Math.random() * 4 + 's';
+    } else if (type === 'fog') {
+      p.classList.add('particle-fog');
+      p.style.width = (80 + Math.random() * 120) + 'px';
+      p.style.height = (40 + Math.random() * 60) + 'px';
+      p.style.left = '-100px';
+      p.style.top = (50 + Math.random() * 40) + '%';
+      p.style.animationDuration = (10 + Math.random() * 8) + 's';
+      p.style.animationDelay = Math.random() * 8 + 's';
+    }
+    layer.appendChild(p);
+  }
+}
+
+function screenShake(heavy) {
+  const el = document.getElementById('scenePanel');
+  if (!el) return;
+  el.classList.remove('shake', 'shake-heavy');
+  void el.offsetWidth; // force reflow
+  el.classList.add(heavy ? 'shake-heavy' : 'shake');
+}
+
+function damageFlash(type) {
+  const el = document.getElementById('damageFlash');
+  if (!el) return;
+  el.classList.remove('hit', 'healed');
+  void el.offsetWidth;
+  el.classList.add(type);
+}
+
+function floatDamage(text, color) {
+  const el = document.createElement('div');
+  el.className = 'float-dmg';
+  el.style.color = color;
+  el.style.fontSize = text.includes('CRIT') ? '1.6rem' : '1.2rem';
+  el.style.left = (30 + Math.random() * 40) + '%';
+  el.style.top = '30%';
+  el.textContent = text;
+  const container = document.querySelector('.game-main');
+  if (container) container.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function roomTransition() {
+  const el = document.getElementById('scenePanel');
+  if (!el) return;
+  el.classList.remove('scene-entering');
+  void el.offsetWidth;
+  el.classList.add('scene-entering');
+}
+
+function combatLogMsg(text) {
+  const el = document.getElementById('combatLog');
+  if (!el) return;
+  el.innerHTML += text + '<br>';
+  el.scrollTop = 999999;
+}
+
+function renderEnemySVG(type) {
+  const w = 140, h = 160;
+  let art = '';
+  if (type === 'risen') {
+    art = `<g transform="translate(70,15)">
+      <rect x="-16" y="40" width="32" height="65" fill="rgba(90,85,75,0.3)" stroke="rgba(100,200,220,0.12)" stroke-width="0.5" rx="2"/>
+      <rect x="-2" y="50" width="4" height="22" fill="rgba(139,0,0,0.4)"/>
+      <rect x="-7" y="58" width="14" height="3.5" fill="rgba(139,0,0,0.4)"/>
+      <rect x="-11" y="18" width="22" height="25" fill="rgba(90,85,75,0.35)" rx="3"/>
+      <line x1="-5" y1="20" x2="3" y2="35" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"/>
+      <rect x="-7" y="29" width="14" height="1.8" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="-3.5" cy="30.5" r="2.2" fill="rgba(100,200,220,0.8)" filter="url(#glow)"/>
+      <circle cx="3.5" cy="30.5" r="2.2" fill="rgba(100,200,220,0.8)" filter="url(#glow)"/>
+      <rect x="18" y="50" width="2.5" height="38" fill="rgba(120,115,105,0.3)" transform="rotate(12 19 69)"/>
+      <polygon points="18,47 20.5,47 22,36 17,36" fill="rgba(120,115,105,0.2)" transform="rotate(12 19 42)"/>
+      <ellipse cx="-7" cy="65" rx="5" ry="3" fill="rgba(120,70,30,0.1)"/>
+      <rect x="-11" y="105" width="9" height="32" fill="rgba(90,85,75,0.22)" rx="2"/>
+      <rect x="2" y="105" width="9" height="32" fill="rgba(90,85,75,0.22)" rx="2"/>
+      <ellipse cx="0" cy="30" rx="18" ry="12" fill="rgba(100,200,220,0.03)"/>
+    </g>`;
+  } else if (type === 'peasant') {
+    art = `<g transform="translate(70,20)">
+      <path d="M-13,36 L-18,100 Q-7,108 0,100 Q7,108 18,100 L13,36" fill="rgba(80,70,55,0.2)" stroke="rgba(80,70,55,0.12)" stroke-width="0.5"/>
+      <rect x="-9" y="50" width="18" height="13" fill="rgba(120,90,70,0.08)" rx="3"/>
+      <circle cx="0" cy="24" r="13" fill="rgba(130,105,80,0.12)" stroke="rgba(130,105,80,0.08)" stroke-width="0.5"/>
+      <ellipse cx="0" cy="31" rx="5.5" ry="4.5" fill="rgba(0,0,0,0.35)"/>
+      <circle cx="-4.5" cy="22" r="2.2" fill="rgba(100,200,220,0.7)" filter="url(#glow)"/>
+      <circle cx="4.5" cy="22" r="2.2" fill="rgba(100,200,220,0.7)" filter="url(#glow)"/>
+      <line x1="22" y1="16" x2="25" y2="110" stroke="rgba(100,80,50,0.3)" stroke-width="2.5"/>
+      <line x1="19" y1="16" x2="22" y2="7" stroke="rgba(120,115,105,0.25)" stroke-width="1.5"/>
+      <line x1="25" y1="16" x2="22" y2="7" stroke="rgba(120,115,105,0.25)" stroke-width="1.5"/>
+      <line x1="22" y1="16" x2="22" y2="5" stroke="rgba(120,115,105,0.25)" stroke-width="1.5"/>
+      <path d="M-13,45 L-22,82 L-19,92" fill="none" stroke="rgba(130,105,80,0.1)" stroke-width="2.5"/>
+      <rect x="-9" y="100" width="7" height="26" fill="rgba(80,70,55,0.12)" rx="2"/>
+      <rect x="2" y="100" width="7" height="26" fill="rgba(80,70,55,0.12)" rx="2" transform="rotate(4 5.5 113)"/>
+    </g>`;
+  } else {
+    art = `<g transform="translate(70,8)">
+      <path d="M-27,45 L-40,140 Q0,150 40,140 L27,45" fill="rgba(20,10,35,0.6)" stroke="rgba(60,255,60,0.06)" stroke-width="0.5"/>
+      ${[-13,-4,5,14].map(x => '<text x="'+x+'" y="'+(90+Math.abs(x)*1.5)+'" font-size="6" fill="rgba(60,255,60,0.12)" font-family="serif">☠</text>').join('')}
+      <path d="M-15,17 Q0,-2 15,17 L19,48 L-19,48" fill="rgba(15,8,25,0.7)"/>
+      <ellipse cx="0" cy="32" rx="9" ry="10" fill="rgba(200,190,170,0.06)"/>
+      <ellipse cx="0" cy="38" rx="3.5" ry="2.5" fill="rgba(0,0,0,0.35)"/>
+      <circle cx="-3.5" cy="30" r="2.8" fill="rgba(200,240,255,0.85)" filter="url(#glow)"/>
+      <circle cx="3.5" cy="30" r="2.8" fill="rgba(200,240,255,0.85)" filter="url(#glow)"/>
+      <ellipse cx="-24" cy="47" rx="9" ry="5" fill="rgba(200,190,170,0.05)" stroke="rgba(200,190,170,0.06)" stroke-width="0.5"/>
+      <ellipse cx="24" cy="47" rx="9" ry="5" fill="rgba(200,190,170,0.05)" stroke="rgba(200,190,170,0.06)" stroke-width="0.5"/>
+      <line x1="-24" y1="42" x2="-24" y2="33" stroke="rgba(200,190,170,0.08)" stroke-width="1.2"/>
+      <line x1="24" y1="42" x2="24" y2="33" stroke="rgba(200,190,170,0.08)" stroke-width="1.2"/>
+      <line x1="34" y1="-2" x2="38" y2="140" stroke="rgba(180,170,150,0.22)" stroke-width="2.5"/>
+      <circle cx="33" cy="-7" r="7" fill="rgba(200,190,170,0.08)" stroke="rgba(200,190,170,0.06)" stroke-width="0.5"/>
+      <circle cx="30" cy="-9" r="1.3" fill="rgba(200,240,255,0.5)"/>
+      <circle cx="36" cy="-9" r="1.3" fill="rgba(200,240,255,0.5)"/>
+      <path d="M-13,15 L-17,3 M-8,13 L-10,6 M8,13 L10,6 M13,15 L17,3" fill="none" stroke="rgba(200,190,170,0.1)" stroke-width="1.2"/>
+      <ellipse cx="0" cy="72" rx="42" ry="65" fill="rgba(60,255,60,0.015)"/>
+    </g>`;
+  }
+  return '<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg"><defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' + art + '</svg>';
+}
 
 // ─── MAP LAYOUT (grid positions for drawing) ───
 const MAP_POS = {
@@ -1167,6 +1368,13 @@ function enterRoom(roomId) {
   STATE.visited.add(roomId);
   const room = ROOMS[roomId];
 
+  // v5.1: Atmospheric effects
+  roomTransition();
+  const fx = ROOM_FX[roomId] || {particles:'dust',tint:'transparent'};
+  spawnParticles(fx.particles);
+  const tintEl = document.getElementById('ambientTint');
+  if (tintEl) tintEl.style.background = fx.tint;
+
   // Update scene
   document.getElementById('roomName').textContent = room.name;
   document.getElementById('roomSub').textContent = room.sub;
@@ -1188,6 +1396,7 @@ function enterRoom(roomId) {
     const heal = 25 + Math.floor(Math.random() * 16);
     STATE.hp = Math.min(STATE.maxHp, STATE.hp + heal);
     addLog(`Brother Aldric tends your wounds. You recover ${heal} HP.`, 'heal');
+    damageFlash('healed'); floatDamage('+' + heal, '#4a8');
     playSound('heal');
     updateHP();
   }
@@ -1198,6 +1407,7 @@ function enterRoom(roomId) {
     const dmg = 8 + Math.floor(Math.random() * 11);
     STATE.hp -= dmg;
     addLog(`The ancient runes flare with dark energy! A runic trap deals ${dmg} damage.`, 'combat');
+    screenShake(false); damageFlash('hit'); floatDamage('-' + dmg, '#c44');
     playSound('trap');
     updateHP();
     if (STATE.hp <= 0) { playerDeath(); return; }
@@ -1209,11 +1419,13 @@ function enterRoom(roomId) {
     if (evt.dmg > 0) {
       STATE.hp -= evt.dmg;
       addLog(evt.text + ` (-${evt.dmg} HP)`, 'combat');
+      screenShake(false); damageFlash('hit'); floatDamage('-' + evt.dmg, '#c44');
       updateHP();
       if (STATE.hp <= 0) { playerDeath(); return; }
     } else if (evt.heal > 0) {
       STATE.hp = Math.min(STATE.maxHp, STATE.hp + evt.heal);
       addLog(evt.text + ` (+${evt.heal} HP)`, 'heal');
+      damageFlash('healed'); floatDamage('+' + evt.heal, '#4a8');
       updateHP();
     } else {
       addLog(evt.text, 'lore');
@@ -1256,6 +1468,8 @@ function startCombat(roomId, enemyType) {
 
   document.getElementById('combatOverlay').classList.add('active');
   document.getElementById('combatEnemyName').textContent = e.name;
+  document.getElementById('combatEnemyArt').innerHTML = renderEnemySVG(enemyType);
+  document.getElementById('combatLog').innerHTML = '';
   updateEnemyHP();
   updateButtons();
 }
@@ -1271,7 +1485,10 @@ function combatAction(action) {
     if (crit) dmg = Math.floor(dmg * 1.8);
     if (STATE.hasGoldenArmor) dmg = STATE.enemyMaxHp; // One-hit with golden armor
     STATE.enemyHp -= dmg;
-    addLog(`You strike the ${e.name} for ${dmg} damage${crit ? ' — CRITICAL HIT!' : '.'}`, 'combat');
+    const msg = `You strike the ${e.name} for ${dmg} damage${crit ? ' — CRITICAL HIT!' : '.'}`;
+    addLog(msg, 'combat');
+    combatLogMsg(crit ? `⚔ ${dmg} CRITICAL!` : `⚔ ${dmg} damage`);
+    floatDamage(crit ? `-${dmg} CRIT!` : `-${dmg}`, crit ? '#ffd700' : '#c44');
     playSound('sword');
 
     if (STATE.enemyHp <= 0) {
@@ -1281,12 +1498,14 @@ function combatAction(action) {
   } else if (action === 'defend') {
     STATE.defending = true;
     addLog('You raise your shield and brace for impact.', 'system');
+    combatLogMsg('🛡 Defending...');
     playSound('defend');
   } else if (action === 'flee') {
     STATE.defending = false;
     const fleeDmg = 5 + Math.floor(Math.random() * 8);
     STATE.hp -= fleeDmg;
     addLog(`You turn and flee! The ${e.name} strikes you as you run. (-${fleeDmg} HP)`, 'combat');
+    screenShake(false); damageFlash('hit'); floatDamage('-' + fleeDmg, '#c44');
     updateHP();
     STATE.inCombat = false;
     document.getElementById('combatOverlay').classList.remove('active');
@@ -1309,8 +1528,11 @@ function combatAction(action) {
     STATE.hp -= eDmg;
     if (eDmg > 0) {
       addLog(`The ${e.name} strikes back for ${eDmg} damage${STATE.defending ? ' (blocked!)' : '.'}`, 'combat');
+      combatLogMsg(`☠ ${e.name}: ${eDmg}${STATE.defending ? ' (blocked)' : ''}`);
+      screenShake(eDmg > 10); damageFlash('hit'); floatDamage('-' + eDmg, '#c44');
     } else {
       addLog(`The ${e.name}'s attack bounces harmlessly off your divine armor.`, 'combat');
+      combatLogMsg('✦ Attack deflected by divine armor');
     }
     playSound('hit');
     updateHP();
@@ -1336,8 +1558,10 @@ function endCombat(victory) {
     STATE.necromancerDead = true;
     addLog('The Necromancer shrieks as his staff shatters! Dark energy implodes — the undead army collapses. The fortress is cleansed.', 'victory');
     playSound('victory');
+    screenShake(true);
     checkAchievements();
     setTimeout(() => {
+      document.getElementById('winStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Achievements: ' + STATE.achievements.size + '/8';
       document.getElementById('winScreen').classList.add('active');
     }, 2000);
     return;
@@ -1422,6 +1646,7 @@ function askNPC(npcId, topic) {
     const heal = 20 + Math.floor(Math.random() * 15);
     STATE.hp = Math.min(STATE.maxHp, STATE.hp + heal);
     addLog(`Brother Aldric\'s care restores ${heal} HP.`, 'heal');
+    damageFlash('healed'); floatDamage('+' + heal, '#4a8');
     playSound('heal');
     updateHP();
   }
@@ -1467,8 +1692,10 @@ function checkGoldenArmor() {
     addLog('Saint Michael the Archangel descends — wings of gold, sword of flame, halo of pure light.', 'divine');
     addLog('"You have proven your faith, knight. Take my armor and end this darkness."', 'divine');
     addLog('✦ You are now clad in the Armor of Saint Michael. You are INVINCIBLE. ✦', 'divine');
+    screenShake(true);
     playSound('divine');
     updateHP();
+    renderScene(STATE.currentRoom); // Re-render knight as golden
     checkAchievements();
   }
 }
@@ -1518,6 +1745,7 @@ function playerDeath() {
   addLog('You collapse. The darkness takes you.', 'death');
   playSound('death');
   setTimeout(() => {
+    document.getElementById('deathStats').innerHTML = 'Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Rooms: ' + STATE.visited.size + '/17';
     document.getElementById('deathScreen').classList.add('active');
   }, 1500);
 }
@@ -1804,6 +2032,8 @@ function renderMap() {
 
   svg += `</svg>`;
   document.getElementById('mapContainer').innerHTML = svg;
+  const rcEl = document.getElementById('mapRoomCount');
+  if (rcEl) rcEl.textContent = 'Explored: ' + STATE.visited.size + ' / 17';
 }
 
 // ═══ SCENE RENDERER — Rich SVG Art ═══
