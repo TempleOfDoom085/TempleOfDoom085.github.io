@@ -744,7 +744,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead</div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v6.0b</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -1908,11 +1908,19 @@ function updateButtons() {
     btn.disabled = !room.exits[dir] || STATE.inCombat;
   });
 
-  // Action buttons
-  document.getElementById('btnGrab').style.display = (room.relic && !STATE.inCombat) ? 'inline-block' : 'none';
-  document.getElementById('btnScroll').style.display = (room.hasScroll && !STATE.inCombat && scrollPlacements[STATE.currentRoom] && !STATE.scrollsFound.includes(scrollPlacements[STATE.currentRoom]?.ref)) ? 'inline-block' : 'none';
-  document.getElementById('btnTalk').style.display = (room.npc && !STATE.inCombat) ? 'inline-block' : 'none';
-  document.getElementById('btnPortrait').style.display = (room.hasPortraits && !STATE.inCombat) ? 'inline-block' : 'none';
+  // Action buttons — always visible, disabled when not usable
+  const canGrab = room.relic && !STATE.inCombat;
+  const canScroll = room.hasScroll && !STATE.inCombat && scrollPlacements[STATE.currentRoom] && !STATE.scrollsFound.includes(scrollPlacements[STATE.currentRoom]?.ref);
+  const canTalk = room.npc && !STATE.inCombat;
+  const canPortrait = room.hasPortraits && !STATE.inCombat;
+
+  document.getElementById('btnGrab').style.display = canGrab ? 'inline-block' : 'none';
+  document.getElementById('btnScroll').style.display = canScroll ? 'inline-block' : 'none';
+  document.getElementById('btnTalk').style.display = canTalk ? 'inline-block' : 'none';
+  document.getElementById('btnPortrait').style.display = canPortrait ? 'inline-block' : 'none';
+  
+  // Debug: log button state
+  console.log('updateButtons:', STATE.currentRoom, 'relic:', room.relic, 'scroll:', room.hasScroll, 'npc:', room.npc, 'combat:', STATE.inCombat);
 }
 
 function updateEnemyHP() {
