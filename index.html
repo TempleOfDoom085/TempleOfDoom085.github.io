@@ -492,7 +492,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag neon">SVG Art</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v5.1 Live</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v5.2 Live</span>
         </div>
         <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
       </div>
@@ -519,7 +519,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
       <div id="gameLauncher">
         <button class="game-launch-btn" onclick="launchGame()">
           <div class="game-launch-title">KNIGHTS TEMPLAR</div>
-          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 5.1 —</div>
+          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 5.2 —</div>
           <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
         </button>
       </div>
@@ -537,13 +537,65 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
-        <span class="patch-version-tag">v5.1</span>
-        <span class="patch-version-name">Atmospheric Overhaul</span>
+        <span class="patch-version-tag">v5.2</span>
+        <span class="patch-version-name">Immersion Overhaul — Detail, Readability & Bug Fixes</span>
         <span class="patch-date">March 2026</span>
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
+        <div class="patch-category">Font & Readability Overhaul</div>
+        <ul class="patch-list">
+          <li>All font sizes increased across every UI element — room names, log text, buttons, HP display, inventory, NPC dialog, scroll verses, achievement popups</li>
+          <li>HP bar enlarged to 160×18px for better visibility</li>
+          <li>Control buttons now 0.82rem+ with larger hit targets</li>
+          <li>Game title bar, room names, and combat titles all bumped significantly</li>
+        </ul>
+        <div class="patch-category">Rich Medieval Room Detail</div>
+        <ul class="patch-list">
+          <li>New stone block wall texture — visible individual blocks with mortar lines, replacing flat fills</li>
+          <li>New flagstone floor texture with visible paving pattern</li>
+          <li>Templar war banners (torn and intact) hanging throughout the fortress</li>
+          <li>Wall-mounted Templar shields with red cross emblems on display</li>
+          <li>Torch bracket system with flame glow, warm pool of light, and wall mount detail</li>
+          <li>Cobwebs in upper corners of indoor rooms</li>
+          <li>Stone wall cracks, moss stains, and claw marks from the undead auto-generated per room</li>
+          <li>Period-authentic inscriptions — "DEUS VULT" and "NON NOBIS DOMINE" carved into stone</li>
+          <li>Rats occasionally visible scurrying along the floor</li>
+        </ul>
+        <div class="patch-category">Room-Specific Enhancements</div>
+        <ul class="patch-list">
+          <li>Chapel: Grand rose window with tracery, ribbed vault ceiling, shattered pews with debris, torn altar cloth, wax drips on candles, wall shields and dual torches</li>
+          <li>Cloister: Fallen saint statue, dead roses in garden, iron wall sconces, inscribed column</li>
+          <li>Armory: Additional shields, Templar banner, dented helmet on floor, broken mace, hanging chain, carved motto</li>
+          <li>Barracks: War planning table with battle maps, supply crates, tally marks near Sir Edmund, second torch, torn banner</li>
+          <li>Courtyard: Broken battering ram with iron head, arrows embedded in ground, fallen knight body, broken siege ladder, damaged war banner</li>
+        </ul>
+        <div class="patch-category">Action Button Overhaul</div>
+        <ul class="patch-list">
+          <li>TAKE RELIC and READ SCROLL buttons now pulse with animated glow — impossible to miss</li>
+          <li>All action buttons enlarged with bigger text and hit targets</li>
+          <li>Clear text notifications when relics, scrolls, NPCs, or portraits are available in a room</li>
+          <li>Post-combat notifications — after defeating an enemy, the game tells you what items are available to grab</li>
+        </ul>
+        <div class="patch-category">Bug Fixes</div>
+        <ul class="patch-list">
+          <li>Fixed relics/scrolls being invisible — players now get explicit log messages when items are present</li>
+          <li>Fixed action buttons not appearing after combat — updateButtons now fires correctly after every enemy defeat</li>
+          <li>Fixed rooms feeling empty — every room now has auto-generated medieval detail layer</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v5.1</span>
+        <span class="patch-version-name">Atmospheric Overhaul</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status prev">PREVIOUS</span>
+        <span class="patch-toggle">▶</span>
+      </div>
+      <div class="patch-body">
         <div class="patch-category">Particle Systems</div>
         <ul class="patch-list">
           <li>Floating dust motes in indoor rooms — drifting through candlelight</li>
