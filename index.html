@@ -492,7 +492,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag neon">SVG Art</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v6.1 Live</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v7.0 Live</span>
         </div>
         <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
       </div>
@@ -537,13 +537,106 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
-        <span class="patch-version-tag">v6.1</span>
-        <span class="patch-version-name">Quest System & Character Overhaul</span>
+        <span class="patch-version-tag">v7.0</span>
+        <span class="patch-version-name">The Living Fortress</span>
         <span class="patch-date">March 2026</span>
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
+        <div class="patch-category">3-Phase Boss Fight</div>
+        <ul class="patch-list">
+          <li>The Necromancer fight is now a cinematic 3-phase battle with unique mechanics in each phase</li>
+          <li>Phase 1: Shield of Bones — the Necromancer summons 3 skeleton shields that must be destroyed before he can be damaged</li>
+          <li>Phase 2: Shadow Split — he dissolves into 3 shadow clones and you must choose which one is real, wrong choice = damage</li>
+          <li>Phase 3: Berserk — he shatters his own staff for raw power, dealing massive damage but taking 30% more in return</li>
+          <li>Full cinematic intro with dialogue and screen effects when the boss fight begins</li>
+          <li>Necromancer HP increased to 180 for the extended multi-phase encounter</li>
+        </ul>
+        <div class="patch-category">World Events System</div>
+        <ul class="patch-list">
+          <li>Random world events trigger every 4-6 room transitions — the fortress feels alive and unpredictable</li>
+          <li>The Wandering Merchant appears randomly — sell XP to buy Health Potions, Fortification Brews (+10 max HP), Whetstones (+2 ATK), or Blessed Bandages (extra death save)</li>
+          <li>Fortress Tremors — earthquakes that can heal you, damage you, or grant bonus XP from revealed treasure</li>
+          <li>Voices of the Dead — ghostly Templar spirits that grant blessings, XP, or temporary combat buffs</li>
+          <li>Undead Patrols — surprise ambush encounters that deal damage but reward XP after you fight them off</li>
+          <li>Dark Energy Surges — the Necromancer's power pulses through the fortress, narratively strengthening remaining enemies</li>
+        </ul>
+        <div class="patch-category">Portrait Gallery Overhaul</div>
+        <ul class="patch-list">
+          <li>All 3 portrait frames now contain detailed mini-figure paintings visible in the room scene</li>
+          <li>Hugues de Payens — elder knight with sword, visible Templar cross, grey hair</li>
+          <li>Jacques de Molay — chained, defiant, with animated flickering flames at the stake</li>
+          <li>André de Montbard — battle-ready crusader with raised sword and Templar shield</li>
+          <li>Portrait names and dates etched below each frame with candle sconces illuminating them</li>
+          <li>Examine button now shows a portrait picker — choose which painting to study instead of forced sequential order</li>
+          <li>All 3 portraits can be re-examined after initial viewing</li>
+        </ul>
+        <div class="patch-category">Spectral Scribe Overhaul</div>
+        <ul class="patch-list">
+          <li>Brother Matthias rebuilt from a vague ghost into a fully detailed spectral monk with visible robes, face, and accessories</li>
+          <li>Holding an open glowing book with visible text lines and a quill pen with dripping spectral ink</li>
+          <li>Tonsured head, sad glowing eyes, wispy spectral beard, Templar cross pendant on rope belt</li>
+          <li>Surrounded by floating scroll fragments and luminous particles, feet dissolving into mist</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v6.2</span>
+        <span class="patch-version-name">Equipment System & RPG Combat</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status prev">PREV</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body">
+        <div class="patch-category">Relic Equipment System</div>
+        <ul class="patch-list">
+          <li>All 6 relics now have passive stat bonuses and active combat abilities — every pickup transforms your playstyle</li>
+          <li>Templar Longsword — +4 ATK, Power Strike ability (2.5x damage, 3-turn cooldown)</li>
+          <li>Chainmail Hauberk — +5 DEF, Iron Wall ability (block ALL damage for one turn, 4-turn cooldown)</li>
+          <li>Holy Water — Divine Heal ability (restore 25-40 HP mid-combat, 4-turn cooldown)</li>
+          <li>Blessed Candles — +2 ATK/DEF, Holy Light ability (guaranteed critical on next attack, 5-turn cooldown)</li>
+          <li>Rosary of Iron — +1 ATK/+3 DEF, Martyr's Resolve (auto-survive one killing blow per combat at 1 HP)</li>
+          <li>Illuminated Map — Cartographer's Eye (reveals all rooms, relics, and enemies on the fortress map immediately on pickup)</li>
+          <li>Relic stats and ability descriptions shown on pickup in the game log</li>
+        </ul>
+        <div class="patch-category">Combat Ability Bar</div>
+        <ul class="patch-list">
+          <li>New ability buttons row appears below Attack/Defend/Flee during combat — dynamically populated based on equipped relics</li>
+          <li>Each ability has a visible cooldown counter — greyed out with turn count when on cooldown</li>
+          <li>Ability buttons pulse gold when available, matching the existing action button styling</li>
+          <li>Power Strike triggers screen shake, Holy Light buffs persist across turns, Iron Wall fully blocks enemy counterattack</li>
+        </ul>
+        <div class="patch-category">XP & Leveling System</div>
+        <ul class="patch-list">
+          <li>Earn XP from every combat victory — Peasant Zombies 15 XP, Risen Knights 25 XP, Necromancer 100 XP</li>
+          <li>Level up at XP thresholds (30, 75, 140, 230, 350, 500, 700) — max Level 9</li>
+          <li>Each level grants +5 Max HP, +1 ATK, +1 DEF — permanent stat growth</li>
+          <li>Level-up triggers golden log announcement with screen shake and achievement sound</li>
+          <li>XP progress bar shown in top bar alongside current level</li>
+        </ul>
+        <div class="patch-category">Stat-Based Combat</div>
+        <ul class="patch-list">
+          <li>Attack damage now scales from ATK stat (base + relics + level + quest buffs) instead of flat random range</li>
+          <li>DEF stat reduces incoming damage by 35% of your defense value — stacking armor actually matters</li>
+          <li>Stats display in top bar shows LVL, ATK, DEF, and XP/next level in real-time</li>
+          <li>Win and death screens now display Level and XP alongside existing stats</li>
+          <li>Map reveals unvisited rooms with color-coded borders when Illuminated Map is active — relics green, enemies red, boss crimson</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v6.1</span>
+        <span class="patch-version-name">Quest System & Character Overhaul</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status prev">PREV</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body">
         <div class="patch-category">NPC Quest System</div>
         <ul class="patch-list">
           <li>5 fully-scripted quests given by NPCs — each with multi-step objectives, story dialogue, and meaningful gameplay rewards</li>
@@ -918,7 +1011,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
     <div class="patch-roadmap">
       <div class="patch-roadmap-title">// Future Roadmap — The Path to Open World</div>
       <div class="roadmap-item">
-        <span class="roadmap-phase">v6.1 →</span>
+        <span class="roadmap-phase">v7.0 →</span>
         <span class="roadmap-desc">Equippable inventory, player stats (strength/faith/defense), save system, difficulty modes, more rooms and mini-bosses</span>
       </div>
       <div class="roadmap-item">
