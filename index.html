@@ -18,6 +18,42 @@
 html { scroll-behavior: smooth; }
 body { font-family: var(--serif); background: var(--ink); color: var(--paper); line-height: 1.6; overflow-x: hidden; }
 
+/* SCROLL ANIMATIONS */
+.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ACTIVE NAV */
+.nav-links a.active { color: var(--gold); }
+
+/* BACK TO TOP */
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  background: rgba(184,147,58,0.15);
+  border: 1px solid rgba(184,147,58,0.3);
+  color: var(--gold);
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 90;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  backdrop-filter: blur(8px);
+}
+.back-to-top:hover { background: rgba(184,147,58,0.3); border-color: var(--gold); }
+.back-to-top.show { display: flex; }
+
 /* NAV */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -383,10 +419,10 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- ABOUT -->
 <section id="about">
   <div class="inner">
-    <div class="about-grid">
+    <div class="about-grid fade-in">
       <div>
-        <span class="section-label">01 — About</span>
-        <h2 class="section-title">Security-minded.<br><em>Automation-driven.</em></h2>
+        <span class="section-label fade-in">01 — About</span>
+        <h2 class="section-title fade-in">Security-minded.<br><em>Automation-driven.</em></h2>
         <div class="about-text">
           <p>I'm Brian Temple — an AI automation builder and cybersecurity student based in Towaco, NJ. I specialize in designing and deploying AI-driven voice agents, workflow automation pipelines, and cloud-deployed systems that blend intelligent automation with real human impact.</p>
           <p>My technical work spans building conversational AI systems, integrating platforms via automation tools, and managing cloud infrastructure — all with a focus on performance, reliability, and clean user experience.</p>
@@ -405,9 +441,9 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- EXPERIENCE -->
 <section id="experience">
   <div class="inner">
-    <span class="section-label">02 — Experience</span>
-    <h2 class="section-title">Where I've <em>built things.</em></h2>
-    <div class="exp-list">
+    <span class="section-label fade-in">02 — Experience</span>
+    <h2 class="section-title fade-in">Where I've <em>built things.</em></h2>
+    <div class="exp-list fade-in">
       <div class="exp-item">
         <div>
           <div class="exp-co">Unblinded — Paramus, NJ</div>
@@ -449,9 +485,9 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- SKILLS -->
 <section id="skills">
   <div class="inner">
-    <span class="section-label">03 — Skills</span>
-    <h2 class="section-title" style="color:var(--paper)">What I <em>bring to the table.</em></h2>
-    <div class="skills-grid">
+    <span class="section-label fade-in">03 — Skills</span>
+    <h2 class="section-title fade-in" style="color:var(--paper)">What I <em>bring to the table.</em></h2>
+    <div class="skills-grid fade-in">
       <div class="skill-card">
         <div class="skill-icon">🤖</div>
         <div class="skill-title">AI & Automation</div>
@@ -479,9 +515,9 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- PROJECTS -->
 <section id="projects">
   <div class="inner">
-    <span class="section-label">04 — Projects</span>
-    <h2 class="section-title">Things I've <em>built.</em></h2>
-    <div class="project-list">
+    <span class="section-label fade-in">04 — Projects</span>
+    <h2 class="section-title fade-in">Things I've <em>built.</em></h2>
+    <div class="project-list fade-in">
       <div class="project-item">
         <div class="project-type">Python / Game Dev / JavaScript</div>
         <div class="project-name">Knights Templar: The Siege of the Undead</div>
@@ -503,8 +539,8 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- GAME SECTION -->
 <section id="game-section" style="padding:0">
   <div class="game-header inner" style="padding-top:4rem;padding-bottom:0;">
-    <span class="section-label">04 — Featured Project</span>
-    <h2 class="section-title">Knights Templar: <em>The Siege of the Undead</em></h2>
+    <span class="section-label fade-in">04 — Featured Project</span>
+    <h2 class="section-title fade-in">Knights Templar: <em>The Siege of the Undead</em></h2>
   </div>
 
   <div class="game-tabs">
@@ -519,7 +555,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
       <div id="gameLauncher">
         <button class="game-launch-btn" onclick="launchGame()">
           <div class="game-launch-title">KNIGHTS TEMPLAR</div>
-          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 6.0 —</div>
+          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 7.0 —</div>
           <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
         </button>
       </div>
@@ -1011,16 +1047,20 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
     <div class="patch-roadmap">
       <div class="patch-roadmap-title">// Future Roadmap — The Path to Open World</div>
       <div class="roadmap-item">
-        <span class="roadmap-phase">v7.0 →</span>
-        <span class="roadmap-desc">Equippable inventory, player stats (strength/faith/defense), save system, difficulty modes, more rooms and mini-bosses</span>
+        <span class="roadmap-phase">v7.0 ✓</span>
+        <span class="roadmap-desc">3-phase boss fight, world events, wandering merchant, equipment abilities, XP/leveling, portrait gallery overhaul, spectral NPC art</span>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase">v8.0 →</span>
+        <span class="roadmap-desc">Procedural ambient soundscapes per room, dynamic combat music, save/load system, difficulty modes, expanded lore and branching dialogue</span>
       </div>
       <div class="roadmap-item">
         <span class="roadmap-phase">Phase 2 →</span>
-        <span class="roadmap-desc">2D isometric prototype with sprite-based characters, tile movement, animated combat, voiced NPCs</span>
+        <span class="roadmap-desc">2D isometric prototype — sprite-based characters, tile movement, animated combat, voiced NPCs, real-time exploration</span>
       </div>
       <div class="roadmap-item">
         <span class="roadmap-phase">Phase 3 →</span>
-        <span class="roadmap-desc">Full 3D open-world engine — photorealistic medieval fortress, real-time combat, procedural dungeons, multiplayer co-op, orchestral soundtrack</span>
+        <span class="roadmap-desc">Full 3D open-world sandbox — photorealistic medieval fortress, real-time combat, procedural dungeons, multiplayer co-op, orchestral soundtrack</span>
       </div>
     </div>
   </div>
@@ -1029,26 +1069,34 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
   <div id="tab-about-game" class="tab-content" style="padding:2rem 3rem 4rem;max-width:800px;">
     <div style="font-size:1.1rem;font-weight:300;color:rgba(245,242,236,0.75);line-height:1.95;">
       <p>Knights Templar: The Siege of the Undead started as a Python assignment for IT 140 at Southern New Hampshire University. The brief was simple: build a text-based adventure with rooms, items, and win/lose conditions.</p>
-      <p style="margin-top:1.2rem;">What it became is something much larger. Over five versions, the game grew from a terminal script into a feature-rich browser experience with hand-coded SVG artwork, procedural Web Audio chant music, a full combat system, NPC dialogue trees, hidden Bible verse scrolls, historical portraits, and an achievement system culminating in a Saint Michael the Archangel cutscene.</p>
-      <p style="margin-top:1.2rem;">The game is built entirely without external libraries — no game engine, no asset files, no audio downloads. Every sound is synthesized live using the Web Audio API. Every piece of artwork is hand-written SVG code following a strict cinematic dark-fantasy art direction inspired by Diablo and Batman Beyond. Version 5.1 added animated particle systems, screen shake, floating damage numbers, per-room atmospheric tinting, and full SVG enemy art in combat.</p>
-      <p style="margin-top:1.2rem;">The long-term goal is a full open-world 3D game. This browser version is the foundation — the design document, the lore, and the vision are all already built. The graphics are the next frontier.</p>
+      <p style="margin-top:1.2rem;">What it became is something much larger. Over seven major versions, the game grew from a terminal script into a full RPG with hand-coded SVG artwork, procedural Web Audio music, stat-based combat with equippable relics and special abilities, a quest system with NPC missions, a 3-phase cinematic boss fight, random world events with a wandering merchant, XP and leveling, and an achievement system culminating in a Saint Michael the Archangel divine armor cutscene.</p>
+      <p style="margin-top:1.2rem;">The game is built entirely without external libraries — no game engine, no asset files, no audio downloads. Every sound is synthesized live using the Web Audio API. Every piece of artwork is hand-written SVG code following a strict cinematic dark-fantasy art direction. The hybrid image engine allows AI-generated photorealistic backgrounds to be layered in seamlessly.</p>
+      <p style="margin-top:1.2rem;">The long-term goal is a full open-world 3D game. This browser version is the foundation — the design document, the lore, the combat mechanics, and the vision are all already built and battle-tested.</p>
     </div>
     <div style="margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;">
-      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:180px;">
+      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
         <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Rooms</div>
         <div style="font-size:2rem;font-weight:300;color:var(--paper)">17</div>
       </div>
-      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:180px;">
+      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
         <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Relics</div>
         <div style="font-size:2rem;font-weight:300;color:var(--paper)">6</div>
       </div>
-      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:180px;">
-        <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Sacred Scrolls</div>
+      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
+        <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Quests</div>
+        <div style="font-size:2rem;font-weight:300;color:var(--paper)">5</div>
+      </div>
+      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
+        <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Scrolls</div>
         <div style="font-size:2rem;font-weight:300;color:var(--paper)">8</div>
       </div>
-      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:180px;">
+      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
         <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Achievements</div>
-        <div style="font-size:2rem;font-weight:300;color:var(--paper)">8</div>
+        <div style="font-size:2rem;font-weight:300;color:var(--paper)">9</div>
+      </div>
+      <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
+        <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);margin-bottom:0.4rem;text-transform:uppercase;">Lines of Code</div>
+        <div style="font-size:2rem;font-weight:300;color:var(--paper)">4,850+</div>
       </div>
     </div>
   </div>
@@ -1057,9 +1105,9 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- CERTS -->
 <section id="certs" style="background:#111;">
   <div class="inner">
-    <span class="section-label">05 — Licenses & Certifications</span>
-    <h2 class="section-title">Credentials that <em>count.</em></h2>
-    <div class="cert-grid-full">
+    <span class="section-label fade-in">05 — Licenses & Certifications</span>
+    <h2 class="section-title fade-in">Credentials that <em>count.</em></h2>
+    <div class="cert-grid-full fade-in">
 
       <div class="cert-card-full cert-highlight">
         <div class="cert-issuer-tag">🎯 Forage / Mastercard</div>
@@ -1145,8 +1193,8 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- EDUCATION -->
 <section id="education" style="background:#111;">
   <div class="inner">
-    <span class="section-label">06 — Education</span>
-    <h2 class="section-title">Always <em>learning.</em></h2>
+    <span class="section-label fade-in">06 — Education</span>
+    <h2 class="section-title fade-in">Always <em>learning.</em></h2>
     <div class="edu-list">
 
       <div class="edu-card">
@@ -1204,8 +1252,8 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- FULL SKILLS -->
 <section id="all-skills" style="background:var(--cyber);">
   <div class="inner">
-    <span class="section-label">07 — Skills</span>
-    <h2 class="section-title" style="color:var(--paper)">Full <em>skill set.</em></h2>
+    <span class="section-label fade-in">07 — Skills</span>
+    <h2 class="section-title fade-in" style="color:var(--paper)">Full <em>skill set.</em></h2>
     <div class="skills-full-grid">
 
       <div class="skills-category">
@@ -1312,8 +1360,8 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- COOKING -->
 <section id="cooking">
   <div class="inner">
-    <span class="section-label">09 — What's Cooking</span>
-    <h2 class="section-title">My <em>kitchen.</em></h2>
+    <span class="section-label fade-in">09 — What's Cooking</span>
+    <h2 class="section-title fade-in">My <em>kitchen.</em></h2>
     <p class="cooking-intro">
       Outside of cybersecurity and AI, my real passion is cooking. I love building flavors from scratch —
       testing techniques, layering ingredients, and chasing that moment when a dish comes together perfectly.
@@ -1438,8 +1486,8 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
 <section id="volunteering" style="background:#0c0c0c;">
   <div class="inner">
-    <span class="section-label">10 — Volunteering</span>
-    <h2 class="section-title">Giving <em>back.</em></h2>
+    <span class="section-label fade-in">10 — Volunteering</span>
+    <h2 class="section-title fade-in">Giving <em>back.</em></h2>
     <div class="vol-list">
 
       <div class="vol-card">
@@ -1469,10 +1517,10 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- CONTACT -->
 <section id="contact">
   <div class="inner" style="text-align:center">
-    <span class="section-label">11 — Contact</span>
-    <h2 class="section-title">Let's <em>work together.</em></h2>
+    <span class="section-label fade-in">11 — Contact</span>
+    <h2 class="section-title fade-in">Let's <em>work together.</em></h2>
     <p class="contact-sub">Open to new projects, consulting, and conversations about AI automation, security, or sales strategy.</p>
-    <div class="contact-links">
+    <div class="contact-links fade-in">
       <a href="/cdn-cgi/l/email-protection#137167767e63232b2653747e727a7f3d707c7e" class="contact-link">📧 Email Me</a>
       <a href="tel:9737149974" class="contact-link">📞 973-714-9974</a>
       <a href="https://www.linkedin.com/in/briantemple1" class="contact-link" target="_blank">🔗 LinkedIn</a>
@@ -1480,6 +1528,8 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
     </div>
   </div>
 </section>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <footer>&copy; 2026 Brian Temple &nbsp;·&nbsp; Towaco, New Jersey &nbsp;·&nbsp; Deus Vult</footer>
 
@@ -1507,6 +1557,37 @@ function launchGame() {
   document.getElementById('gameContainer').style.display = 'block';
   document.getElementById('gameFrame').src = 'game.html';
 }
+
+// Scroll-triggered fade-in animations
+const fadeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+
+// Active nav link tracking
+const navLinks = document.querySelectorAll('.nav-links a');
+const sections = document.querySelectorAll('section[id]');
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => link.classList.remove('active'));
+      const activeLink = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
+      if (activeLink) activeLink.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => navObserver.observe(s));
+
+// Back to top button
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 600) backBtn.classList.add('show');
+  else backBtn.classList.remove('show');
+});
 </script>
 </body>
 </html>
