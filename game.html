@@ -3077,11 +3077,73 @@ function getSceneSVG(type, roomId) {
         <path d="M640,60 Q652,100 664,60" fill="none" stroke="rgba(160,155,145,0.25)" stroke-width="2"/>
         <!-- Blood -->
         <ellipse cx="300" cy="240" rx="40" ry="8" fill="rgba(139,0,0,0.15)"/>
-        <!-- Chained figure (Sir Edmund) -->
-        <rect x="680" y="130" width="40" height="80" fill="rgba(80,75,65,0.15)" rx="4"/>
-        <circle cx="700" cy="120" r="12" fill="rgba(200,190,170,0.08)"/>
-        <line x1="690" y1="140" x2="670" y2="120" stroke="rgba(120,110,100,0.2)" stroke-width="1.5"/>
-        <line x1="710" y1="140" x2="730" y2="120" stroke="rgba(120,110,100,0.2)" stroke-width="1.5"/>
+        <!-- Chained figure (Sir Edmund of Bruges) -->
+        <g transform="translate(700,105)">
+          <!-- Chains going to wall -->
+          <path d="M-20,35 Q-40,30 -50,15 L-55,5" fill="none" stroke="#8a8070" stroke-width="1.8" stroke-dasharray="4 2"/>
+          <path d="M20,35 Q40,30 50,15 L55,5" fill="none" stroke="#8a8070" stroke-width="1.8" stroke-dasharray="4 2"/>
+          <!-- Wall shackle rings -->
+          <circle cx="-55" cy="3" r="3" fill="none" stroke="#7a7060" stroke-width="1.5"/>
+          <circle cx="55" cy="3" r="3" fill="none" stroke="#7a7060" stroke-width="1.5"/>
+          <!-- Shadow -->
+          <ellipse cx="0" cy="130" rx="20" ry="4" fill="rgba(0,0,0,0.25)"/>
+          <!-- Cape (torn, hanging behind) -->
+          <path d="M-10,20 L-16,120 Q0,128 16,120 L10,20" fill="#5a1818" stroke="#3a0808" stroke-width="0.4"/>
+          <path d="M-12,70 L-14,110" fill="none" stroke="#3a0808" stroke-width="0.6"/>
+          <!-- Legs — armored greaves, kneeling -->
+          <rect x="-10" y="85" width="8" height="30" fill="#7a756a" stroke="#5a5548" stroke-width="0.4" rx="1"/>
+          <rect x="2" y="85" width="8" height="30" fill="#7a756a" stroke="#5a5548" stroke-width="0.4" rx="1"/>
+          <!-- Boots -->
+          <rect x="-11" y="113" width="10" height="5" fill="#3d2c1a" rx="1"/>
+          <rect x="1" y="113" width="10" height="5" fill="#3d2c1a" rx="1"/>
+          <!-- Torso — damaged white surcoat over chainmail -->
+          <rect x="-13" y="18" width="26" height="50" fill="#b8b0a0" stroke="#7a7468" stroke-width="0.5" rx="2"/>
+          <!-- Chainmail showing through tears -->
+          <rect x="-13" y="18" width="26" height="8" fill="#6a6560" stroke="#4a4540" stroke-width="0.3"/>
+          <!-- Templar cross (faded, blood-stained) -->
+          <rect x="-2" y="28" width="4" height="22" fill="rgba(160,16,16,0.6)" rx="0.5"/>
+          <rect x="-8" y="36" width="16" height="4" fill="rgba(160,16,16,0.6)" rx="0.5"/>
+          <!-- Blood stain across cross -->
+          <ellipse cx="2" cy="40" rx="6" ry="3" fill="rgba(139,0,0,0.2)"/>
+          <!-- Belt -->
+          <rect x="-14" y="62" width="28" height="4" fill="#3d2c1a" stroke="rgba(184,147,58,0.3)" stroke-width="0.3"/>
+          <!-- Shoulder pauldrons (one dented) -->
+          <ellipse cx="-16" cy="22" rx="6" ry="4" fill="#8a8578" stroke="#5a5548" stroke-width="0.4"/>
+          <ellipse cx="16" cy="22" rx="5" ry="3.5" fill="#6a6560" stroke="#4a4540" stroke-width="0.3"/>
+          <!-- Dent mark on right pauldron -->
+          <path d="M14,20 Q16,23 18,21" fill="none" stroke="#3a3630" stroke-width="0.6"/>
+          <!-- Arms — chained, spread -->
+          <rect x="-24" y="24" width="8" height="25" fill="#6a6560" stroke="#4a4540" stroke-width="0.3" rx="2"/>
+          <rect x="16" y="24" width="8" height="25" fill="#6a6560" stroke="#4a4540" stroke-width="0.3" rx="2"/>
+          <!-- Wrist shackles -->
+          <rect x="-26" y="32" width="12" height="4" fill="#5a5548" stroke="#3a3630" stroke-width="0.5" rx="1"/>
+          <rect x="14" y="32" width="12" height="4" fill="#5a5548" stroke="#3a3630" stroke-width="0.5" rx="1"/>
+          <!-- Head — strong jaw, white hair, battle scars -->
+          <circle cx="0" cy="2" r="16" fill="#a09078" stroke="#7a6a58" stroke-width="0.5"/>
+          <!-- White hair — long, wild from imprisonment -->
+          <path d="M-14,-8 Q-16,-18 -10,-22 Q0,-26 10,-22 Q16,-18 14,-8" fill="#d0ccc4"/>
+          <path d="M-14,-6 L-18,8" fill="none" stroke="#c4c0b8" stroke-width="2"/>
+          <path d="M14,-6 L18,8" fill="none" stroke="#c4c0b8" stroke-width="2"/>
+          <path d="M-12,-4 L-15,5" fill="none" stroke="#b8b4ac" stroke-width="1.5"/>
+          <!-- Strong brow -->
+          <path d="M-8,-3 L-2,-4" fill="none" stroke="#6a5a48" stroke-width="1.2"/>
+          <path d="M2,-4 L8,-3" fill="none" stroke="#6a5a48" stroke-width="1.2"/>
+          <!-- Eyes — fierce, unbroken -->
+          <ellipse cx="-5" cy="0" rx="2.5" ry="1.5" fill="#1a1510"/>
+          <circle cx="-5" cy="0" r="0.8" fill="#4a6a8a"/>
+          <ellipse cx="5" cy="0" rx="2.5" ry="1.5" fill="#1a1510"/>
+          <circle cx="5" cy="0" r="0.8" fill="#4a6a8a"/>
+          <!-- Battle scar — long, across left eye and cheek -->
+          <path d="M-10,-6 L-3,8" stroke="rgba(180,100,100,0.4)" stroke-width="0.8" fill="none"/>
+          <!-- Second scar — shorter, on right jaw -->
+          <path d="M4,6 L9,12" stroke="rgba(180,100,100,0.3)" stroke-width="0.6" fill="none"/>
+          <!-- Nose -->
+          <path d="M-1,0 L-1.5,5 L1.5,5 L1,0" fill="none" stroke="#8a7a68" stroke-width="0.5"/>
+          <!-- Short white beard — scraggly from imprisonment -->
+          <path d="M-8,8 Q-5,16 0,18 Q5,16 8,8" fill="#c4c0b8" stroke="#a8a498" stroke-width="0.3"/>
+          <!-- Mouth — grim, set -->
+          <path d="M-4,10 Q0,12 4,10" fill="none" stroke="#5a4a38" stroke-width="0.5"/>
+        </g>
         <!-- Torch -->
         <rect x="400" y="40" width="5" height="25" fill="#3a2a18"/>
         <ellipse cx="402" cy="35" rx="7" ry="10" fill="rgba(255,150,40,0.4)" filter="url(#glow)"/>
@@ -3122,9 +3184,51 @@ function getSceneSVG(type, roomId) {
         <ellipse cx="465" cy="198" rx="18" ry="8" fill="rgba(255,100,20,0.2)" filter="url(#glow)"/>
         <ellipse cx="465" cy="195" rx="10" ry="4" fill="rgba(255,150,40,0.3)"/>
         <ellipse cx="465" cy="180" rx="40" ry="30" fill="url(#candleGlow)"/>
-        <!-- Brother Aldric figure -->
-        <rect x="470" y="135" width="30" height="60" fill="rgba(60,50,35,0.2)" rx="3"/>
-        <circle cx="485" cy="125" r="10" fill="rgba(180,170,150,0.08)"/>
+        <!-- Brother Aldric figure — elderly monk healer -->
+        <g transform="translate(485,100)">
+          <!-- Shadow -->
+          <ellipse cx="0" cy="130" rx="16" ry="3" fill="rgba(0,0,0,0.2)"/>
+          <!-- Brown monk's robe -->
+          <path d="M-14,25 L-18,120 Q0,126 18,120 L14,25" fill="#3d3020" stroke="#2a2018" stroke-width="0.5"/>
+          <!-- Robe folds -->
+          <path d="M-6,40 Q-8,70 -10,110" fill="none" stroke="#2a2018" stroke-width="0.8"/>
+          <path d="M5,38 Q7,68 9,108" fill="none" stroke="#2a2018" stroke-width="0.6"/>
+          <!-- Rope belt with cross -->
+          <path d="M-14,65 Q0,68 14,65" fill="none" stroke="#7a6a40" stroke-width="1.5"/>
+          <line x1="2" y1="68" x2="2" y2="82" stroke="#7a6a40" stroke-width="0.8"/>
+          <rect x="0" y="80" width="4" height="6" fill="rgba(184,147,58,0.4)" rx="0.5"/>
+          <rect x="-1" y="82" width="6" height="2" fill="rgba(184,147,58,0.4)" rx="0.5"/>
+          <!-- Hood (down, around shoulders) -->
+          <path d="M-16,22 Q-18,30 -14,35 L14,35 Q18,30 16,22" fill="#4a3d2c" stroke="#3a2d1c" stroke-width="0.3"/>
+          <!-- Hands — holding mortar/pestle (healing herbs) -->
+          <circle cx="-14" cy="72" r="3.5" fill="#9a8a70"/>
+          <circle cx="14" cy="70" r="3.5" fill="#9a8a70"/>
+          <!-- Mortar -->
+          <path d="M-18,68 L-22,76 L-8,76 L-12,68" fill="#5a5548" stroke="#3a3630" stroke-width="0.3"/>
+          <!-- Pestle -->
+          <line x1="-8" y1="68" x2="-4" y2="62" stroke="#8a8070" stroke-width="1.5"/>
+          <!-- Head — elderly, kind, tonsured -->
+          <circle cx="0" cy="10" r="14" fill="#a09078" stroke="#7a6a58" stroke-width="0.4"/>
+          <!-- Tonsure (bald top, ring of grey hair) -->
+          <circle cx="0" cy="6" r="10" fill="#a09078"/>
+          <path d="M-12,4 Q-14,-4 -8,-10 Q0,-14 8,-10 Q14,-4 12,4" fill="#a09078"/>
+          <path d="M-13,6 Q-14,0 -10,-4" fill="none" stroke="#8a8478" stroke-width="2"/>
+          <path d="M13,6 Q14,0 10,-4" fill="none" stroke="#8a8478" stroke-width="2"/>
+          <!-- Kind eyes -->
+          <ellipse cx="-4" cy="8" rx="2" ry="1.5" fill="#1a1510"/>
+          <circle cx="-4" cy="8" r="0.7" fill="#5a6a4a"/>
+          <ellipse cx="4" cy="8" rx="2" ry="1.5" fill="#1a1510"/>
+          <circle cx="4" cy="8" r="0.7" fill="#5a6a4a"/>
+          <!-- Crow's feet (age lines) -->
+          <path d="M-7,7 L-9,6 M-7,9 L-9,10" fill="none" stroke="#7a6a58" stroke-width="0.3"/>
+          <path d="M7,7 L9,6 M7,9 L9,10" fill="none" stroke="#7a6a58" stroke-width="0.3"/>
+          <!-- Nose -->
+          <path d="M-0.5,8 L-1,14 L1,14 L0.5,8" fill="none" stroke="#8a7a68" stroke-width="0.4"/>
+          <!-- Gentle smile -->
+          <path d="M-3,17 Q0,19 3,17" fill="none" stroke="#6a5a48" stroke-width="0.5"/>
+          <!-- Herb pouch on belt -->
+          <rect x="8" y="66" width="8" height="10" fill="#4a3a28" stroke="#3a2a18" stroke-width="0.3" rx="1"/>
+        </g>
         <!-- Lavender hint -->
         <ellipse cx="300" cy="160" rx="100" ry="60" fill="rgba(150,130,180,0.02)"/>
         <rect x="0" y="230" width="${w}" height="50" fill="#0c0b09" filter="url(#floorStone)"/><rect x="0" y="228" width="${w}" height="4" fill="rgba(0,0,0,0.3)"/>
@@ -3297,9 +3401,40 @@ function getSceneSVG(type, roomId) {
           <!-- Tattered effect -->
           <path d="M${x},150 L${x+15},145 L${x+30},152 L${x+45},143 L${x+60},150" fill="none" stroke="rgba(139,0,0,0.06)" stroke-width="1"/>
         `).join('')}
-        <!-- Ghost shimmer (Brother Matthias) -->
-        <ellipse cx="600" cy="120" rx="25" ry="50" fill="rgba(94,196,212,0.03)" filter="url(#glow)"/>
-        <ellipse cx="600" cy="100" rx="8" ry="10" fill="rgba(94,196,212,0.04)"/>
+        <!-- Ghost of Brother Matthias — spectral scribe -->
+        <g transform="translate(600,80)" opacity="0.6">
+          <!-- Ethereal glow -->
+          <ellipse cx="0" cy="50" rx="30" ry="60" fill="rgba(94,196,212,0.04)" filter="url(#glow)"/>
+          <!-- Ghostly robe (translucent) -->
+          <path d="M-12,25 L-16,110 Q0,116 16,110 L12,25" fill="rgba(94,196,212,0.08)" stroke="rgba(94,196,212,0.12)" stroke-width="0.5"/>
+          <!-- Robe folds -->
+          <path d="M-4,35 Q-6,65 -8,100" fill="none" stroke="rgba(94,196,212,0.06)" stroke-width="0.6"/>
+          <path d="M4,33 Q6,62 8,98" fill="none" stroke="rgba(94,196,212,0.06)" stroke-width="0.5"/>
+          <!-- Hood up (scholar) -->
+          <path d="M-10,10 Q0,-2 10,10 L12,28 L-12,28" fill="rgba(94,196,212,0.1)" stroke="rgba(94,196,212,0.08)" stroke-width="0.3"/>
+          <!-- Face — gaunt, translucent -->
+          <ellipse cx="0" cy="18" rx="7" ry="9" fill="rgba(140,180,200,0.08)"/>
+          <!-- Eyes — glowing softly -->
+          <circle cx="-3" cy="16" r="1.5" fill="rgba(94,196,212,0.5)" filter="url(#glow)">
+            <animate attributeName="opacity" values="0.5;0.8;0.5" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="3" cy="16" r="1.5" fill="rgba(94,196,212,0.5)" filter="url(#glow)">
+            <animate attributeName="opacity" values="0.8;0.5;0.8" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Holding ghostly scroll -->
+          <rect x="-14" y="55" width="12" height="4" fill="rgba(200,190,170,0.08)" rx="1"/>
+          <rect x="3" y="53" width="12" height="4" fill="rgba(200,190,170,0.08)" rx="1"/>
+          <!-- Spectral hands -->
+          <circle cx="-10" cy="52" r="2.5" fill="rgba(140,180,200,0.06)"/>
+          <circle cx="10" cy="50" r="2.5" fill="rgba(140,180,200,0.06)"/>
+          <!-- Feet fade into nothing -->
+          <path d="M-8,108 Q0,118 8,108" fill="none" stroke="rgba(94,196,212,0.04)" stroke-width="1"/>
+          <!-- Floating particles around him -->
+          ${[[-15,30],[12,20],[-8,70],[14,65],[0,10]].map(([px,py]) => `<circle cx="${px}" cy="${py}" r="1" fill="rgba(94,196,212,0.15)">
+            <animate attributeName="cy" values="${py};${py-8};${py}" dur="${2+Math.random()*2}s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.3;0;0.3" dur="${2+Math.random()*2}s" repeatCount="indefinite"/>
+          </circle>`).join('')}
+        </g>
         <rect x="0" y="245" width="${w}" height="35" fill="url(#floorGrad)"/>
         ${renderKnight(350, 155)}
       `;
@@ -3322,10 +3457,52 @@ function getSceneSVG(type, roomId) {
         <ellipse cx="400" cy="170" rx="40" ry="30" fill="url(#candleGlow)"/>
         <!-- Locked chests -->
         ${[150,600].map(x => `<rect x="${x}" y="210" width="50" height="30" fill="#1e1a12" stroke="rgba(184,147,58,0.15)" stroke-width="1" rx="2"/><rect x="${x+20}" y="218" width="10" height="10" fill="rgba(184,147,58,0.1)" rx="5"/>`).join('')}
-        <!-- Ezra sitting -->
-        <g transform="translate(550,170)">
-          <rect x="-12" y="0" width="24" height="40" fill="rgba(80,70,55,0.12)" rx="3"/>
-          <circle cx="0" cy="-12" r="10" fill="rgba(180,170,150,0.06)"/>
+        <!-- Ezra the Blind — old merchant sitting on chest -->
+        <g transform="translate(550,135)">
+          <!-- Sitting on a locked chest -->
+          <rect x="-18" y="65" width="36" height="22" fill="#1e1a12" stroke="rgba(184,147,58,0.15)" stroke-width="0.6" rx="2"/>
+          <rect x="-6" y="70" width="12" height="8" fill="rgba(184,147,58,0.08)" rx="4"/>
+          <!-- Shadow -->
+          <ellipse cx="0" cy="90" rx="22" ry="4" fill="rgba(0,0,0,0.2)"/>
+          <!-- Long merchant robes (dark blue/purple) -->
+          <path d="M-14,15 L-18,70 Q0,76 18,70 L14,15" fill="#22203a" stroke="#16142a" stroke-width="0.5"/>
+          <!-- Robe folds -->
+          <path d="M-5,25 Q-7,45 -10,65" fill="none" stroke="#16142a" stroke-width="0.7"/>
+          <path d="M5,24 Q7,44 10,64" fill="none" stroke="#16142a" stroke-width="0.5"/>
+          <!-- Sash/belt -->
+          <path d="M-14,40 Q0,43 14,40" fill="none" stroke="#5a4a30" stroke-width="1.5"/>
+          <!-- Arms resting on knees -->
+          <rect x="-22" y="20" width="8" height="30" fill="#22203a" stroke="#16142a" stroke-width="0.3" rx="2"/>
+          <rect x="14" y="20" width="8" height="30" fill="#22203a" stroke="#16142a" stroke-width="0.3" rx="2"/>
+          <!-- Walking stick leaning beside -->
+          <line x1="24" y1="-10" x2="28" y2="85" stroke="#5a4a30" stroke-width="2"/>
+          <!-- Gnarled old hands -->
+          <circle cx="-18" cy="52" r="3" fill="#8a7a60"/>
+          <circle cx="18" cy="50" r="3" fill="#8a7a60"/>
+          <!-- Head — old, gaunt, blind -->
+          <circle cx="0" cy="-2" r="13" fill="#9a8a70" stroke="#7a6a58" stroke-width="0.4"/>
+          <!-- White wispy hair -->
+          <path d="M-12,-8 Q-14,-16 -8,-20 Q0,-22 8,-20 Q14,-16 12,-8" fill="#c8c4bc"/>
+          <path d="M-12,-6 L-16,6" fill="none" stroke="#b8b4ac" stroke-width="1.5"/>
+          <path d="M12,-6 L16,6" fill="none" stroke="#b8b4ac" stroke-width="1.5"/>
+          <!-- Blind eyes — scarred shut -->
+          <path d="M-7,-3 Q-4,-5 -2,-3" fill="none" stroke="#5a4a38" stroke-width="0.8"/>
+          <path d="M2,-3 Q4,-5 7,-3" fill="none" stroke="#5a4a38" stroke-width="0.8"/>
+          <!-- Scar tissue over eyes -->
+          <path d="M-8,-4 L-1,-2" fill="none" stroke="rgba(180,100,100,0.25)" stroke-width="0.6"/>
+          <path d="M1,-2 L8,-4" fill="none" stroke="rgba(180,100,100,0.25)" stroke-width="0.6"/>
+          <!-- Deeply lined face -->
+          <path d="M-6,0 L-8,4" fill="none" stroke="#7a6a58" stroke-width="0.3"/>
+          <path d="M6,0 L8,4" fill="none" stroke="#7a6a58" stroke-width="0.3"/>
+          <!-- Hooked nose -->
+          <path d="M-0.5,-1 L-1.5,5 L1.5,5 L0.5,-1" fill="none" stroke="#8a7a68" stroke-width="0.5"/>
+          <!-- Thin frown -->
+          <path d="M-4,8 Q0,6 4,8" fill="none" stroke="#5a4a38" stroke-width="0.5"/>
+          <!-- Long white beard -->
+          <path d="M-7,7 Q-4,22 0,26 Q4,22 7,7" fill="#c8c4bc" stroke="#a8a498" stroke-width="0.3"/>
+          <path d="M-4,12 Q0,24 4,12" fill="none" stroke="#a8a498" stroke-width="0.3"/>
+          <!-- Book in lap -->
+          <rect x="-8" y="48" width="16" height="10" fill="#2a1a0a" stroke="rgba(184,147,58,0.15)" stroke-width="0.3" rx="1"/>
         </g>
         <rect x="0" y="250" width="${w}" height="30" fill="url(#floorGrad)"/>
         ${renderKnight(250, 155)}
