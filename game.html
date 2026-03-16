@@ -681,19 +681,34 @@ body {
 }
 .portrait-name {
   font-family: var(--heading);
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   color: var(--gold);
   letter-spacing: 0.1em;
-  margin-top: 8px;
+  margin-top: 12px;
+  text-shadow: 0 0 12px var(--gold-glow);
+}
+.portrait-title {
+  font-family: var(--ui);
+  font-size: 0.8rem;
+  color: var(--neon);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.portrait-years {
+  font-family: var(--ui);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
 }
 .portrait-desc {
   font-family: var(--body);
-  font-size: 0.82rem;
-  color: var(--text-dim);
+  font-size: 0.92rem;
+  color: var(--text);
   font-style: italic;
-  max-width: 350px;
+  max-width: 420px;
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* ═══ RESPONSIVE ═══ */
@@ -832,6 +847,8 @@ body {
   <div class="portrait-overlay" id="portraitOverlay">
     <div class="portrait-frame" id="portraitFrame"></div>
     <div class="portrait-name" id="portraitName"></div>
+    <div class="portrait-title" id="portraitTitle"></div>
+    <div class="portrait-years" id="portraitYears"></div>
     <div class="portrait-desc" id="portraitDesc"></div>
     <button class="scroll-close" onclick="closePortrait()">Continue</button>
   </div>
@@ -1464,15 +1481,21 @@ const NPCS = {
 const PORTRAITS = {
   hugues: {
     name: 'Hugues de Payens',
-    desc: 'Founder and First Grand Master of the Knights Templar, circa 1119. He established the Order to protect Christian pilgrims traveling to the Holy Land.'
+    title: 'Founder & First Grand Master',
+    years: 'c. 1070 – 1136',
+    desc: 'A French knight from Champagne who founded the Order of the Poor Fellow-Soldiers of Christ in 1119. After the First Crusade, he gathered eight kinsmen to protect Christian pilgrims on the deadly road from Jaffa to Jerusalem. King Baldwin II granted them quarters on the Temple Mount — giving the Order its name. Hugues traveled to Europe to win papal recognition, securing it at the Council of Troyes in 1129. He built the Templars from nine men into an army that would reshape the world.'
   },
   jacques: {
     name: 'Jacques de Molay',
-    desc: 'The last Grand Master of the Knights Templar. Arrested on Friday the 13th, 1307, and burned at the stake in 1314. His final curse echoes through history.'
+    title: 'Last Grand Master',
+    years: 'c. 1243 – 1314',
+    desc: 'The 23rd and final Grand Master of the Knights Templar. A veteran of the fall of Acre in 1291, he fought to keep the Order alive after the loss of the Holy Land. On Friday, October 13th, 1307, King Philip IV of France had every Templar in the country arrested at dawn. After seven years of imprisonment and torture, Jacques was burned at the stake on an island in the Seine. As flames consumed him, he cursed both King Philip and Pope Clement, summoning them to face God\'s judgment within the year. Both were dead within months.'
   },
   philip: {
-    name: 'Philip IV of France',
-    desc: 'The king who orchestrated the destruction of the Templar Order in 1307. Driven by greed and jealousy, he convinced the Pope to disband the most powerful military order in Christendom.'
+    name: 'André de Montbard',
+    title: 'Fifth Grand Master & Crusader',
+    years: 'c. 1097 – 1174',
+    desc: 'One of the nine founding knights of the Templar Order and uncle to the great Bernard of Clairvaux, whose papal influence secured the Templars\' legitimacy. André fought in the Second Crusade alongside King Louis VII of France and proved himself among the fiercest warriors in the Holy Land. He rose to Seneschal — the Order\'s second-in-command — before being elected Grand Master in 1153. Under his leadership, the Templars captured the fortress of Ascalon from the Fatimid Caliphate, one of the Order\'s greatest military victories.'
   }
 };
 
@@ -1907,6 +1930,8 @@ function examinePortrait() {
   const p = PORTRAITS[key];
 
   document.getElementById('portraitName').textContent = p.name;
+  document.getElementById('portraitTitle').textContent = p.title;
+  document.getElementById('portraitYears').textContent = p.years;
   document.getElementById('portraitDesc').textContent = p.desc;
   document.getElementById('portraitFrame').innerHTML = renderPortraitSVG(key);
   document.getElementById('portraitOverlay').classList.add('active');
@@ -3114,40 +3139,229 @@ function renderKnight(x, y) {
 // ─── PORTRAIT SVG ───
 function renderPortraitSVG(key) {
   const w = 250, h = 300;
+  // Aged parchment background
+  const bg = `<rect width="${w}" height="${h}" fill="#1e1a0e"/>
+    <rect width="${w}" height="${h}" fill="rgba(40,35,20,0.3)" filter="url(#stoneFilter)"/>
+    <!-- Aged canvas texture -->
+    <rect width="${w}" height="${h}" fill="rgba(184,147,58,0.03)"/>
+    <!-- Gold decorative border -->
+    <rect x="6" y="6" width="${w-12}" height="${h-12}" fill="none" stroke="rgba(184,147,58,0.25)" stroke-width="1.5"/>
+    <rect x="10" y="10" width="${w-20}" height="${h-20}" fill="none" stroke="rgba(184,147,58,0.12)" stroke-width="0.5"/>
+    <!-- Corner ornaments -->
+    ${[[14,14],[w-14,14],[14,h-14],[w-14,h-14]].map(([cx,cy]) => `<circle cx="${cx}" cy="${cy}" r="3" fill="rgba(184,147,58,0.2)"/>`).join('')}`;
+
   let figure = '';
 
   if (key === 'hugues') {
+    // Hugues de Payens — noble founding knight, older, wise, holding sword planted in ground
     figure = `
-      <!-- Hugues de Payens -->
-      <rect x="80" y="80" width="90" height="130" fill="rgba(180,170,150,0.06)"/>
-      <circle cx="125" cy="65" r="25" fill="rgba(180,170,150,0.06)"/>
-      <rect x="122" y="100" width="6" height="40" fill="rgba(139,0,0,0.3)"/>
-      <rect x="112" y="115" width="26" height="5" fill="rgba(139,0,0,0.3)"/>
-      <text x="125" y="250" font-family="serif" font-size="11" fill="rgba(184,147,58,0.5)" text-anchor="middle">c. 1119</text>
+      <!-- Warm candlelight glow behind figure -->
+      <ellipse cx="125" cy="140" rx="70" ry="90" fill="rgba(255,180,60,0.04)"/>
+      <!-- Body — white Templar surcoat over chainmail -->
+      <rect x="100" y="95" width="50" height="80" fill="#c8c0b0" stroke="#8a8274" stroke-width="0.6" rx="2"/>
+      <!-- Chainmail visible at arms and neck -->
+      <rect x="98" y="95" width="54" height="8" fill="#7a756a" stroke="#5a5548" stroke-width="0.3"/>
+      <!-- Bold red Templar cross -->
+      <rect x="122" y="108" width="6" height="32" fill="#a01010" rx="0.5"/>
+      <rect x="112" y="118" width="26" height="6" fill="#a01010" rx="0.5"/>
+      <!-- Belt with gold buckle -->
+      <rect x="98" y="168" width="54" height="5" fill="#3d2c1a" stroke="rgba(184,147,58,0.4)" stroke-width="0.4"/>
+      <circle cx="125" cy="170.5" r="2" fill="rgba(184,147,58,0.5)"/>
+      <!-- Shoulders — chainmail pauldrons -->
+      <ellipse cx="96" cy="98" rx="8" ry="5" fill="#7a756a" stroke="#5a5548" stroke-width="0.4"/>
+      <ellipse cx="154" cy="98" rx="8" ry="5" fill="#7a756a" stroke="#5a5548" stroke-width="0.4"/>
+      <!-- Arms — chainmail sleeves -->
+      <rect x="85" y="100" width="12" height="40" fill="#7a756a" stroke="#5a5548" stroke-width="0.3" rx="2"/>
+      <rect x="153" y="100" width="12" height="40" fill="#7a756a" stroke="#5a5548" stroke-width="0.3" rx="2"/>
+      <!-- Hands -->
+      <circle cx="91" cy="142" r="4" fill="#9a8a70"/>
+      <circle cx="159" cy="142" r="4" fill="#9a8a70"/>
+      <!-- Head — older, wise face, short beard -->
+      <circle cx="125" cy="72" r="22" fill="#a09078" stroke="#7a6a58" stroke-width="0.5"/>
+      <!-- Hair — short, grey -->
+      <path d="M104,60 Q107,48 125,45 Q143,48 146,60" fill="#6a6558"/>
+      <path d="M105,62 Q104,55 108,50" fill="none" stroke="#5a5548" stroke-width="1"/>
+      <path d="M145,62 Q146,55 142,50" fill="none" stroke="#5a5548" stroke-width="1"/>
+      <!-- Eyes — steady, determined -->
+      <ellipse cx="118" cy="70" rx="3" ry="2" fill="#1a1510"/>
+      <circle cx="118" cy="70" r="1" fill="#4a4030"/>
+      <ellipse cx="132" cy="70" rx="3" ry="2" fill="#1a1510"/>
+      <circle cx="132" cy="70" r="1" fill="#4a4030"/>
+      <!-- Brow -->
+      <path d="M114,66 Q118,64 122,66" fill="none" stroke="#6a5a48" stroke-width="1"/>
+      <path d="M128,66 Q132,64 136,66" fill="none" stroke="#6a5a48" stroke-width="1"/>
+      <!-- Nose -->
+      <path d="M124,72 L123,78 L127,78 L126,72" fill="none" stroke="#8a7a68" stroke-width="0.6"/>
+      <!-- Short beard — grey -->
+      <path d="M113,82 Q118,90 125,92 Q132,90 137,82" fill="#6a6558" stroke="#5a5548" stroke-width="0.3"/>
+      <path d="M116,80 Q125,95 134,80" fill="none" stroke="#5a5548" stroke-width="0.4"/>
+      <!-- Mouth -->
+      <path d="M120,84 Q125,86 130,84" fill="none" stroke="#5a4a38" stroke-width="0.6"/>
+      <!-- Sword planted in ground — right hand on pommel -->
+      <g transform="translate(158,138)">
+        <rect x="-1.5" y="-8" width="3" height="55" fill="#b0aca0" stroke="#6a6860" stroke-width="0.3"/>
+        <rect x="-6" y="-10" width="12" height="3.5" fill="rgba(184,147,58,0.5)" rx="0.5"/>
+        <rect x="-2.5" y="-15" width="5" height="6" fill="#3d2c1a" rx="1"/>
+        <circle cx="0" cy="-12" r="1.5" fill="rgba(184,147,58,0.4)"/>
+      </g>
+      <!-- Legs visible below surcoat -->
+      <rect x="108" y="173" width="12" height="35" fill="#7a756a" rx="1"/>
+      <rect x="130" y="173" width="12" height="35" fill="#7a756a" rx="1"/>
+      <!-- Boots -->
+      <rect x="106" y="206" width="15" height="7" fill="#3d2c1a" rx="1"/>
+      <rect x="129" y="206" width="15" height="7" fill="#3d2c1a" rx="1"/>
+      <!-- Floor line -->
+      <line x1="60" y1="213" x2="190" y2="213" stroke="rgba(184,147,58,0.1)" stroke-width="0.5"/>
+      <!-- Nameplate -->
+      <rect x="75" y="230" width="100" height="22" fill="rgba(184,147,58,0.06)" stroke="rgba(184,147,58,0.2)" stroke-width="0.5" rx="1"/>
+      <text x="125" y="245" font-family="serif" font-size="10" fill="rgba(184,147,58,0.6)" text-anchor="middle" letter-spacing="0.1em">HUGUES DE PAYENS</text>
+      <text x="125" y="260" font-family="serif" font-size="8" fill="rgba(184,147,58,0.35)" text-anchor="middle">Founder · c. 1119</text>
     `;
   } else if (key === 'jacques') {
+    // Jacques de Molay — defiant last Grand Master, aged, battle-scarred, flames below
     figure = `
-      <!-- Jacques de Molay -->
-      <rect x="80" y="80" width="90" height="130" fill="rgba(180,170,150,0.06)"/>
-      <circle cx="125" cy="65" r="25" fill="rgba(180,170,150,0.06)"/>
-      <!-- Flames -->
-      ${[100,115,130,145].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="15" fill="rgba(255,120,20,0.1)"/>`).join('')}
-      <text x="125" y="270" font-family="serif" font-size="11" fill="rgba(184,147,58,0.5)" text-anchor="middle">1314</text>
+      <!-- Warm glow from flames below -->
+      <ellipse cx="125" cy="200" rx="80" ry="40" fill="rgba(255,120,30,0.06)"/>
+      <!-- Body — white surcoat, war-worn -->
+      <rect x="100" y="90" width="50" height="85" fill="#b8b0a0" stroke="#8a8274" stroke-width="0.6" rx="2"/>
+      <!-- Armor plate underneath -->
+      <rect x="102" y="90" width="46" height="10" fill="#6a6560" stroke="#4a4540" stroke-width="0.3"/>
+      <!-- Battle-scarred Templar cross -->
+      <rect x="122" y="104" width="6" height="32" fill="#a01010" rx="0.5"/>
+      <rect x="112" y="114" width="26" height="6" fill="#a01010" rx="0.5"/>
+      <!-- Slash across cross (battle damage) -->
+      <line x1="110" y1="108" x2="140" y2="130" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+      <!-- Chains on wrists (prisoner) -->
+      <path d="M92,138 Q86,142 83,138 Q80,134 83,130" fill="none" stroke="#8a8070" stroke-width="1.2"/>
+      <path d="M158,138 Q164,142 167,138 Q170,134 167,130" fill="none" stroke="#8a8070" stroke-width="1.2"/>
+      <!-- Belt -->
+      <rect x="98" y="168" width="54" height="5" fill="#3d2c1a" stroke="rgba(184,147,58,0.3)" stroke-width="0.4"/>
+      <!-- Shoulders -->
+      <ellipse cx="96" cy="93" rx="8" ry="5" fill="#6a6560" stroke="#4a4540" stroke-width="0.4"/>
+      <ellipse cx="154" cy="93" rx="8" ry="5" fill="#6a6560" stroke="#4a4540" stroke-width="0.4"/>
+      <!-- Arms — bound -->
+      <rect x="84" y="96" width="12" height="42" fill="#6a6560" stroke="#4a4540" stroke-width="0.3" rx="2"/>
+      <rect x="154" y="96" width="12" height="42" fill="#6a6560" stroke="#4a4540" stroke-width="0.3" rx="2"/>
+      <!-- Fists clenched -->
+      <rect x="86" y="136" width="8" height="6" fill="#9a8a70" rx="2"/>
+      <rect x="156" y="136" width="8" height="6" fill="#9a8a70" rx="2"/>
+      <!-- Head — old, defiant, long grey beard -->
+      <circle cx="125" cy="68" r="22" fill="#9a8870" stroke="#7a6a58" stroke-width="0.5"/>
+      <!-- Long white beard -->
+      <path d="M112,80 Q115,100 120,108 Q125,112 130,108 Q135,100 138,80" fill="#a8a498" stroke="#8a8478" stroke-width="0.3"/>
+      <path d="M115,85 Q125,110 135,85" fill="none" stroke="#8a8478" stroke-width="0.4"/>
+      <!-- Hair — long, grey, flowing -->
+      <path d="M103,60 Q108,42 125,38 Q142,42 147,60" fill="#8a8478"/>
+      <path d="M103,62 L100,85" fill="none" stroke="#7a7468" stroke-width="2"/>
+      <path d="M147,62 L150,85" fill="none" stroke="#7a7468" stroke-width="2"/>
+      <!-- Eyes — fierce, unyielding -->
+      <ellipse cx="118" cy="66" rx="3" ry="2" fill="#1a1510"/>
+      <circle cx="118" cy="66" r="1.2" fill="#5a4020"/>
+      <ellipse cx="132" cy="66" rx="3" ry="2" fill="#1a1510"/>
+      <circle cx="132" cy="66" r="1.2" fill="#5a4020"/>
+      <!-- Deep brow — scowling -->
+      <path d="M113,62 Q118,60 123,63" fill="none" stroke="#6a5a48" stroke-width="1.2"/>
+      <path d="M127,63 Q132,60 137,62" fill="none" stroke="#6a5a48" stroke-width="1.2"/>
+      <!-- Battle scar across right cheek -->
+      <line x1="134" y1="64" x2="140" y2="78" stroke="rgba(160,80,80,0.3)" stroke-width="0.8"/>
+      <!-- Nose -->
+      <path d="M124,68 L122,76 L128,76 L126,68" fill="none" stroke="#8a7a68" stroke-width="0.6"/>
+      <!-- Flames at the base -->
+      ${[90,105,118,132,145,158].map(fx => `
+        <ellipse cx="${fx}" cy="${200-Math.random()*8}" rx="${5+Math.random()*4}" ry="${10+Math.random()*8}" fill="rgba(255,${80+Math.floor(Math.random()*60)},20,${0.15+Math.random()*0.1})">
+          <animate attributeName="ry" values="${10+Math.random()*8};${14+Math.random()*6};${10+Math.random()*8}" dur="${0.6+Math.random()*0.4}s" repeatCount="indefinite"/>
+        </ellipse>
+      `).join('')}
+      <!-- Stake behind him -->
+      <rect x="123" y="165" width="4" height="50" fill="#4a3a28" stroke="#3a2a18" stroke-width="0.3"/>
+      <!-- Legs -->
+      <rect x="108" y="173" width="12" height="30" fill="#6a6560" rx="1"/>
+      <rect x="130" y="173" width="12" height="30" fill="#6a6560" rx="1"/>
+      <!-- Nameplate -->
+      <rect x="70" y="230" width="110" height="22" fill="rgba(184,147,58,0.06)" stroke="rgba(184,147,58,0.2)" stroke-width="0.5" rx="1"/>
+      <text x="125" y="245" font-family="serif" font-size="10" fill="rgba(184,147,58,0.6)" text-anchor="middle" letter-spacing="0.1em">JACQUES DE MOLAY</text>
+      <text x="125" y="260" font-family="serif" font-size="8" fill="rgba(184,147,58,0.35)" text-anchor="middle">Last Grand Master · 1314</text>
     `;
   } else {
+    // André de Montbard — muscular crusader knight, battle-ready, holding shield and sword
     figure = `
-      <!-- Philip IV -->
-      <rect x="85" y="70" width="80" height="120" fill="rgba(60,40,100,0.06)"/>
-      <circle cx="125" cy="55" r="22" fill="rgba(180,170,150,0.06)"/>
-      <!-- Crown -->
-      <path d="M105,38 L110,28 L118,35 L125,24 L132,35 L140,28 L145,38" fill="rgba(184,147,58,0.15)" stroke="rgba(184,147,58,0.2)" stroke-width="0.5"/>
-      <text x="125" y="250" font-family="serif" font-size="11" fill="rgba(184,147,58,0.5)" text-anchor="middle">1307</text>
+      <!-- Battle light -->
+      <ellipse cx="125" cy="130" rx="65" ry="80" fill="rgba(255,180,60,0.03)"/>
+      <!-- Body — white surcoat, pristine, ready for battle -->
+      <rect x="100" y="90" width="50" height="82" fill="#ccc4b4" stroke="#8a8274" stroke-width="0.6" rx="2"/>
+      <!-- Full plate armor underneath -->
+      <rect x="100" y="90" width="50" height="12" fill="#8a8578" stroke="#5a5548" stroke-width="0.3"/>
+      <!-- Prominent red Templar cross -->
+      <rect x="122" y="106" width="6" height="30" fill="#a01010" rx="0.5"/>
+      <rect x="112" y="116" width="26" height="6" fill="#a01010" rx="0.5"/>
+      <!-- Belt with sword frog -->
+      <rect x="98" y="166" width="54" height="5" fill="#3d2c1a" stroke="rgba(184,147,58,0.4)" stroke-width="0.4"/>
+      <circle cx="125" cy="168.5" r="2" fill="rgba(184,147,58,0.5)"/>
+      <!-- Heavy shoulder pauldrons -->
+      <ellipse cx="94" cy="94" rx="10" ry="6" fill="#8a8578" stroke="#5a5548" stroke-width="0.5"/>
+      <ellipse cx="156" cy="94" rx="10" ry="6" fill="#8a8578" stroke="#5a5548" stroke-width="0.5"/>
+      <!-- Arms — armored -->
+      <rect x="82" y="98" width="13" height="38" fill="#8a8578" stroke="#5a5548" stroke-width="0.3" rx="2"/>
+      <rect x="155" y="98" width="13" height="38" fill="#8a8578" stroke="#5a5548" stroke-width="0.3" rx="2"/>
+      <!-- Left hand holding shield -->
+      <g transform="translate(78,120) rotate(-5)">
+        <rect x="-12" y="-8" width="20" height="30" fill="#7a756a" stroke="#5a5548" stroke-width="0.6" rx="2"/>
+        <rect x="-1" y="-4" width="2.5" height="20" fill="#a01010"/>
+        <rect x="-7" y="5" width="13" height="2.5" fill="#a01010"/>
+      </g>
+      <!-- Right hand holding raised sword -->
+      <g transform="translate(168,95) rotate(15)">
+        <rect x="-1.5" y="-30" width="3" height="45" fill="#b0aca0" stroke="#6a6860" stroke-width="0.3"/>
+        <rect x="-5" y="14" width="10" height="3.5" fill="rgba(184,147,58,0.5)" rx="0.5"/>
+        <rect x="-2.5" y="16" width="5" height="8" fill="#3d2c1a" rx="1"/>
+      </g>
+      <!-- Gauntlets -->
+      <rect x="83" y="134" width="11" height="7" fill="#6a6560" rx="1"/>
+      <rect x="156" y="134" width="11" height="7" fill="#6a6560" rx="1"/>
+      <!-- Head — strong jaw, battle-ready, no-nonsense -->
+      <circle cx="125" cy="68" r="22" fill="#a89878" stroke="#7a6a58" stroke-width="0.5"/>
+      <!-- Short cropped hair -->
+      <path d="M104,58 Q110,42 125,38 Q140,42 146,58" fill="#4a3a28"/>
+      <!-- Strong brow -->
+      <path d="M112,62 L123,60" fill="none" stroke="#5a4a38" stroke-width="1.5"/>
+      <path d="M127,60 L138,62" fill="none" stroke="#5a4a38" stroke-width="1.5"/>
+      <!-- Eyes — sharp, tactical -->
+      <ellipse cx="118" cy="66" rx="3.5" ry="2" fill="#1a1510"/>
+      <circle cx="118" cy="66" r="1.2" fill="#3a3020"/>
+      <ellipse cx="132" cy="66" rx="3.5" ry="2" fill="#1a1510"/>
+      <circle cx="132" cy="66" r="1.2" fill="#3a3020"/>
+      <!-- Nose — broad, strong -->
+      <path d="M123,68 L121,77 L129,77 L127,68" fill="none" stroke="#8a7a68" stroke-width="0.7"/>
+      <!-- Mouth — set, determined -->
+      <path d="M119,82 Q125,84 131,82" fill="none" stroke="#5a4a38" stroke-width="0.7"/>
+      <!-- Short beard — dark brown -->
+      <path d="M114,80 Q118,88 125,90 Q132,88 136,80" fill="#4a3a28" stroke="#3a2a18" stroke-width="0.3"/>
+      <!-- Cleft chin -->
+      <line x1="125" y1="86" x2="125" y2="88" stroke="#6a5a48" stroke-width="0.4"/>
+      <!-- Legs in greaves -->
+      <rect x="108" y="170" width="12" height="36" fill="#8a8578" rx="1"/>
+      <rect x="130" y="170" width="12" height="36" fill="#8a8578" rx="1"/>
+      <!-- Sabatons -->
+      <rect x="106" y="204" width="15" height="7" fill="#6a6560" rx="1"/>
+      <rect x="129" y="204" width="15" height="7" fill="#6a6560" rx="1"/>
+      <!-- Floor line -->
+      <line x1="60" y1="211" x2="190" y2="211" stroke="rgba(184,147,58,0.1)" stroke-width="0.5"/>
+      <!-- Nameplate -->
+      <rect x="60" y="230" width="130" height="22" fill="rgba(184,147,58,0.06)" stroke="rgba(184,147,58,0.2)" stroke-width="0.5" rx="1"/>
+      <text x="125" y="245" font-family="serif" font-size="9.5" fill="rgba(184,147,58,0.6)" text-anchor="middle" letter-spacing="0.08em">ANDRÉ DE MONTBARD</text>
+      <text x="125" y="260" font-family="serif" font-size="8" fill="rgba(184,147,58,0.35)" text-anchor="middle">Fifth Grand Master · 1153</text>
     `;
   }
 
   return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-    <rect width="${w}" height="${h}" fill="#1a1508"/>
-    ${figure}
+    <defs>
+      <filter id="stoneFilter" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="4" seed="7" result="noise"/>
+        <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+        <feBlend in="SourceGraphic" in2="gray" mode="overlay"/>
+      </filter>
+    </defs>
+    ${bg}${figure}
   </svg>`;
 }
 
