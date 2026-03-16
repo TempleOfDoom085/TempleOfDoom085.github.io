@@ -2406,16 +2406,6 @@ function getSceneSVG(type, roomId) {
         <!-- Knight -->
         ${renderKnight(w/2 + 110, 155)}
       `;
-        <!-- Floor -->
-        <rect x="0" y="230" width="${w}" height="50" fill="url(#floorGrad)"/>
-        <!-- Blood stains -->
-        <ellipse cx="280" cy="250" rx="30" ry="6" fill="rgba(139,0,0,0.12)"/>
-        <ellipse cx="520" cy="255" rx="20" ry="4" fill="rgba(139,0,0,0.08)"/>
-        <!-- Scattered debris -->
-        ${[200,300,500,600].map(x => `<rect x="${x}" y="${240+Math.random()*20}" width="${8+Math.random()*15}" height="3" fill="rgba(30,26,20,0.6)" transform="rotate(${Math.random()*30-15} ${x} 250)"/>`).join('')}
-        <!-- Knight character -->
-        ${renderKnight(w/2 + 100, 160)}
-      `;
       break;
 
     case 'cloister':
