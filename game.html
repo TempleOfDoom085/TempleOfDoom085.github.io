@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knights Templar: The Siege of the Undead — v7.0</title>
+<title>Knights Templar: The Siege of the Undead — v8.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
 
@@ -419,6 +419,41 @@ body {
   50% { opacity: 0.75; }
   75% { opacity: 0.95; }
 }
+
+/* ═══ v8.0 MAP PULSE ═══ */
+@keyframes mapPulse {
+  0%,100% { opacity: 0.4; r: 8; }
+  50% { opacity: 0.8; r: 12; }
+}
+
+/* ═══ v8.0 COMBO COUNTER ═══ */
+.combo-display {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--heading);
+  font-size: 1.3rem;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6);
+  pointer-events: none;
+  z-index: 25;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.combo-display.active { opacity: 1; animation: comboPulse 0.5s ease; }
+@keyframes comboPulse { 0% { transform: translateX(-50%) scale(1.4); } 100% { transform: translateX(-50%) scale(1); } }
+
+/* ═══ v8.0 SAVE/LOAD FEEDBACK ═══ */
+.save-flash {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  z-index: 200;
+  animation: saveFlash 0.8s ease forwards;
+}
+@keyframes saveFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ═══ COMBAT OVERLAY ═══ */
 .combat-overlay {
@@ -929,6 +964,8 @@ body {
     <span class="inv-count" id="scrollCount">Scrolls: 0/8</span>
     <div class="stats-display" id="statsDisplay"></div>
     <button class="btn-audio" id="btnAudio" onclick="toggleAudio()">♪ Music</button>
+    <button class="btn-audio" onclick="saveGame('1')" title="Save progress">💾 Save</button>
+    <button class="btn-audio" onclick="loadGame('1')" title="Load saved game">📂 Load</button>
     <div style="position:relative">
       <button class="quest-log-toggle" onclick="toggleQuestLog()">📋 Quests</button>
       <div class="quest-log-panel" id="questLogPanel">
@@ -1071,8 +1108,8 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v7.0 GAME ENGINE
-// Photorealistic Texture Engine — SVG Turbulence, Animated Flames, Material Filters
+// KNIGHTS TEMPLAR: THE SIEGE OF THE UNDEAD — v8.0 GAME ENGINE
+// Save/Load System, Combo Counter, Difficulty Modes, Weather FX, Minimap Pulse
 // ═══════════════════════════════════════════════════════════════
 
 // ─── GAME STATE ───
@@ -1112,8 +1149,190 @@ const STATE = {
   bossCorrectShadow: -1, // Phase 2: which shadow is real
   roomMoves: 0,          // Track room transitions for world events
   merchantAvailable: false,
-  merchantRoom: null
+  merchantRoom: null,
+  // v8.0: New systems
+  difficulty: 'normal', // easy, normal, hard, nightmare
+  comboCount: 0,        // consecutive hits without taking damage
+  bestCombo: 0,
+  totalDamageDealt: 0,
+  saveSlot: null
 };
+
+// ─── v8.0 DIFFICULTY SYSTEM ───
+const DIFFICULTY = {
+  easy:      { label: '🕊 Pilgrim',    playerDmgMult: 1.3, enemyDmgMult: 0.6, healMult: 1.5, xpMult: 0.8 },
+  normal:    { label: '⚔ Knight',      playerDmgMult: 1.0, enemyDmgMult: 1.0, healMult: 1.0, xpMult: 1.0 },
+  hard:      { label: '💀 Crusader',   playerDmgMult: 0.85, enemyDmgMult: 1.4, healMult: 0.7, xpMult: 1.3 },
+  nightmare: { label: '☠ Deus Vult',   playerDmgMult: 0.7, enemyDmgMult: 1.8, healMult: 0.5, xpMult: 1.6 }
+};
+
+function getDifficulty() { return DIFFICULTY[STATE.difficulty] || DIFFICULTY.normal; }
+
+// ─── v8.0 SAVE/LOAD SYSTEM ───
+function saveGame(slot) {
+  const saveData = {
+    version: '8.0',
+    timestamp: Date.now(),
+    state: {
+      currentRoom: STATE.currentRoom,
+      hp: STATE.hp,
+      maxHp: STATE.maxHp,
+      inventory: [...STATE.inventory],
+      scrollsFound: [...STATE.scrollsFound],
+      visited: [...STATE.visited],
+      enemiesDefeated: [...STATE.enemiesDefeated],
+      battlesWon: STATE.battlesWon,
+      npcsSpoken: [...STATE.npcsSpoken],
+      portraitsExamined: [...STATE.portraitsExamined],
+      hasGoldenArmor: STATE.hasGoldenArmor,
+      necromancerDead: STATE.necromancerDead,
+      achievements: [...STATE.achievements],
+      activeQuests: [...STATE.activeQuests],
+      completedQuests: [...STATE.completedQuests],
+      questFlags: {...STATE.questFlags},
+      xp: STATE.xp,
+      level: STATE.level,
+      difficulty: STATE.difficulty,
+      comboCount: STATE.comboCount,
+      bestCombo: STATE.bestCombo,
+      totalDamageDealt: STATE.totalDamageDealt,
+      revealedRooms: STATE.revealedRooms
+    },
+    scrollPlacements: Object.fromEntries(
+      Object.entries(scrollPlacements).map(([k,v]) => [k, v ? v.ref : null])
+    )
+  };
+  try {
+    localStorage.setItem('kt_save_' + (slot || '1'), JSON.stringify(saveData));
+    addLog('💾 Game saved successfully.', 'system');
+    playSound('pickup');
+    return true;
+  } catch(e) {
+    addLog('⚠ Save failed — storage may be full.', 'combat');
+    return false;
+  }
+}
+
+function loadGame(slot) {
+  try {
+    const raw = localStorage.getItem('kt_save_' + (slot || '1'));
+    if (!raw) { addLog('No save found in this slot.', 'system'); return false; }
+    const data = JSON.parse(raw);
+    if (!data.version) { addLog('Incompatible save file.', 'system'); return false; }
+
+    const s = data.state;
+    STATE.currentRoom = s.currentRoom;
+    STATE.hp = s.hp;
+    STATE.maxHp = s.maxHp;
+    STATE.inventory = s.inventory || [];
+    STATE.scrollsFound = s.scrollsFound || [];
+    STATE.visited = new Set(s.visited || []);
+    STATE.enemiesDefeated = new Set(s.enemiesDefeated || []);
+    STATE.battlesWon = s.battlesWon || 0;
+    STATE.npcsSpoken = new Set(s.npcsSpoken || []);
+    STATE.portraitsExamined = new Set(s.portraitsExamined || []);
+    STATE.hasGoldenArmor = s.hasGoldenArmor || false;
+    STATE.necromancerDead = s.necromancerDead || false;
+    STATE.achievements = new Set(s.achievements || []);
+    STATE.activeQuests = s.activeQuests || [];
+    STATE.completedQuests = new Set(s.completedQuests || []);
+    STATE.questFlags = s.questFlags || {};
+    STATE.xp = s.xp || 0;
+    STATE.level = s.level || 1;
+    STATE.difficulty = s.difficulty || 'normal';
+    STATE.comboCount = s.comboCount || 0;
+    STATE.bestCombo = s.bestCombo || 0;
+    STATE.totalDamageDealt = s.totalDamageDealt || 0;
+    STATE.revealedRooms = s.revealedRooms || false;
+    STATE.inCombat = false;
+    STATE.abilityCooldowns = {};
+    STATE.rosaryUsed = false;
+    STATE.bossPhase = 0;
+
+    // Restore scroll placements
+    if (data.scrollPlacements) {
+      Object.keys(ROOMS).forEach(k => ROOMS[k].hasScroll = false);
+      scrollPlacements = {};
+      Object.entries(data.scrollPlacements).forEach(([roomKey, ref]) => {
+        if (ref) {
+          const scroll = SCROLLS.find(s => s.ref === ref);
+          if (scroll && !STATE.scrollsFound.includes(ref)) {
+            ROOMS[roomKey].hasScroll = true;
+            scrollPlacements[roomKey] = scroll;
+          }
+        }
+      });
+    }
+
+    // Re-clear defeated enemies from rooms
+    STATE.enemiesDefeated.forEach(roomId => {
+      if (ROOMS[roomId]) ROOMS[roomId].enemy = null;
+    });
+    // Re-clear collected relics
+    STATE.inventory.forEach(relic => {
+      Object.keys(ROOMS).forEach(k => {
+        if (ROOMS[k].relic === relic) ROOMS[k].relic = null;
+      });
+    });
+    // Restore secret passage if quest completed
+    if (STATE.questFlags.secretPassageOpen) {
+      ROOMS.dungeonDepths.exits.south = 'necromancerLair';
+      ROOMS.necromancerLair.exits.north = 'dungeonDepths';
+    }
+
+    // Clear UI and re-enter room
+    document.getElementById('logPanel').innerHTML = '';
+    document.getElementById('combatOverlay').classList.remove('active');
+    document.getElementById('scrollOverlay').classList.remove('active');
+    document.getElementById('npcDialog').classList.remove('active');
+    document.getElementById('portraitOverlay').classList.remove('active');
+    document.getElementById('deathScreen').classList.remove('active');
+    document.getElementById('winScreen').classList.remove('active');
+    preloadAllSpecial();
+    preloadRoomImages(STATE.currentRoom);
+    updateStatsDisplay();
+    updateQuestLog();
+
+    const d = new Date(data.timestamp);
+    addLog(`💾 Save loaded — ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`, 'system');
+    addLog(`Difficulty: ${getDifficulty().label} | Level ${STATE.level} | ${STATE.inventory.length} relics`, 'system');
+    enterRoom(STATE.currentRoom);
+    return true;
+  } catch(e) {
+    addLog('⚠ Failed to load save.', 'combat');
+    return false;
+  }
+}
+
+function hasSave(slot) {
+  return !!localStorage.getItem('kt_save_' + (slot || '1'));
+}
+
+function deleteSave(slot) {
+  localStorage.removeItem('kt_save_' + (slot || '1'));
+  addLog('🗑 Save deleted.', 'system');
+}
+
+// ─── v8.0 COMBO SYSTEM ───
+function addCombo() {
+  STATE.comboCount++;
+  if (STATE.comboCount > STATE.bestCombo) STATE.bestCombo = STATE.comboCount;
+  if (STATE.comboCount >= 3) {
+    floatDamage(`${STATE.comboCount}x COMBO!`, '#ffd700');
+  }
+  if (STATE.comboCount === 5) {
+    addLog('🔥 5-HIT COMBO! You are unstoppable!', 'achievement');
+    playSound('achieve');
+  }
+  if (STATE.comboCount === 10) {
+    addLog('⚡ 10-HIT COMBO! LEGENDARY STREAK!', 'divine');
+    playSound('divine');
+  }
+}
+
+function resetCombo() {
+  STATE.comboCount = 0;
+}
 
 // ─── SACRED SCROLLS ───
 const SCROLLS = [
@@ -2555,7 +2774,25 @@ function initGame() {
 function enterRoom(roomId) {
   STATE.currentRoom = roomId;
   STATE.visited.add(roomId);
+  STATE.roomMoves++;
   const room = ROOMS[roomId];
+
+  // v8.0: Auto-save every 5 rooms
+  if (STATE.roomMoves > 1 && STATE.roomMoves % 5 === 0) {
+    try { localStorage.setItem('kt_autosave', JSON.stringify({
+      version:'8.0', timestamp:Date.now(),
+      state:{ currentRoom:STATE.currentRoom, hp:STATE.hp, maxHp:STATE.maxHp,
+        inventory:[...STATE.inventory], scrollsFound:[...STATE.scrollsFound],
+        visited:[...STATE.visited], enemiesDefeated:[...STATE.enemiesDefeated],
+        battlesWon:STATE.battlesWon, npcsSpoken:[...STATE.npcsSpoken],
+        portraitsExamined:[...STATE.portraitsExamined], hasGoldenArmor:STATE.hasGoldenArmor,
+        necromancerDead:STATE.necromancerDead, achievements:[...STATE.achievements],
+        activeQuests:[...STATE.activeQuests], completedQuests:[...STATE.completedQuests],
+        questFlags:{...STATE.questFlags}, xp:STATE.xp, level:STATE.level,
+        difficulty:STATE.difficulty, comboCount:0, bestCombo:STATE.bestCombo,
+        totalDamageDealt:STATE.totalDamageDealt, revealedRooms:STATE.revealedRooms }
+    })); } catch(e) {}
+  }
 
   // v6.0: Preload this room's image + adjacent rooms
   preloadRoomImages(roomId);
@@ -4828,6 +5065,10 @@ function renderPortraitSVG(key) {
 
 // ═══ KEYBOARD CONTROLS ═══
 document.addEventListener('keydown', (e) => {
+  // v8.0: Save/Load shortcuts
+  if (e.key === 'F5') { e.preventDefault(); saveGame('1'); return; }
+  if (e.key === 'F9') { e.preventDefault(); loadGame('1'); return; }
+
   if (STATE.inCombat) {
     if (e.key === 'a' || e.key === '1') combatAction('attack');
     if (e.key === 'd' || e.key === '2') combatAction('defend');
