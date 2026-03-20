@@ -508,9 +508,124 @@ nav.scrolled {
   .recipe-header { padding: 1.5rem; }
 }
 
+/* ── CUSTOM CURSOR ── */
+body { cursor: none; }
+a, button, [role="button"], input, textarea, select { cursor: none; }
+#cursor {
+  position: fixed; pointer-events: none; z-index: 99999;
+  font-size: 20px; line-height: 1; user-select: none;
+  transform: translate(-50%, -50%) rotate(45deg);
+  filter: drop-shadow(0 0 5px rgba(184,147,58,0.7));
+  transition: font-size 0.15s ease, filter 0.15s ease;
+}
+body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(184,147,58,1)); }
+@keyframes trailFade {
+  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
+}
+.cursor-trail {
+  position: fixed; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold); pointer-events: none; z-index: 99998;
+  animation: trailFade 0.55s forwards;
+}
+
+/* ── YOU DIED OVERLAY ── */
+#you-died-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0);
+  z-index: 999998; display: flex; align-items: center;
+  justify-content: center; flex-direction: column;
+  pointer-events: none; transition: background 1.8s ease;
+}
+#you-died-overlay.active { background: rgba(0,0,0,0.94); pointer-events: all; }
+#you-died-inner { text-align: center; opacity: 0; transform: scale(0.96); transition: opacity 1.1s ease 1s, transform 1.1s ease 1s; }
+#you-died-overlay.active #you-died-inner { opacity: 1; transform: scale(1); }
+.you-died-text {
+  font-family: var(--serif); font-size: clamp(4rem, 10vw, 8rem);
+  font-weight: 300; color: var(--crimson); letter-spacing: 0.3em;
+  text-shadow: 0 0 60px rgba(139,0,0,0.9), 0 0 140px rgba(139,0,0,0.4);
+  margin-bottom: 0.8rem;
+}
+.you-died-sub {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.35em;
+  color: rgba(245,242,236,0.35); text-transform: uppercase; margin-bottom: 2.5rem;
+}
+#you-died-overlay .yd-btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em;
+  text-transform: uppercase; border: 1px solid rgba(139,0,0,0.5);
+  color: rgba(245,242,236,0.6); background: none; padding: 0.75rem 2.5rem;
+  cursor: none; transition: all 0.25s;
+}
+#you-died-overlay .yd-btn:hover { background: rgba(139,0,0,0.2); color: var(--paper); border-color: var(--crimson); }
+
+/* ── KONAMI OVERLAY ── */
+#konami-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.96);
+  z-index: 999999; display: none; align-items: center;
+  justify-content: center; flex-direction: column;
+  text-align: center; padding: 3rem; backdrop-filter: blur(16px);
+}
+#konami-overlay.show { display: flex; }
+.konami-title {
+  font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 3rem);
+  font-weight: 300; color: var(--gold); letter-spacing: 0.25em;
+  text-shadow: 0 0 50px rgba(184,147,58,0.8); margin-bottom: 0.4rem;
+}
+.konami-sub {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.35em;
+  color: rgba(245,242,236,0.3); text-transform: uppercase; margin-bottom: 2.5rem;
+}
+.konami-sheet {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1.5rem; max-width: 720px; width: 100%;
+  border: 1px solid rgba(184,147,58,0.2); padding: 2rem; margin-bottom: 1.5rem;
+  background: rgba(184,147,58,0.03);
+}
+.konami-stat-val { font-size: 2rem; font-weight: 300; color: var(--gold); line-height: 1; margin-bottom: 0.3rem; }
+.konami-stat-key { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em; color: rgba(245,242,236,0.3); text-transform: uppercase; }
+.konami-achievement {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.18em;
+  color: var(--gold); border: 1px solid rgba(184,147,58,0.25);
+  padding: 0.6rem 1.5rem; margin-bottom: 2rem; background: rgba(184,147,58,0.06);
+}
+#konami-overlay .close-konami {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.18em;
+  text-transform: uppercase; border: 1px solid rgba(184,147,58,0.25);
+  color: rgba(245,242,236,0.35); background: none; padding: 0.65rem 2rem;
+  cursor: none; transition: all 0.25s;
+}
+#konami-overlay .close-konami:hover { border-color: var(--gold); color: var(--gold); }
+
 </style>
 </head>
 <body>
+
+<!-- CUSTOM CURSOR -->
+<div id="cursor">⚔</div>
+
+<!-- YOU DIED OVERLAY -->
+<div id="you-died-overlay">
+  <div id="you-died-inner">
+    <div class="you-died-text">YOU DIED</div>
+    <div class="you-died-sub">The quest remains unfinished...</div>
+    <button class="yd-btn" onclick="closeYouDied()">Rise Again</button>
+  </div>
+</div>
+
+<!-- KONAMI OVERLAY -->
+<div id="konami-overlay">
+  <div class="konami-title">☩ DEVELOPER ROOM ☩</div>
+  <div class="konami-sub">Lorekeeper — You found the hidden archive</div>
+  <div class="konami-sheet">
+    <div><div class="konami-stat-val">Brian</div><div class="konami-stat-key">Name</div></div>
+    <div><div class="konami-stat-val">99</div><div class="konami-stat-key">Level</div></div>
+    <div><div class="konami-stat-val">10+</div><div class="konami-stat-key">ATK — Years Sales</div></div>
+    <div><div class="konami-stat-val">5</div><div class="konami-stat-key">DEF — Certs</div></div>
+    <div><div class="konami-stat-val">∞</div><div class="konami-stat-key">Coffee Consumed</div></div>
+    <div><div class="konami-stat-val">v9.1</div><div class="konami-stat-key">Current Build</div></div>
+  </div>
+  <div class="konami-achievement">🏆 Achievement Unlocked — Lorekeeper: Read Every Patch Note</div>
+  <button class="close-konami" onclick="closeKonami()">Return to Fortress</button>
+</div>
 
 <nav>
   <span class="nav-logo">BRIAN TEMPLE</span>
@@ -559,8 +674,8 @@ nav.scrolled {
         </div>
       </div>
       <div class="about-stats">
-        <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Years in Sales & Client Relations</div></div>
-        <div class="stat"><div class="stat-num">5</div><div class="stat-label">Cybersecurity Certifications</div></div>
+        <div class="stat"><div class="stat-num" data-count="10" data-suffix="+">10+</div><div class="stat-label">Years in Sales & Client Relations</div></div>
+        <div class="stat"><div class="stat-num" data-count="5">5</div><div class="stat-label">Cybersecurity Certifications</div></div>
         <div class="stat"><div class="stat-num">NJ</div><div class="stat-label">Based in Towaco, New Jersey</div></div>
       </div>
     </div>
@@ -699,6 +814,34 @@ nav.scrolled {
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v9.1</span>
+        <span class="patch-version-name">Site Overhaul — Phase 1</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Version Bump</div>
+        <ul class="patch-list">
+          <li>Game version display updated to v9.1 across all UI elements</li>
+        </ul>
+        <div class="patch-category">Portfolio — Site Upgrades</div>
+        <ul class="patch-list">
+          <li>Custom crusader sword cursor — the ⚔ follows your mouse with a gold particle trail throughout the site</li>
+          <li>Scroll-driven stat counters — the numbers in the About section now count up from zero when scrolled into view</li>
+          <li>Hero section parallax — text layers on both sides of the hero respond to mouse movement at different depths</li>
+          <li>"You Died" exit-intent — try to leave without finishing the quest and see what happens</li>
+          <li>Projects section header animation removed — static, cleaner presentation</li>
+        </ul>
+        <div class="patch-category">Secrets</div>
+        <ul class="patch-list">
+          <li>If you've read this far, you deserve a reward. Try this on any page: ↑ ↑ ↓ ↓ ← → ← → B A</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
@@ -1903,6 +2046,131 @@ const staggerObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1 });
 document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.observe(el));
+
+// ── v9.1: CUSTOM CURSOR ──
+(function() {
+  const cursor = document.getElementById('cursor');
+  let mx = -100, my = -100;
+  let trailThrottle = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top  = my + 'px';
+    // Throttle trail particles to every ~40ms
+    const now = Date.now();
+    if (now - trailThrottle > 40) {
+      trailThrottle = now;
+      const p = document.createElement('div');
+      p.className = 'cursor-trail';
+      p.style.left = mx + 'px';
+      p.style.top  = my + 'px';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 560);
+    }
+  });
+
+  document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; });
+  document.addEventListener('mouseenter', () => { cursor.style.opacity = '1'; });
+
+  document.querySelectorAll('a, button, [role="button"]').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+})();
+
+// ── v9.1: YOU DIED EXIT-INTENT ──
+(function() {
+  let shown = sessionStorage.getItem('youDiedShown');
+  document.addEventListener('mouseleave', e => {
+    if (e.clientY < 8 && !shown) {
+      shown = true;
+      sessionStorage.setItem('youDiedShown', '1');
+      const overlay = document.getElementById('you-died-overlay');
+      overlay.style.display = 'flex';
+      requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
+    }
+  });
+})();
+
+function closeYouDied() {
+  const overlay = document.getElementById('you-died-overlay');
+  overlay.classList.remove('active');
+  setTimeout(() => { overlay.style.display = 'none'; }, 1800);
+}
+
+// ── v9.1: KONAMI CODE ──
+(function() {
+  const SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  let pos = 0;
+  document.addEventListener('keydown', e => {
+    if (e.key === SEQ[pos]) {
+      pos++;
+      if (pos === SEQ.length) {
+        pos = 0;
+        document.getElementById('konami-overlay').classList.add('show');
+      }
+    } else {
+      pos = e.key === SEQ[0] ? 1 : 0;
+    }
+  });
+})();
+
+function closeKonami() {
+  document.getElementById('konami-overlay').classList.remove('show');
+}
+
+// ── v9.1: SCROLL STAT COUNTERS ──
+(function() {
+  const counters = document.querySelectorAll('.stat-num[data-count]');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      const el     = entry.target;
+      const target = parseInt(el.dataset.count, 10);
+      const suffix = el.dataset.suffix || '';
+      const dur    = 1400;
+      const start  = performance.now();
+      function tick(now) {
+        const t = Math.min((now - start) / dur, 1);
+        const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        el.textContent = Math.round(eased * target) + suffix;
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      el.textContent = '0' + suffix;
+      requestAnimationFrame(tick);
+    });
+  }, { threshold: 0.6 });
+  counters.forEach(el => observer.observe(el));
+})();
+
+// ── v9.1: HERO PARALLAX ──
+(function() {
+  const hero = document.querySelector('.hero');
+  if (!hero) return;
+  const leftText  = hero.querySelector('.hero-left  .hero-name');
+  const leftDesc  = hero.querySelector('.hero-left  .hero-desc');
+  const rightText = hero.querySelector('.hero-right .hero-name');
+  const rightDesc = hero.querySelector('.hero-right .hero-desc');
+
+  hero.addEventListener('mousemove', e => {
+    const rect = hero.getBoundingClientRect();
+    const x = (e.clientX - rect.left)  / rect.width  - 0.5; // -0.5 to 0.5
+    const y = (e.clientY - rect.top)   / rect.height - 0.5;
+
+    if (leftText)  leftText.style.transform  = `translate(${x * 14}px, ${y * 10}px)`;
+    if (leftDesc)  leftDesc.style.transform  = `translate(${x *  7}px, ${y *  5}px)`;
+    if (rightText) rightText.style.transform = `translate(${x * -10}px, ${y * 8}px)`;
+    if (rightDesc) rightDesc.style.transform = `translate(${x * -5}px, ${y * 4}px)`;
+  });
+
+  hero.addEventListener('mouseleave', () => {
+    [leftText, leftDesc, rightText, rightDesc].forEach(el => {
+      if (el) el.style.transform = '';
+    });
+  });
+})();
 </script>
 </body>
 </html>
