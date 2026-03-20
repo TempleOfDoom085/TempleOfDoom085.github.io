@@ -595,6 +595,143 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
 }
 #konami-overlay .close-konami:hover { border-color: var(--gold); color: var(--gold); }
 
+/* ── SKILL TREE ── */
+.skill-tree-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 0.5rem; }
+.tree-root {
+  padding: 0.9rem 2.5rem; border: 1px solid var(--gold); font-family: var(--mono);
+  font-size: 0.7rem; letter-spacing: 0.22em; color: var(--gold); text-transform: uppercase;
+  position: relative; background: rgba(184,147,58,0.05); box-shadow: 0 0 30px rgba(184,147,58,0.12);
+  text-align: center;
+}
+.tree-root::after {
+  content: ''; position: absolute; bottom: -2.2rem; left: 50%; transform: translateX(-50%);
+  width: 1px; height: 2.2rem; background: linear-gradient(to bottom, var(--gold), rgba(184,147,58,0.15));
+}
+.tree-branches {
+  width: 100%; display: flex; gap: 1.2rem; position: relative; padding-top: 2.2rem;
+}
+.tree-branches::before {
+  content: ''; position: absolute; top: 0; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(to right, rgba(184,147,58,0.15), rgba(0,212,255,0.35), rgba(0,212,255,0.35), rgba(184,147,58,0.15));
+}
+.tree-branch { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.tree-branch::before {
+  content: ''; width: 1px; height: 2.2rem; flex-shrink: 0;
+  background: linear-gradient(to bottom, rgba(0,212,255,0.35), transparent);
+}
+.tree-branch:first-child::before, .tree-branch:last-child::before {
+  background: linear-gradient(to bottom, rgba(184,147,58,0.35), transparent);
+}
+.branch-node {
+  width: 100%; padding: 1rem 0.75rem; border: 1px solid rgba(0,212,255,0.18);
+  background: rgba(0,212,255,0.03); cursor: default; text-align: center;
+  transition: all 0.25s; position: relative;
+}
+.branch-node::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon), transparent);
+  opacity: 0; transition: opacity 0.25s;
+}
+.branch-node:hover { border-color: rgba(0,212,255,0.45); background: rgba(0,212,255,0.07); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,212,255,0.1); }
+.branch-node:hover::after { opacity: 1; }
+.tree-branch:first-child .branch-node, .tree-branch:last-child .branch-node { border-color: rgba(184,147,58,0.18); background: rgba(184,147,58,0.03); }
+.tree-branch:first-child .branch-node::after, .tree-branch:last-child .branch-node::after { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.tree-branch:first-child .branch-node:hover, .tree-branch:last-child .branch-node:hover { border-color: rgba(184,147,58,0.45); background: rgba(184,147,58,0.07); box-shadow: 0 4px 20px rgba(184,147,58,0.1); }
+.branch-icon { font-size: 1.3rem; margin-bottom: 0.4rem; }
+.branch-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--neon); }
+.tree-branch:first-child .branch-label, .tree-branch:last-child .branch-label { color: var(--gold-light); }
+.branch-leaves {
+  list-style: none; width: 100%; border: 1px solid rgba(255,255,255,0.04); border-top: none;
+}
+.branch-leaves li {
+  font-size: 0.82rem; color: rgba(245,242,236,0.42); padding: 0.32rem 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03); text-align: center;
+  transition: color 0.18s, background 0.18s;
+}
+.branch-leaves li:hover { color: rgba(245,242,236,0.78); background: rgba(255,255,255,0.02); }
+.branch-leaves li:last-child { border-bottom: none; }
+@media(max-width:768px) {
+  .tree-branches { flex-wrap: wrap; gap: 1rem; }
+  .tree-branches::before, .tree-root::after { display: none; }
+  .tree-branch { flex: 0 0 calc(50% - 0.5rem); }
+  .tree-branch::before { display: none; }
+}
+
+/* ── TERMINAL OVERLAY ── */
+#terminal-overlay {
+  position: fixed; inset: 0; background: rgba(2,6,2,0.98); z-index: 999997;
+  display: none; flex-direction: column; font-family: var(--mono);
+}
+#terminal-overlay.open { display: flex; }
+.terminal-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.55rem 1.4rem; background: #0d120d; border-bottom: 1px solid rgba(0,200,64,0.15);
+  flex-shrink: 0;
+}
+.terminal-dots { display: flex; gap: 0.45rem; }
+.terminal-dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.terminal-dots .dot-r { background: #ff5f57; }
+.terminal-dots .dot-y { background: #febc2e; }
+.terminal-dots .dot-g { background: #28c840; }
+.terminal-title-text { font-size: 0.62rem; letter-spacing: 0.18em; color: rgba(0,200,64,0.4); text-transform: uppercase; }
+.terminal-hint { font-size: 0.58rem; color: rgba(0,200,64,0.25); letter-spacing: 0.12em; }
+#terminal-output {
+  flex: 1; overflow-y: auto; padding: 1.2rem 2rem 0.5rem; color: #00c840; font-size: 0.82rem; line-height: 1.75;
+}
+#terminal-output::-webkit-scrollbar { width: 4px; }
+#terminal-output::-webkit-scrollbar-track { background: transparent; }
+#terminal-output::-webkit-scrollbar-thumb { background: rgba(0,200,64,0.2); }
+.t-line { white-space: pre-wrap; word-break: break-word; margin-bottom: 0.1rem; }
+.t-line .t-prompt { color: rgba(0,200,64,0.45); }
+.t-line .t-cmd { color: #00ff50; }
+.t-output { color: rgba(0,200,64,0.72); }
+.t-err { color: #ff5555; }
+.t-system { color: rgba(0,212,255,0.65); }
+.t-blank { height: 0.6rem; }
+.terminal-input-row {
+  display: flex; align-items: center; padding: 0.7rem 2rem;
+  border-top: 1px solid rgba(0,200,64,0.1); gap: 0.5rem; flex-shrink: 0;
+}
+.t-prompt-label { color: rgba(0,200,64,0.5); font-size: 0.82rem; white-space: nowrap; user-select: none; }
+#terminal-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: #00ff50; font-family: var(--mono); font-size: 0.82rem; caret-color: #00ff50;
+}
+
+/* ── ACHIEVEMENT TOAST ── */
+#achievement-container {
+  position: fixed; bottom: 5.5rem; left: 1.5rem; z-index: 99995;
+  display: flex; flex-direction: column; gap: 0.6rem; pointer-events: none;
+}
+.achievement-toast {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 0.75rem 1.1rem; background: rgba(8,6,2,0.97);
+  border: 1px solid rgba(184,147,58,0.35); border-left: 3px solid var(--gold);
+  backdrop-filter: blur(16px); min-width: 255px; max-width: 320px;
+  transform: translateX(-115%); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 4px 30px rgba(184,147,58,0.18);
+}
+.achievement-toast.show { transform: translateX(0); }
+.achievement-toast.hide { transform: translateX(-115%); transition: transform 0.3s ease-in; }
+.toast-icon { font-size: 1.15rem; flex-shrink: 0; }
+.toast-label { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); opacity: 0.65; margin-bottom: 0.1rem; }
+.toast-name { font-size: 0.86rem; color: var(--paper); font-weight: 300; }
+
+/* ── GITHUB STATS ── */
+.github-stats-row {
+  display: flex; gap: 1.2rem; flex-wrap: wrap;
+  margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid rgba(0,212,255,0.08);
+}
+.gh-stat {
+  display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 1.1rem;
+  border: 1px solid rgba(0,212,255,0.1); background: rgba(0,212,255,0.02);
+  text-decoration: none; transition: border-color 0.22s, background 0.22s;
+}
+.gh-stat:hover { border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); }
+.gh-stat-ico { font-size: 0.95rem; opacity: 0.5; }
+.gh-stat-num { font-family: var(--mono); font-size: 1.25rem; color: var(--neon); line-height: 1; }
+.gh-stat-key { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,242,236,0.28); margin-top: 0.15rem; }
+
 </style>
 </head>
 <body>
@@ -610,6 +747,23 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
     <button class="yd-btn" onclick="closeYouDied()">Rise Again</button>
   </div>
 </div>
+
+<!-- TERMINAL OVERLAY -->
+<div id="terminal-overlay">
+  <div class="terminal-topbar">
+    <div class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+    <span class="terminal-title-text">brian@fortress — interactive portfolio</span>
+    <span class="terminal-hint">press ` to toggle</span>
+  </div>
+  <div id="terminal-output"></div>
+  <div class="terminal-input-row">
+    <span class="t-prompt-label">brian@fortress:~$&nbsp;</span>
+    <input id="terminal-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type 'help' for commands...">
+  </div>
+</div>
+
+<!-- ACHIEVEMENT CONTAINER -->
+<div id="achievement-container"></div>
 
 <!-- KONAMI OVERLAY -->
 <div id="konami-overlay">
@@ -679,6 +833,20 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
         <div class="stat"><div class="stat-num">NJ</div><div class="stat-label">Based in Towaco, New Jersey</div></div>
       </div>
     </div>
+    <div class="github-stats-row fade-in">
+      <div class="gh-stat">
+        <span class="gh-stat-ico">📁</span>
+        <div><div class="gh-stat-num" id="gh-repos">—</div><div class="gh-stat-key">Public Repos</div></div>
+      </div>
+      <div class="gh-stat">
+        <span class="gh-stat-ico">👥</span>
+        <div><div class="gh-stat-num" id="gh-followers">—</div><div class="gh-stat-key">Followers</div></div>
+      </div>
+      <div class="gh-stat">
+        <span class="gh-stat-ico">⭐</span>
+        <div><div class="gh-stat-num" id="gh-stars">—</div><div class="gh-stat-key">Total Stars</div></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -731,26 +899,61 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
   <div class="inner">
     <span class="section-label fade-in">03 — Skills</span>
     <h2 class="section-title fade-in" style="color:var(--paper)">What I <em>bring to the table.</em></h2>
-    <div class="skills-grid stagger-children fade-in">
-      <div class="skill-card">
-        <div class="skill-icon">🤖</div>
-        <div class="skill-title">AI & Automation</div>
-        <ul class="skill-items"><li>AI Agent Development</li><li>Workflow Automation (n8n)</li><li>Voice AI & IVR Design</li><li>Bland AI Integration</li><li>Conversational UX</li></ul>
-      </div>
-      <div class="skill-card">
-        <div class="skill-icon">🔐</div>
-        <div class="skill-title">Cybersecurity</div>
-        <ul class="skill-items"><li>Threat Analysis & IR</li><li>Network Security</li><li>DFIR & Threat Hunting</li><li>Linux Security</li><li>Vulnerability Assessment</li></ul>
-      </div>
-      <div class="skill-card">
-        <div class="skill-icon">⚙️</div>
-        <div class="skill-title">Technical Stack</div>
-        <ul class="skill-items"><li>Cloud Deployment (Railway)</li><li>Python (Security Focus)</li><li>CRM Integration</li><li>API & Webhook Pipelines</li><li>Infrastructure Management</li></ul>
-      </div>
-      <div class="skill-card gold-card">
-        <div class="skill-icon">🤝</div>
-        <div class="skill-title">Sales & Communication</div>
-        <ul class="skill-items"><li>Consultative Sales</li><li>Technical Client Communication</li><li>Lead Generation</li><li>Tier 1 Technical Support</li><li>Sales Automation</li></ul>
+    <div class="skill-tree-wrap fade-in">
+      <div class="tree-root">⚔ &nbsp; Brian Temple &nbsp; ⚔</div>
+      <div class="tree-branches">
+        <div class="tree-branch">
+          <div class="branch-node">
+            <div class="branch-icon">🤖</div>
+            <div class="branch-label">AI & Automation</div>
+          </div>
+          <ul class="branch-leaves">
+            <li>AI Agent Development</li>
+            <li>Workflow Automation (n8n)</li>
+            <li>Voice AI & IVR Design</li>
+            <li>Bland AI Integration</li>
+            <li>Conversational UX</li>
+          </ul>
+        </div>
+        <div class="tree-branch">
+          <div class="branch-node">
+            <div class="branch-icon">🔐</div>
+            <div class="branch-label">Cybersecurity</div>
+          </div>
+          <ul class="branch-leaves">
+            <li>Threat Analysis & IR</li>
+            <li>Network Security</li>
+            <li>DFIR & Threat Hunting</li>
+            <li>Linux Security</li>
+            <li>Vulnerability Assessment</li>
+          </ul>
+        </div>
+        <div class="tree-branch">
+          <div class="branch-node">
+            <div class="branch-icon">⚙️</div>
+            <div class="branch-label">Technical Stack</div>
+          </div>
+          <ul class="branch-leaves">
+            <li>Cloud Deployment</li>
+            <li>Python (Security Focus)</li>
+            <li>CRM Integration</li>
+            <li>API & Webhook Pipelines</li>
+            <li>Infrastructure Mgmt</li>
+          </ul>
+        </div>
+        <div class="tree-branch">
+          <div class="branch-node">
+            <div class="branch-icon">🤝</div>
+            <div class="branch-label">Sales & Comms</div>
+          </div>
+          <ul class="branch-leaves">
+            <li>Consultative Sales</li>
+            <li>Technical Client Comms</li>
+            <li>Lead Generation</li>
+            <li>Tier 1 Tech Support</li>
+            <li>Sales Automation</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -814,6 +1017,44 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v10.0</span>
+        <span class="patch-version-name">Site Overhaul — Phase 2</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Portfolio — Secret Terminal</div>
+        <ul class="patch-list">
+          <li>Press ` (backtick) anywhere on the site to open a fully interactive terminal</li>
+          <li>Supports commands: whoami, ls, cat about.txt, cat skills.txt, cat experience.txt, cat certs.txt, cat contact.txt, ./play, clear, exit</li>
+          <li>Command history with arrow keys — navigate previous commands like a real shell</li>
+          <li>Easter eggs buried in the command list — try nmap, git log, vim, hack, sudo</li>
+          <li>Typing ./play from the terminal launches the game and closes the terminal automatically</li>
+        </ul>
+        <div class="patch-category">Portfolio — Achievement System</div>
+        <ul class="patch-list">
+          <li>8 achievements tracked across the site — unlock them by exploring, playing, connecting, and lurking</li>
+          <li>Toast notifications slide in from the bottom-left when an achievement is unlocked</li>
+          <li>Progress persists in localStorage — your unlocks survive page refreshes</li>
+          <li>Achievements: Explorer, Player, Analyst, Devoted, Recruiter, Gamer, Mortality, Connected</li>
+        </ul>
+        <div class="patch-category">Portfolio — Skill Tree</div>
+        <ul class="patch-list">
+          <li>Skills section rebuilt from 4 cards into an RPG-style branching skill tree</li>
+          <li>Root node connects to 4 branches via animated connector lines</li>
+          <li>Branch nodes glow on hover with neon/gold accent per branch type</li>
+        </ul>
+        <div class="patch-category">Portfolio — Live GitHub Stats</div>
+        <ul class="patch-list">
+          <li>About section now fetches live data from the GitHub API — real-time public repos, followers, and total star count</li>
+          <li>Stats update automatically on every page load</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
@@ -2156,20 +2397,200 @@ function closeKonami() {
 
   hero.addEventListener('mousemove', e => {
     const rect = hero.getBoundingClientRect();
-    const x = (e.clientX - rect.left)  / rect.width  - 0.5; // -0.5 to 0.5
+    const x = (e.clientX - rect.left)  / rect.width  - 0.5;
     const y = (e.clientY - rect.top)   / rect.height - 0.5;
-
     if (leftText)  leftText.style.transform  = `translate(${x * 14}px, ${y * 10}px)`;
     if (leftDesc)  leftDesc.style.transform  = `translate(${x *  7}px, ${y *  5}px)`;
     if (rightText) rightText.style.transform = `translate(${x * -10}px, ${y * 8}px)`;
     if (rightDesc) rightDesc.style.transform = `translate(${x * -5}px, ${y * 4}px)`;
   });
-
   hero.addEventListener('mouseleave', () => {
-    [leftText, leftDesc, rightText, rightDesc].forEach(el => {
-      if (el) el.style.transform = '';
-    });
+    [leftText, leftDesc, rightText, rightDesc].forEach(el => { if (el) el.style.transform = ''; });
   });
+})();
+
+// ── v10.0: TERMINAL ──
+(function() {
+  const CMDS = {
+    help: `AVAILABLE COMMANDS\n─────────────────────────────────────────────\n  whoami              — who is this guy\n  ls                  — list sections\n  cat about.txt       — about Brian\n  cat skills.txt      — full skill set\n  cat experience.txt  — work history\n  cat certs.txt       — certifications\n  cat contact.txt     — get in touch\n  ./play              — launch the game\n  clear               — clear terminal\n  exit                — close terminal`,
+    whoami: `brian@fortress — AI Automation Builder & Cybersecurity Student\n─────────────────────────────────────────────\n  Location  : Towaco, NJ\n  Status    : Building intelligent systems\n  Clearance : 5 Security Certifications\n  XP        : 10+ years sales, 3+ years tech\n  Current   : SNHU IT Security Program\n  Build     : v10.0`,
+    ls: `about/         experience/    skills/        projects/\ncerts/         education/     kitchen/       contact/\ngame.exe`,
+    'ls -la': `drwxr-xr-x  brian  fortress  about/\ndrwxr-xr-x  brian  fortress  skills/\n-rwxr-xr-x  brian  fortress  game.exe\n-rw-r--r--  brian  fortress  contact.txt\n-rw-r--r--  brian  fortress  README.md`,
+    'ls -al': `drwxr-xr-x  brian  fortress  about/\ndrwxr-xr-x  brian  fortress  skills/\n-rwxr-xr-x  brian  fortress  game.exe\n-rw-r--r--  brian  fortress  contact.txt\n-rw-r--r--  brian  fortress  README.md`,
+    'cat about.txt': `I'm Brian Temple — an AI automation builder and cybersecurity\nstudent based in Towaco, NJ. I design and deploy AI-driven voice\nagents, workflow automation pipelines, and cloud-deployed systems\nthat blend intelligent automation with real human impact.\n\nBefore tech, I spent a decade in high-performance sales.\nThat background shapes how I think: systems need to work\nfor people, not just on paper.`,
+    'cat skills.txt': `AI & AUTOMATION\n  → AI Agent Development       → Workflow Automation (n8n)\n  → Voice AI & IVR Design      → Bland AI Integration\n  → Conversational UX\n\nCYBERSECURITY\n  → Threat Analysis & IR       → Network Security\n  → DFIR & Threat Hunting      → Linux Security\n  → Vulnerability Assessment\n\nTECHNICAL STACK\n  → Cloud Deployment           → Python (Security Focus)\n  → CRM Integration            → API & Webhook Pipelines\n\nSALES & COMMUNICATION\n  → Consultative Sales         → Technical Client Comms\n  → Lead Generation            → Sales Automation`,
+    'cat experience.txt': `[CURRENT]  Unblinded               — AI Automation Builder\n[PREV]     Evolve                  — SDR / Sales Automation\n[PREV]     Globus                  — Account Executive\n[PREV]     Axium Academy           — Enrollment Advisor\n[PREV]     Verizon                 — Business Solutions Consultant\n[PREV]     Complete Doc. Sol.      — Account Executive`,
+    'cat certs.txt': `✓  Google Cybersecurity Professional Certificate\n✓  Cisco Introduction to Cybersecurity\n✓  CompTIA Security+ (in progress)\n✓  SNHU IT-140 Python Fundamentals\n✓  Additional certs — scroll to the /certs section`,
+    'cat contact.txt': `GitHub   : github.com/TempleOfDoom085\nEmail    : Scroll to the Contact section\nLinkedIn : Scroll to the Contact section`,
+    './play': '__LAUNCH__',
+    play: '__LAUNCH__',
+    nmap: `Starting Nmap 7.94 -- nmap.org\nScan report for fortress.local (127.0.0.1)\n17 rooms discovered, all OPEN\nService: undead-patrol on ports 1-16\nService: necromancer-boss on port 666\nWarning: Route through catacombs required`,
+    'git log': `commit a1b2c3d  Add 2D open world canvas map (UPCOMING)\ncommit 4e5f6a7  Phase 2 — terminal, achievements, skill tree\ncommit 8b9c0d1  Phase 1 — cursor, Easter eggs, parallax\ncommit f696116  Bump version to v9.1\ncommit 41cf37d  Security review: A+ rating`,
+    hack: `Initializing...\n[████████████████] 100%\n\nAccess granted.\n\nJust kidding. That's literally what the cybersecurity cert is for.`,
+    vim: `\n~\n~\n~\n~\n~  "portfolio.txt" [readonly] 847 lines\n\nPress :wq to save and quit.\nPress :q! to abandon changes.\nGood luck. You'll need it.`,
+    'sudo rm -rf /': `Permission denied.\nYou are not root in this fortress.`,
+    pwd: `/home/brian/fortress`,
+    clear: '__CLEAR__',
+    exit: '__EXIT__',
+    q: '__EXIT__',
+  };
+
+  const overlay = document.getElementById('terminal-overlay');
+  const output  = document.getElementById('terminal-output');
+  const input   = document.getElementById('terminal-input');
+  let cmdHistory = [], histIdx = -1, opened = false;
+
+  function openTerminal() {
+    overlay.classList.add('open');
+    if (!opened) {
+      opened = true;
+      addSystem('╔════════════════════════════════════════════╗');
+      addSystem('║   brian@fortress  —  Interactive Portfolio  ║');
+      addSystem('║   Type "help" for available commands        ║');
+      addSystem('╚════════════════════════════════════════════╝');
+      addBlank();
+    }
+    setTimeout(() => input.focus(), 60);
+    window._unlockAchievement && window._unlockAchievement('analyst');
+  }
+
+  function closeTerminal() { overlay.classList.remove('open'); }
+
+  function addSystem(txt) { const d = document.createElement('div'); d.className = 't-line t-system'; d.textContent = txt; output.appendChild(d); scroll(); }
+  function addBlank()     { const d = document.createElement('div'); d.className = 't-blank'; output.appendChild(d); scroll(); }
+  function addOutput(txt) { const d = document.createElement('div'); d.className = 't-line t-output'; d.textContent = txt; output.appendChild(d); scroll(); }
+  function addError(txt)  { const d = document.createElement('div'); d.className = 't-line t-err'; d.textContent = txt; output.appendChild(d); scroll(); }
+  function scroll() { output.scrollTop = output.scrollHeight; }
+
+  function addPromptLine(raw) {
+    const d = document.createElement('div'); d.className = 't-line';
+    const ps = document.createElement('span'); ps.className = 't-prompt'; ps.textContent = 'brian@fortress:~$ ';
+    const cs = document.createElement('span'); cs.className = 't-cmd'; cs.textContent = raw;
+    d.appendChild(ps); d.appendChild(cs); output.appendChild(d); scroll();
+  }
+
+  function runCmd(raw) {
+    const cmd = raw.trim();
+    if (!cmd) return;
+    cmdHistory.unshift(raw); histIdx = -1;
+    addPromptLine(raw);
+    const key = cmd.toLowerCase();
+    const resp = CMDS[key];
+    if (resp === '__CLEAR__')  { output.innerHTML = ''; return; }
+    if (resp === '__EXIT__')   { closeTerminal(); return; }
+    if (resp === '__LAUNCH__') {
+      addSystem('Launching Knights Templar: The Siege of the Undead v10.0...');
+      setTimeout(() => { closeTerminal(); document.getElementById('game-section').scrollIntoView({ behavior: 'smooth' }); }, 900);
+      return;
+    }
+    if (resp !== undefined)    { addOutput(resp); }
+    else if (key.startsWith('cd ')) { addError(`cd: ${cmd.slice(3)}: This is a portfolio, not a real filesystem.`); }
+    else if (key.startsWith('sudo ')) { addError('Permission denied. You are not root here.'); }
+    else { addError(`Command not found: ${cmd}  —  type "help" for available commands`); }
+    addBlank();
+    if (cmdHistory.length >= 3) window._unlockAchievement && window._unlockAchievement('analyst');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === '`' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      overlay.classList.contains('open') ? closeTerminal() : openTerminal();
+    }
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { const v = input.value; input.value = ''; runCmd(v); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); if (histIdx < cmdHistory.length - 1) { histIdx++; input.value = cmdHistory[histIdx]; } }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); if (histIdx > 0) { histIdx--; input.value = cmdHistory[histIdx]; } else { histIdx = -1; input.value = ''; } }
+  });
+
+  window._closeTerminal = closeTerminal;
+})();
+function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
+
+// ── v10.0: ACHIEVEMENT SYSTEM ──
+(function() {
+  const DEFS = {
+    explorer:  { icon: '🗺', name: 'Explorer',   desc: 'Scroll through every section' },
+    player:    { icon: '⚔',  name: 'Player',     desc: 'Launch the game' },
+    analyst:   { icon: '💻', name: 'Analyst',    desc: 'Use the terminal' },
+    devoted:   { icon: '⏳', name: 'Devoted',    desc: 'Spend 2+ minutes reading' },
+    recruiter: { icon: '📧', name: 'Recruiter',  desc: 'Click the contact link' },
+    gamer:     { icon: '🎮', name: 'Gamer',      desc: 'Enter the Konami code' },
+    mortality: { icon: '☠',  name: 'Mortality',  desc: 'Try to leave the page' },
+    connected: { icon: '🌐', name: 'Connected',  desc: 'Visit GitHub or LinkedIn' },
+  };
+  const KEY = 'bt_ach_v1';
+  const unlocked = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+
+  function unlock(id) {
+    if (unlocked.has(id) || !DEFS[id]) return;
+    unlocked.add(id);
+    localStorage.setItem(KEY, JSON.stringify([...unlocked]));
+    showToast(DEFS[id]);
+  }
+
+  function showToast(def) {
+    const c = document.getElementById('achievement-container');
+    const t = document.createElement('div');
+    t.className = 'achievement-toast';
+    t.innerHTML = `<span class="toast-icon">${def.icon}</span><div><div class="toast-label">Achievement Unlocked</div><div class="toast-name">${def.name}</div></div>`;
+    c.appendChild(t);
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 350); }, 4200);
+  }
+
+  // Explorer — visit 6 key sections
+  const needed = ['about','experience','skills','projects','certs','contact'];
+  const seen   = new Set();
+  const secObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { seen.add(e.target.id); if (needed.every(s => seen.has(s))) unlock('explorer'); } });
+  }, { threshold: 0.3 });
+  needed.forEach(id => { const el = document.getElementById(id); if (el) secObs.observe(el); });
+
+  // Devoted — 2 min on page
+  setTimeout(() => unlock('devoted'), 2 * 60 * 1000);
+
+  // Recruiter — contact links
+  document.querySelectorAll('#contact a').forEach(a => a.addEventListener('click', () => unlock('recruiter')));
+
+  // Connected — GitHub / LinkedIn
+  document.querySelectorAll('a[href*="github"], a[href*="linkedin"]').forEach(a => a.addEventListener('click', () => unlock('connected')));
+
+  // Player — game launch button
+  const glb = document.querySelector('.game-launch-btn');
+  if (glb) glb.addEventListener('click', () => unlock('player'));
+
+  // Mortality — You Died overlay shows
+  new MutationObserver(ms => { ms.forEach(m => { if (m.target.classList.contains('active')) unlock('mortality'); }); })
+    .observe(document.getElementById('you-died-overlay'), { attributes: true, attributeFilter: ['class'] });
+
+  // Gamer — Konami overlay shows
+  new MutationObserver(ms => { ms.forEach(m => { if (m.target.classList.contains('show')) unlock('gamer'); }); })
+    .observe(document.getElementById('konami-overlay'), { attributes: true, attributeFilter: ['class'] });
+
+  window._unlockAchievement = unlock;
+})();
+
+// ── v10.0: GITHUB STATS ──
+(function() {
+  fetch('https://api.github.com/users/TempleOfDoom085')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(u => {
+      const re = document.getElementById('gh-repos');
+      const fo = document.getElementById('gh-followers');
+      if (re) re.textContent = u.public_repos ?? '—';
+      if (fo) fo.textContent = u.followers ?? '—';
+      return fetch('https://api.github.com/users/TempleOfDoom085/repos?per_page=100');
+    })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(repos => {
+      if (!Array.isArray(repos)) return;
+      const stars = repos.reduce((s, r) => s + (r.stargazers_count || 0), 0);
+      const el = document.getElementById('gh-stars');
+      if (el) el.textContent = stars;
+    })
+    .catch(() => {});
 })();
 </script>
 </body>
