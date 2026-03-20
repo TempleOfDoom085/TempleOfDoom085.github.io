@@ -947,210 +947,6 @@ body {
 .combat-log::-webkit-scrollbar { display:none; }
 .endscreen-stats { font-family:var(--ui); font-size:0.62rem; color:var(--gold-dim); letter-spacing:0.06em; text-align:center; line-height:2; }
 .map-room-count { font-family:var(--ui); font-size:0.48rem; color:var(--text-faint); text-align:center; padding:3px 0 5px; border-top:1px solid rgba(184,147,58,0.06); }
-
-/* ═══════════════════════════════════════════
-   v9.0 VISUAL OVERHAUL — DARK SOULS AESTHETIC
-   ═══════════════════════════════════════════ */
-
-/* ── SOUL BAR HP ── */
-.hp-bar-outer {
-  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
-  border-radius: 0;
-  border: none;
-  background: rgba(8,8,10,0.95);
-  box-shadow: 0 0 0 1px rgba(184,147,58,0.5), 0 0 12px rgba(184,147,58,0.1);
-  width: 180px;
-}
-.hp-bar-inner {
-  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  border-radius: 0;
-  position: relative;
-}
-/* Tick marks etched into the bar */
-.hp-bar-outer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(0,0,0,0.55) 23px, rgba(0,0,0,0.55) 24px);
-  z-index: 3;
-  pointer-events: none;
-}
-
-/* ── TOP BAR ENHANCEMENT ── */
-.top-bar {
-  background: linear-gradient(180deg, #16161e 0%, #0a0a0d 100%);
-  border-bottom: 1px solid rgba(184,147,58,0.45);
-  box-shadow: 0 2px 20px rgba(0,0,0,0.8), 0 1px 0 rgba(184,147,58,0.12);
-}
-.game-title-bar {
-  text-shadow: 0 0 20px rgba(201,168,76,0.5), 0 0 40px rgba(201,168,76,0.2);
-  letter-spacing: 0.16em;
-}
-
-/* ── PANEL BORDERS — BEVELED CORNERS ── */
-.scene-panel {
-  border-bottom: 1px solid rgba(184,147,58,0.35);
-  border-right: 1px solid rgba(184,147,58,0.35);
-  box-shadow: inset 0 0 100px 20px rgba(0,0,0,0.5);
-}
-.map-panel {
-  border-left: 1px solid rgba(184,147,58,0.35);
-}
-.map-header {
-  background: linear-gradient(180deg, rgba(184,147,58,0.08) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(184,147,58,0.2);
-  letter-spacing: 0.25em;
-}
-.log-panel {
-  border-right: 1px solid rgba(184,147,58,0.2);
-}
-
-/* ── COMBAT OVERLAY — FULL CINEMATIC ── */
-.combat-overlay {
-  background: radial-gradient(ellipse at 50% 40%, rgba(30,5,5,0.88) 0%, rgba(4,4,8,0.97) 70%);
-  backdrop-filter: blur(3px) brightness(0.65);
-}
-/* Animated vignette rings */
-.combat-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.6) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-.combat-overlay > * { position: relative; z-index: 1; }
-
-/* Enemy art breathes */
-@keyframes enemyBreath {
-  0%,100% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 8px rgba(180,40,40,0.3)); }
-  45%     { transform: scale(1.04) translateY(-5px); filter: drop-shadow(0 0 18px rgba(220,60,60,0.6)); }
-  65%     { transform: scale(0.98) translateY(2px); filter: drop-shadow(0 0 6px rgba(140,20,20,0.2)); }
-}
-.combat-enemy-art {
-  animation: enemyBreath 2.8s ease-in-out infinite;
-  transform-origin: bottom center;
-  width: 160px;
-  height: 180px;
-  margin: 2px 0;
-}
-
-/* Enemy HP bar — wider and more dramatic */
-.enemy-hp-bar-outer {
-  width: 260px;
-  height: 14px;
-  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  border-radius: 0;
-  border: none;
-  background: rgba(8,4,4,0.95);
-  box-shadow: 0 0 0 1px rgba(180,40,40,0.5), 0 0 12px rgba(180,40,40,0.15);
-}
-.enemy-hp-bar-inner {
-  background: linear-gradient(90deg, #6a0000, #cc2222, #ee3333);
-  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
-  border-radius: 0;
-}
-/* Tick marks on enemy bar */
-.enemy-hp-bar-outer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(0,0,0,0.4) 23px, rgba(0,0,0,0.4) 24px);
-  z-index: 3;
-  pointer-events: none;
-}
-
-/* ── SLASH VFX ── */
-@keyframes slashSwipe {
-  0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
-  40%  { clip-path: inset(0 0% 0 0);   opacity: 1; }
-  70%  { clip-path: inset(0 0% 0 0);   opacity: 0.6; }
-  100% { clip-path: inset(0 0% 0 0);   opacity: 0; }
-}
-@keyframes slashAfterGlow {
-  0%   { opacity: 0.6; }
-  100% { opacity: 0; }
-}
-.slash-vfx {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 220px;
-  height: 3px;
-  transform: translate(-50%, -50%) rotate(-38deg);
-  background: linear-gradient(90deg, transparent 0%, rgba(255,220,120,1) 50%, rgba(255,255,255,0.9) 65%, transparent 100%);
-  box-shadow: 0 0 12px rgba(255,200,80,0.9), 0 0 30px rgba(255,120,40,0.5);
-  pointer-events: none;
-  z-index: 50;
-  opacity: 0;
-}
-.slash-vfx::before {
-  content: '';
-  position: absolute;
-  top: -10px; left: 0; right: 0; bottom: -10px;
-  background: linear-gradient(90deg, transparent, rgba(255,200,80,0.15), transparent);
-  filter: blur(6px);
-}
-.slash-vfx.active { animation: slashSwipe 0.3s ease-out forwards; }
-
-/* Second slash line (parallel, offset) */
-.slash-vfx-2 {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 160px;
-  height: 2px;
-  transform: translate(-30%, -60%) rotate(-38deg);
-  background: linear-gradient(90deg, transparent, rgba(255,180,80,0.7), transparent);
-  box-shadow: 0 0 8px rgba(255,180,40,0.6);
-  pointer-events: none;
-  z-index: 50;
-  opacity: 0;
-}
-.slash-vfx-2.active { animation: slashSwipe 0.3s ease-out 0.04s forwards; }
-
-/* ── EDGE BLEED DAMAGE ── */
-@keyframes edgeBleed {
-  0%   { box-shadow: inset 0 0 0px 0px transparent; }
-  20%  { box-shadow: inset 0 0 80px 40px rgba(200,20,20,0.5); }
-  100% { box-shadow: inset 0 0 40px 20px rgba(160,10,10,0); }
-}
-.damage-flash.hit {
-  background: none;
-  animation: edgeBleed 0.55s ease forwards;
-}
-
-/* ── ROOM TRANSITION — HORIZONTAL INK WIPE ── */
-@keyframes roomWipe {
-  0%   { clip-path: inset(0 100% 0 0); opacity: 0.6; }
-  100% { clip-path: inset(0 0% 0 0);   opacity: 1; }
-}
-.scene-entering { animation: roomWipe 0.42s cubic-bezier(0.22, 0.61, 0.36, 1); }
-
-/* ── FLOATING DAMAGE — scatter with drift ── */
-@keyframes floatUpScatter {
-  0%   { opacity: 1;   transform: translateY(0) translateX(0) scale(1) rotate(0deg); }
-  30%  { opacity: 1; }
-  100% { opacity: 0;   transform: translateY(-72px) translateX(var(--drift,18px)) scale(1.35) rotate(var(--rot,4deg)); }
-}
-.float-dmg { animation: floatUpScatter 1.2s ease-out forwards; }
-
-/* ── COMBAT TITLE — more dramatic ── */
-.combat-title {
-  font-size: 1.7rem;
-  letter-spacing: 0.25em;
-  text-shadow: 0 0 15px rgba(200,40,40,0.6), 0 0 40px rgba(160,20,20,0.4), 0 2px 4px rgba(0,0,0,0.8);
-}
-
-/* ── ENDSCREEN — more cinematic ── */
-.endscreen {
-  backdrop-filter: blur(6px) brightness(0.5);
-}
-.endscreen-title {
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  letter-spacing: 0.15em;
-  animation: combatPulse 2.5s ease-in-out infinite;
-}
 </style>
 </head>
 <body>
@@ -1224,8 +1020,6 @@ body {
 
   <!-- COMBAT OVERLAY -->
   <div class="combat-overlay" id="combatOverlay">
-    <div class="slash-vfx" id="slashVfx"></div>
-    <div class="slash-vfx-2" id="slashVfx2"></div>
     <div class="combat-title">⚔ COMBAT ⚔</div>
     <div class="combat-enemy-art" id="combatEnemyArt"></div>
     <div class="combat-enemy-name" id="combatEnemyName"></div>
@@ -1426,36 +1220,30 @@ function loadGame(slot) {
     const data = JSON.parse(raw);
     if (!data.version) { addLog('Incompatible save file.', 'system'); return false; }
 
-    const clampInt = (v, min, max) => { const n = parseInt(v, 10); return isNaN(n) ? min : Math.max(min, Math.min(max, n)); };
-    const safeBool = v => v === true;
-    const safeStr = (v, allowed, def) => allowed.includes(v) ? v : def;
-    const safeArr = v => Array.isArray(v) ? v : [];
-    const safeObj = v => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
-
     const s = data.state;
-    STATE.currentRoom = safeStr(s.currentRoom, Object.keys(ROOMS), 'entrance');
-    STATE.hp = clampInt(s.hp, 1, 9999);
-    STATE.maxHp = clampInt(s.maxHp, 1, 9999);
-    STATE.inventory = safeArr(s.inventory);
-    STATE.scrollsFound = safeArr(s.scrollsFound);
-    STATE.visited = new Set(safeArr(s.visited));
-    STATE.enemiesDefeated = new Set(safeArr(s.enemiesDefeated));
-    STATE.battlesWon = clampInt(s.battlesWon, 0, 99999);
-    STATE.npcsSpoken = new Set(safeArr(s.npcsSpoken));
-    STATE.portraitsExamined = new Set(safeArr(s.portraitsExamined));
-    STATE.hasGoldenArmor = safeBool(s.hasGoldenArmor);
-    STATE.necromancerDead = safeBool(s.necromancerDead);
-    STATE.achievements = new Set(safeArr(s.achievements));
-    STATE.activeQuests = safeArr(s.activeQuests);
-    STATE.completedQuests = new Set(safeArr(s.completedQuests));
-    STATE.questFlags = safeObj(s.questFlags);
-    STATE.xp = clampInt(s.xp, 0, 999999);
-    STATE.level = clampInt(s.level, 1, 99);
-    STATE.difficulty = safeStr(s.difficulty, ['easy', 'normal', 'hard', 'nightmare'], 'normal');
-    STATE.comboCount = clampInt(s.comboCount, 0, 9999);
-    STATE.bestCombo = clampInt(s.bestCombo, 0, 9999);
-    STATE.totalDamageDealt = clampInt(s.totalDamageDealt, 0, 999999);
-    STATE.revealedRooms = safeBool(s.revealedRooms);
+    STATE.currentRoom = s.currentRoom;
+    STATE.hp = s.hp;
+    STATE.maxHp = s.maxHp;
+    STATE.inventory = s.inventory || [];
+    STATE.scrollsFound = s.scrollsFound || [];
+    STATE.visited = new Set(s.visited || []);
+    STATE.enemiesDefeated = new Set(s.enemiesDefeated || []);
+    STATE.battlesWon = s.battlesWon || 0;
+    STATE.npcsSpoken = new Set(s.npcsSpoken || []);
+    STATE.portraitsExamined = new Set(s.portraitsExamined || []);
+    STATE.hasGoldenArmor = s.hasGoldenArmor || false;
+    STATE.necromancerDead = s.necromancerDead || false;
+    STATE.achievements = new Set(s.achievements || []);
+    STATE.activeQuests = s.activeQuests || [];
+    STATE.completedQuests = new Set(s.completedQuests || []);
+    STATE.questFlags = s.questFlags || {};
+    STATE.xp = s.xp || 0;
+    STATE.level = s.level || 1;
+    STATE.difficulty = s.difficulty || 'normal';
+    STATE.comboCount = s.comboCount || 0;
+    STATE.bestCombo = s.bestCombo || 0;
+    STATE.totalDamageDealt = s.totalDamageDealt || 0;
+    STATE.revealedRooms = s.revealedRooms || false;
     STATE.inCombat = false;
     STATE.abilityCooldowns = {};
     STATE.rosaryUsed = false;
@@ -1823,10 +1611,6 @@ function floatDamage(text, color) {
   el.style.fontSize = text.includes('CRIT') ? '1.6rem' : '1.2rem';
   el.style.left = (30 + Math.random() * 40) + '%';
   el.style.top = '30%';
-  const drift = (Math.random() * 60 - 30);
-  const rot = (Math.random() * 16 - 8);
-  el.style.setProperty('--drift', drift + 'px');
-  el.style.setProperty('--rot', rot + 'deg');
   el.textContent = text;
   const container = document.querySelector('.game-main');
   if (container) container.appendChild(el);
@@ -1844,10 +1628,7 @@ function roomTransition() {
 function combatLogMsg(text) {
   const el = document.getElementById('combatLog');
   if (!el) return;
-  const span = document.createElement('span');
-  span.textContent = text;
-  el.appendChild(span);
-  el.appendChild(document.createElement('br'));
+  el.innerHTML += text + '<br>';
   el.scrollTop = 999999;
 }
 
@@ -2192,8 +1973,7 @@ function updateStatsDisplay() {
   const stats = getPlayerStats();
   const el = document.getElementById('statsDisplay');
   if (el) {
-    el.textContent = '';
-    [['stat-item', `LVL ${STATE.level}`], ['stat-item stat-atk', `ATK ${stats.atk}`], ['stat-item stat-def', `DEF ${stats.def}`], ['stat-item stat-xp', `XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}`]].forEach(([cls, txt]) => { const s = document.createElement('span'); s.className = cls; s.textContent = txt; el.appendChild(s); });
+    el.innerHTML = `<span class="stat-item">LVL ${STATE.level}</span><span class="stat-item stat-atk">ATK ${stats.atk}</span><span class="stat-item stat-def">DEF ${stats.def}</span><span class="stat-item stat-xp">XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}</span>`;
   }
 }
 
@@ -3175,10 +2955,6 @@ function combatAction(action) {
   const e = STATE.currentEnemy;
 
   if (action === 'attack') {
-    // v9.0: Slash VFX
-    const sv = document.getElementById('slashVfx'), sv2 = document.getElementById('slashVfx2');
-    if (sv) { sv.classList.remove('active'); void sv.offsetWidth; sv.classList.add('active'); }
-    if (sv2) { sv2.classList.remove('active'); void sv2.offsetWidth; sv2.classList.add('active'); }
     // Boss Phase 2: can't regular attack during shadow phase
     if (STATE.bossPhase === 2 && STATE.bossShadows.length > 0) {
       addLog('The Necromancer has split into shadows — choose which one to strike!', 'system');
@@ -3328,7 +3104,7 @@ function endCombat(victory) {
     showSpecialScene('victory'); // v6.0: Show victory art if available
     checkAchievements();
     setTimeout(() => {
-      document.getElementById('winStats').textContent = `Level: ${STATE.level} | XP: ${STATE.xp} | Battles Won: ${STATE.battlesWon} | Relics: ${STATE.inventory.length}/6 | Scrolls: ${STATE.scrollsFound.length}/8 | Rooms: ${STATE.visited.size}/17 | Quests: ${STATE.completedQuests.size}/5 | Achievements: ${STATE.achievements.size}/9`;
+      document.getElementById('winStats').innerHTML = 'Level: ' + STATE.level + '<br>XP: ' + STATE.xp + '<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Quests: ' + STATE.completedQuests.size + '/5<br>Achievements: ' + STATE.achievements.size + '/9';
       document.getElementById('winScreen').classList.add('active');
     }, 2000);
     return;
@@ -3619,7 +3395,7 @@ function playerDeath() {
   playSound('death');
   showSpecialScene('death'); // v6.0: Show death art if available
   setTimeout(() => {
-    document.getElementById('deathStats').textContent = `Level: ${STATE.level} (XP: ${STATE.xp}) | Battles Won: ${STATE.battlesWon} | Relics: ${STATE.inventory.length}/6 | Quests: ${STATE.completedQuests.size}/5 | Rooms: ${STATE.visited.size}/17`;
+    document.getElementById('deathStats').innerHTML = 'Level: ' + STATE.level + ' (XP: ' + STATE.xp + ')<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/5<br>Rooms: ' + STATE.visited.size + '/17';
     document.getElementById('deathScreen').classList.add('active');
   }, 1500);
 }
