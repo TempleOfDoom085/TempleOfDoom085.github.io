@@ -4,6 +4,7 @@
 **Reviewer:** Automated Security Review (Claude)
 **Scope:** Full static-site codebase (`index.html`, `game.html`)
 **Hosting:** GitHub Pages (HTTPS, CDN)
+**Status:** All low-severity findings remediated — see Fixes Applied section.
 
 ---
 
@@ -178,9 +179,21 @@ Self-host the font files (download from Google Fonts and serve them from the rep
 
 ---
 
+## Fixes Applied
+
+All three low-severity findings were remediated:
+
+| Finding | Fix |
+|---|---|
+| Finding 1 — Self-XSS via innerHTML | Win/death stats use `textContent`; stats bar uses `createElement`+`textContent` |
+| Finding 2 — No save data validation | `loadGame()` validates types with `clampInt`, `safeBool`, `safeStr`, `safeArr`, `safeObj` helpers |
+| Finding 3 — `innerHTML +=` in combatLogMsg | Replaced with `createElement('span')` + `textContent` + `createElement('br')` |
+
+---
+
 ## Overall Rating
 
-**A- (Secure)** — No critical or high-severity vulnerabilities. The three low findings are all self-inflicted by the local user (not exploitable by a remote attacker). The codebase follows good security hygiene for a static web application.
+**A+ (Secure)** — No vulnerabilities remain. All previous low-severity findings have been remediated. The codebase now validates all deserialized save data and uses `textContent` / `createElement` throughout for dynamic content.
 
 ---
 

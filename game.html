@@ -1220,30 +1220,36 @@ function loadGame(slot) {
     const data = JSON.parse(raw);
     if (!data.version) { addLog('Incompatible save file.', 'system'); return false; }
 
+    const clampInt = (v, min, max) => { const n = parseInt(v, 10); return isNaN(n) ? min : Math.max(min, Math.min(max, n)); };
+    const safeBool = v => v === true;
+    const safeStr = (v, allowed, def) => allowed.includes(v) ? v : def;
+    const safeArr = v => Array.isArray(v) ? v : [];
+    const safeObj = v => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+
     const s = data.state;
-    STATE.currentRoom = s.currentRoom;
-    STATE.hp = s.hp;
-    STATE.maxHp = s.maxHp;
-    STATE.inventory = s.inventory || [];
-    STATE.scrollsFound = s.scrollsFound || [];
-    STATE.visited = new Set(s.visited || []);
-    STATE.enemiesDefeated = new Set(s.enemiesDefeated || []);
-    STATE.battlesWon = s.battlesWon || 0;
-    STATE.npcsSpoken = new Set(s.npcsSpoken || []);
-    STATE.portraitsExamined = new Set(s.portraitsExamined || []);
-    STATE.hasGoldenArmor = s.hasGoldenArmor || false;
-    STATE.necromancerDead = s.necromancerDead || false;
-    STATE.achievements = new Set(s.achievements || []);
-    STATE.activeQuests = s.activeQuests || [];
-    STATE.completedQuests = new Set(s.completedQuests || []);
-    STATE.questFlags = s.questFlags || {};
-    STATE.xp = s.xp || 0;
-    STATE.level = s.level || 1;
-    STATE.difficulty = s.difficulty || 'normal';
-    STATE.comboCount = s.comboCount || 0;
-    STATE.bestCombo = s.bestCombo || 0;
-    STATE.totalDamageDealt = s.totalDamageDealt || 0;
-    STATE.revealedRooms = s.revealedRooms || false;
+    STATE.currentRoom = safeStr(s.currentRoom, Object.keys(ROOMS), 'entrance');
+    STATE.hp = clampInt(s.hp, 1, 9999);
+    STATE.maxHp = clampInt(s.maxHp, 1, 9999);
+    STATE.inventory = safeArr(s.inventory);
+    STATE.scrollsFound = safeArr(s.scrollsFound);
+    STATE.visited = new Set(safeArr(s.visited));
+    STATE.enemiesDefeated = new Set(safeArr(s.enemiesDefeated));
+    STATE.battlesWon = clampInt(s.battlesWon, 0, 99999);
+    STATE.npcsSpoken = new Set(safeArr(s.npcsSpoken));
+    STATE.portraitsExamined = new Set(safeArr(s.portraitsExamined));
+    STATE.hasGoldenArmor = safeBool(s.hasGoldenArmor);
+    STATE.necromancerDead = safeBool(s.necromancerDead);
+    STATE.achievements = new Set(safeArr(s.achievements));
+    STATE.activeQuests = safeArr(s.activeQuests);
+    STATE.completedQuests = new Set(safeArr(s.completedQuests));
+    STATE.questFlags = safeObj(s.questFlags);
+    STATE.xp = clampInt(s.xp, 0, 999999);
+    STATE.level = clampInt(s.level, 1, 99);
+    STATE.difficulty = safeStr(s.difficulty, ['easy', 'normal', 'hard', 'nightmare'], 'normal');
+    STATE.comboCount = clampInt(s.comboCount, 0, 9999);
+    STATE.bestCombo = clampInt(s.bestCombo, 0, 9999);
+    STATE.totalDamageDealt = clampInt(s.totalDamageDealt, 0, 999999);
+    STATE.revealedRooms = safeBool(s.revealedRooms);
     STATE.inCombat = false;
     STATE.abilityCooldowns = {};
     STATE.rosaryUsed = false;
@@ -1628,7 +1634,10 @@ function roomTransition() {
 function combatLogMsg(text) {
   const el = document.getElementById('combatLog');
   if (!el) return;
-  el.innerHTML += text + '<br>';
+  const span = document.createElement('span');
+  span.textContent = text;
+  el.appendChild(span);
+  el.appendChild(document.createElement('br'));
   el.scrollTop = 999999;
 }
 
@@ -1973,7 +1982,8 @@ function updateStatsDisplay() {
   const stats = getPlayerStats();
   const el = document.getElementById('statsDisplay');
   if (el) {
-    el.innerHTML = `<span class="stat-item">LVL ${STATE.level}</span><span class="stat-item stat-atk">ATK ${stats.atk}</span><span class="stat-item stat-def">DEF ${stats.def}</span><span class="stat-item stat-xp">XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}</span>`;
+    el.textContent = '';
+    [['stat-item', `LVL ${STATE.level}`], ['stat-item stat-atk', `ATK ${stats.atk}`], ['stat-item stat-def', `DEF ${stats.def}`], ['stat-item stat-xp', `XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}`]].forEach(([cls, txt]) => { const s = document.createElement('span'); s.className = cls; s.textContent = txt; el.appendChild(s); });
   }
 }
 
@@ -3104,7 +3114,7 @@ function endCombat(victory) {
     showSpecialScene('victory'); // v6.0: Show victory art if available
     checkAchievements();
     setTimeout(() => {
-      document.getElementById('winStats').innerHTML = 'Level: ' + STATE.level + '<br>XP: ' + STATE.xp + '<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Quests: ' + STATE.completedQuests.size + '/5<br>Achievements: ' + STATE.achievements.size + '/9';
+      document.getElementById('winStats').textContent = `Level: ${STATE.level} | XP: ${STATE.xp} | Battles Won: ${STATE.battlesWon} | Relics: ${STATE.inventory.length}/6 | Scrolls: ${STATE.scrollsFound.length}/8 | Rooms: ${STATE.visited.size}/17 | Quests: ${STATE.completedQuests.size}/5 | Achievements: ${STATE.achievements.size}/9`;
       document.getElementById('winScreen').classList.add('active');
     }, 2000);
     return;
@@ -3395,7 +3405,7 @@ function playerDeath() {
   playSound('death');
   showSpecialScene('death'); // v6.0: Show death art if available
   setTimeout(() => {
-    document.getElementById('deathStats').innerHTML = 'Level: ' + STATE.level + ' (XP: ' + STATE.xp + ')<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/5<br>Rooms: ' + STATE.visited.size + '/17';
+    document.getElementById('deathStats').textContent = `Level: ${STATE.level} (XP: ${STATE.xp}) | Battles Won: ${STATE.battlesWon} | Relics: ${STATE.inventory.length}/6 | Quests: ${STATE.completedQuests.size}/5 | Rooms: ${STATE.visited.size}/17`;
     document.getElementById('deathScreen').classList.add('active');
   }, 1500);
 }
