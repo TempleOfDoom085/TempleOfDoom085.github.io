@@ -343,6 +343,134 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
   #tab-game, #tab-patches { padding: 1.5rem; }
 }
 
+/* ═══════════════════════════════════════════
+   v9.0 PORTFOLIO VISUAL OVERHAUL
+   ═══════════════════════════════════════════ */
+
+/* ── ANIMATED MESH GRADIENT HERO ── */
+@keyframes meshShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.hero-left {
+  background: linear-gradient(-45deg, #0f1623, #0a1a2e, #071420, #0f1e30, #060e18);
+  background-size: 400% 400%;
+  animation: meshShift 12s ease infinite;
+}
+.hero-right {
+  background: linear-gradient(-45deg, #141008, #1c1408, #0e0c04, #181208, #120e06);
+  background-size: 400% 400%;
+  animation: meshShift 14s ease infinite reverse;
+}
+
+/* Particle canvas behind hero content */
+#heroBgCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.hero-left > *:not(#heroBgCanvas) { position: relative; z-index: 1; }
+
+/* ── GLITCH TITLE EFFECT ── */
+@keyframes glitchA {
+  0%,89%,91%,100% { clip-path: inset(0 0 100% 0); transform: skewX(0deg); }
+  90% { clip-path: inset(20% 0 40% 0); transform: skewX(-4deg); color: var(--neon); }
+}
+@keyframes glitchB {
+  0%,92%,95%,100% { clip-path: inset(100% 0 0 0); transform: skewX(0deg); }
+  93% { clip-path: inset(55% 0 20% 0); transform: skewX(3deg); color: var(--gold-light); }
+}
+.hero-name.glitch { position: relative; }
+.hero-name.glitch::before,
+.hero-name.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+.hero-name.glitch::before { animation: glitchA 7s infinite; }
+.hero-name.glitch::after  { animation: glitchB 7s infinite 0.1s; }
+
+/* ── 3D CARD HOVER ── */
+.skill-card, .project-item, .cert-card-full {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.12s ease, border-color 0.25s, box-shadow 0.25s;
+}
+.skill-card.tilting, .project-item.tilting, .cert-card-full.tilting {
+  transition: none;
+}
+
+/* ── NAV MORPH ON SCROLL ── */
+nav.scrolled {
+  padding: 0.6rem 3rem;
+  background: rgba(14,14,14,0.98);
+  box-shadow: 0 2px 30px rgba(0,0,0,0.8);
+}
+
+/* ── SECTION REVEAL — stagger children ── */
+.stagger-children > * {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.stagger-children.visible > *:nth-child(1) { opacity:1; transform:none; transition-delay: 0s; }
+.stagger-children.visible > *:nth-child(2) { opacity:1; transform:none; transition-delay: 0.1s; }
+.stagger-children.visible > *:nth-child(3) { opacity:1; transform:none; transition-delay: 0.2s; }
+.stagger-children.visible > *:nth-child(4) { opacity:1; transform:none; transition-delay: 0.3s; }
+.stagger-children.visible > *:nth-child(5) { opacity:1; transform:none; transition-delay: 0.4s; }
+.stagger-children.visible > *:nth-child(6) { opacity:1; transform:none; transition-delay: 0.5s; }
+.stagger-children.visible > *:nth-child(n+7) { opacity:1; transform:none; transition-delay: 0.6s; }
+
+/* ── GLOWING SECTION LABELS ── */
+.section-label {
+  position: relative;
+  display: inline-block;
+}
+.section-label::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+
+/* ── ENHANCED PROJECT ITEMS ── */
+.project-item {
+  position: relative;
+  overflow: hidden;
+}
+.project-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--gold), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.project-item:hover::before { opacity: 1; }
+
+/* ── ENHANCED EXP ITEMS ── */
+.exp-item {
+  position: relative;
+  overflow: hidden;
+}
+.exp-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--neon), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.exp-item:hover::before { opacity: 1; }
+
 /* COOKING SECTION */
 #cooking { background: #0a0c08; }
 .cooking-intro { font-size: 1.15rem; font-weight: 300; color: rgba(245,242,236,0.75); line-height: 1.9; margin-bottom: 3rem; }
@@ -403,8 +531,9 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 <!-- HERO -->
 <div class="hero">
   <div class="hero-left">
+    <canvas id="heroBgCanvas"></canvas>
     <span class="tag tag-cyber">// AI Automation & Cybersecurity</span>
-    <h1 class="hero-name">Building<br><em>intelligent</em><br>systems.</h1>
+    <h1 class="hero-name glitch" data-text="Building">Building<br><em>intelligent</em><br>systems.</h1>
     <p class="hero-desc">Voice AI, workflow automation, and cybersecurity — I design systems that are fast, secure, and built to scale. Currently studying at SNHU with a focus on security operations.</p>
     <a href="#experience" class="hero-cta cta-cyber">View My Work</a>
   </div>
@@ -487,7 +616,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
   <div class="inner">
     <span class="section-label fade-in">03 — Skills</span>
     <h2 class="section-title fade-in" style="color:var(--paper)">What I <em>bring to the table.</em></h2>
-    <div class="skills-grid fade-in">
+    <div class="skills-grid stagger-children fade-in">
       <div class="skill-card">
         <div class="skill-icon">🤖</div>
         <div class="skill-title">AI & Automation</div>
@@ -517,7 +646,7 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
   <div class="inner">
     <span class="section-label fade-in">04 — Projects</span>
     <h2 class="section-title fade-in">Things I've <em>built.</em></h2>
-    <div class="project-list fade-in">
+    <div class="project-list stagger-children fade-in">
       <div class="project-item">
         <div class="project-type">Python / Game Dev / JavaScript</div>
         <div class="project-name">Knights Templar: The Siege of the Undead</div>
@@ -573,10 +702,59 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v9.0</span>
+        <span class="patch-version-name">Dark Citadel — Visual Overhaul</span>
+        <span class="patch-date">March 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Game — Dark Souls Aesthetic UI</div>
+        <ul class="patch-list">
+          <li>HP bar rebuilt as a Dark Souls-style soul bar — parallelogram clip-path shape with etched tick marks and gold glow border</li>
+          <li>Enemy HP bar matches — wider, angled, with crimson glow and segment marks</li>
+          <li>All panels receive beveled gold borders and deeper background gradients for a high-fantasy game feel</li>
+          <li>Game title bar now has layered glow — inner white-gold + outer diffuse for depth</li>
+          <li>Endscreen overlays gain backdrop blur + brightness dimming for a cinematic death/victory feel</li>
+        </ul>
+        <div class="patch-category">Game — Combat Overhaul</div>
+        <ul class="patch-list">
+          <li>Combat overlay is now a full cinematic experience — radial dark gradient from behind the enemy with backdrop blur</li>
+          <li>Enemy art now breathes: subtle scale + vertical float + drop-shadow pulse looping at 2.8s</li>
+          <li>Attack action triggers a dual slash VFX — two angled light streaks sweep across the enemy with gold/white gradient and glow</li>
+          <li>Taking damage now bleeds the screen edges red instead of a flat flash — inset box-shadow animates outward then fades</li>
+          <li>Floating damage numbers gain random X drift and rotation so they scatter like real hit sparks</li>
+          <li>Room transitions switch from a simple fade/scale to a horizontal ink wipe across the scene panel</li>
+        </ul>
+        <div class="patch-category">Portfolio — Hero Section</div>
+        <ul class="patch-list">
+          <li>Hero background is now an animated mesh gradient — both halves cycle through 5-color palettes on a 12–14s loop</li>
+          <li>Particle network canvas layer added to the cyber hero panel — 55 nodes connected by proximity lines, fully animated</li>
+          <li>Hero headline gets a subtle CSS glitch effect — occasional chromatic aberration slice and skew</li>
+          <li>Navigation bar morphs on scroll — tighter padding, stronger background opacity, box shadow</li>
+        </ul>
+        <div class="patch-category">Portfolio — Interactions</div>
+        <ul class="patch-list">
+          <li>Skill cards, project items, and cert cards now tilt in 3D toward the cursor on hover using perspective transforms</li>
+          <li>Skills grid and project list animate children in staggered sequence when scrolled into view</li>
+          <li>Section labels get a gold underline gradient extending to the right</li>
+          <li>Project and experience items reveal a colored left-edge accent bar on hover</li>
+        </ul>
+        <div class="patch-category">Security</div>
+        <ul class="patch-list">
+          <li>All innerHTML usage for STATE-derived content replaced with textContent and createElement</li>
+          <li>loadGame() now validates all deserialized save fields with type helpers (clampInt, safeBool, safeStr, safeArr, safeObj)</li>
+          <li>Security review rating upgraded to A+</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
         <span class="patch-version-tag">v7.0</span>
         <span class="patch-version-name">The Living Fortress</span>
         <span class="patch-date">March 2026</span>
-        <span class="patch-status live">LIVE</span>
+        <span class="patch-status prev">PREV</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
@@ -1622,6 +1800,109 @@ window.addEventListener('scroll', () => {
   if (window.scrollY > 600) backBtn.classList.add('show');
   else backBtn.classList.remove('show');
 });
+
+// ── v9.0: NAV MORPH ON SCROLL ──
+const navEl = document.querySelector('nav');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 80) navEl.classList.add('scrolled');
+  else navEl.classList.remove('scrolled');
+}, { passive: true });
+
+// ── v9.0: PARTICLE NETWORK CANVAS ──
+(function() {
+  const canvas = document.getElementById('heroBgCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const PARTICLE_COUNT = 55;
+  const MAX_DIST = 120;
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function Particle() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = (Math.random() - 0.5) * 0.4;
+    this.r  = 1.5 + Math.random() * 1.5;
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // Move
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    });
+    // Lines
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const d  = Math.sqrt(dx*dx + dy*dy);
+        if (d < MAX_DIST) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(0,212,255,${0.18 * (1 - d / MAX_DIST)})`;
+          ctx.lineWidth = 0.8;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    // Dots
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,212,255,0.55)';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); }, { passive: true });
+  init();
+  draw();
+})();
+
+// ── v9.0: 3D CARD HOVER ──
+(function() {
+  const MAX_TILT = 12;
+  document.querySelectorAll('.skill-card, .project-item, .cert-card-full').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width  / 2;
+      const cy = rect.top  + rect.height / 2;
+      const dx = (e.clientX - cx) / (rect.width  / 2);
+      const dy = (e.clientY - cy) / (rect.height / 2);
+      const rotX = -dy * MAX_TILT;
+      const rotY =  dx * MAX_TILT;
+      card.classList.add('tilting');
+      card.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-3px)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.classList.remove('tilting');
+      card.style.transform = '';
+    });
+  });
+})();
+
+// ── v9.0: STAGGER OBSERVER ──
+const staggerObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.observe(el));
 </script>
 </body>
 </html>
