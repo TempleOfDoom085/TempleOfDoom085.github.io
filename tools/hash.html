@@ -227,6 +227,10 @@ input.plain-input::placeholder { color: var(--text-faint); }
 }
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* EXPORT BAR */
+.export-bar { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+.export-bar .btn { font-size: 0.65rem; padding: 0.45rem 1rem; letter-spacing: 0.12em; }
+
 /* FOOTER */
 footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
 footer a { color: var(--green); text-decoration: none; }
@@ -271,6 +275,11 @@ footer a { color: var(--green); text-decoration: none; }
 
   <!-- RESULTS -->
   <div id="resultsWrap" style="display:none">
+
+    <div class="export-bar">
+      <button class="btn" onclick="exportHashTxt()">Export TXT</button>
+      <button class="btn" onclick="exportHashJson()">Export JSON</button>
+    </div>
 
     <!-- TABS -->
     <div class="tabs">
@@ -512,6 +521,9 @@ function analyze() {
   document.getElementById('genGrid').innerHTML = '';
   resetCrack();
 
+  // Store for export
+  lastHashScan = { hash, types: matches, entropy: H.toFixed(3), hibp: null, plaintext: '', generated: [] };
+
   // HIBP check (async)
   runHIBP(hash);
 }
@@ -537,6 +549,7 @@ async function runHIBP(hash) {
       const [s, c] = line.trim().split(':');
       if (s === suffix) { count = parseInt(c,10); break; }
     }
+    if (lastHashScan) lastHashScan.hibp = count;
     if (count === 0) {
       el.innerHTML = `<div class="hibp-status hibp-safe"><div class="hibp-icon">🛡️</div><div class="hibp-text"><div class="hibp-headline">Not Found in Breaches</div><div class="hibp-sub">This hash does not appear in the HIBP database.</div></div><div class="hibp-count">0</div></div>`;
     } else if (count < 100) {
@@ -574,6 +587,7 @@ async function generateHashes() {
     const h = await sha(algo, plain);
     return { label, hash: h };
   }));
+  if (lastHashScan) { lastHashScan.plaintext = plain; lastHashScan.generated = results; }
   grid.innerHTML = results.map(r => `
     <div class="gen-row" data-hash="${r.hash}" title="Click to copy">
       <div class="gen-algo">${r.label}</div>
@@ -584,6 +598,36 @@ async function generateHashes() {
 
 function copyHash(el) {
   navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+}
+
+// ── EXPORT ───────────────────────────────────────────────────
+let lastHashScan = null;
+
+function downloadFile(name, content) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = name; a.click();
+}
+
+function exportHashTxt() {
+  if (!lastHashScan) { showToast('Run an analysis first'); return; }
+  const d = lastHashScan;
+  const ts = new Date().toISOString();
+  let out = `HASH ANALYZER REPORT\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
+  out += `HASH\n${d.hash}\n\nLENGTH: ${d.hash.length} characters\n\n`;
+  out += `DETECTED TYPES\n${d.types.length ? d.types.map(t=>t.name+' ('+t.bits+' bit)').join('\n') : 'None matched'}\n\n`;
+  out += `ENTROPY: ${d.entropy} bits/byte\n\n`;
+  if (d.hibp !== null) out += `BREACH CHECK (HIBP)\nSHA-1 occurrences: ${d.hibp.toLocaleString()}\n\n`;
+  if (d.generated.length) {
+    out += `GENERATED HASHES (plaintext: "${d.plaintext}")\n`;
+    d.generated.forEach(g => { out += `${g.label}: ${g.hash}\n`; });
+  }
+  downloadFile(`hash-report-${Date.now()}.txt`, out);
+}
+
+function exportHashJson() {
+  if (!lastHashScan) { showToast('Run an analysis first'); return; }
+  downloadFile(`hash-report-${Date.now()}.json`, JSON.stringify({ ...lastHashScan, generated_at: new Date().toISOString() }, null, 2));
 }
 
 // ── MD5 (Paul Johnston / BSD License) ────────────────────────

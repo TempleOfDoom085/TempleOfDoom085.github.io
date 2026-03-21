@@ -142,6 +142,11 @@ input.domain-input::placeholder { color: var(--text-faint); }
 .empty-state-icon { font-size: 3rem; opacity: 0.12; margin-bottom: 1rem; }
 .empty-state-text { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-faint); }
 
+/* EXPORT BAR */
+.export-bar { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+.export-bar .btn { font-size: 0.65rem; padding: 0.45rem 1rem; letter-spacing: 0.12em; border-color: var(--cyan); color: var(--cyan); }
+.export-bar .btn:hover { background: var(--cyan); color: var(--bg); }
+
 /* TOAST */
 .toast {
   position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
@@ -203,6 +208,11 @@ footer a { color: var(--cyan); text-decoration: none; }
 
   <!-- RESULTS -->
   <div id="resultsWrap" style="display:none">
+
+    <div class="export-bar">
+      <button class="btn" onclick="exportReconTxt()">Export TXT</button>
+      <button class="btn" onclick="exportReconJson()">Export JSON</button>
+    </div>
 
     <!-- INFRASTRUCTURE OVERVIEW -->
     <div class="panel" id="panelInfra">
@@ -500,6 +510,33 @@ function drawRadar(lat, lon){
   setTimeout(()=>clearInterval(sweep), 8000);
 }
 
+// ── EXPORT ───────────────────────────────────────────────────
+let lastReconScan = null;
+
+function dlFile(name, content) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = name; a.click();
+}
+
+function exportReconTxt() {
+  if (!lastReconScan) return;
+  const d = lastReconScan; const ts = new Date().toISOString();
+  let out = `NETWORK RECON REPORT\nTarget: ${d.domain}\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
+  out += `INFRASTRUCTURE\nPrimary IP: ${d.primaryIP||'N/A'}\nIPv6: ${d.ipv6||'None'}\nASN: ${d.geo?.asn||'N/A'}\nOrg: ${d.geo?.org||'N/A'}\n\n`;
+  if (d.geo) out += `GEOLOCATION\nCountry: ${d.geo.country_name||'?'}\nCity: ${d.geo.city||'?'}\nRegion: ${d.geo.region||'?'}\nTimezone: ${d.geo.timezone||'?'}\n\n`;
+  out += `DNS RECORDS\n`;
+  Object.entries(d.dns).forEach(([type, recs]) => { if (recs.length) out += `${type}: ${recs.map(r=>r.data).join(', ')}\n`; });
+  out += `\nOPEN PORTS: ${d.ports?.length ? d.ports.join(', ') : 'None detected'}\n`;
+  if (d.cves?.length) out += `CVEs: ${d.cves.join(', ')}\n`;
+  dlFile(`recon-${d.domain}-${Date.now()}.txt`, out);
+}
+
+function exportReconJson() {
+  if (!lastReconScan) return;
+  dlFile(`recon-${lastReconScan.domain}-${Date.now()}.json`, JSON.stringify({ ...lastReconScan, generated_at: new Date().toISOString() }, null, 2));
+}
+
 // ── MAIN RECON ────────────────────────────────────────────────
 const reconBtn = document.getElementById('reconBtn');
 const domainInput = document.getElementById('domainInput');
@@ -613,6 +650,9 @@ async function startRecon(){
   } else {
     portsEl.innerHTML = '<div class="ports-none">Shodan lookup failed or IP not indexed.</div>';
   }
+
+  // Store for export
+  lastReconScan = { domain: raw, primaryIP, ipv6: dnsResults['AAAA'][0]?.data||null, dns: dnsResults, geo, ports: shodan?.ports||[], cves: shodan?.vulns||[], tags: shodan?.tags||[] };
 }
 </script>
 </body>
