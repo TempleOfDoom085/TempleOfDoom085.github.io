@@ -195,6 +195,7 @@ footer a { color: var(--red); text-decoration: none; }
   <div id="resultsWrap" style="display:none">
 
     <div class="export-bar">
+      <button class="btn" onclick="copyOsintReport()">Copy Report</button>
       <button class="btn" onclick="exportOsintTxt()">Export TXT</button>
       <button class="btn" onclick="exportOsintJson()">Export JSON</button>
     </div>
@@ -444,8 +445,8 @@ function dlFile(name, content) {
   a.download = name; a.click();
 }
 
-function exportOsintTxt() {
-  if (!lastOsintScan) return;
+function buildOsintReport() {
+  if (!lastOsintScan) return null;
   const d = lastOsintScan; const ts = new Date().toISOString();
   let out = `OSINT INTELLIGENCE REPORT\nTarget: ${d.domain}\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
   out += `THREAT SCORE: ${d.score}/100\n\n`;
@@ -455,7 +456,27 @@ function exportOsintTxt() {
   if (d.ports?.length) out += `OPEN PORTS\n${d.ports.join(', ')}\n\n`;
   if (d.cves?.length) out += `CVEs\n${d.cves.join('\n')}\n\n`;
   if (d.cert) out += `TLS CERTIFICATE\nIssuer: ${d.cert.issuer}\nExpires: ${d.cert.expires}\n`;
-  dlFile(`osint-${d.domain}-${Date.now()}.txt`, out);
+  return out;
+}
+
+function copyOsintReport() {
+  const report = buildOsintReport();
+  if (!report) return;
+  navigator.clipboard.writeText(report).then(() => {
+    const btn = document.querySelector('.export-bar .btn');
+    const orig = btn.textContent; btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+function exportOsintTxt() {
+  if (!lastOsintScan) return;
+  const d = lastOsintScan; const ts = new Date().toISOString();
+  let out = `OSINT INTELLIGENCE REPORT\nTarget: ${d.domain}\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
+  out += `THREAT SCORE: ${d.score}/100\n\n`;
+  out += `INFRASTRUCTURE\nPrimary IP: ${d.primaryIP||'N/A'}\nOpen Ports: ${d.ports?.length||0}\nCVEs: ${d.cves?.length||0}\n\n`;
+  out += `DNS SECURITY\nSPF: ${d.hasSPF?'Present':'Missing'}\nDMARC: ${d.hasDMARC?'Present':'Missing'}\nDNSSEC: ${d.hasDNSSEC?'Enabled':'Not detected'}\n\n`;
+  dlFile(`osint-${d.domain}-${Date.now()}.txt`, buildOsintReport());
 }
 
 function exportOsintJson() {
