@@ -165,6 +165,30 @@ canvas#byteChart { width: 100% !important; max-height: 180px; display: block; }
 .hibp-warn { border-color: rgba(255,170,0,0.25); }
 .hibp-note { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); margin-top: 1rem; }
 
+/* CRACK */
+.crack-state-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.75rem; text-align: center; }
+.crack-state-value { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); transition: all 0.4s; text-align: center; margin-bottom: 1.25rem; }
+.crack-state-value.scanning { color: var(--green); animation: crackPulse 1.2s ease infinite; }
+.crack-state-value.cracked  { color: var(--green); text-shadow: 0 0 40px rgba(0,255,136,0.7); }
+.crack-state-value.notfound { color: var(--text-faint); }
+@keyframes crackPulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+.crack-progress-wrap { background: var(--bg3); border: 1px solid var(--border); height: 8px; margin: 0 0 0.75rem; overflow: hidden; }
+.crack-progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--green), #00ffcc); transition: width 0.08s linear; box-shadow: 0 0 8px rgba(0,255,136,0.4); }
+.crack-live { font-family: var(--mono); font-size: 0.78rem; color: var(--green); min-height: 1.5rem; text-align: center; letter-spacing: 0.08em; margin-bottom: 0.4rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.crack-counter { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); text-align: center; letter-spacing: 0.1em; }
+.crack-result { margin-top: 1.5rem; padding: 1.5rem; background: rgba(0,255,136,0.04); border: 1px solid var(--green); display: none; position: relative; overflow: hidden; }
+.crack-result::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--green), transparent); }
+.crack-result-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.28em; color: var(--green); text-transform: uppercase; margin-bottom: 0.6rem; }
+.crack-result-plain { font-family: var(--mono); font-size: clamp(1.4rem, 4vw, 2.2rem); font-weight: 700; color: var(--text); letter-spacing: 0.06em; word-break: break-all; margin-bottom: 0.4rem; }
+.crack-result-sub { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); }
+.crack-fail { margin-top: 1.5rem; padding: 1.2rem; background: var(--bg3); border: 1px solid var(--border); display: none; text-align: center; }
+.crack-fail-label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-faint); letter-spacing: 0.08em; }
+.crack-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin-top: 1.25rem; display: none; }
+.crack-stat { background: var(--bg3); border: 1px solid var(--border); padding: 0.75rem; text-align: center; }
+.crack-stat-val { font-size: 1.3rem; font-weight: 700; color: var(--green); font-family: var(--mono); }
+.crack-stat-lbl { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; color: var(--text-faint); margin-top: 0.2rem; }
+.crack-unsupported { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); text-align: center; padding: 1rem 0.5rem; line-height: 1.8; }
+
 /* GENERATE */
 .gen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
 .gen-row { background: var(--bg3); border: 1px solid var(--border); padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
@@ -203,6 +227,10 @@ input.plain-input::placeholder { color: var(--text-faint); }
 }
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* EXPORT BAR */
+.export-bar { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+.export-bar .btn { font-size: 0.65rem; padding: 0.45rem 1rem; letter-spacing: 0.12em; }
+
 /* FOOTER */
 footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
 footer a { color: var(--green); text-decoration: none; }
@@ -230,7 +258,7 @@ footer a { color: var(--green); text-decoration: none; }
   <div class="hero-content">
     <div class="hero-label">Tool 01 / Hash Analysis</div>
     <h1 class="hero-title">Hash Analyzer</h1>
-    <p class="hero-sub">Identify · Entropy · Breach Check · Generate</p>
+    <p class="hero-sub">Identify · Entropy · Breach Check · Generate · Crack</p>
   </div>
 </section>
 
@@ -248,12 +276,18 @@ footer a { color: var(--green); text-decoration: none; }
   <!-- RESULTS -->
   <div id="resultsWrap" style="display:none">
 
+    <div class="export-bar">
+      <button class="btn" onclick="exportHashTxt()">Export TXT</button>
+      <button class="btn" onclick="exportHashJson()">Export JSON</button>
+    </div>
+
     <!-- TABS -->
     <div class="tabs">
       <div class="tab active" data-tab="types">Hash Types</div>
       <div class="tab" data-tab="entropy">Entropy</div>
       <div class="tab" data-tab="hibp">Breach Check</div>
       <div class="tab" data-tab="generate">Generate</div>
+      <div class="tab" data-tab="crack">Crack</div>
     </div>
 
     <!-- TYPES TAB -->
@@ -294,6 +328,35 @@ footer a { color: var(--green); text-decoration: none; }
         <button class="btn" id="genBtn">Generate</button>
       </div>
       <div id="genGrid" class="gen-grid"></div>
+    </div>
+
+    <!-- CRACK TAB -->
+    <div id="tab-crack" class="tab-content panel" style="display:none">
+      <div class="panel-title">Dictionary Attack — Wordlist Crack</div>
+      <div id="crackUnsupported" class="crack-unsupported" style="display:none">
+        ⚠ Only MD5 (32 chars), SHA-1 (40 chars), and SHA-256 (64 chars) are supported.<br>Paste a supported hash above and re-analyze.
+      </div>
+      <div id="crackReadyRow" style="margin-bottom:1.25rem">
+        <button class="btn" id="crackBtn" style="width:100%;padding:0.85rem 0">Start Crack — 500 Word Dictionary</button>
+      </div>
+      <div class="crack-state-label">Status</div>
+      <div class="crack-state-value" id="crackStateVal">READY</div>
+      <div class="crack-progress-wrap"><div class="crack-progress-bar" id="crackProgressBar"></div></div>
+      <div class="crack-live" id="crackLive">—</div>
+      <div class="crack-counter" id="crackCounter">0 / 500 checked</div>
+      <div class="crack-result" id="crackResult">
+        <div class="crack-result-label">Plaintext Recovered</div>
+        <div class="crack-result-plain" id="crackResultPlain">—</div>
+        <div class="crack-result-sub" id="crackResultSub">—</div>
+      </div>
+      <div class="crack-fail" id="crackFail">
+        <div class="crack-fail-label">NOT FOUND — Password is not in the top-500 wordlist. Strong password or custom value.</div>
+      </div>
+      <div class="crack-stats" id="crackStats">
+        <div class="crack-stat"><div class="crack-stat-val" id="cstatWords">—</div><div class="crack-stat-lbl">Words Tested</div></div>
+        <div class="crack-stat"><div class="crack-stat-val" id="cstatTime">—</div><div class="crack-stat-lbl">Time (ms)</div></div>
+        <div class="crack-stat"><div class="crack-stat-val" id="cstatAlgo">—</div><div class="crack-stat-lbl">Hash Type</div></div>
+      </div>
     </div>
 
   </div>
@@ -454,8 +517,12 @@ function analyze() {
   document.getElementById('statUniq').textContent = new Set(hash).size;
   document.getElementById('statChars').textContent = /^[0-9a-f]+$/i.test(hash) ? 'Yes' : 'No';
 
-  // Reset generate grid on new analysis
+  // Reset generate grid and crack state on new analysis
   document.getElementById('genGrid').innerHTML = '';
+  resetCrack();
+
+  // Store for export
+  lastHashScan = { hash, types: matches, entropy: H.toFixed(3), hibp: null, plaintext: '', generated: [] };
 
   // HIBP check (async)
   runHIBP(hash);
@@ -482,6 +549,7 @@ async function runHIBP(hash) {
       const [s, c] = line.trim().split(':');
       if (s === suffix) { count = parseInt(c,10); break; }
     }
+    if (lastHashScan) lastHashScan.hibp = count;
     if (count === 0) {
       el.innerHTML = `<div class="hibp-status hibp-safe"><div class="hibp-icon">🛡️</div><div class="hibp-text"><div class="hibp-headline">Not Found in Breaches</div><div class="hibp-sub">This hash does not appear in the HIBP database.</div></div><div class="hibp-count">0</div></div>`;
     } else if (count < 100) {
@@ -519,6 +587,7 @@ async function generateHashes() {
     const h = await sha(algo, plain);
     return { label, hash: h };
   }));
+  if (lastHashScan) { lastHashScan.plaintext = plain; lastHashScan.generated = results; }
   grid.innerHTML = results.map(r => `
     <div class="gen-row" data-hash="${r.hash}" title="Click to copy">
       <div class="gen-algo">${r.label}</div>
@@ -529,6 +598,208 @@ async function generateHashes() {
 
 function copyHash(el) {
   navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+}
+
+// ── EXPORT ───────────────────────────────────────────────────
+let lastHashScan = null;
+
+function downloadFile(name, content) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = name; a.click();
+}
+
+function exportHashTxt() {
+  if (!lastHashScan) { showToast('Run an analysis first'); return; }
+  const d = lastHashScan;
+  const ts = new Date().toISOString();
+  let out = `HASH ANALYZER REPORT\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
+  out += `HASH\n${d.hash}\n\nLENGTH: ${d.hash.length} characters\n\n`;
+  out += `DETECTED TYPES\n${d.types.length ? d.types.map(t=>t.name+' ('+t.bits+' bit)').join('\n') : 'None matched'}\n\n`;
+  out += `ENTROPY: ${d.entropy} bits/byte\n\n`;
+  if (d.hibp !== null) out += `BREACH CHECK (HIBP)\nSHA-1 occurrences: ${d.hibp.toLocaleString()}\n\n`;
+  if (d.generated.length) {
+    out += `GENERATED HASHES (plaintext: "${d.plaintext}")\n`;
+    d.generated.forEach(g => { out += `${g.label}: ${g.hash}\n`; });
+  }
+  downloadFile(`hash-report-${Date.now()}.txt`, out);
+}
+
+function exportHashJson() {
+  if (!lastHashScan) { showToast('Run an analysis first'); return; }
+  downloadFile(`hash-report-${Date.now()}.json`, JSON.stringify({ ...lastHashScan, generated_at: new Date().toISOString() }, null, 2));
+}
+
+// ── MD5 (Paul Johnston / BSD License) ────────────────────────
+function md5(s){function RL(k,n){return(k<<n)|(k>>>(32-n))}function AU(x,y){var l=(x&0xFFFF)+(y&0xFFFF),m=(x>>16)+(y>>16)+(l>>16);return(m<<16)|(l&0xFFFF)}function XX(f,a,b,c,d,x,s,t){return AU(RL(AU(AU(a,f),AU(x,t)),s),b)}function s2b(str){var nb=((str.length+8)>>6)+1,bl=new Array(nb*16).fill(0),i;for(i=0;i<str.length;i++)bl[i>>2]|=str.charCodeAt(i)<<((i%4)*8);bl[i>>2]|=0x80<<((i%4)*8);bl[nb*16-2]=str.length*8;return bl}var x=s2b(s),a=1732584193,b=-271733879,c=-1732584194,d=271733878;for(var k=0;k<x.length;k+=16){var A=a,B=b,C=c,D=d;a=XX((b&c)|(~b&d),a,b,c,d,x[k+0],7,-680876936);d=XX((a&b)|(~a&c),d,a,b,c,x[k+1],12,-389564586);c=XX((d&a)|(~d&b),c,d,a,b,x[k+2],17,606105819);b=XX((c&d)|(~c&a),b,c,d,a,x[k+3],22,-1044525330);a=XX((b&c)|(~b&d),a,b,c,d,x[k+4],7,-176418897);d=XX((a&b)|(~a&c),d,a,b,c,x[k+5],12,1200080426);c=XX((d&a)|(~d&b),c,d,a,b,x[k+6],17,-1473231341);b=XX((c&d)|(~c&a),b,c,d,a,x[k+7],22,-45705983);a=XX((b&c)|(~b&d),a,b,c,d,x[k+8],7,1770035416);d=XX((a&b)|(~a&c),d,a,b,c,x[k+9],12,-1958414417);c=XX((d&a)|(~d&b),c,d,a,b,x[k+10],17,-42063);b=XX((c&d)|(~c&a),b,c,d,a,x[k+11],22,-1990404162);a=XX((b&c)|(~b&d),a,b,c,d,x[k+12],7,1804603682);d=XX((a&b)|(~a&c),d,a,b,c,x[k+13],12,-40341101);c=XX((d&a)|(~d&b),c,d,a,b,x[k+14],17,-1502002290);b=XX((c&d)|(~c&a),b,c,d,a,x[k+15],22,1236535329);a=XX((b&d)|(c&~d),a,b,c,d,x[k+1],5,-165796510);d=XX((a&c)|(b&~c),d,a,b,c,x[k+6],9,-1069501632);c=XX((d&b)|(a&~b),c,d,a,b,x[k+11],14,643717713);b=XX((c&a)|(d&~a),b,c,d,a,x[k+0],20,-373897302);a=XX((b&d)|(c&~d),a,b,c,d,x[k+5],5,-701558691);d=XX((a&c)|(b&~c),d,a,b,c,x[k+10],9,38016083);c=XX((d&b)|(a&~b),c,d,a,b,x[k+15],14,-660478335);b=XX((c&a)|(d&~a),b,c,d,a,x[k+4],20,-405537848);a=XX((b&d)|(c&~d),a,b,c,d,x[k+9],5,568446438);d=XX((a&c)|(b&~c),d,a,b,c,x[k+14],9,-1019803690);c=XX((d&b)|(a&~b),c,d,a,b,x[k+3],14,-187363961);b=XX((c&a)|(d&~a),b,c,d,a,x[k+8],20,1163531501);a=XX((b&d)|(c&~d),a,b,c,d,x[k+13],5,-1444681467);d=XX((a&c)|(b&~c),d,a,b,c,x[k+2],9,-51403784);c=XX((d&b)|(a&~b),c,d,a,b,x[k+7],14,1735328473);b=XX((c&a)|(d&~a),b,c,d,a,x[k+12],20,-1926607734);a=XX(b^c^d,a,b,c,d,x[k+5],4,-378558);d=XX(a^b^c,d,a,b,c,x[k+8],11,-2022574463);c=XX(d^a^b,c,d,a,b,x[k+11],16,1839030562);b=XX(c^d^a,b,c,d,a,x[k+14],23,-35309556);a=XX(b^c^d,a,b,c,d,x[k+1],4,-1530992060);d=XX(a^b^c,d,a,b,c,x[k+4],11,1272893353);c=XX(d^a^b,c,d,a,b,x[k+7],16,-155497632);b=XX(c^d^a,b,c,d,a,x[k+10],23,-1094730640);a=XX(b^c^d,a,b,c,d,x[k+13],4,681279174);d=XX(a^b^c,d,a,b,c,x[k+0],11,-358537222);c=XX(d^a^b,c,d,a,b,x[k+3],16,-722521979);b=XX(c^d^a,b,c,d,a,x[k+6],23,76029189);a=XX(b^c^d,a,b,c,d,x[k+9],4,-640364487);d=XX(a^b^c,d,a,b,c,x[k+12],11,-421815835);c=XX(d^a^b,c,d,a,b,x[k+15],16,530742520);b=XX(c^d^a,b,c,d,a,x[k+2],23,-995338651);a=XX(c^(b|(~d)),a,b,c,d,x[k+0],6,-198630844);d=XX(b^(a|(~c)),d,a,b,c,x[k+7],10,1126891415);c=XX(a^(d|(~b)),c,d,a,b,x[k+14],15,-1416354905);b=XX(d^(c|(~a)),b,c,d,a,x[k+5],21,-57434055);a=XX(c^(b|(~d)),a,b,c,d,x[k+12],6,1700485571);d=XX(b^(a|(~c)),d,a,b,c,x[k+3],10,-1894986606);c=XX(a^(d|(~b)),c,d,a,b,x[k+10],15,-1051523);b=XX(d^(c|(~a)),b,c,d,a,x[k+1],21,-2054922799);a=XX(c^(b|(~d)),a,b,c,d,x[k+8],6,1873313359);d=XX(b^(a|(~c)),d,a,b,c,x[k+15],10,-30611744);c=XX(a^(d|(~b)),c,d,a,b,x[k+6],15,-1560198380);b=XX(d^(c|(~a)),b,c,d,a,x[k+13],21,1309151649);a=XX(c^(b|(~d)),a,b,c,d,x[k+4],6,-145523070);d=XX(b^(a|(~c)),d,a,b,c,x[k+11],10,-1120210379);c=XX(a^(d|(~b)),c,d,a,b,x[k+2],15,718787259);b=XX(d^(c|(~a)),b,c,d,a,x[k+9],21,-343485551);a=AU(a,A);b=AU(b,B);c=AU(c,C);d=AU(d,D)}function W(n){var s='',j;for(j=0;j<4;j++)s+=('0'+((n>>>(j*8))&0xFF).toString(16)).slice(-2);return s}return(W(a)+W(b)+W(c)+W(d)).toLowerCase()}
+
+// ── WORDLIST (top 500 common passwords) ──────────────────────
+const WORDLIST = [
+'123456','password','12345678','qwerty','123456789','12345','1234567','1234567890',
+'abc123','password1','iloveyou','1234','monkey','dragon','master','letmein',
+'login','hello','shadow','sunshine','princess','trustno1','welcome','football',
+'baseball','charlie','donald','password123','qwerty123','solo','passw0rd',
+'whatever','qazwsx','michael','superman','batman','spider','hockey','soccer',
+'thomas','tigger','cheese','summer','ashley','bailey','ranger','harley',
+'jordan','joshua','michael1','andrew','jessica','jennifer','crystal','amanda',
+'secret','hunter','starwars','google','123123','666666','111111','000000',
+'222222','333333','444444','555555','777777','888888','999999','112233',
+'121212','123321','654321','1111111','11111111','11111111111','123abc',
+'abc','test','admin','root','user','guest','default','pass','temp',
+'qwertyuiop','asdfghjkl','zxcvbnm','1q2w3e','1q2w3e4r','1q2w3e4r5t',
+'zaq1xsw2','qwe123','asd123','zxc123','1234qwer','1234abcd','abcd1234',
+'pass123','pass1234','hello123','hello1234','welcome1','welcome123',
+'test123','test1234','admin123','admin1','root123','user123','guest123',
+'temp123','change_me','changeme','newpassword','mypassword','mypassword1',
+'p@ssword','p@ssw0rd','Pa$$word','P@ssword','P@$$w0rd','passw0rd1',
+'password!','password2','password3','password4','password5','password9',
+'abc1234','abc12345','abcd123','abcdef','abcdefg','abcdefgh',
+'qwerty1','qwerty12','qwerty123456','asdfgh','asdf1234','zxcvbn',
+'love','lover','lovely','loveyou','iloveyou1','iloveyou2','love123',
+'monkey1','monkey123','dragon1','dragon123','shadow1','shadow123',
+'master1','master123','batman1','batman123','superman1','spiderman',
+'football1','baseball1','basketball','hockey1','soccer1','tennis',
+'harley1','eagle','falcon','hawk','wolf','bear','lion','tiger',
+'snake','viper','cobra','python','panther','leopard','jaguar',
+'ranger1','hunter1','warrior','soldier','captain','knight','wizard',
+'alpha','beta','gamma','delta','omega','sigma','ninja','samurai',
+'ghost','phantom','stealth','matrix','hacker','cyber','pwned',
+'star','moon','sun','sky','ocean','earth','fire','water','wind',
+'gold','silver','bronze','diamond','crystal','ruby','jade','stone',
+'January','February','March','April','May','June','July','August',
+'September','October','November','December','january','february',
+'march','april','june','july','august','september','october',
+'november','december','monday','tuesday','wednesday','thursday',
+'friday','saturday','sunday','winter','summer','spring','autumn',
+'london','paris','berlin','madrid','rome','tokyo','sydney','dubai',
+'moscow','beijing','seoul','cairo','lagos','mumbai','delhi',
+'newyork','chicago','miami','vegas','boston','dallas','houston',
+'losangeles','sanfrancisco','seattle','portland','denver','atlanta',
+'google','facebook','twitter','instagram','youtube','amazon','apple',
+'microsoft','linkedin','netflix','spotify','reddit','discord','twitch',
+'iphone','android','windows','linux','ubuntu','debian','chrome',
+'firefox','safari','opera','edge','internet','network','server',
+'computer','laptop','desktop','tablet','mobile','phone','keyboard',
+'mouse','monitor','printer','scanner','camera','speaker','headphones',
+'music','guitar','piano','drum','violin','trumpet','saxophone',
+'movie','film','cinema','theater','drama','action','comedy','horror',
+'coffee','tea','beer','wine','vodka','whiskey','rum','tequila',
+'pizza','burger','sushi','pasta','chicken','steak','salad','soup',
+'chocolate','vanilla','strawberry','banana','orange','apple1','cherry',
+'basketball1','volleyball','swimming','running','cycling','hiking',
+'travel','adventure','explore','discover','journey','freedom','peace',
+'justice','truth','faith','hope','love1','dream','magic','power',
+'energy','force','light','dark','black','white','red','blue','green',
+'yellow','purple','pink','brown','grey','color','rainbow','night',
+'day','morning','evening','sunrise','sunset','twilight','midnight',
+'spring2024','summer2024','winter2024','fall2024','spring2023',
+'summer2023','winter2023','2024','2023','2022','2021','2020',
+'P@ssw0rd','S3cur1ty','H@ck3r','L0g1n','Adm1n','P@55word',
+'qweasdzxc','1qaz2wsx','!QAZ2wsx','1Qaz2Wsx','abc123!',
+'michael2','jessica1','jennifer1','ashley1','amanda1','crystal1',
+'brandon','william','james','john','chris','david','daniel',
+'robert','richard','matthew','anthony','mark','ryan','kevin',
+'brian','george','edward','steven','kenneth','joshua1','joseph',
+'password01','password10','password11','password12','password13',
+'letmein1','letmein123','trustno1!','welcome2','iloveyou!',
+];
+
+// ── CRACK ─────────────────────────────────────────────────────
+let crackRunning = false;
+
+function resetCrack() {
+  crackRunning = false;
+  document.getElementById('crackStateVal').className = 'crack-state-value';
+  document.getElementById('crackStateVal').textContent = 'READY';
+  document.getElementById('crackProgressBar').style.width = '0%';
+  document.getElementById('crackLive').textContent = '—';
+  document.getElementById('crackCounter').textContent = '0 / ' + WORDLIST.length + ' checked';
+  document.getElementById('crackResult').style.display = 'none';
+  document.getElementById('crackFail').style.display = 'none';
+  document.getElementById('crackStats').style.display = 'none';
+  document.getElementById('crackUnsupported').style.display = 'none';
+  document.getElementById('crackReadyRow').style.display = 'block';
+  document.getElementById('crackBtn').disabled = false;
+  document.getElementById('crackBtn').textContent = 'Start Crack — 500 Word Dictionary';
+}
+
+document.getElementById('crackBtn').addEventListener('click', startCrack);
+
+async function startCrack() {
+  if (crackRunning) return;
+  const hash = document.getElementById('hashInput').value.trim().toLowerCase();
+  if (!hash) { showToast('Paste a hash first'); return; }
+
+  const isMD5    = /^[0-9a-f]{32}$/.test(hash);
+  const isSHA1   = /^[0-9a-f]{40}$/.test(hash);
+  const isSHA256 = /^[0-9a-f]{64}$/.test(hash);
+
+  if (!isMD5 && !isSHA1 && !isSHA256) {
+    document.getElementById('crackUnsupported').style.display = 'block';
+    return;
+  }
+
+  crackRunning = true;
+  document.getElementById('crackBtn').disabled = true;
+  document.getElementById('crackBtn').textContent = 'Cracking…';
+  document.getElementById('crackResult').style.display = 'none';
+  document.getElementById('crackFail').style.display = 'none';
+  document.getElementById('crackStats').style.display = 'none';
+
+  const algoLabel = isMD5 ? 'MD5' : isSHA1 ? 'SHA-1' : 'SHA-256';
+  const algoKey   = isSHA1 ? 'SHA-1' : 'SHA-256';
+
+  // Pre-compute all hashes
+  const sv = document.getElementById('crackStateVal');
+  sv.className = 'crack-state-value scanning';
+  sv.textContent = 'COMPUTING…';
+
+  let wordHashes;
+  if (isMD5) {
+    wordHashes = WORDLIST.map(w => md5(w));
+  } else {
+    wordHashes = await Promise.all(WORDLIST.map(w => sha(algoKey, w)));
+  }
+
+  const matchIdx = wordHashes.findIndex(h => h === hash);
+  const total = matchIdx === -1 ? WORDLIST.length : matchIdx + 1;
+  const t0 = performance.now();
+
+  sv.textContent = 'SCANNING…';
+
+  // Animate scan
+  const BATCH = 8;
+  for (let i = 0; i < total; i++) {
+    document.getElementById('crackLive').textContent = '> ' + WORDLIST[i];
+    document.getElementById('crackCounter').textContent = (i+1) + ' / ' + WORDLIST.length + ' checked';
+    document.getElementById('crackProgressBar').style.width = ((i+1)/WORDLIST.length*100).toFixed(1) + '%';
+    if (i % BATCH === 0) await new Promise(r => setTimeout(r, 16));
+  }
+
+  const elapsed = Math.round(performance.now() - t0);
+
+  document.getElementById('crackStats').style.display = 'grid';
+  document.getElementById('cstatWords').textContent = total;
+  document.getElementById('cstatTime').textContent = elapsed;
+  document.getElementById('cstatAlgo').textContent = algoLabel;
+
+  if (matchIdx !== -1) {
+    sv.className = 'crack-state-value cracked';
+    sv.textContent = 'CRACKED';
+    const res = document.getElementById('crackResult');
+    res.style.display = 'block';
+    document.getElementById('crackResultPlain').textContent = WORDLIST[matchIdx];
+    document.getElementById('crackResultSub').textContent = algoLabel + ' · Found at position #' + (matchIdx+1) + ' · ' + elapsed + 'ms';
+    showToast('Hash cracked: ' + WORDLIST[matchIdx]);
+  } else {
+    sv.className = 'crack-state-value notfound';
+    sv.textContent = 'NOT FOUND';
+    document.getElementById('crackFail').style.display = 'block';
+  }
+
+  crackRunning = false;
+  document.getElementById('crackBtn').disabled = false;
+  document.getElementById('crackBtn').textContent = 'Crack Again';
 }
 
 function showToast(msg) {

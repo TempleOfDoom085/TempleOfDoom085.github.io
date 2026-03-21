@@ -138,6 +138,11 @@ canvas#gaugeCanvas { display: block; }
 
 .faint { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); }
 
+/* EXPORT BAR */
+.export-bar { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+.export-bar .btn { font-size: 0.65rem; padding: 0.45rem 1rem; letter-spacing: 0.12em; border-color: var(--red); color: var(--red); }
+.export-bar .btn:hover { background: var(--red); color: var(--bg); }
+
 footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
 footer a { color: var(--red); text-decoration: none; }
 
@@ -188,6 +193,12 @@ footer a { color: var(--red); text-decoration: none; }
 
   <!-- RESULTS -->
   <div id="resultsWrap" style="display:none">
+
+    <div class="export-bar">
+      <button class="btn" onclick="copyOsintReport()">Copy Report</button>
+      <button class="btn" onclick="exportOsintTxt()">Export TXT</button>
+      <button class="btn" onclick="exportOsintJson()">Export JSON</button>
+    </div>
 
     <!-- THREAT GAUGE -->
     <div class="panel" id="panelGauge">
@@ -425,6 +436,54 @@ async function fetchCertDetails(domain){
 
 // ── MAIN ─────────────────────────────────────────────────────
 document.getElementById('launchBtn').addEventListener('click', startOSINT);
+// ── EXPORT ───────────────────────────────────────────────────
+let lastOsintScan = null;
+
+function dlFile(name, content) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = name; a.click();
+}
+
+function buildOsintReport() {
+  if (!lastOsintScan) return null;
+  const d = lastOsintScan; const ts = new Date().toISOString();
+  let out = `OSINT INTELLIGENCE REPORT\nTarget: ${d.domain}\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
+  out += `THREAT SCORE: ${d.score}/100\n\n`;
+  out += `INFRASTRUCTURE\nPrimary IP: ${d.primaryIP||'N/A'}\nOpen Ports: ${d.ports?.length||0}\nCVEs: ${d.cves?.length||0}\n\n`;
+  out += `DNS SECURITY\nSPF: ${d.hasSPF?'Present':'Missing'}\nDMARC: ${d.hasDMARC?'Present':'Missing'}\nDNSSEC: ${d.hasDNSSEC?'Enabled':'Not detected'}\n\n`;
+  out += `SUBDOMAINS (${d.subdomains.length} found)\n${d.subdomains.join('\n')}\n\n`;
+  if (d.ports?.length) out += `OPEN PORTS\n${d.ports.join(', ')}\n\n`;
+  if (d.cves?.length) out += `CVEs\n${d.cves.join('\n')}\n\n`;
+  if (d.cert) out += `TLS CERTIFICATE\nIssuer: ${d.cert.issuer}\nExpires: ${d.cert.expires}\n`;
+  return out;
+}
+
+function copyOsintReport() {
+  const report = buildOsintReport();
+  if (!report) return;
+  navigator.clipboard.writeText(report).then(() => {
+    const btn = document.querySelector('.export-bar .btn');
+    const orig = btn.textContent; btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+function exportOsintTxt() {
+  if (!lastOsintScan) return;
+  const d = lastOsintScan; const ts = new Date().toISOString();
+  let out = `OSINT INTELLIGENCE REPORT\nTarget: ${d.domain}\nGenerated: ${ts}\n${'='.repeat(50)}\n\n`;
+  out += `THREAT SCORE: ${d.score}/100\n\n`;
+  out += `INFRASTRUCTURE\nPrimary IP: ${d.primaryIP||'N/A'}\nOpen Ports: ${d.ports?.length||0}\nCVEs: ${d.cves?.length||0}\n\n`;
+  out += `DNS SECURITY\nSPF: ${d.hasSPF?'Present':'Missing'}\nDMARC: ${d.hasDMARC?'Present':'Missing'}\nDNSSEC: ${d.hasDNSSEC?'Enabled':'Not detected'}\n\n`;
+  dlFile(`osint-${d.domain}-${Date.now()}.txt`, buildOsintReport());
+}
+
+function exportOsintJson() {
+  if (!lastOsintScan) return;
+  dlFile(`osint-${lastOsintScan.domain}-${Date.now()}.json`, JSON.stringify({ ...lastOsintScan, generated_at: new Date().toISOString() }, null, 2));
+}
+
 document.getElementById('domainInput').addEventListener('keydown', e=>{ if(e.key==='Enter') startOSINT(); });
 
 async function startOSINT(){
@@ -558,6 +617,14 @@ async function startOSINT(){
   } else {
     certEl.innerHTML = '<div class="faint">No certificate data found in crt.sh.</div>';
   }
+
+  // Store for export
+  lastOsintScan = {
+    domain: raw, score, primaryIP, hasSPF, hasDMARC, hasDNSSEC,
+    subdomains, ports: shodan?.ports||[], cves: shodan?.vulns||[],
+    cert: certDetail ? { issuer: certDetail.issuer_name, expires: certDetail.not_after } : null,
+    dns: { A: aRecords.map(r=>r.data), AAAA: resAAAA?.Answer?.map(r=>r.data)||[], MX: resMX?.Answer?.map(r=>r.data)||[], NS: resNS?.Answer?.map(r=>r.data)||[] }
+  };
 }
 </script>
 </body>
