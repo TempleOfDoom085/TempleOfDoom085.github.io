@@ -2194,15 +2194,20 @@ document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.obs
 // ── v9.1: YOU DIED EXIT-INTENT ──
 (function() {
   let shown = sessionStorage.getItem('youDiedShown');
+  let timer;
   document.addEventListener('mouseleave', e => {
-    if (e.clientY < 8 && !shown) {
-      shown = true;
-      sessionStorage.setItem('youDiedShown', '1');
-      const overlay = document.getElementById('you-died-overlay');
-      overlay.style.display = 'flex';
-      requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
+    if (e.clientY <= 0 && e.relatedTarget === null && !shown) {
+      timer = setTimeout(() => {
+        if (shown) return;
+        shown = true;
+        sessionStorage.setItem('youDiedShown', '1');
+        const overlay = document.getElementById('you-died-overlay');
+        overlay.style.display = 'flex';
+        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
+      }, 200);
     }
   });
+  document.addEventListener('mouseenter', () => clearTimeout(timer));
 })();
 
 function closeYouDied() {
