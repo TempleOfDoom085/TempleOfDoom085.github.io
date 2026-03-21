@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encode / Decode — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --lime: #c8ff00; --lime-dim: rgba(200,255,0,0.10); --lime-mid: rgba(200,255,0,0.32);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-lime: rgba(200,255,0,0.22);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --orange: #ff8800; --yellow: #ffcc00; --green: #00ff88; --cyan: #00c8ff;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-lime);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--lime); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--lime); text-transform: uppercase; }
+
+.hero { position: relative; overflow: hidden; padding: 5rem 2.5rem 4rem; text-align: center; border-bottom: 1px solid var(--border-lime); }
+.hero-canvas { position: absolute; inset: 0; opacity: 0.15; }
+.hero-content { position: relative; z-index: 1; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--lime); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1;
+  text-shadow: 0 0 40px rgba(200,255,0,0.4); animation: glitch 4.5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(200,255,0,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(200,255,0,0.9), 2px 0 rgba(200,255,0,0.4); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(200,255,0,0.9), -2px 0 rgba(200,255,0,0.4); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(200,255,0,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--lime); text-transform: uppercase; margin-bottom: 0.75rem; }
+
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--lime-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+/* TEXTAREAS */
+.io-area {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border-lime);
+  color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+  padding: 1rem; outline: none; resize: vertical; min-height: 130px;
+  transition: border-color 0.2s, box-shadow 0.2s; line-height: 1.6;
+  word-break: break-all;
+}
+.io-area:focus { border-color: var(--lime); box-shadow: 0 0 14px rgba(200,255,0,0.12); }
+.io-area::placeholder { color: var(--text-faint); }
+.io-area[readonly] { cursor: default; color: var(--lime); border-color: rgba(200,255,0,0.15); }
+.io-area[readonly]:focus { border-color: rgba(200,255,0,0.3); box-shadow: none; }
+
+/* CHAR COUNT */
+.char-count { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); margin-top: 0.35rem; text-align: right; }
+
+/* OPERATION GRID */
+.op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; margin-bottom: 1.25rem; }
+.op-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.65rem 0.5rem; background: var(--bg3); border: 1px solid var(--border-lime);
+  color: var(--text-dim); cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.3;
+}
+.op-btn:hover { background: var(--lime-dim); border-color: var(--lime); color: var(--lime); box-shadow: 0 0 12px rgba(200,255,0,0.12); }
+.op-btn:active { transform: scale(0.97); }
+.op-btn.active { background: var(--lime-dim); border-color: var(--lime); color: var(--lime); }
+
+/* ACTION BAR */
+.action-bar { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.6rem 1.4rem; background: transparent; border: 1px solid var(--lime);
+  color: var(--lime); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--lime); color: var(--bg); box-shadow: 0 0 20px rgba(200,255,0,0.3); }
+.btn:active { transform: scale(0.97); }
+.btn-secondary { border-color: var(--border-lime); color: var(--text-dim); }
+.btn-secondary:hover { background: var(--lime-dim); color: var(--lime); box-shadow: none; }
+
+/* ERROR */
+.op-error { font-family: var(--mono); font-size: 0.68rem; color: var(--red); margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,77,77,0.06); border: 1px solid rgba(255,77,77,0.25); display: none; }
+
+/* LAST OP INDICATOR */
+.last-op-badge { font-family: var(--mono); font-size: 0.62rem; color: var(--lime); letter-spacing: 0.12em; padding: 0.25rem 0.6rem; background: var(--lime-dim); border: 1px solid var(--border-lime); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--bg2); border: 1px solid var(--lime); color: var(--lime); font-family: var(--mono); font-size: 0.7rem; padding: 0.7rem 1.2rem; z-index: 200; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; letter-spacing: 0.1em; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
+footer a { color: var(--lime); text-decoration: none; }
+
+@media (max-width: 640px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .hero { padding: 3.5rem 1.2rem 3rem; }
+  .op-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 400px) {
+  .op-grid { grid-template-columns: 1fr 1fr; }
+  .nav-center { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-center">Temple Tools</span>
+  <span class="nav-right">Encode / Decode</span>
+</nav>
+
+<section class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-label">Tool 07 / Encoding Analysis</div>
+    <h1 class="hero-title">Encode / Decode</h1>
+    <p class="hero-sub">Base64 &middot; Hex &middot; URL &middot; ROT13 &middot; Binary &middot; ASCII</p>
+  </div>
+</section>
+
+<main class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="section-label">Input</div>
+    <textarea class="io-area" id="inputArea" placeholder="Paste or type text to encode / decode…" spellcheck="false"></textarea>
+    <div class="char-count" id="inputCount">0 chars</div>
+  </div>
+
+  <!-- OPERATIONS PANEL -->
+  <div class="panel">
+    <div class="panel-title">Operations</div>
+    <div class="op-grid">
+      <button class="op-btn" data-op="b64enc">Base64<br>Encode</button>
+      <button class="op-btn" data-op="b64dec">Base64<br>Decode</button>
+      <button class="op-btn" data-op="urlenc">URL<br>Encode</button>
+      <button class="op-btn" data-op="urldec">URL<br>Decode</button>
+      <button class="op-btn" data-op="hexenc">Hex<br>Encode</button>
+      <button class="op-btn" data-op="hexdec">Hex<br>Decode</button>
+      <button class="op-btn" data-op="rot13">ROT13</button>
+      <button class="op-btn" data-op="binenc">Binary<br>Encode</button>
+      <button class="op-btn" data-op="bindec">Binary<br>Decode</button>
+      <button class="op-btn" data-op="ascii">ASCII<br>Codes</button>
+      <button class="op-btn" data-op="reverse">Reverse</button>
+      <button class="op-btn" data-op="upper">Uppercase</button>
+      <button class="op-btn" data-op="lower">Lowercase</button>
+      <button class="op-btn" data-op="htmlenc">HTML<br>Encode</button>
+      <button class="op-btn" data-op="htmldec">HTML<br>Decode</button>
+    </div>
+    <div class="op-error" id="opError"></div>
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem">
+      <div style="display:flex;align-items:center;gap:0.6rem">
+        <div class="section-label" style="margin-bottom:0">Output</div>
+        <span class="last-op-badge" id="lastOpBadge" style="display:none"></span>
+      </div>
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="copyOutputBtn">Copy</button>
+        <button class="btn btn-secondary" id="swapBtn">⇅ Swap</button>
+        <button class="btn btn-secondary" id="exportBtn">Export TXT</button>
+      </div>
+    </div>
+    <textarea class="io-area" id="outputArea" readonly placeholder="Result will appear here…" spellcheck="false"></textarea>
+    <div class="char-count" id="outputCount">0 chars</div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="../index.html">Temple Tools</a> &nbsp;/&nbsp; Encode / Decode &nbsp;&nbsp;·&nbsp;&nbsp; All operations run locally · No data transmitted
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HERO CANVAS ─────────────────────────────────────────────────
+(function(){
+  const c = document.getElementById('heroCanvas');
+  const ctx = c.getContext('2d');
+  const chars = '0123456789ABCDEFabcdef01';
+  let cols, drops;
+  function resize(){ c.width=c.offsetWidth; c.height=c.offsetHeight; cols=Math.floor(c.width/18); drops=Array(cols).fill(0).map(()=>Math.random()*c.height/18*-1); }
+  resize(); window.addEventListener('resize', resize);
+  setInterval(()=>{
+    ctx.fillStyle='rgba(10,10,12,0.08)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(200,255,0,0.5)'; ctx.font='13px monospace';
+    drops.forEach((y,i)=>{ ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,y*18); drops[i]=(y>c.height/18+5&&Math.random()>0.97)?0:y+0.4; });
+  },50);
+})();
+
+// ── OPERATIONS ───────────────────────────────────────────────────
+const ops = {
+  b64enc(s) {
+    const bytes = new TextEncoder().encode(s);
+    let bin = '';
+    bytes.forEach(b => bin += String.fromCharCode(b));
+    return btoa(bin);
+  },
+  b64dec(s) {
+    s = s.trim();
+    try {
+      const bin = atob(s);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder('utf-8').decode(bytes);
+    } catch(e) { throw new Error('Invalid Base64 input — ensure correct padding and characters'); }
+  },
+  urlenc(s) { return encodeURIComponent(s); },
+  urldec(s) {
+    try { return decodeURIComponent(s); }
+    catch(e) { throw new Error('Invalid URL-encoded string — malformed percent-encoding'); }
+  },
+  hexenc(s) {
+    let out = '';
+    for (const char of s) {
+      const cp = char.codePointAt(0);
+      if (cp > 0xFFFF) {
+        out += cp.toString(16).padStart(8,'0') + ' ';
+      } else {
+        const bytes = new TextEncoder().encode(char);
+        bytes.forEach(b => out += b.toString(16).padStart(2,'0'));
+        out += ' ';
+      }
+    }
+    return out.trim();
+  },
+  hexdec(s) {
+    s = s.replace(/\s+/g,'');
+    if (!/^[0-9a-fA-F]*$/.test(s) || s.length % 2 !== 0) throw new Error('Invalid hex — must be even number of hex characters (0-9, a-f)');
+    const bytes = new Uint8Array(s.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(s.substr(i*2,2),16);
+    return new TextDecoder('utf-8').decode(bytes);
+  },
+  rot13(s) {
+    return s.replace(/[a-zA-Z]/g, c => {
+      const base = c <= 'Z' ? 65 : 97;
+      return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
+    });
+  },
+  binenc(s) {
+    const bytes = new TextEncoder().encode(s);
+    return Array.from(bytes).map(b => b.toString(2).padStart(8,'0')).join(' ');
+  },
+  bindec(s) {
+    const parts = s.trim().split(/\s+/);
+    if (parts.some(p => !/^[01]{8}$/.test(p))) throw new Error('Invalid binary — input must be 8-bit groups separated by spaces (e.g. 01000001 01000010)');
+    const bytes = new Uint8Array(parts.map(p => parseInt(p,2)));
+    return new TextDecoder('utf-8').decode(bytes);
+  },
+  ascii(s) {
+    return Array.from(s).map(c => c.codePointAt(0)).join(' ');
+  },
+  reverse(s) { return [...s].reverse().join(''); },
+  upper(s) { return s.toUpperCase(); },
+  lower(s) { return s.toLowerCase(); },
+  htmlenc(s) {
+    return s
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  },
+  htmldec(s) {
+    const ta = document.createElement('textarea');
+    ta.innerHTML = s;
+    return ta.value;
+  },
+};
+
+const opLabels = {
+  b64enc:'Base64 Encode', b64dec:'Base64 Decode',
+  urlenc:'URL Encode', urldec:'URL Decode',
+  hexenc:'Hex Encode', hexdec:'Hex Decode',
+  rot13:'ROT13', binenc:'Binary Encode', bindec:'Binary Decode',
+  ascii:'ASCII Codes', reverse:'Reverse', upper:'Uppercase', lower:'Lowercase',
+  htmlenc:'HTML Encode', htmldec:'HTML Decode',
+};
+
+// ── CHAR COUNTS ──────────────────────────────────────────────────
+const inputArea = document.getElementById('inputArea');
+const outputArea = document.getElementById('outputArea');
+
+inputArea.addEventListener('input', () => {
+  document.getElementById('inputCount').textContent = `${[...inputArea.value].length} chars`;
+});
+
+function setOutput(val) {
+  outputArea.value = val;
+  document.getElementById('outputCount').textContent = `${[...val].length} chars`;
+}
+
+// ── OP BUTTONS ───────────────────────────────────────────────────
+let lastActiveBtn = null;
+
+document.querySelectorAll('.op-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const opKey = btn.getAttribute('data-op');
+    const input = inputArea.value;
+    const errEl = document.getElementById('opError');
+    errEl.style.display = 'none';
+
+    if (!input && opKey !== 'reverse') {
+      errEl.textContent = 'Input is empty — paste some text first';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const result = ops[opKey](input);
+      setOutput(result);
+      document.getElementById('lastOpBadge').textContent = opLabels[opKey];
+      document.getElementById('lastOpBadge').style.display = '';
+
+      if (lastActiveBtn) lastActiveBtn.classList.remove('active');
+      btn.classList.add('active');
+      lastActiveBtn = btn;
+    } catch(e) {
+      errEl.textContent = e.message;
+      errEl.style.display = 'block';
+    }
+  });
+});
+
+// ── ACTIONS ──────────────────────────────────────────────────────
+document.getElementById('copyOutputBtn').addEventListener('click', () => {
+  const val = outputArea.value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => showToast('Output copied to clipboard'));
+});
+
+document.getElementById('swapBtn').addEventListener('click', () => {
+  const out = outputArea.value;
+  if (!out) return;
+  inputArea.value = out;
+  document.getElementById('inputCount').textContent = `${[...out].length} chars`;
+  setOutput('');
+  document.getElementById('lastOpBadge').style.display = 'none';
+  if (lastActiveBtn) { lastActiveBtn.classList.remove('active'); lastActiveBtn = null; }
+  showToast('Output swapped to input');
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const val = outputArea.value;
+  if (!val) return;
+  const content = [
+    'ENCODE / DECODE — Temple Tools',
+    '='.repeat(50),
+    '',
+    `Operation: ${document.getElementById('lastOpBadge').textContent || 'Unknown'}`,
+    `Date: ${new Date().toUTCString()}`,
+    '',
+    '--- INPUT ---',
+    inputArea.value,
+    '',
+    '--- OUTPUT ---',
+    val,
+  ].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = 'encoded-output.txt';
+  a.click();
+  showToast('Exported TXT');
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
