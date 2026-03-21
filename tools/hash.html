@@ -454,6 +454,9 @@ function analyze() {
   document.getElementById('statUniq').textContent = new Set(hash).size;
   document.getElementById('statChars').textContent = /^[0-9a-f]+$/i.test(hash) ? 'Yes' : 'No';
 
+  // Reset generate grid on new analysis
+  document.getElementById('genGrid').innerHTML = '';
+
   // HIBP check (async)
   runHIBP(hash);
 }
