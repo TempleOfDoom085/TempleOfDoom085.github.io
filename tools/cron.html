@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cron Parser — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #ff7722; --c-dim: rgba(255,119,34,0.08); --c-mid: rgba(255,119,34,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(255,119,34,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(255,119,34,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(255,119,34,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(255,119,34,0.9), 2px 0 rgba(0,212,255,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(255,119,34,0.9), -2px 0 rgba(0,212,255,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(255,119,34,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+.cron-input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border-c);
+  color: var(--text); font-family: var(--mono); font-size: 1.3rem;
+  padding: 0.85rem 1.1rem; outline: none; transition: border-color 0.2s; letter-spacing: 0.1em;
+  text-align: center;
+}
+.cron-input:focus { border-color: var(--c); }
+.error-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--red); margin-top: 0.6rem; min-height: 1rem; text-align: center; }
+
+.fields-row { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: center; flex-wrap: wrap; }
+.field-box {
+  background: var(--bg3); border: 1px solid var(--border-c); padding: 0.75rem 1rem; text-align: center; min-width: 70px;
+}
+.field-label { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.3rem; }
+.field-val { font-family: var(--mono); font-size: 1.1rem; color: var(--c); }
+
+.description-box {
+  background: var(--bg3); border: 1px solid var(--border-c);
+  padding: 1.5rem; margin-top: 1rem; text-align: center;
+}
+.desc-text { font-family: var(--mono); font-size: 1rem; color: var(--text); line-height: 1.7; }
+.desc-text span { color: var(--c); font-weight: 600; }
+
+.next-runs { display: flex; flex-direction: column; gap: 0.4rem; }
+.next-run-item {
+  display: flex; align-items: center; gap: 1rem; padding: 0.65rem 1rem;
+  background: var(--bg3); border: 1px solid var(--border);
+  transition: border-color 0.2s;
+}
+.next-run-item:hover { border-color: var(--c); }
+.run-num { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); min-width: 24px; }
+.run-time { font-family: var(--mono); font-size: 0.88rem; color: var(--c); }
+.run-rel { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); margin-left: auto; }
+
+.quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.6rem; }
+.quick-item {
+  background: var(--bg3); border: 1px solid var(--border); padding: 0.85rem 1rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.quick-item:hover { border-color: var(--c); background: var(--c-dim); }
+.qi-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 0.3rem; }
+.qi-expr { font-family: var(--mono); font-size: 0.82rem; color: var(--c); margin-bottom: 0.2rem; }
+.qi-desc { font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">cron</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — schedule parser</div>
+  <div class="hero-title">CRON PARSER</div>
+  <div class="hero-sub">decode schedules · next run times · plain english · 5 or 6 fields</div>
+</div>
+
+<div class="main">
+
+  <!-- Quick examples -->
+  <div class="panel">
+    <div class="panel-title">Common Schedules</div>
+    <div class="quick-grid" id="quick-grid"></div>
+  </div>
+
+  <!-- Input -->
+  <div class="panel">
+    <div class="panel-title">Cron Expression</div>
+    <input class="cron-input" id="cron-input" type="text" placeholder="* * * * *" spellcheck="false" oninput="parse()" value="*/5 * * * *">
+    <div class="error-msg" id="error-msg"></div>
+    <div class="fields-row" id="fields-row">
+      <div class="field-box"><div class="field-label">Minute</div><div class="field-val" id="f-min">*</div></div>
+      <div class="field-box"><div class="field-label">Hour</div><div class="field-val" id="f-hour">*</div></div>
+      <div class="field-box"><div class="field-label">Day (Month)</div><div class="field-val" id="f-dom">*</div></div>
+      <div class="field-box"><div class="field-label">Month</div><div class="field-val" id="f-mon">*</div></div>
+      <div class="field-box"><div class="field-label">Day (Week)</div><div class="field-val" id="f-dow">*</div></div>
+    </div>
+  </div>
+
+  <!-- Description -->
+  <div class="panel" id="desc-panel">
+    <div class="panel-title">Plain English</div>
+    <div class="description-box">
+      <div class="desc-text" id="desc-text">Enter a cron expression above...</div>
+    </div>
+  </div>
+
+  <!-- Next runs -->
+  <div class="panel" id="runs-panel">
+    <div class="panel-title">Next 8 Run Times</div>
+    <div class="next-runs" id="next-runs"></div>
+  </div>
+
+</div>
+
+<footer>temple tools — cron parser &nbsp;·&nbsp; client-side only &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+const QUICK = [
+  { label: 'Every minute',        expr: '* * * * *',       desc: 'Runs every minute' },
+  { label: 'Every 5 minutes',     expr: '*/5 * * * *',     desc: 'Five-minute interval' },
+  { label: 'Every 15 minutes',    expr: '*/15 * * * *',    desc: 'Quarter-hour interval' },
+  { label: 'Every 30 minutes',    expr: '*/30 * * * *',    desc: 'Half-hour interval' },
+  { label: 'Every hour',          expr: '0 * * * *',       desc: 'Top of every hour' },
+  { label: 'Every 6 hours',       expr: '0 */6 * * *',     desc: 'Six times daily' },
+  { label: 'Once daily (midnight)',expr: '0 0 * * *',       desc: 'Midnight every day' },
+  { label: 'Daily at noon',       expr: '0 12 * * *',      desc: 'Noon every day' },
+  { label: 'Every weekday 9am',   expr: '0 9 * * 1-5',     desc: 'Mon–Fri, 9:00 AM' },
+  { label: 'Every Monday 8am',    expr: '0 8 * * 1',       desc: 'Monday mornings' },
+  { label: 'Weekly Sunday midnight',expr:'0 0 * * 0',      desc: 'Once a week' },
+  { label: 'First of month',      expr: '0 0 1 * *',       desc: 'Monthly billing/reset' },
+  { label: 'Every Jan 1st',       expr: '0 0 1 1 *',       desc: 'Once a year' },
+  { label: 'Weekdays 9–5, hourly',expr: '0 9-17 * * 1-5',  desc: 'Business hours' },
+];
+
+document.getElementById('quick-grid').innerHTML = QUICK.map(q =>
+  `<div class="quick-item" onclick="setExpr('${q.expr}')">
+    <div class="qi-label">${q.label}</div>
+    <div class="qi-expr">${q.expr}</div>
+    <div class="qi-desc">${q.desc}</div>
+  </div>`
+).join('');
+
+function setExpr(e) {
+  document.getElementById('cron-input').value = e;
+  parse();
+}
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function expandField(field, min, max, names) {
+  if (field === '*') return null; // all
+  const result = new Set();
+  for (const part of field.split(',')) {
+    if (part.includes('/')) {
+      const [range, step] = part.split('/');
+      const s = parseInt(step);
+      if (isNaN(s) || s <= 0) return null;
+      let lo = min, hi = max;
+      if (range !== '*') {
+        const [a, b] = range.split('-').map(Number);
+        lo = a; hi = b !== undefined ? b : a;
+      }
+      for (let i = lo; i <= hi; i += s) result.add(i);
+    } else if (part.includes('-')) {
+      const [a, b] = part.split('-').map(v => names ? names.indexOf(v.slice(0,3)) !== -1 ? names.indexOf(v.slice(0,3)) + min : parseInt(v) : parseInt(v));
+      if (isNaN(a) || isNaN(b)) return null;
+      for (let i = a; i <= b; i++) result.add(i);
+    } else {
+      const v = names ? (names.indexOf(part.slice(0,3)) !== -1 ? names.indexOf(part.slice(0,3)) + min : parseInt(part)) : parseInt(part);
+      if (isNaN(v)) return null;
+      result.add(v);
+    }
+  }
+  return [...result].filter(v => v >= min && v <= max).sort((a,b) => a-b);
+}
+
+function describeField(field, unit, min, max, names) {
+  if (field === '*') return `every ${unit}`;
+  if (field.startsWith('*/')) {
+    const n = parseInt(field.slice(2));
+    return `every ${n} ${unit}${n > 1 ? 's' : ''}`;
+  }
+  const vals = expandField(field, min, max, names);
+  if (!vals) return field;
+  const labeled = vals.map(v => names ? names[v - min] || v : v);
+  if (labeled.length === 1) return `${unit} ${labeled[0]}`;
+  if (labeled.length === 2) return `${unit}s ${labeled[0]} and ${labeled[1]}`;
+  return `${unit}s ${labeled.slice(0,-1).join(', ')} and ${labeled[labeled.length-1]}`;
+}
+
+function buildDescription(parts) {
+  const [min, hour, dom, mon, dow] = parts;
+  let desc = 'Runs ';
+
+  // Time
+  if (min === '*' && hour === '*') desc += 'every minute';
+  else if (min.startsWith('*/') && hour === '*') desc += `every ${min.slice(2)} minutes`;
+  else if (hour === '*') desc += `at ${describeField(min,'minute',0,59)} of every hour`;
+  else if (min === '0' && hour === '*') desc += 'at the start of every hour';
+  else {
+    const minVals = expandField(min, 0, 59, null);
+    const hourVals = expandField(hour, 0, 23, null);
+    if (minVals && hourVals && minVals.length === 1 && hourVals.length === 1) {
+      const h = hourVals[0], m = minVals[0];
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      desc += `at ${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+    } else {
+      desc += `at ${describeField(min,'minute',0,59,null)} past ${describeField(hour,'hour',0,23,null)}`;
+    }
+  }
+
+  // Day of month
+  if (dom !== '*') desc += `, on day ${describeField(dom,'day',1,31,null)} of the month`;
+
+  // Month
+  if (mon !== '*') desc += `, in ${describeField(mon,'month',1,12,MONTHS)}`;
+
+  // Day of week
+  if (dow !== '*') {
+    const dowMap = { '0':'Sunday','1':'Monday','2':'Tuesday','3':'Wednesday','4':'Thursday','5':'Friday','6':'Saturday','7':'Sunday' };
+    if (dow.includes('-')) {
+      const [a,b] = dow.split('-').map(v => parseInt(v));
+      desc += `, on ${DAYS[a]} through ${DAYS[b]}`;
+    } else if (dow.includes(',')) {
+      const days = dow.split(',').map(v => DAYS[parseInt(v)] || v);
+      desc += `, on ${days.join(', ')}`;
+    } else {
+      desc += `, on ${DAYS[parseInt(dow)] || dow}`;
+    }
+  }
+
+  return desc;
+}
+
+function getNextRuns(parts, count) {
+  const [minF, hourF, domF, monF, dowF] = parts;
+  const now = new Date();
+  const runs = [];
+  const dt = new Date(now);
+  dt.setSeconds(0); dt.setMilliseconds(0);
+  dt.setMinutes(dt.getMinutes() + 1); // start from next minute
+
+  const minVals  = minF  === '*' ? [...Array(60).keys()] : expandField(minF, 0, 59, null);
+  const hourVals = hourF === '*' ? [...Array(24).keys()] : expandField(hourF, 0, 23, null);
+  const monVals  = monF  === '*' ? [...Array(12).keys()].map(v=>v+1) : expandField(monF, 1, 12, MONTHS);
+  const domVals  = domF  === '*' ? null : expandField(domF, 1, 31, null);
+  const dowVals  = dowF  === '*' ? null : expandField(dowF, 0, 6, DAYS);
+
+  if (!minVals || !hourVals || !monVals) return [];
+
+  let tries = 0;
+  while (runs.length < count && tries < 100000) {
+    tries++;
+    const m = dt.getMonth() + 1, d = dt.getDate();
+    const h = dt.getHours(), mi = dt.getMinutes();
+    const dow = dt.getDay();
+
+    if (!monVals.includes(m)) { dt.setMonth(dt.getMonth() + 1); dt.setDate(1); dt.setHours(0); dt.setMinutes(0); continue; }
+    const domOk = !domVals || domVals.includes(d);
+    const dowOk = !dowVals || dowVals.includes(dow);
+    if (domF !== '*' && dowF !== '*' ? !(domOk || dowOk) : !(domOk && dowOk)) { dt.setDate(dt.getDate() + 1); dt.setHours(0); dt.setMinutes(0); continue; }
+    if (!hourVals.includes(h)) { dt.setHours(dt.getHours() + 1); dt.setMinutes(0); continue; }
+    if (!minVals.includes(mi)) { dt.setMinutes(dt.getMinutes() + 1); continue; }
+
+    runs.push(new Date(dt));
+    dt.setMinutes(dt.getMinutes() + 1);
+  }
+  return runs;
+}
+
+function relTime(d) {
+  const diff = Math.floor((d - Date.now()) / 1000);
+  if (diff < 60) return `in ${diff}s`;
+  if (diff < 3600) return `in ${Math.floor(diff/60)}m`;
+  if (diff < 86400) return `in ${Math.floor(diff/3600)}h ${Math.floor((diff%3600)/60)}m`;
+  return `in ${Math.floor(diff/86400)}d ${Math.floor((diff%86400)/3600)}h`;
+}
+
+function parse() {
+  const raw = document.getElementById('cron-input').value.trim();
+  const errEl = document.getElementById('error-msg');
+  const descEl = document.getElementById('desc-text');
+  const runsEl = document.getElementById('next-runs');
+
+  if (!raw) { errEl.textContent = ''; descEl.textContent = 'Enter a cron expression above...'; runsEl.innerHTML = ''; return; }
+
+  const parts = raw.split(/\s+/);
+  if (parts.length < 5 || parts.length > 6) {
+    errEl.textContent = '✕ Cron requires 5 fields: minute hour day month weekday';
+    descEl.textContent = '';
+    runsEl.innerHTML = '';
+    return;
+  }
+
+  const [min, hour, dom, mon, dow] = parts;
+  document.getElementById('f-min').textContent = min;
+  document.getElementById('f-hour').textContent = hour;
+  document.getElementById('f-dom').textContent = dom;
+  document.getElementById('f-mon').textContent = mon;
+  document.getElementById('f-dow').textContent = dow;
+
+  errEl.textContent = '';
+
+  try {
+    const desc = buildDescription([min, hour, dom, mon, dow]);
+    descEl.innerHTML = desc.replace(/(\d+:\d+ [AP]M)/g, '<span>$1</span>').replace(/(every \d+ minutes?)/g, '<span>$1</span>').replace(/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\w*/g, '<span>$&</span>');
+
+    const runs = getNextRuns([min, hour, dom, mon, dow], 8);
+    runsEl.innerHTML = runs.map((r, i) => {
+      const opts = { weekday:'short', year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' };
+      return `<div class="next-run-item">
+        <span class="run-num">${i+1}</span>
+        <span class="run-time">${r.toLocaleString('en-US', opts)}</span>
+        <span class="run-rel">${relTime(r)}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    errEl.textContent = '✕ ' + e.message;
+  }
+}
+
+parse();
+</script>
+</body>
+</html>

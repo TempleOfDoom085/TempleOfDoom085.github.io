@@ -16,7 +16,7 @@
   --mono: 'DM Mono', monospace;
 }
 html { scroll-behavior: smooth; }
-body { font-family: var(--serif); background: var(--ink); color: var(--paper); line-height: 1.6; overflow-x: hidden; }
+body { font-family: var(--serif); background: var(--ink); color: var(--paper); line-height: 1.75; overflow-x: hidden; font-size: 17px; }
 
 /* SCROLL ANIMATIONS */
 .fade-in {
@@ -94,7 +94,7 @@ nav {
 .hero-name { font-size: clamp(2.8rem, 4.5vw, 4.8rem); font-weight: 300; line-height: 1.08; margin-bottom: 1.5rem; }
 .hero-name em { font-style: italic; color: var(--neon); }
 .hero-right .hero-name em { color: var(--gold-light); }
-.hero-desc { font-size: 1.05rem; font-weight: 300; line-height: 1.85; color: rgba(245,242,236,0.6); max-width: 380px; }
+.hero-desc { font-size: 1.2rem; font-weight: 300; line-height: 1.9; color: rgba(245,242,236,0.6); max-width: 420px; }
 .hero-cta {
   display: inline-block; margin-top: 2.5rem; padding: 0.75rem 2rem;
   font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
@@ -106,20 +106,20 @@ nav {
 .cta-gold:hover { background: rgba(184,147,58,0.08); }
 
 /* SECTIONS */
-section { padding: 6rem 3rem; }
+section { padding: 7.5rem 4rem; }
 .section-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; }
-.section-title { font-size: clamp(2rem, 3.5vw, 3.2rem); font-weight: 300; margin-bottom: 3rem; }
+.section-title { font-size: clamp(2.5rem, 4vw, 4rem); font-weight: 300; margin-bottom: 3rem; }
 .section-title em { font-style: italic; color: var(--gold-light); }
 .inner { max-width: 1100px; margin: 0 auto; }
 
 /* ABOUT */
 #about { background: #111; }
 .about-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 5rem; }
-.about-text { font-size: 1.1rem; font-weight: 300; color: rgba(245,242,236,0.75); line-height: 1.95; }
+.about-text { font-size: 1.2rem; font-weight: 300; color: rgba(245,242,236,0.75); line-height: 2.0; }
 .about-text p + p { margin-top: 1.2rem; }
 .about-stats { display: flex; flex-direction: column; gap: 2rem; justify-content: center; }
 .stat { border-left: 2px solid var(--gold); padding-left: 1.5rem; }
-.stat-num { font-size: 2.8rem; font-weight: 300; color: var(--gold); line-height: 1; }
+.stat-num { font-size: 3.4rem; font-weight: 300; color: var(--gold); line-height: 1; }
 .stat-label { font-family: var(--mono); font-size: 0.7rem; color: rgba(245,242,236,0.45); letter-spacing: 0.1em; margin-top: 0.3rem; }
 
 /* EXPERIENCE */
@@ -133,10 +133,10 @@ section { padding: 6rem 3rem; }
 .exp-item:hover { background: rgba(184,147,58,0.03); }
 .exp-item:last-child { border-bottom: none; }
 .exp-co { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.4rem; }
-.exp-title { font-size: 1.35rem; font-weight: 300; margin-bottom: 0.5rem; }
-.exp-desc { font-size: 0.9rem; color: rgba(245,242,236,0.5); line-height: 1.7; max-width: 600px; }
+.exp-title { font-size: 1.55rem; font-weight: 300; margin-bottom: 0.5rem; }
+.exp-desc { font-size: 1.05rem; color: rgba(245,242,236,0.5); line-height: 1.85; max-width: 620px; }
 .exp-bullets { margin-top: 0.75rem; list-style: none; }
-.exp-bullets li { font-size: 0.88rem; color: rgba(245,242,236,0.45); padding: 0.2rem 0; }
+.exp-bullets li { font-size: 0.98rem; color: rgba(245,242,236,0.45); padding: 0.25rem 0; }
 .exp-bullets li::before { content: '▸ '; color: var(--neon); opacity: 0.5; font-size: 0.68rem; }
 .exp-date { font-family: var(--mono); font-size: 0.68rem; color: rgba(245,242,236,0.3); white-space: nowrap; letter-spacing: 0.08em; }
 
@@ -170,7 +170,7 @@ section { padding: 6rem 3rem; }
 .project-item:hover { background: rgba(184,147,58,0.02); }
 .project-type { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.4rem; }
 .project-name { font-size: 1.6rem; font-weight: 300; margin-bottom: 0.6rem; }
-.project-desc { font-size: 0.95rem; color: rgba(245,242,236,0.55); line-height: 1.75; margin-bottom: 1.2rem; max-width: 680px; }
+.project-desc { font-size: 1.05rem; color: rgba(245,242,236,0.55); line-height: 1.85; margin-bottom: 1.2rem; max-width: 700px; }
 .project-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem; }
 .ptag { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; padding: 0.3rem 0.75rem; border: 1px solid rgba(184,147,58,0.3); color: rgba(184,147,58,0.7); }
 .ptag.neon { border-color: rgba(0,212,255,0.25); color: rgba(0,212,255,0.6); }
@@ -639,9 +639,89 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
 .gh-stat-num { font-family: var(--mono); font-size: 1.25rem; color: var(--neon); line-height: 1; }
 .gh-stat-key { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,242,236,0.28); margin-top: 0.15rem; }
 
+/* ── SCROLL PROGRESS BAR ── */
+#scroll-progress {
+  position: fixed; top: 0; left: 0; z-index: 200;
+  height: 2px; width: 0%;
+  background: linear-gradient(90deg, var(--neon), var(--gold));
+  box-shadow: 0 0 10px rgba(0,212,255,0.7);
+  pointer-events: none;
+  transition: width 0.08s linear;
+}
+
+/* ── COMMAND PALETTE ── */
+#cmd-palette-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(5,5,8,0.88); backdrop-filter: blur(16px);
+  display: none; align-items: flex-start; justify-content: center;
+  padding-top: 14vh;
+}
+#cmd-palette-overlay.open { display: flex; }
+.cmd-palette {
+  width: min(640px, 92vw);
+  background: #0e0f13; border: 1px solid rgba(0,212,255,0.25);
+  box-shadow: 0 0 60px rgba(0,212,255,0.12), 0 30px 80px rgba(0,0,0,0.7);
+}
+.cmd-input-row {
+  display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0,212,255,0.12);
+}
+.cmd-prompt-icon { font-family: var(--mono); color: var(--neon); font-size: 0.9rem; opacity: 0.55; }
+#cmd-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--paper); font-family: var(--mono); font-size: 1rem; letter-spacing: 0.03em;
+}
+#cmd-input::placeholder { color: rgba(245,242,236,0.22); }
+.cmd-results { max-height: 400px; overflow-y: auto; }
+.cmd-result-item {
+  display: flex; align-items: center; gap: 0.85rem; padding: 0.8rem 1.25rem;
+  cursor: pointer; transition: background 0.12s; border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.cmd-result-item:hover, .cmd-result-item.selected { background: rgba(0,212,255,0.07); }
+.cmd-result-icon { font-size: 1rem; opacity: 0.75; min-width: 1.4rem; text-align: center; }
+.cmd-result-name { font-family: var(--mono); font-size: 0.85rem; color: var(--paper); }
+.cmd-result-desc { font-family: var(--mono); font-size: 0.7rem; color: rgba(245,242,236,0.35); margin-top: 0.12rem; }
+.cmd-result-tag { margin-left: auto; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--neon); opacity: 0.45; text-transform: uppercase; padding-left: 0.5rem; flex-shrink: 0; }
+.cmd-footer {
+  display: flex; gap: 1.8rem; padding: 0.65rem 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.cmd-hint { font-family: var(--mono); font-size: 0.6rem; color: rgba(245,242,236,0.22); letter-spacing: 0.05em; }
+.cmd-hint kbd { background: rgba(255,255,255,0.09); padding: 1px 5px; border-radius: 2px; font-family: var(--mono); }
+.cmd-palette-trigger {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  color: rgba(245,242,236,0.3); border: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 8px; cursor: pointer; background: none; transition: all 0.2s;
+}
+.cmd-palette-trigger:hover { border-color: var(--neon); color: var(--neon); }
+
+/* ── TYPEWRITER CURSOR ── */
+.type-cursor { display: inline-block; width: 2px; height: 1em; background: currentColor; margin-left: 2px; vertical-align: text-bottom; animation: blink 0.9s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
 </style>
 </head>
 <body>
+
+<!-- SCROLL PROGRESS -->
+<div id="scroll-progress"></div>
+
+<!-- COMMAND PALETTE -->
+<div id="cmd-palette-overlay">
+  <div class="cmd-palette">
+    <div class="cmd-input-row">
+      <span class="cmd-prompt-icon">⌘</span>
+      <input id="cmd-input" type="text" placeholder="Search sections and tools..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="cmd-results" id="cmd-results"></div>
+    <div class="cmd-footer">
+      <span class="cmd-hint"><kbd>↵</kbd> go</span>
+      <span class="cmd-hint"><kbd>↑↓</kbd> select</span>
+      <span class="cmd-hint"><kbd>Esc</kbd> close</span>
+      <span class="cmd-hint"><kbd>Ctrl+K</kbd> toggle</span>
+    </div>
+  </div>
+</div>
 
 <!-- CUSTOM CURSOR -->
 <div id="cursor">⚔</div>
@@ -708,13 +788,13 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
 <div class="hero">
   <div class="hero-left">
     <span class="tag tag-cyber">// AI Automation & Cybersecurity</span>
-    <h1 class="hero-name">Building<br><em>intelligent</em><br>systems.</h1>
+    <h1 class="hero-name">Building<br><em id="hero-cycle-left">intelligent</em><br>systems.</h1>
     <p class="hero-desc">Voice AI, workflow automation, and cybersecurity — I design systems that are fast, secure, and built to scale. Currently studying at SNHU with a focus on security operations.</p>
     <a href="#experience" class="hero-cta cta-cyber">View My Work</a>
   </div>
   <div class="hero-right">
     <span class="tag tag-gold">— The Human Side</span>
-    <h1 class="hero-name">Sales instinct<br>meets <em>technical</em><br>precision.</h1>
+    <h1 class="hero-name">Sales instinct<br>meets <em id="hero-cycle-right">technical</em><br>precision.</h1>
     <p class="hero-desc">A decade in consultative sales taught me how to listen, communicate, and deliver. Now I apply that same edge to technical systems and client-facing automation.</p>
     <a href="#contact" class="hero-cta cta-gold">Get in Touch</a>
   </div>
@@ -1002,6 +1082,62 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
           <span class="ptag" style="border-color:rgba(255,77,166,0.3);color:rgba(255,77,166,0.7)">Email Intel</span>
           <span class="ptag" style="border-color:rgba(255,77,166,0.3);color:rgba(255,77,166,0.7)">DNS Analysis</span>
           <span class="ptag" style="border-color:rgba(255,77,166,0.3);color:rgba(255,77,166,0.7)">Disposable Check</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/regex.html" class="cyber-tool-card" style="border-color:rgba(200,255,0,0.12)" onmouseenter="this.style.borderColor='rgba(200,255,0,0.3)';this.style.boxShadow='0 0 30px rgba(200,255,0,0.08),inset 0 0 30px rgba(200,255,0,0.03)'" onmouseleave="this.style.borderColor='rgba(200,255,0,0.12)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(200,255,0,0.07) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(200,255,0,0.8);text-shadow:0 0 12px rgba(200,255,0,0.5)">🧩</div>
+        <div class="tool-card-label">09</div>
+        <div class="tool-card-name">Regex Tester</div>
+        <div class="tool-card-desc">Live regex pattern matching with real-time match highlighting, group capture display, flag toggles, and 12 security-focused quick patterns.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(200,255,0,0.3);color:rgba(200,255,0,0.7)">Regex</span>
+          <span class="ptag" style="border-color:rgba(200,255,0,0.3);color:rgba(200,255,0,0.7)">Pattern Match</span>
+          <span class="ptag" style="border-color:rgba(200,255,0,0.3);color:rgba(200,255,0,0.7)">Groups</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/cidr.html" class="cyber-tool-card tool-cyan">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon" style="color:rgba(0,200,255,0.8);text-shadow:0 0 12px rgba(0,200,255,0.5)">🌐</div>
+        <div class="tool-card-label">10</div>
+        <div class="tool-card-name">CIDR Calculator</div>
+        <div class="tool-card-desc">Full subnet breakdown — network/broadcast, usable hosts, subnet mask, wildcard, binary bit-visualization, and a full /8–/32 reference table.</div>
+        <div class="tool-card-tags">
+          <span class="ptag neon">Subnets</span>
+          <span class="ptag neon">IP Math</span>
+          <span class="ptag neon">Networking</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/cron.html" class="cyber-tool-card" style="border-color:rgba(255,119,34,0.12)" onmouseenter="this.style.borderColor='rgba(255,119,34,0.3)';this.style.boxShadow='0 0 30px rgba(255,119,34,0.08),inset 0 0 30px rgba(255,119,34,0.03)'" onmouseleave="this.style.borderColor='rgba(255,119,34,0.12)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(255,119,34,0.07) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(255,119,34,0.8);text-shadow:0 0 12px rgba(255,119,34,0.5)">⏱</div>
+        <div class="tool-card-label">11</div>
+        <div class="tool-card-name">Cron Parser</div>
+        <div class="tool-card-desc">Decode any cron expression into plain English, preview next 8 run times with relative timestamps, and pick from 14 common schedule presets.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(255,119,34,0.3);color:rgba(255,119,34,0.7)">Cron</span>
+          <span class="ptag" style="border-color:rgba(255,119,34,0.3);color:rgba(255,119,34,0.7)">Schedule</span>
+          <span class="ptag" style="border-color:rgba(255,119,34,0.3);color:rgba(255,119,34,0.7)">Next Runs</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/headers.html" class="cyber-tool-card" style="border-color:rgba(176,106,255,0.12)" onmouseenter="this.style.borderColor='rgba(176,106,255,0.3)';this.style.boxShadow='0 0 30px rgba(176,106,255,0.08),inset 0 0 30px rgba(176,106,255,0.03)'" onmouseleave="this.style.borderColor='rgba(176,106,255,0.12)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(176,106,255,0.07) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(176,106,255,0.8);text-shadow:0 0 12px rgba(176,106,255,0.5)">🔒</div>
+        <div class="tool-card-label">12</div>
+        <div class="tool-card-name">HTTP Headers</div>
+        <div class="tool-card-desc">Paste HTTP response headers and get a security grade (A–F) with detailed analysis of HSTS, CSP, X-Frame-Options, and 10 other security headers.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(176,106,255,0.3);color:rgba(176,106,255,0.7)">Security Grade</span>
+          <span class="ptag" style="border-color:rgba(176,106,255,0.3);color:rgba(176,106,255,0.7)">CSP</span>
+          <span class="ptag" style="border-color:rgba(176,106,255,0.3);color:rgba(176,106,255,0.7)">HSTS</span>
         </div>
         <span class="tool-card-cta">Launch Tool →</span>
       </a>
@@ -2157,6 +2293,7 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
   </div>
 </section>
 
+<button class="cmd-palette-trigger" onclick="openCmdPalette()" title="Ctrl+K — Quick navigation" style="position:fixed;bottom:4.5rem;right:2rem;z-index:90;">⌘K</button>
 <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <footer>&copy; 2026 Brian Temple &nbsp;·&nbsp; Towaco, New Jersey &nbsp;·&nbsp; Deus Vult</footer>
@@ -2607,6 +2744,137 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     .observe(document.getElementById('konami-overlay'), { attributes: true, attributeFilter: ['class'] });
 
   window._unlockAchievement = unlock;
+})();
+
+// ── SCROLL PROGRESS BAR ──
+(function() {
+  const bar = document.getElementById('scroll-progress');
+  if (!bar) return;
+  window.addEventListener('scroll', () => {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (total > 0 ? (window.scrollY / total) * 100 : 0) + '%';
+  }, { passive: true });
+})();
+
+// ── COMMAND PALETTE (Ctrl+K) ──
+(function() {
+  const overlay = document.getElementById('cmd-palette-overlay');
+  const input   = document.getElementById('cmd-input');
+  const results = document.getElementById('cmd-results');
+  const ITEMS = [
+    { icon: '👤', name: 'About',           desc: 'Who is Brian Temple?',                tag: 'section', href: '#about' },
+    { icon: '💼', name: 'Experience',      desc: 'Work history and roles',              tag: 'section', href: '#experience' },
+    { icon: '⚡', name: 'Skills',          desc: 'Technical skills overview',           tag: 'section', href: '#skills' },
+    { icon: '🚀', name: 'Projects',        desc: "What I've built",                     tag: 'section', href: '#projects' },
+    { icon: '⚔',  name: 'Game',            desc: 'Knights Templar: Siege of the Undead',tag: 'section', href: '#game-section' },
+    { icon: '🛡', name: 'Certifications',  desc: 'Security certs and credentials',      tag: 'section', href: '#certs' },
+    { icon: '🎓', name: 'Education',       desc: 'SNHU, CU Boulder',                    tag: 'section', href: '#education' },
+    { icon: '🍳', name: 'Kitchen',         desc: 'Recipes and cooking',                 tag: 'section', href: '#cooking' },
+    { icon: '🤝', name: 'Volunteering',    desc: 'Community involvement',               tag: 'section', href: '#volunteering' },
+    { icon: '📬', name: 'Contact',         desc: 'Get in touch',                        tag: 'section', href: '#contact' },
+    { icon: '#',  name: 'Hash Analyzer',   desc: 'Identify and analyze hashes',         tag: 'tool', href: 'tools/hash.html' },
+    { icon: '🌐', name: 'Network Recon',   desc: 'DNS, geolocation, ports',             tag: 'tool', href: 'tools/recon.html' },
+    { icon: '🔍', name: 'OSINT Dashboard', desc: 'Subdomains, DNS, threat score',       tag: 'tool', href: 'tools/osint.html' },
+    { icon: '🔑', name: 'Password Strength',desc: 'Entropy & crack time estimator',     tag: 'tool', href: 'tools/password.html' },
+    { icon: '🔗', name: 'URL / IP Scanner',desc: 'Threat intelligence lookup',          tag: 'tool', href: 'tools/scanner.html' },
+    { icon: '🪙', name: 'JWT Decoder',     desc: 'Decode and inspect JWTs',             tag: 'tool', href: 'tools/jwt.html' },
+    { icon: '🔄', name: 'Encode / Decode', desc: 'Base64, Hex, URL, ROT13...',          tag: 'tool', href: 'tools/encode.html' },
+    { icon: '📧', name: 'Email OSINT',     desc: 'Email analysis and breach check',     tag: 'tool', href: 'tools/email.html' },
+    { icon: '🧩', name: 'Regex Tester',    desc: 'Live pattern matching & groups',      tag: 'tool', href: 'tools/regex.html' },
+    { icon: '🖥', name: 'CIDR Calculator', desc: 'Subnet ranges and IP math',           tag: 'tool', href: 'tools/cidr.html' },
+    { icon: '⏱', name: 'Cron Parser',     desc: 'Decode cron expressions plainly',     tag: 'tool', href: 'tools/cron.html' },
+    { icon: '🔒', name: 'HTTP Headers',    desc: 'Security header grade analyzer',      tag: 'tool', href: 'tools/headers.html' },
+    { icon: '💻', name: 'Open Terminal',   desc: 'Interactive portfolio shell',          tag: 'action', action: 'terminal' },
+  ];
+  let selected = 0, filtered = [...ITEMS];
+
+  function open() {
+    overlay.classList.add('open');
+    input.value = '';
+    render(ITEMS);
+    setTimeout(() => input.focus(), 40);
+  }
+  function close() { overlay.classList.remove('open'); }
+  window.openCmdPalette = open;
+
+  function render(items) {
+    filtered = items; selected = 0;
+    results.innerHTML = items.map((item, i) =>
+      `<div class="cmd-result-item${i===0?' selected':''}" data-idx="${i}" onclick="_cmdGo(${i})">
+        <span class="cmd-result-icon">${item.icon}</span>
+        <div><div class="cmd-result-name">${item.name}</div><div class="cmd-result-desc">${item.desc}</div></div>
+        <span class="cmd-result-tag">${item.tag}</span>
+      </div>`
+    ).join('');
+  }
+
+  window._cmdGo = function(idx) {
+    const item = filtered[idx]; if (!item) return;
+    close();
+    if (item.action === 'terminal') { openTerminal(); return; }
+    if (item.href && item.href.startsWith('#')) {
+      document.querySelector(item.href)?.scrollIntoView({ behavior: 'smooth' });
+    } else if (item.href) {
+      window.location.href = item.href;
+    }
+  };
+
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    render(q ? ITEMS.filter(i => (i.name+i.desc+i.tag).toLowerCase().includes(q)) : ITEMS);
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); overlay.classList.contains('open') ? close() : open(); }
+    if (!overlay.classList.contains('open')) return;
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected+1, filtered.length-1); updateSel(); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); selected = Math.max(selected-1, 0); updateSel(); }
+    if (e.key === 'Enter')     { e.preventDefault(); _cmdGo(selected); }
+  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  function updateSel() {
+    results.querySelectorAll('.cmd-result-item').forEach((el, i) => {
+      el.classList.toggle('selected', i === selected);
+      if (i === selected) el.scrollIntoView({ block: 'nearest' });
+    });
+  }
+})();
+
+// ── HERO TYPEWRITER CYCLING ──
+(function() {
+  const leftPhrases  = ['intelligent', 'automated', 'resilient', 'scalable', 'secure'];
+  const rightPhrases = ['technical', 'strategic', 'decisive', 'relentless', 'adaptive'];
+
+  function cycle(elId, phrases, offset) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    let idx = 0;
+
+    function typeOut(text, cb) {
+      let i = 0; el.textContent = '';
+      const t = setInterval(() => {
+        el.textContent += text[i++];
+        if (i >= text.length) { clearInterval(t); cb && cb(); }
+      }, 80);
+    }
+    function eraseOut(cb) {
+      const t = setInterval(() => {
+        el.textContent = el.textContent.slice(0, -1);
+        if (!el.textContent.length) { clearInterval(t); cb && cb(); }
+      }, 48);
+    }
+    function next() {
+      idx = (idx + 1) % phrases.length;
+      setTimeout(() => typeOut(phrases[idx], () => setTimeout(() => eraseOut(next), 2600)), 320);
+    }
+
+    setTimeout(() => eraseOut(next), 2800 + offset);
+  }
+
+  cycle('hero-cycle-left',  leftPhrases,  0);
+  cycle('hero-cycle-right', rightPhrases, 500);
 })();
 
 // ── v10.0: GITHUB STATS ──
