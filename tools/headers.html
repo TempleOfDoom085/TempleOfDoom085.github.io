@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP Headers Analyzer — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #b06aff; --c-dim: rgba(176,106,255,0.08); --c-mid: rgba(176,106,255,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(176,106,255,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88; --yellow: #ffcc00; --orange: #ff7722;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(176,106,255,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(176,106,255,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(176,106,255,0.9), 2px 0 rgba(0,212,255,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(176,106,255,0.9), -2px 0 rgba(0,212,255,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(176,106,255,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+.io-area {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border-c);
+  color: var(--text); font-family: var(--mono); font-size: 0.8rem;
+  padding: 0.9rem 1rem; resize: vertical; outline: none; min-height: 180px;
+  transition: border-color 0.2s; line-height: 1.6; tab-size: 2;
+}
+.io-area:focus { border-color: var(--c); }
+
+.btn-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.6rem 1.4rem; cursor: pointer; transition: all 0.2s; background: none;
+  border: 1px solid var(--c); color: var(--c);
+}
+.btn:hover { background: var(--c-dim); }
+.btn-sec { border-color: var(--border); color: var(--text-dim); }
+.btn-sec:hover { border-color: var(--text-dim); color: var(--text); background: none; }
+
+/* Grade display */
+.grade-row { display: flex; align-items: center; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.grade-circle {
+  width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 2rem; font-weight: 700; flex-shrink: 0;
+  border: 2px solid;
+}
+.grade-a { color: var(--green); border-color: var(--green); background: rgba(0,255,136,0.07); text-shadow: 0 0 12px rgba(0,255,136,0.5); }
+.grade-b { color: #7af; border-color: #7af; background: rgba(100,180,255,0.07); }
+.grade-c { color: var(--yellow); border-color: var(--yellow); background: rgba(255,204,0,0.07); }
+.grade-d { color: var(--orange); border-color: var(--orange); background: rgba(255,119,34,0.07); }
+.grade-f { color: var(--red); border-color: var(--red); background: rgba(255,77,77,0.07); }
+.grade-meta { font-family: var(--mono); }
+.grade-label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.3rem; }
+.grade-score { font-size: 1.4rem; margin-bottom: 0.2rem; }
+.grade-summary { font-size: 0.78rem; color: var(--text-dim); max-width: 500px; line-height: 1.5; }
+
+.headers-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.header-item {
+  display: flex; align-items: flex-start; gap: 1rem; padding: 0.9rem 1.1rem;
+  background: var(--bg3); border: 1px solid var(--border); transition: border-color 0.2s;
+}
+.header-item:hover { border-color: rgba(176,106,255,0.3); }
+.header-status { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.1rem; }
+.header-info { flex: 1; }
+.header-name { font-family: var(--mono); font-size: 0.82rem; color: var(--c); margin-bottom: 0.2rem; }
+.header-value { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 0.2rem; }
+.header-desc { font-family: var(--mono); font-size: 0.68rem; color: var(--text-faint); line-height: 1.5; }
+.header-item.present { border-color: rgba(0,255,136,0.1); }
+.header-item.present .header-name { color: var(--green); }
+.header-item.missing { border-color: rgba(255,77,77,0.1); }
+.header-item.missing .header-name { color: var(--red); opacity: 0.8; }
+.header-item.warn { border-color: rgba(255,204,0,0.1); }
+.header-item.warn .header-name { color: var(--yellow); }
+.header-item.info { border-color: rgba(176,106,255,0.1); }
+.header-item.info .header-name { color: var(--c); }
+
+.raw-headers { display: flex; flex-direction: column; gap: 0.3rem; }
+.raw-header-row {
+  display: flex; gap: 0.5rem; padding: 0.35rem 0.75rem;
+  font-family: var(--mono); font-size: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.raw-header-row:hover { background: rgba(176,106,255,0.04); }
+.raw-key { color: var(--c); min-width: 240px; }
+.raw-val { color: var(--text-dim); word-break: break-all; }
+
+.sample-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.sample-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  padding: 0.3rem 0.7rem; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+}
+.sample-btn:hover { border-color: var(--c); color: var(--c); background: var(--c-dim); }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">headers</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — http security</div>
+  <div class="hero-title">HTTP HEADERS</div>
+  <div class="hero-sub">security grade · missing headers · value analysis · csp inspection</div>
+</div>
+
+<div class="main">
+
+  <!-- Input -->
+  <div class="panel">
+    <div class="panel-title">Paste Response Headers</div>
+
+    <div class="sample-btns">
+      <button class="sample-btn" onclick="loadSample('good')">Good (A grade)</button>
+      <button class="sample-btn" onclick="loadSample('average')">Average (C grade)</button>
+      <button class="sample-btn" onclick="loadSample('poor')">Poor (F grade)</button>
+    </div>
+
+    <textarea class="io-area" id="headers-input" placeholder="Paste raw HTTP response headers here...
+Example:
+HTTP/2 200
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000; includeSubDomains
+x-frame-options: DENY
+x-content-type-options: nosniff
+content-security-policy: default-src 'self'" rows="10" oninput="analyze()"></textarea>
+
+    <div class="btn-row">
+      <button class="btn" onclick="analyze()">Analyze</button>
+      <button class="btn btn-sec" onclick="document.getElementById('headers-input').value=''; clearResults()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Grade -->
+  <div class="panel" id="grade-panel" style="display:none;">
+    <div class="panel-title">Security Grade</div>
+    <div class="grade-row">
+      <div class="grade-circle" id="grade-circle">?</div>
+      <div class="grade-meta">
+        <div class="grade-label">Security Score</div>
+        <div class="grade-score" id="grade-score">—</div>
+        <div class="grade-summary" id="grade-summary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security Headers -->
+  <div class="panel" id="sec-panel" style="display:none;">
+    <div class="panel-title">Security Header Analysis</div>
+    <div class="headers-list" id="sec-list"></div>
+  </div>
+
+  <!-- All Headers -->
+  <div class="panel" id="raw-panel" style="display:none;">
+    <div class="panel-title">All Headers Parsed</div>
+    <div class="raw-headers" id="raw-headers"></div>
+  </div>
+
+</div>
+
+<footer>temple tools — http headers &nbsp;·&nbsp; client-side only &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+const SAMPLES = {
+  good: `HTTP/2 200
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+x-frame-options: DENY
+x-content-type-options: nosniff
+content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'
+referrer-policy: strict-origin-when-cross-origin
+permissions-policy: geolocation=(), microphone=(), camera=()
+cache-control: no-store, max-age=0
+x-xss-protection: 0
+server: nginx`,
+
+  average: `HTTP/1.1 200 OK
+Content-Type: text/html; charset=UTF-8
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+Cache-Control: public, max-age=3600
+Server: Apache/2.4.41 (Ubuntu)
+X-Powered-By: PHP/7.4.3`,
+
+  poor: `HTTP/1.1 200 OK
+Content-Type: text/html
+Server: Apache/2.2.31
+X-Powered-By: PHP/5.5.38
+Expires: Thu, 19 Nov 1981 08:52:00 GMT`
+};
+
+function loadSample(k) {
+  document.getElementById('headers-input').value = SAMPLES[k];
+  analyze();
+}
+
+function clearResults() {
+  ['grade-panel','sec-panel','raw-panel'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+}
+
+const SEC_HEADERS = [
+  {
+    name: 'Strict-Transport-Security',
+    key: 'strict-transport-security',
+    weight: 20,
+    critical: true,
+    desc: 'Forces HTTPS connections. Should include max-age≥31536000, includeSubDomains, and preload.',
+    checkValue(v) {
+      const issues = [];
+      if (!v) return { ok: false, issues: ['Missing — site can be downgraded to HTTP'] };
+      const age = v.match(/max-age=(\d+)/i);
+      if (!age || parseInt(age[1]) < 31536000) issues.push('max-age should be ≥ 31536000 (1 year)');
+      if (!v.includes('includeSubDomains')) issues.push('includeSubDomains is recommended');
+      return { ok: issues.length === 0, issues };
+    }
+  },
+  {
+    name: 'Content-Security-Policy',
+    key: 'content-security-policy',
+    weight: 25,
+    critical: true,
+    desc: 'Controls resource loading. Mitigates XSS and data injection attacks.',
+    checkValue(v) {
+      if (!v) return { ok: false, issues: ['Missing — XSS attacks are not mitigated'] };
+      const issues = [];
+      if (v.includes("'unsafe-inline'")) issues.push("'unsafe-inline' weakens XSS protection");
+      if (v.includes("'unsafe-eval'"))   issues.push("'unsafe-eval' weakens XSS protection");
+      if (v.includes('*'))               issues.push('Wildcard (*) sources are too broad');
+      if (!v.includes('default-src') && !v.includes('script-src')) issues.push('No default-src or script-src directive');
+      return { ok: issues.length === 0, issues };
+    }
+  },
+  {
+    name: 'X-Frame-Options',
+    key: 'x-frame-options',
+    weight: 10,
+    desc: 'Prevents clickjacking attacks. Use DENY or SAMEORIGIN.',
+    checkValue(v) {
+      if (!v) return { ok: false, issues: ['Missing — site can be embedded in iframes (clickjacking risk)'] };
+      const upper = v.toUpperCase();
+      if (upper !== 'DENY' && upper !== 'SAMEORIGIN' && !upper.startsWith('ALLOW-FROM')) {
+        return { ok: false, issues: [`Unknown value: ${v}`] };
+      }
+      if (upper.startsWith('ALLOW-FROM')) return { ok: true, warn: true, issues: ['ALLOW-FROM is deprecated, consider CSP frame-ancestors instead'] };
+      return { ok: true, issues: [] };
+    }
+  },
+  {
+    name: 'X-Content-Type-Options',
+    key: 'x-content-type-options',
+    weight: 10,
+    desc: 'Prevents MIME type sniffing. Must be set to "nosniff".',
+    checkValue(v) {
+      if (!v) return { ok: false, issues: ['Missing — browser may sniff content types (MIME confusion attacks)'] };
+      if (v.toLowerCase() !== 'nosniff') return { ok: false, issues: [`Value should be "nosniff", got "${v}"`] };
+      return { ok: true, issues: [] };
+    }
+  },
+  {
+    name: 'Referrer-Policy',
+    key: 'referrer-policy',
+    weight: 8,
+    desc: 'Controls how much referrer information is sent. Recommended: strict-origin-when-cross-origin.',
+    checkValue(v) {
+      if (!v) return { ok: false, issues: ['Missing — full URL may leak in referrer headers'] };
+      const unsafe = ['unsafe-url', 'no-referrer-when-downgrade'];
+      if (unsafe.some(u => v.toLowerCase().includes(u))) return { ok: false, issues: [`"${v}" leaks URL to other origins`] };
+      return { ok: true, issues: [] };
+    }
+  },
+  {
+    name: 'Permissions-Policy',
+    key: 'permissions-policy',
+    weight: 8,
+    desc: 'Controls browser features. Restricts access to camera, mic, geolocation, etc.',
+    checkValue(v) {
+      if (!v) return { ok: false, issues: ['Missing — browser features are not restricted'] };
+      return { ok: true, issues: [] };
+    }
+  },
+  {
+    name: 'X-XSS-Protection',
+    key: 'x-xss-protection',
+    weight: 3,
+    desc: 'Legacy XSS filter. Modern recommendation: set to "0" and use CSP instead.',
+    checkValue(v) {
+      if (!v) return { ok: true, warn: true, issues: ['Not set — was used in older browsers, now deprecated; set to 0'] };
+      if (v === '0') return { ok: true, issues: ['Set to 0 (correct — rely on CSP instead)'] };
+      if (v.startsWith('1')) return { ok: true, warn: true, issues: ['Value "1" can introduce vulnerabilities in some browsers; use 0 + CSP'] };
+      return { ok: true, issues: [] };
+    }
+  },
+  {
+    name: 'Cache-Control',
+    key: 'cache-control',
+    weight: 6,
+    desc: 'For sensitive pages, use no-store. Prevents caching of private data.',
+    checkValue(v) {
+      if (!v) return { ok: true, warn: true, issues: ['Not set — sensitive data may be cached by browsers/proxies'] };
+      if (v.includes('public') && !v.includes('no-store')) return { ok: true, warn: true, issues: ['Public caching may expose sensitive data'] };
+      return { ok: true, issues: [] };
+    }
+  },
+  {
+    name: 'Server',
+    key: 'server',
+    weight: 5,
+    desc: 'Should not reveal server software/version (information disclosure).',
+    checkValue(v) {
+      if (!v) return { ok: true, issues: ['Not present — good, server info is hidden'] };
+      const detailed = v.match(/[\d.]{3,}/);
+      if (detailed) return { ok: false, issues: [`Reveals version: "${v}" — attackers can target known CVEs`] };
+      return { ok: true, warn: true, issues: [`Reveals server type: "${v}" — consider removing entirely`] };
+    }
+  },
+  {
+    name: 'X-Powered-By',
+    key: 'x-powered-by',
+    weight: 5,
+    desc: 'Reveals framework/language. Should be removed entirely.',
+    checkValue(v) {
+      if (!v) return { ok: true, issues: ['Not present — good'] };
+      return { ok: false, issues: [`Reveals stack: "${v}" — remove this header`] };
+    }
+  },
+];
+
+function parseHeaders(raw) {
+  const headers = {};
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('HTTP/')) continue;
+    const colon = trimmed.indexOf(':');
+    if (colon === -1) continue;
+    const key = trimmed.slice(0, colon).trim().toLowerCase();
+    const val = trimmed.slice(colon + 1).trim();
+    headers[key] = val;
+  }
+  return headers;
+}
+
+function analyze() {
+  const raw = document.getElementById('headers-input').value.trim();
+  if (!raw) { clearResults(); return; }
+
+  const headers = parseHeaders(raw);
+
+  // Security analysis
+  let score = 0, maxScore = 0;
+  const items = [];
+
+  for (const def of SEC_HEADERS) {
+    maxScore += def.weight;
+    const val = headers[def.key];
+    const result = def.checkValue(val);
+
+    if (result.ok && !result.warn) score += def.weight;
+    else if (result.warn) score += Math.floor(def.weight * 0.5);
+
+    const status = !val ? '✕' : result.ok && !result.warn ? '✓' : result.warn ? '⚠' : '✕';
+    const cls = !val ? 'missing' : result.ok && !result.warn ? 'present' : result.warn ? 'warn' : 'missing';
+
+    items.push({ def, val, result, status, cls });
+  }
+
+  const pct = Math.round((score / maxScore) * 100);
+  let grade, gradeCls;
+  if (pct >= 90)     { grade = 'A'; gradeCls = 'grade-a'; }
+  else if (pct >= 75) { grade = 'B'; gradeCls = 'grade-b'; }
+  else if (pct >= 55) { grade = 'C'; gradeCls = 'grade-c'; }
+  else if (pct >= 35) { grade = 'D'; gradeCls = 'grade-d'; }
+  else                { grade = 'F'; gradeCls = 'grade-f'; }
+
+  const missing = items.filter(i => !i.val && i.def.critical);
+  const summaries = [];
+  if (missing.length) summaries.push(`${missing.length} critical header${missing.length>1?'s':''} missing`);
+  const warns = items.filter(i => i.result.warn);
+  if (warns.length) summaries.push(`${warns.length} warning${warns.length>1?'s':''}`);
+  const ok = items.filter(i => i.result.ok && !i.result.warn);
+  if (ok.length) summaries.push(`${ok.length} header${ok.length>1?'s':''} correctly configured`);
+
+  const gradeCircle = document.getElementById('grade-circle');
+  gradeCircle.textContent = grade;
+  gradeCircle.className = 'grade-circle ' + gradeCls;
+  document.getElementById('grade-score').textContent = `${pct}/100`;
+  document.getElementById('grade-summary').textContent = summaries.join(' · ');
+  document.getElementById('grade-panel').style.display = 'block';
+
+  // Security list
+  document.getElementById('sec-list').innerHTML = items.map(({ def, val, result, status, cls }) =>
+    `<div class="header-item ${cls}">
+      <div class="header-status">${status}</div>
+      <div class="header-info">
+        <div class="header-name">${def.name}</div>
+        ${val ? `<div class="header-value">${escapeHtml(val)}</div>` : ''}
+        ${result.issues.length ? `<div class="header-desc" style="color:${cls==='present'?'var(--green)':cls==='warn'?'var(--yellow)':'var(--red)'}">
+          ${result.issues.join(' · ')}</div>` : ''}
+        <div class="header-desc">${def.desc}</div>
+      </div>
+    </div>`
+  ).join('');
+  document.getElementById('sec-panel').style.display = 'block';
+
+  // Raw headers
+  const rawEntries = Object.entries(headers);
+  document.getElementById('raw-headers').innerHTML = rawEntries.length
+    ? rawEntries.map(([k, v]) =>
+        `<div class="raw-header-row"><span class="raw-key">${escapeHtml(k)}</span><span class="raw-val">${escapeHtml(v)}</span></div>`
+      ).join('')
+    : '<div style="font-family:var(--mono);font-size:0.78rem;color:var(--text-faint);padding:0.5rem;">No headers parsed.</div>';
+  document.getElementById('raw-panel').style.display = 'block';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
