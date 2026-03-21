@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JWT Decoder — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --teal: #00d4aa; --teal-dim: rgba(0,212,170,0.12); --teal-mid: rgba(0,212,170,0.35);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-teal: rgba(0,212,170,0.22);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --orange: #ff8800; --yellow: #ffcc00; --green: #00ff88; --cyan: #00c8ff;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-teal);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--teal); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--teal); text-transform: uppercase; }
+
+.hero { position: relative; overflow: hidden; padding: 5rem 2.5rem 4rem; text-align: center; border-bottom: 1px solid var(--border-teal); }
+.hero-canvas { position: absolute; inset: 0; opacity: 0.15; }
+.hero-content { position: relative; z-index: 1; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--teal); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1;
+  text-shadow: 0 0 40px rgba(0,212,170,0.4); animation: glitch 4.5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(0,212,170,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(0,212,170,0.9), 2px 0 rgba(0,212,170,0.4); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(0,212,170,0.9), -2px 0 rgba(0,212,170,0.4); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(0,212,170,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 1000px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--teal); text-transform: uppercase; margin-bottom: 0.75rem; }
+
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--teal-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+/* INPUT */
+.input-area {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border-teal);
+  color: var(--teal); font-family: var(--mono); font-size: 0.82rem;
+  padding: 1rem; outline: none; resize: vertical; min-height: 120px;
+  transition: border-color 0.2s, box-shadow 0.2s; letter-spacing: 0.04em; line-height: 1.6;
+  word-break: break-all;
+}
+.input-area:focus { border-color: var(--teal); box-shadow: 0 0 16px rgba(0,212,170,0.15); }
+.input-area::placeholder { color: var(--text-faint); font-size: 0.75rem; }
+
+.btn-row { display: flex; gap: 0.6rem; margin-top: 0.85rem; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.6rem 1.4rem; background: transparent; border: 1px solid var(--teal);
+  color: var(--teal); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--teal); color: var(--bg); box-shadow: 0 0 20px rgba(0,212,170,0.3); }
+.btn:active { transform: scale(0.97); }
+.btn-sm { padding: 0.35rem 0.8rem; font-size: 0.62rem; }
+.btn-secondary { border-color: var(--border-teal); color: var(--text-dim); }
+.btn-secondary:hover { background: var(--teal-dim); color: var(--teal); box-shadow: none; }
+
+/* THREE-COLUMN PANELS */
+.tri-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.sub-panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.25rem; position: relative; overflow: hidden; }
+.sub-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--teal-mid), transparent); }
+.sub-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; }
+.sub-panel-title { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em; color: var(--teal); text-transform: uppercase; }
+
+/* JSON VIEWER */
+.json-view { font-family: var(--mono); font-size: 0.72rem; line-height: 1.7; white-space: pre-wrap; word-break: break-word; background: var(--bg3); padding: 0.85rem; border: 1px solid var(--border); max-height: 320px; overflow-y: auto; }
+.json-string { color: #00e676; }
+.json-number { color: var(--cyan); }
+.json-bool { color: var(--orange); }
+.json-null { color: rgba(255,77,77,0.6); }
+.json-key { color: var(--text-dim); }
+
+/* SIGNATURE PANEL */
+.sig-raw { font-family: var(--mono); font-size: 0.68rem; color: var(--teal); word-break: break-all; background: var(--bg3); padding: 0.85rem; border: 1px solid var(--border); line-height: 1.6; max-height: 120px; overflow-y: auto; }
+.sig-note { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); margin-top: 0.6rem; padding: 0.55rem 0.75rem; border-left: 2px solid var(--teal-mid); }
+
+/* SECURITY FLAGS */
+.flag-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.flag-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.7rem 0.9rem; background: var(--bg3); border: 1px solid var(--border); }
+.flag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 0.28rem; }
+.flag-critical { background: var(--red); box-shadow: 0 0 8px var(--red); border-color: rgba(255,77,77,0.3) !important; }
+.flag-warn { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+.flag-ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.flag-info { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
+.flag-body { flex: 1; }
+.flag-title { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; }
+.flag-sub { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); margin-top: 0.15rem; }
+.flag-critical-row { border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.05); }
+
+/* CLAIMS TABLE */
+.claims-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.72rem; }
+.claims-table th { text-align: left; color: var(--text-faint); letter-spacing: 0.15em; font-size: 0.58rem; padding: 0.4rem 0.7rem; border-bottom: 1px solid var(--border); }
+.claims-table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.claims-table tr:last-child td { border-bottom: none; }
+.claims-table td:first-child { color: var(--teal); width: 120px; }
+.claims-table td:nth-child(2) { color: var(--text-faint); width: 140px; }
+.claims-table td:last-child { color: var(--text); word-break: break-word; }
+
+/* EXPORT BAR */
+.export-bar { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+.export-bar .btn { font-size: 0.65rem; padding: 0.45rem 1rem; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 4rem 1rem; }
+.empty-icon { font-size: 3rem; opacity: 0.12; margin-bottom: 1rem; }
+.empty-text { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-faint); }
+.empty-example { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); margin-top: 1rem; cursor: pointer; text-decoration: underline; opacity: 0.5; transition: opacity 0.2s; }
+.empty-example:hover { opacity: 1; }
+
+/* INPUT ERROR */
+.input-error { font-family: var(--mono); font-size: 0.68rem; color: var(--red); margin-top: 0.5rem; display: none; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--bg2); border: 1px solid var(--teal); color: var(--teal); font-family: var(--mono); font-size: 0.7rem; padding: 0.7rem 1.2rem; z-index: 200; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; letter-spacing: 0.1em; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
+footer a { color: var(--teal); text-decoration: none; }
+
+@media (max-width: 768px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .hero { padding: 3.5rem 1.2rem 3rem; }
+  .tri-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .nav-center { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-center">Temple Tools</span>
+  <span class="nav-right">JWT Decoder</span>
+</nav>
+
+<section class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-label">Tool 06 / Token Analysis</div>
+    <h1 class="hero-title">JWT Decoder</h1>
+    <p class="hero-sub">Decode &middot; Verify &middot; Security Flags &middot; Expiry</p>
+  </div>
+</section>
+
+<main class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="section-label">Paste JWT Token</div>
+    <textarea class="input-area" id="jwtInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" spellcheck="false" autocomplete="off"></textarea>
+    <div class="input-error" id="inputError">Invalid JWT — must have 3 dot-separated base64url parts</div>
+    <div class="btn-row">
+      <button class="btn" id="decodeBtn">Decode Token</button>
+      <button class="btn btn-secondary" id="exampleBtn">Load Example</button>
+      <button class="btn btn-secondary" id="clearBtn">Clear</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsWrap" style="display:none">
+
+    <div class="export-bar">
+      <button class="btn btn-secondary" onclick="exportTXT()">Export TXT</button>
+      <button class="btn btn-secondary" onclick="exportJSON()">Export JSON</button>
+    </div>
+
+    <!-- THREE PANELS: HEADER / PAYLOAD / SIGNATURE -->
+    <div class="tri-grid">
+      <!-- HEADER -->
+      <div class="sub-panel">
+        <div class="sub-panel-header">
+          <span class="sub-panel-title">Header</span>
+          <button class="btn btn-sm btn-secondary" onclick="copyPanel('headerJson')">Copy</button>
+        </div>
+        <div class="json-view" id="headerJson"></div>
+      </div>
+      <!-- PAYLOAD -->
+      <div class="sub-panel">
+        <div class="sub-panel-header">
+          <span class="sub-panel-title">Payload</span>
+          <button class="btn btn-sm btn-secondary" onclick="copyPanel('payloadJson')">Copy</button>
+        </div>
+        <div class="json-view" id="payloadJson"></div>
+      </div>
+      <!-- SIGNATURE -->
+      <div class="sub-panel">
+        <div class="sub-panel-header">
+          <span class="sub-panel-title">Signature</span>
+          <button class="btn btn-sm btn-secondary" onclick="copyPanel('sigRaw')">Copy</button>
+        </div>
+        <div class="sig-raw" id="sigRaw"></div>
+        <div class="sig-note">⚠ Signature verification requires the secret key or public key. This tool decodes only — it cannot verify authenticity.</div>
+      </div>
+    </div>
+
+    <!-- SECURITY ANALYSIS -->
+    <div class="panel">
+      <div class="panel-title">Security Analysis</div>
+      <div class="flag-list" id="flagList"></div>
+    </div>
+
+    <!-- STANDARD CLAIMS -->
+    <div class="panel" id="claimsPanel">
+      <div class="panel-title">Standard Claims</div>
+      <table class="claims-table">
+        <thead><tr><th>Claim</th><th>Label</th><th>Value</th></tr></thead>
+        <tbody id="claimsBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">🔐</div>
+    <div class="empty-text">Paste a JWT token above and click Decode</div>
+    <div class="empty-example" id="loadExampleLink">Click to load an example token →</div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="../index.html">Temple Tools</a> &nbsp;/&nbsp; JWT Decoder &nbsp;&nbsp;·&nbsp;&nbsp; Client-Side Only · No tokens transmitted
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HERO CANVAS ─────────────────────────────────────────────────
+(function(){
+  const c = document.getElementById('heroCanvas');
+  const ctx = c.getContext('2d');
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=.';
+  let cols, drops;
+  function resize(){ c.width=c.offsetWidth; c.height=c.offsetHeight; cols=Math.floor(c.width/18); drops=Array(cols).fill(0).map(()=>Math.random()*c.height/18*-1); }
+  resize(); window.addEventListener('resize', resize);
+  setInterval(()=>{
+    ctx.fillStyle='rgba(10,10,12,0.08)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(0,212,170,0.5)'; ctx.font='13px monospace';
+    drops.forEach((y,i)=>{ ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,y*18); drops[i]=(y>c.height/18+5&&Math.random()>0.97)?0:y+0.4; });
+  },50);
+})();
+
+// ── EXAMPLE JWT ──────────────────────────────────────────────────
+const EXAMPLE_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMzQ1IiwibmFtZSI6IkFsaWNlIFRlbXBsZSIsImVtYWlsIjoiYWxpY2VAdGVtcGxlLmRldiIsInJvbGUiOiJhZG1pbiIsImlzcyI6Imh0dHBzOi8vYXV0aC50ZW1wbGUuZGV2IiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVtcGxlLmRldiIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDM2MDAwLCJuYmYiOjE3MDAwMDAwMDAsImp0aSI6ImFiY2RlZjEyMzQ1NiJ9.fake_signature_for_demo_only_not_real';
+
+// ── BASE64URL DECODE ─────────────────────────────────────────────
+function b64urlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4 !== 0) str += '=';
+  try {
+    const bin = atob(str);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch(e) {
+    return atob(str);
+  }
+}
+
+// ── JSON SYNTAX HIGHLIGHT ────────────────────────────────────────
+function highlightJSON(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+    let cls = 'json-number';
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) { cls = 'json-key'; }
+      else { cls = 'json-string'; }
+    } else if (/true|false/.test(match)) { cls = 'json-bool'; }
+    else if (/null/.test(match)) { cls = 'json-null'; }
+    return `<span class="${cls}">${match}</span>`;
+  });
+}
+
+// ── DECODE LOGIC ─────────────────────────────────────────────────
+let lastDecoded = null;
+
+function decodeJWT(token) {
+  token = token.trim();
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Invalid JWT structure — must have exactly 3 parts separated by dots');
+
+  let header, payload;
+  try { header = JSON.parse(b64urlDecode(parts[0])); } catch(e) { throw new Error('Invalid header — not valid JSON after base64url decode'); }
+  try { payload = JSON.parse(b64urlDecode(parts[1])); } catch(e) { throw new Error('Invalid payload — not valid JSON after base64url decode'); }
+  const signature = parts[2];
+
+  return { header, payload, signature, raw: token };
+}
+
+function renderResults(decoded) {
+  lastDecoded = decoded;
+  const { header, payload, signature } = decoded;
+  const now = Math.floor(Date.now() / 1000);
+
+  // Show panels
+  document.getElementById('resultsWrap').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('inputError').style.display = 'none';
+
+  // Header JSON
+  document.getElementById('headerJson').innerHTML = highlightJSON(header);
+
+  // Payload JSON
+  document.getElementById('payloadJson').innerHTML = highlightJSON(payload);
+
+  // Signature
+  document.getElementById('sigRaw').textContent = signature;
+
+  // ── SECURITY FLAGS ────────────────────────────────────────────
+  const flags = [];
+  const alg = (header.alg || '').toLowerCase();
+
+  // alg:none — CRITICAL
+  if (alg === 'none' || alg === '') {
+    flags.push({ level: 'critical', title: 'CRITICAL: Algorithm None', sub: 'Algorithm "none" means the signature is not verified — any payload can be accepted. This is a major security vulnerability (CVE-2015-9235).' });
+  }
+
+  // Algorithm classification
+  if (alg && alg !== 'none') {
+    const strong = ['rs256','rs384','rs512','es256','es384','es512','ps256','ps384','ps512'];
+    const symmetric = ['hs256','hs384','hs512'];
+    if (strong.includes(alg)) {
+      flags.push({ level: 'ok', title: `Algorithm: ${header.alg} — Asymmetric / Strong`, sub: 'Uses public-key cryptography. Server holds the private key; anyone can verify with the public key.' });
+    } else if (symmetric.includes(alg)) {
+      flags.push({ level: 'warn', title: `Algorithm: ${header.alg} — Symmetric Key (HMAC)`, sub: 'The same secret is used to sign and verify. Keep it out of client-side code and rotate regularly.' });
+    } else {
+      flags.push({ level: 'info', title: `Algorithm: ${header.alg} — Unknown / Non-standard`, sub: 'Unrecognized algorithm. Verify your JWT library supports it and that it meets your security requirements.' });
+    }
+  }
+
+  // exp claim
+  if (payload.exp !== undefined) {
+    const diff = payload.exp - now;
+    if (diff < 0) {
+      const ago = formatTimeDiff(Math.abs(diff));
+      flags.push({ level: 'critical', title: `EXPIRED — ${ago} ago`, sub: `exp: ${new Date(payload.exp * 1000).toUTCString()}` });
+    } else {
+      const inTime = formatTimeDiff(diff);
+      flags.push({ level: diff < 300 ? 'warn' : 'ok', title: `Expires in ${inTime}`, sub: `exp: ${new Date(payload.exp * 1000).toUTCString()}` });
+    }
+  } else {
+    flags.push({ level: 'warn', title: 'No Expiry (exp) Claim', sub: 'Without an expiry, this token is valid indefinitely — a security risk if ever compromised.' });
+  }
+
+  // iat claim
+  if (payload.iat !== undefined) {
+    const ago = formatTimeDiff(now - payload.iat);
+    flags.push({ level: 'info', title: `Issued ${ago} ago`, sub: `iat: ${new Date(payload.iat * 1000).toUTCString()}` });
+  }
+
+  // nbf claim
+  if (payload.nbf !== undefined) {
+    if (now < payload.nbf) {
+      flags.push({ level: 'warn', title: 'Token Not Yet Valid (nbf)', sub: `Not valid before: ${new Date(payload.nbf * 1000).toUTCString()}` });
+    } else {
+      flags.push({ level: 'ok', title: 'nbf — Token Is Active', sub: `Valid since: ${new Date(payload.nbf * 1000).toUTCString()}` });
+    }
+  }
+
+  // Check for sensitive fields in payload
+  const sensitiveKeys = ['password','passwd','secret','key','token','api_key','apikey','access_token','refresh_token','private_key'];
+  const foundSensitive = Object.keys(payload).filter(k => sensitiveKeys.includes(k.toLowerCase()));
+  if (foundSensitive.length > 0) {
+    flags.push({ level: 'critical', title: `Sensitive Data in Payload: ${foundSensitive.join(', ')}`, sub: 'JWT payloads are base64-encoded, NOT encrypted. Anyone can read this data. Never store secrets in JWTs.' });
+  }
+
+  // Render flags
+  document.getElementById('flagList').innerHTML = flags.map(f => `
+    <div class="flag-row ${f.level === 'critical' ? 'flag-critical-row' : ''}">
+      <div class="flag-dot ${f.level === 'critical' ? 'flag-critical' : f.level === 'warn' ? 'flag-warn' : f.level === 'ok' ? 'flag-ok' : 'flag-info'}"></div>
+      <div class="flag-body">
+        <div class="flag-title" style="color:${f.level==='critical'?'var(--red)':f.level==='warn'?'var(--orange)':f.level==='ok'?'var(--green)':'var(--teal)'}">${f.title}</div>
+        <div class="flag-sub">${f.sub}</div>
+      </div>
+    </div>`).join('');
+
+  // ── STANDARD CLAIMS TABLE ─────────────────────────────────────
+  const stdClaims = [
+    { key: 'iss', label: 'Issuer', fmt: v => String(v) },
+    { key: 'sub', label: 'Subject', fmt: v => String(v) },
+    { key: 'aud', label: 'Audience', fmt: v => Array.isArray(v) ? v.join(', ') : String(v) },
+    { key: 'exp', label: 'Expiry', fmt: v => `${new Date(v*1000).toUTCString()} (${v})` },
+    { key: 'iat', label: 'Issued At', fmt: v => `${new Date(v*1000).toUTCString()} (${v})` },
+    { key: 'nbf', label: 'Not Before', fmt: v => `${new Date(v*1000).toUTCString()} (${v})` },
+    { key: 'jti', label: 'JWT ID', fmt: v => String(v) },
+  ];
+  const rows = stdClaims.filter(c => payload[c.key] !== undefined);
+  if (rows.length > 0) {
+    document.getElementById('claimsPanel').style.display = 'block';
+    document.getElementById('claimsBody').innerHTML = rows.map(c => `<tr><td>${c.key}</td><td>${c.label}</td><td>${c.fmt(payload[c.key])}</td></tr>`).join('');
+  } else {
+    document.getElementById('claimsPanel').style.display = 'none';
+  }
+}
+
+function formatTimeDiff(secs) {
+  if (secs < 60) return `${secs}s`;
+  if (secs < 3600) return `${Math.floor(secs/60)}m ${secs%60}s`;
+  if (secs < 86400) return `${Math.floor(secs/3600)}h ${Math.floor((secs%3600)/60)}m`;
+  if (secs < 2592000) return `${Math.floor(secs/86400)} day${Math.floor(secs/86400)!==1?'s':''}`;
+  if (secs < 31536000) return `${Math.floor(secs/2592000)} month${Math.floor(secs/2592000)!==1?'s':''}`;
+  return `${Math.floor(secs/31536000)} year${Math.floor(secs/31536000)!==1?'s':''}`;
+}
+
+// ── UI EVENTS ────────────────────────────────────────────────────
+function runDecode() {
+  const raw = document.getElementById('jwtInput').value.trim();
+  if (!raw) return;
+  try {
+    const decoded = decodeJWT(raw);
+    renderResults(decoded);
+  } catch(e) {
+    document.getElementById('inputError').textContent = e.message;
+    document.getElementById('inputError').style.display = 'block';
+    document.getElementById('resultsWrap').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+  }
+}
+
+document.getElementById('decodeBtn').addEventListener('click', runDecode);
+
+document.getElementById('jwtInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runDecode(); }
+});
+
+document.getElementById('jwtInput').addEventListener('input', () => {
+  document.getElementById('inputError').style.display = 'none';
+});
+
+function loadExample() {
+  document.getElementById('jwtInput').value = EXAMPLE_JWT;
+  document.getElementById('inputError').style.display = 'none';
+  runDecode();
+}
+
+document.getElementById('exampleBtn').addEventListener('click', loadExample);
+document.getElementById('loadExampleLink').addEventListener('click', loadExample);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('jwtInput').value = '';
+  document.getElementById('resultsWrap').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('inputError').style.display = 'none';
+  lastDecoded = null;
+});
+
+// ── COPY / EXPORT ────────────────────────────────────────────────
+function copyPanel(id) {
+  const el = document.getElementById(id);
+  const text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function exportTXT() {
+  if (!lastDecoded) return;
+  const { header, payload, signature } = lastDecoded;
+  const lines = [
+    'JWT DECODER — Temple Tools',
+    '='.repeat(50),
+    '',
+    'HEADER',
+    JSON.stringify(header, null, 2),
+    '',
+    'PAYLOAD',
+    JSON.stringify(payload, null, 2),
+    '',
+    'SIGNATURE (raw base64url)',
+    signature,
+    '',
+    `Decoded: ${new Date().toUTCString()}`,
+  ];
+  downloadFile('jwt-decoded.txt', lines.join('\n'), 'text/plain');
+  showToast('Exported TXT');
+}
+
+function exportJSON() {
+  if (!lastDecoded) return;
+  const { header, payload, signature } = lastDecoded;
+  const out = { decoded_at: new Date().toISOString(), header, payload, signature };
+  downloadFile('jwt-decoded.json', JSON.stringify(out, null, 2), 'application/json');
+  showToast('Exported JSON');
+}
+
+function downloadFile(name, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = name;
+  a.click();
+}
+</script>
+</body>
+</html>
