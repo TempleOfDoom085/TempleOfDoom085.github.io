@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSINT Dashboard — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --red: #ff4d4d; --red-dim: rgba(255,77,77,0.12); --red-mid: rgba(255,77,77,0.35);
+  --orange: #ff8800; --gold: #c8a96e;
+  --text: #f5f2ec; --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-red: rgba(255,77,77,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-red);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--red); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--red); text-transform: uppercase; }
+
+/* HERO */
+.hero { position: relative; overflow: hidden; padding: 5rem 2.5rem 4rem; text-align: center; border-bottom: 1px solid var(--border-red); }
+.hero-canvas { position: absolute; inset: 0; opacity: 0.15; }
+.hero-content { position: relative; z-index: 1; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--red); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1;
+  text-shadow: 0 0 40px rgba(255,77,77,0.4); animation: glitch 4.5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(255,77,77,0.4); transform: none; }
+  92% { text-shadow: -3px 0 rgba(255,77,77,0.9), 3px 0 rgba(255,136,0,0.5); transform: skewX(-1.5deg); }
+  93% { text-shadow: 3px 0 rgba(255,77,77,0.9), -3px 0 rgba(255,136,0,0.5); transform: skewX(1deg); }
+  94% { text-shadow: 0 0 40px rgba(255,77,77,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+/* MAIN */
+.main { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--red); text-transform: uppercase; margin-bottom: 0.75rem; }
+
+/* PANEL */
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--red-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; }
+
+/* INPUT */
+.input-row { display: flex; gap: 0.75rem; }
+input.domain-input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border-red);
+  color: var(--text); font-family: var(--mono); font-size: 0.9rem;
+  padding: 0.85rem 1rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+input.domain-input:focus { border-color: var(--red); box-shadow: 0 0 12px rgba(255,77,77,0.15); }
+input.domain-input::placeholder { color: var(--text-faint); }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0 1.5rem; background: transparent; border: 1px solid var(--red);
+  color: var(--red); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--red); color: var(--bg); box-shadow: 0 0 20px rgba(255,77,77,0.35); }
+.btn:active { transform: scale(0.97); }
+.input-error { font-family: var(--mono); font-size: 0.7rem; color: #ff6b6b; margin-top: 0.5rem; display: none; }
+
+/* PROGRESS */
+.progress-steps { display: flex; gap: 0; margin-top: 1.5rem; }
+.progress-step { flex: 1; text-align: center; padding: 0.6rem 0.3rem; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); border-bottom: 2px solid var(--border); transition: all 0.3s; }
+.progress-step.active { color: var(--red); border-color: var(--red); }
+.progress-step.done { color: rgba(255,77,77,0.45); border-color: rgba(255,77,77,0.2); }
+.progress-step.error { color: #ffaa00; border-color: rgba(255,170,0,0.4); }
+
+/* THREAT GAUGE */
+.gauge-wrap { display: flex; flex-direction: column; align-items: center; padding: 0.5rem 0 1rem; }
+canvas#gaugeCanvas { display: block; }
+.gauge-score-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.25em; color: var(--text-faint); text-transform: uppercase; margin-top: 0.25rem; }
+.gauge-verdict { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-top: 0.25rem; }
+
+/* GRID */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.three-col { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; }
+@media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } .three-col { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 420px) { .three-col { grid-template-columns: 1fr; } }
+
+/* STAT CARD */
+.stat-card { background: var(--bg3); border: 1px solid var(--border); padding: 1rem; }
+.stat-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 0.3rem; }
+.stat-val { font-family: var(--mono); font-size: 0.85rem; color: var(--red); word-break: break-all; }
+
+/* DNS / RECORD ROWS */
+.rec-type-head { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--red); text-transform: uppercase; margin-bottom: 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border-red); }
+.rec-row { font-family: var(--mono); font-size: 0.75rem; padding: 0.4rem 0.7rem; background: var(--bg3); border-left: 2px solid var(--border-red); color: var(--text-dim); margin-bottom: 0.25rem; word-break: break-all; transition: border-color 0.2s; }
+.rec-row:hover { border-color: var(--red); color: var(--text); }
+.rec-section { margin-bottom: 1rem; }
+
+/* SUBDOMAINS */
+.sub-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.sub-badge { font-family: var(--mono); font-size: 0.7rem; padding: 0.3rem 0.65rem; border: 1px solid rgba(255,77,77,0.25); color: var(--text-dim); background: rgba(255,77,77,0.03); transition: all 0.2s; cursor: default; }
+.sub-badge:hover { border-color: var(--red); color: var(--text); }
+.sub-count { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); margin-bottom: 0.75rem; }
+
+/* PORTS */
+.ports-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.port-badge { font-family: var(--mono); font-size: 0.72rem; padding: 0.35rem 0.65rem; border: 1px solid rgba(255,77,77,0.25); color: var(--red); background: rgba(255,77,77,0.03); cursor: default; transition: all 0.2s; }
+.port-badge:hover { background: rgba(255,77,77,0.08); }
+.port-svc { display: block; font-size: 0.55rem; color: var(--text-faint); letter-spacing: 0.1em; margin-top: 0.1rem; }
+.cve-badge { font-family: var(--mono); font-size: 0.7rem; padding: 0.3rem 0.7rem; margin: 0.2rem 0; border-left: 2px solid var(--red); background: rgba(255,77,77,0.05); color: #ff8888; display: block; }
+
+/* CERT */
+.cert-field { display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.cert-field:last-child { border-bottom: none; }
+.cert-key { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em; color: var(--text-faint); text-transform: uppercase; min-width: 100px; padding-top: 0.1rem; }
+.cert-val { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); word-break: break-all; flex: 1; }
+.cert-good { color: #00ff88; }
+.cert-warn { color: #ffaa00; }
+.cert-bad { color: var(--red); }
+
+/* SPINNER */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 3.5rem 1rem; }
+.empty-state-icon { font-size: 3rem; opacity: 0.12; margin-bottom: 1rem; }
+.empty-state-text { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-faint); }
+
+.faint { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); }
+
+footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
+footer a { color: var(--red); text-decoration: none; }
+
+@media (max-width: 600px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .input-row { flex-direction: column; }
+  .btn { padding: 0.8rem; }
+  .hero { padding: 3.5rem 1.2rem 3rem; }
+  .progress-step { font-size: 0.5rem; padding: 0.5rem 0.2rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-center">Temple Tools</span>
+  <span class="nav-right">OSINT Dashboard</span>
+</nav>
+
+<section class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-label">Tool 03 / Open Source Intelligence</div>
+    <h1 class="hero-title">OSINT Dashboard</h1>
+    <p class="hero-sub">Subdomains · DNS Security · Infrastructure · Threat Score</p>
+  </div>
+</section>
+
+<main class="main">
+
+  <!-- INPUT -->
+  <div class="panel">
+    <div class="section-label">Target Domain</div>
+    <div class="input-row">
+      <input type="text" class="domain-input" id="domainInput" placeholder="e.g. example.com" spellcheck="false" autocomplete="off">
+      <button class="btn" id="launchBtn">Launch Recon</button>
+    </div>
+    <div class="input-error" id="inputError"></div>
+    <div class="progress-steps" id="progressSteps" style="display:none">
+      <div class="progress-step" id="step-dns">DNS</div>
+      <div class="progress-step" id="step-certs">Certs</div>
+      <div class="progress-step" id="step-ports">Ports</div>
+      <div class="progress-step" id="step-score">Score</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsWrap" style="display:none">
+
+    <!-- THREAT GAUGE -->
+    <div class="panel" id="panelGauge">
+      <div class="panel-title">Threat Score</div>
+      <div class="gauge-wrap">
+        <canvas id="gaugeCanvas" width="320" height="180"></canvas>
+        <div class="gauge-score-label">Threat Score</div>
+        <div class="gauge-verdict" id="gaugeVerdict"></div>
+      </div>
+    </div>
+
+    <!-- INFRA STATS -->
+    <div class="panel">
+      <div class="panel-title">Infrastructure Overview</div>
+      <div class="three-col" id="infraStats"></div>
+    </div>
+
+    <!-- TWO-COL: DNS RECORDS + DNS SECURITY -->
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-title">DNS Records</div>
+        <div id="dnsRecords"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">DNS Security</div>
+        <div id="dnsSecurity"></div>
+      </div>
+    </div>
+
+    <!-- SUBDOMAINS -->
+    <div class="panel" id="panelSubs">
+      <div class="panel-title">Subdomains via Certificate Transparency</div>
+      <div id="subsContent"></div>
+    </div>
+
+    <!-- TWO-COL: PORTS + CERT -->
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-title">Open Ports & CVEs</div>
+        <div id="portsContent"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">TLS Certificate</div>
+        <div id="certContent"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="empty-state">
+    <div class="empty-state-icon">◈</div>
+    <div class="empty-state-text">Enter a domain to begin intelligence gathering</div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="../index.html">Temple Tools</a> &nbsp;/&nbsp; OSINT Dashboard &nbsp;&nbsp;·&nbsp;&nbsp; Google DNS · crt.sh · Shodan InternetDB · Client-Side
+</footer>
+
+<script>
+// ── HERO CANVAS ─────────────────────────────────────────────
+(function(){
+  const c = document.getElementById('heroCanvas');
+  const ctx = c.getContext('2d');
+  const chars = '0123456789ABCDEF◈◎⬡';
+  let cols, drops;
+  function resize(){
+    c.width = c.offsetWidth; c.height = c.offsetHeight;
+    cols = Math.floor(c.width / 18);
+    drops = Array.from({length:cols},()=>-(Math.random()*(c.height/18)));
+  }
+  resize(); window.addEventListener('resize', resize);
+  setInterval(()=>{
+    ctx.fillStyle='rgba(10,10,12,0.08)';
+    ctx.fillRect(0,0,c.width,c.height);
+    drops.forEach((y,i)=>{
+      ctx.fillStyle = Math.random()>0.92 ? 'rgba(255,136,0,0.8)' : 'rgba(255,77,77,0.55)';
+      ctx.font='13px monospace';
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*18, y*18);
+      drops[i] = (y > c.height/18+5 && Math.random()>0.975) ? 0 : y+0.5;
+    });
+  }, 40);
+})();
+
+// ── HELPERS ──────────────────────────────────────────────────
+function setStep(id, state){ const el=document.getElementById('step-'+id); if(el) el.className='progress-step '+state; }
+function validateDomain(d){ return /^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63})*\.[A-Za-z]{2,}$/.test(d); }
+
+async function dnsQuery(domain, type){
+  try { const r=await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`); return r.ok ? await r.json() : null; }
+  catch(e){ return null; }
+}
+
+const PORT_SERVICES = {
+  21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',110:'POP3',143:'IMAP',
+  443:'HTTPS',445:'SMB',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',6379:'Redis',
+  8080:'HTTP-Alt',8443:'HTTPS-Alt',27017:'MongoDB',9200:'Elasticsearch',5900:'VNC',
+  11211:'Memcached',2375:'Docker',6443:'K8s'
+};
+
+// ── THREAT GAUGE ─────────────────────────────────────────────
+function drawGauge(score){
+  const canvas = document.getElementById('gaugeCanvas');
+  const ctx = canvas.getContext('2d');
+  const W=320, H=180, cx=160, cy=155, R=120;
+  ctx.clearRect(0,0,W,H);
+
+  // Background arc zones
+  const zones = [
+    { from: Math.PI, to: Math.PI*1.25, color:'#00cc55' },  // LOW 0-25
+    { from: Math.PI*1.25, to: Math.PI*1.5, color:'#cccc00' }, // MED 25-50
+    { from: Math.PI*1.5, to: Math.PI*1.75, color:'#ff8800' }, // HIGH 50-75
+    { from: Math.PI*1.75, to: Math.PI*2, color:'#ff3333' },  // CRIT 75-100
+  ];
+  zones.forEach(z=>{
+    ctx.beginPath(); ctx.arc(cx,cy,R,z.from,z.to);
+    ctx.lineWidth=18; ctx.strokeStyle=z.color+'33'; ctx.stroke();
+  });
+  // Zone borders
+  zones.forEach(z=>{
+    ctx.beginPath(); ctx.arc(cx,cy,R,z.from,z.from+0.01);
+    ctx.lineWidth=2; ctx.strokeStyle='rgba(10,10,12,0.8)'; ctx.stroke();
+  });
+
+  // Score arc
+  const clampedScore = Math.max(0,Math.min(100,score));
+  const needleAngle = Math.PI + (clampedScore/100)*Math.PI;
+  const activeColor = clampedScore<=25?'#00cc55':clampedScore<=50?'#cccc00':clampedScore<=75?'#ff8800':'#ff3333';
+
+  ctx.beginPath(); ctx.arc(cx,cy,R,Math.PI,needleAngle);
+  ctx.lineWidth=18; ctx.strokeStyle=activeColor; ctx.stroke();
+  ctx.shadowColor=activeColor; ctx.shadowBlur=12; ctx.stroke(); ctx.shadowBlur=0;
+
+  // Tick marks
+  for(let i=0;i<=10;i++){
+    const a = Math.PI + (i/10)*Math.PI;
+    const inner=R-8, outer=R+8;
+    ctx.beginPath();
+    ctx.moveTo(cx+inner*Math.cos(a), cy+inner*Math.sin(a));
+    ctx.lineTo(cx+outer*Math.cos(a), cy+outer*Math.sin(a));
+    ctx.strokeStyle='rgba(245,242,236,0.15)'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // Needle animation
+  let currentAngle = Math.PI;
+  const targetAngle = needleAngle;
+  function animateNeedle(){
+    ctx.clearRect(0,0,W,H);
+    // Redraw background
+    zones.forEach(z=>{
+      ctx.beginPath(); ctx.arc(cx,cy,R,z.from,z.to);
+      ctx.lineWidth=18; ctx.strokeStyle=z.color+'33'; ctx.stroke();
+    });
+    // Filled arc up to current
+    ctx.beginPath(); ctx.arc(cx,cy,R,Math.PI,currentAngle);
+    ctx.lineWidth=18; ctx.strokeStyle=activeColor; ctx.stroke();
+    ctx.shadowColor=activeColor; ctx.shadowBlur=12; ctx.stroke(); ctx.shadowBlur=0;
+    // Ticks
+    for(let i=0;i<=10;i++){
+      const a=Math.PI+(i/10)*Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(cx+(R-8)*Math.cos(a),cy+(R-8)*Math.sin(a));
+      ctx.lineTo(cx+(R+8)*Math.cos(a),cy+(R+8)*Math.sin(a));
+      ctx.strokeStyle='rgba(245,242,236,0.15)'; ctx.lineWidth=1; ctx.stroke();
+    }
+    // Needle line
+    ctx.save(); ctx.translate(cx,cy);
+    ctx.rotate(currentAngle);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(R-24,0);
+    ctx.strokeStyle='#f5f2ec'; ctx.lineWidth=2; ctx.stroke();
+    ctx.restore();
+    // Center dot
+    ctx.beginPath(); ctx.arc(cx,cy,6,0,Math.PI*2);
+    ctx.fillStyle=activeColor; ctx.fill();
+    // Score number
+    ctx.font='bold 42px Rajdhani, sans-serif';
+    ctx.fillStyle=activeColor; ctx.textAlign='center';
+    ctx.fillText(Math.round(clampedScore*(currentAngle-Math.PI)/Math.PI), cx, cy-24);
+
+    if(currentAngle < targetAngle){
+      currentAngle = Math.min(targetAngle, currentAngle+0.03);
+      requestAnimationFrame(animateNeedle);
+    }
+  }
+  animateNeedle();
+
+  // Verdict
+  const verdicts = [{max:25,label:'LOW',color:'#00cc55'},{max:50,label:'MEDIUM',color:'#cccc00'},{max:75,label:'HIGH',color:'#ff8800'},{max:100,label:'CRITICAL',color:'#ff3333'}];
+  const v = verdicts.find(v=>clampedScore<=v.max)||verdicts[3];
+  const vEl = document.getElementById('gaugeVerdict');
+  vEl.textContent = v.label; vEl.style.color = v.color;
+}
+
+function calcThreatScore(openPorts, cves, subdomains, hasSPF, hasDMARC, hasDNSSEC){
+  let score = 0;
+  score += Math.min(30, openPorts * 3);
+  score += Math.min(40, cves * 10);
+  score += Math.min(10, Math.floor(subdomains / 5));
+  if(!hasSPF) score += 5;
+  if(!hasDMARC) score += 5;
+  if(!hasDNSSEC) score += 5;
+  score += Math.min(5, openPorts > 5 ? 5 : 0);
+  return Math.min(100, score);
+}
+
+// ── CERT TRANSPARENCY (crt.sh) ───────────────────────────────
+async function fetchSubdomains(domain){
+  try {
+    const r = await fetch(`https://crt.sh/?q=%25.${encodeURIComponent(domain)}&output=json`);
+    if(!r.ok) return [];
+    const data = await r.json();
+    const subs = new Set();
+    data.forEach(entry=>{
+      const names = (entry.name_value||'').split('\n');
+      names.forEach(n=>{ n=n.trim().toLowerCase(); if(n && n.endsWith('.'+domain) && !n.includes('*')) subs.add(n); });
+    });
+    return [...subs].sort();
+  } catch(e){ return []; }
+}
+
+// ── TLS CERT DETAILS ─────────────────────────────────────────
+async function fetchCertDetails(domain){
+  try {
+    const r = await fetch(`https://crt.sh/?q=${encodeURIComponent(domain)}&output=json`);
+    if(!r.ok) return null;
+    const data = await r.json();
+    if(!data.length) return null;
+    // Sort by most recent
+    data.sort((a,b)=>new Date(b.not_before)-new Date(a.not_before));
+    return data[0];
+  } catch(e){ return null; }
+}
+
+// ── MAIN ─────────────────────────────────────────────────────
+document.getElementById('launchBtn').addEventListener('click', startOSINT);
+document.getElementById('domainInput').addEventListener('keydown', e=>{ if(e.key==='Enter') startOSINT(); });
+
+async function startOSINT(){
+  const raw = document.getElementById('domainInput').value.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+  const errEl = document.getElementById('inputError');
+  if(!raw){ errEl.textContent='Enter a domain name.'; errEl.style.display='block'; return; }
+  if(!validateDomain(raw)){ errEl.textContent='Invalid domain. Example: example.com'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  document.getElementById('domainInput').value = raw;
+
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('resultsWrap').style.display='none';
+  const stepsEl = document.getElementById('progressSteps');
+  stepsEl.style.display='flex';
+  ['dns','certs','ports','score'].forEach(s=>setStep(s,''));
+
+  // ── DNS PHASE ────────────────────────────────────────────
+  setStep('dns','active');
+  const [resA, resMX, resNS, resTXT, resCNAME, resAAAA] = await Promise.all([
+    dnsQuery(raw,'A'), dnsQuery(raw,'MX'), dnsQuery(raw,'NS'),
+    dnsQuery(raw,'TXT'), dnsQuery(raw,'CNAME'), dnsQuery(raw,'AAAA')
+  ]);
+  const aRecords = resA?.Answer||[];
+  const primaryIP = aRecords[0]?.data||null;
+  setStep('dns','done');
+
+  // DNS security checks
+  const txtRecords = resTXT?.Answer?.map(r=>r.data)||[];
+  const hasSPF = txtRecords.some(t=>t.includes('v=spf'));
+  const hasDMARC = !!(await dnsQuery(`_dmarc.${raw}`,'TXT'))?.Answer?.length;
+  const hasDNSSEC = !!(resA?.AD); // AD flag = authenticated data
+
+  // ── CERT PHASE ───────────────────────────────────────────
+  setStep('certs','active');
+  const [subdomains, certDetail] = await Promise.all([fetchSubdomains(raw), fetchCertDetails(raw)]);
+  setStep('certs', 'done');
+
+  // ── PORTS PHASE ──────────────────────────────────────────
+  setStep('ports','active');
+  let shodan = null;
+  if(primaryIP){
+    try { const r=await fetch(`https://internetdb.shodan.io/${primaryIP}`); if(r.ok) shodan=await r.json(); } catch(e){}
+  }
+  setStep('ports','done');
+
+  // ── SCORE PHASE ──────────────────────────────────────────
+  setStep('score','active');
+  const openPorts = shodan?.ports?.length||0;
+  const cves = shodan?.vulns?.length||0;
+  const score = calcThreatScore(openPorts, cves, subdomains.length, hasSPF, hasDMARC, hasDNSSEC);
+  setStep('score','done');
+
+  // ── RENDER ───────────────────────────────────────────────
+  document.getElementById('resultsWrap').style.display='block';
+
+  // Gauge
+  setTimeout(()=>drawGauge(score), 50);
+
+  // Infra stats
+  document.getElementById('infraStats').innerHTML = [
+    { label:'Primary IP', val: primaryIP||'N/A' },
+    { label:'Open Ports', val: openPorts },
+    { label:'CVEs Found', val: cves },
+    { label:'Subdomains', val: subdomains.length },
+    { label:'SPF Record', val: hasSPF ? '✓ Present' : '✗ Missing' },
+    { label:'DMARC', val: hasDMARC ? '✓ Present' : '✗ Missing' },
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.val}</div></div>`).join('');
+
+  // DNS Records
+  const dnsEl = document.getElementById('dnsRecords');
+  const dnsMap = { A:aRecords, AAAA:resAAAA?.Answer||[], MX:resMX?.Answer||[], NS:resNS?.Answer||[], CNAME:resCNAME?.Answer||[] };
+  dnsEl.innerHTML = Object.entries(dnsMap).map(([type,recs])=>{
+    if(!recs.length) return '';
+    return `<div class="rec-section"><div class="rec-type-head">${type}</div>${recs.map(r=>`<div class="rec-row">${r.data}</div>`).join('')}</div>`;
+  }).join('') || '<div class="faint">No records resolved.</div>';
+
+  // DNS Security
+  const secEl = document.getElementById('dnsSecurity');
+  const spfRec = txtRecords.find(t=>t.includes('v=spf'));
+  const dmarcRec = hasDMARC ? 'DMARC policy found' : null;
+  secEl.innerHTML = [
+    { key:'SPF', ok:hasSPF, detail: spfRec ? spfRec.substring(0,60)+'…' : 'No SPF record found.' },
+    { key:'DMARC', ok:hasDMARC, detail: dmarcRec||'No DMARC record at _dmarc.' },
+    { key:'DNSSEC', ok:hasDNSSEC, detail: hasDNSSEC ? 'AD flag set — responses authenticated.' : 'No DNSSEC validation detected.' },
+    { key:'IPv6', ok:!!(resAAAA?.Answer?.length), detail: resAAAA?.Answer?.[0]?.data||'No AAAA record.' },
+  ].map(s=>`<div class="cert-field">
+    <div class="cert-key">${s.key}</div>
+    <div class="cert-val ${s.ok?'cert-good':'cert-warn'}">${s.ok?'✓':'✗'} ${s.detail}</div>
+  </div>`).join('');
+
+  // Subdomains
+  const subsEl = document.getElementById('subsContent');
+  if(subdomains.length){
+    subsEl.innerHTML = `<div class="sub-count">${subdomains.length} unique subdomain${subdomains.length!==1?'s':''} found via cert transparency</div>
+      <div class="sub-grid">${subdomains.slice(0,80).map(s=>`<div class="sub-badge">${s}</div>`).join('')}
+      ${subdomains.length>80?`<div class="faint" style="margin-top:0.5rem">…and ${subdomains.length-80} more</div>`:''}</div>`;
+  } else {
+    subsEl.innerHTML = '<div class="faint">No subdomains found in certificate transparency logs.</div>';
+  }
+
+  // Ports + CVEs
+  const portsEl = document.getElementById('portsContent');
+  if(shodan?.ports?.length){
+    portsEl.innerHTML = `<div class="ports-grid">${shodan.ports.map(p=>`<div class="port-badge">${p}<span class="port-svc">${PORT_SERVICES[p]||'unknown'}</span></div>`).join('')}</div>`;
+    if(shodan.vulns?.length){
+      portsEl.innerHTML += `<div style="margin-top:1rem"><div class="rec-type-head" style="margin-bottom:0.5rem">CVEs Detected</div>${shodan.vulns.map(v=>`<span class="cve-badge">${v}</span>`).join('')}</div>`;
+    }
+    if(shodan.tags?.length){
+      portsEl.innerHTML += `<div style="margin-top:0.75rem" class="faint">${shodan.tags.join(' · ')}</div>`;
+    }
+  } else {
+    portsEl.innerHTML = '<div class="faint">No port data. IP may not be indexed in Shodan InternetDB.</div>';
+  }
+
+  // TLS Cert
+  const certEl = document.getElementById('certContent');
+  if(certDetail){
+    const issued = new Date(certDetail.not_before);
+    const expires = new Date(certDetail.not_after);
+    const now = new Date();
+    const daysLeft = Math.ceil((expires-now)/(1000*60*60*24));
+    const certStatus = daysLeft < 0 ? 'cert-bad' : daysLeft < 30 ? 'cert-warn' : 'cert-good';
+    certEl.innerHTML = [
+      { k:'Issuer', v: certDetail.issuer_name||'N/A' },
+      { k:'Subject', v: certDetail.name_value||raw },
+      { k:'Issued', v: issued.toLocaleDateString() },
+      { k:'Expires', v: expires.toLocaleDateString() },
+      { k:'Days Left', v: daysLeft < 0 ? 'EXPIRED' : daysLeft+' days', cls: certStatus },
+      { k:'Serial', v: certDetail.serial_number||'N/A' },
+    ].map(f=>`<div class="cert-field"><div class="cert-key">${f.k}</div><div class="cert-val ${f.cls||''}">${f.v}</div></div>`).join('');
+  } else {
+    certEl.innerHTML = '<div class="faint">No certificate data found in crt.sh.</div>';
+  }
+}
+</script>
+</body>
+</html>
