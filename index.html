@@ -343,134 +343,6 @@ footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,5
   #tab-game, #tab-patches { padding: 1.5rem; }
 }
 
-/* ═══════════════════════════════════════════
-   v9.0 PORTFOLIO VISUAL OVERHAUL
-   ═══════════════════════════════════════════ */
-
-/* ── ANIMATED MESH GRADIENT HERO ── */
-@keyframes meshShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.hero-left {
-  background: linear-gradient(-45deg, #0f1623, #0a1a2e, #071420, #0f1e30, #060e18);
-  background-size: 400% 400%;
-  animation: meshShift 12s ease infinite;
-}
-.hero-right {
-  background: linear-gradient(-45deg, #141008, #1c1408, #0e0c04, #181208, #120e06);
-  background-size: 400% 400%;
-  animation: meshShift 14s ease infinite reverse;
-}
-
-/* Particle canvas behind hero content */
-#heroBgCanvas {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.55;
-  pointer-events: none;
-}
-.hero-left > *:not(#heroBgCanvas) { position: relative; z-index: 1; }
-
-/* ── GLITCH TITLE EFFECT ── */
-@keyframes glitchA {
-  0%,89%,91%,100% { clip-path: inset(0 0 100% 0); transform: skewX(0deg); }
-  90% { clip-path: inset(20% 0 40% 0); transform: skewX(-4deg); color: var(--neon); }
-}
-@keyframes glitchB {
-  0%,92%,95%,100% { clip-path: inset(100% 0 0 0); transform: skewX(0deg); }
-  93% { clip-path: inset(55% 0 20% 0); transform: skewX(3deg); color: var(--gold-light); }
-}
-.hero-name.glitch { position: relative; }
-.hero-name.glitch::before,
-.hero-name.glitch::after {
-  content: attr(data-text);
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  pointer-events: none;
-}
-.hero-name.glitch::before { animation: glitchA 7s infinite; }
-.hero-name.glitch::after  { animation: glitchB 7s infinite 0.1s; }
-
-/* ── 3D CARD HOVER ── */
-.skill-card, .project-item, .cert-card-full {
-  transform-style: preserve-3d;
-  will-change: transform;
-  transition: transform 0.12s ease, border-color 0.25s, box-shadow 0.25s;
-}
-.skill-card.tilting, .project-item.tilting, .cert-card-full.tilting {
-  transition: none;
-}
-
-/* ── NAV MORPH ON SCROLL ── */
-nav.scrolled {
-  padding: 0.6rem 3rem;
-  background: rgba(14,14,14,0.98);
-  box-shadow: 0 2px 30px rgba(0,0,0,0.8);
-}
-
-/* ── SECTION REVEAL — stagger children ── */
-.stagger-children > * {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.stagger-children.visible > *:nth-child(1) { opacity:1; transform:none; transition-delay: 0s; }
-.stagger-children.visible > *:nth-child(2) { opacity:1; transform:none; transition-delay: 0.1s; }
-.stagger-children.visible > *:nth-child(3) { opacity:1; transform:none; transition-delay: 0.2s; }
-.stagger-children.visible > *:nth-child(4) { opacity:1; transform:none; transition-delay: 0.3s; }
-.stagger-children.visible > *:nth-child(5) { opacity:1; transform:none; transition-delay: 0.4s; }
-.stagger-children.visible > *:nth-child(6) { opacity:1; transform:none; transition-delay: 0.5s; }
-.stagger-children.visible > *:nth-child(n+7) { opacity:1; transform:none; transition-delay: 0.6s; }
-
-/* ── GLOWING SECTION LABELS ── */
-.section-label {
-  position: relative;
-  display: inline-block;
-}
-.section-label::after {
-  content: '';
-  position: absolute;
-  bottom: -4px; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, var(--gold), transparent);
-}
-
-/* ── ENHANCED PROJECT ITEMS ── */
-.project-item {
-  position: relative;
-  overflow: hidden;
-}
-.project-item::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, transparent, var(--gold), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.project-item:hover::before { opacity: 1; }
-
-/* ── ENHANCED EXP ITEMS ── */
-.exp-item {
-  position: relative;
-  overflow: hidden;
-}
-.exp-item::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 2px;
-  background: linear-gradient(180deg, transparent, var(--neon), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.exp-item:hover::before { opacity: 1; }
-
 /* COOKING SECTION */
 #cooking { background: #0a0c08; }
 .cooking-intro { font-size: 1.15rem; font-weight: 300; color: rgba(245,242,236,0.75); line-height: 1.9; margin-bottom: 3rem; }
@@ -800,9 +672,8 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
 <!-- HERO -->
 <div class="hero">
   <div class="hero-left">
-    <canvas id="heroBgCanvas"></canvas>
     <span class="tag tag-cyber">// AI Automation & Cybersecurity</span>
-    <h1 class="hero-name glitch" data-text="Building">Building<br><em>intelligent</em><br>systems.</h1>
+    <h1 class="hero-name">Building<br><em>intelligent</em><br>systems.</h1>
     <p class="hero-desc">Voice AI, workflow automation, and cybersecurity — I design systems that are fast, secure, and built to scale. Currently studying at SNHU with a focus on security operations.</p>
     <a href="#experience" class="hero-cta cta-cyber">View My Work</a>
   </div>
@@ -1138,7 +1009,7 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
         <span class="patch-version-tag">v7.0</span>
         <span class="patch-version-name">The Living Fortress</span>
         <span class="patch-date">March 2026</span>
-        <span class="patch-status prev">PREV</span>
+        <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
       <div class="patch-body open">
