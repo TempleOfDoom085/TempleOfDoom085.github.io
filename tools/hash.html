@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hash Analyzer — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c;
+  --bg2: #0d0d10;
+  --bg3: #111116;
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.12);
+  --green-mid: rgba(0,255,136,0.35);
+  --gold: #c8a96e;
+  --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5);
+  --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06);
+  --border-green: rgba(0,255,136,0.2);
+  --mono: 'Share Tech Mono', monospace;
+  --head: 'Rajdhani', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-green);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--green); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--green); text-transform: uppercase; }
+
+/* HERO */
+.hero {
+  position: relative; overflow: hidden;
+  padding: 5rem 2.5rem 4rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-green);
+}
+.hero-canvas { position: absolute; inset: 0; opacity: 0.18; }
+.hero-content { position: relative; z-index: 1; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.8rem, 6vw, 5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1;
+  color: var(--text);
+  text-shadow: 0 0 40px rgba(0,255,136,0.3);
+  animation: glitch 4s infinite;
+}
+@keyframes glitch {
+  0%,92%,100% { text-shadow: 0 0 40px rgba(0,255,136,0.3); transform: none; }
+  93% { text-shadow: -2px 0 rgba(0,255,136,0.8), 2px 0 rgba(0,255,136,0.4); transform: skewX(-1deg); }
+  94% { text-shadow: 2px 0 rgba(0,255,136,0.8), -2px 0 rgba(0,255,136,0.4); transform: skewX(1deg); }
+  95% { text-shadow: 0 0 40px rgba(0,255,136,0.3); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+/* MAIN */
+.main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+/* SECTION LABEL */
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; margin-bottom: 0.75rem; }
+
+/* PANEL */
+.panel {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 1.75rem; margin-bottom: 1.5rem;
+  position: relative; overflow: hidden;
+}
+.panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green-mid), transparent);
+}
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+/* INPUT */
+.input-row { display: flex; gap: 0.75rem; }
+textarea.hash-input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border-green);
+  color: var(--text); font-family: var(--mono); font-size: 0.9rem;
+  padding: 0.9rem 1rem; resize: none; height: 80px;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+textarea.hash-input:focus { border-color: var(--green); box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+textarea.hash-input::placeholder { color: var(--text-faint); }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0 1.5rem; background: transparent; border: 1px solid var(--green);
+  color: var(--green); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--green); color: var(--bg); box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+.btn:active { transform: scale(0.97); }
+
+/* TABS */
+.tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.tab {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.6rem 1.2rem; cursor: pointer; color: var(--text-dim);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+/* HASH TYPE RESULTS */
+.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+.type-card {
+  background: var(--bg3); border: 1px solid var(--border); padding: 0.9rem 1rem;
+  position: relative; overflow: hidden;
+}
+.type-card.match { border-color: var(--green); background: rgba(0,255,136,0.04); }
+.type-card.match::before {
+  content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
+  background: var(--green);
+}
+.type-card-name { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--text-dim); }
+.type-card.match .type-card-name { color: var(--green); }
+.type-card-bits { font-size: 1.3rem; font-weight: 700; color: var(--text-faint); }
+.type-card.match .type-card-bits { color: var(--text); }
+.type-card-conf {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  margin-top: 0.3rem; color: var(--text-faint);
+}
+.type-card.match .type-card-conf { color: rgba(0,255,136,0.7); }
+.no-match { font-family: var(--mono); font-size: 0.8rem; color: var(--text-faint); padding: 0.5rem; }
+
+/* ENTROPY */
+.entropy-display { display: flex; align-items: flex-end; gap: 0.5rem; margin-bottom: 1rem; }
+.entropy-value { font-size: 2.8rem; font-weight: 700; color: var(--green); line-height: 1; }
+.entropy-label { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; color: var(--text-dim); padding-bottom: 0.4rem; }
+.entropy-bar-wrap { background: var(--bg3); border: 1px solid var(--border); height: 10px; border-radius: 0; overflow: hidden; margin-bottom: 1.5rem; }
+.entropy-bar { height: 100%; width: 0; background: linear-gradient(90deg, #00ff88, #00ffcc); transition: width 0.6s ease; box-shadow: 0 0 10px rgba(0,255,136,0.4); }
+
+canvas#byteChart { width: 100% !important; max-height: 180px; display: block; }
+
+.byte-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1.25rem; }
+.byte-stat { background: var(--bg3); border: 1px solid var(--border); padding: 0.75rem; text-align: center; }
+.byte-stat-val { font-size: 1.4rem; font-weight: 700; color: var(--green); }
+.byte-stat-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; color: var(--text-faint); margin-top: 0.2rem; }
+
+/* HIBP */
+.hibp-status {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1.25rem; background: var(--bg3); border: 1px solid var(--border);
+}
+.hibp-icon { font-size: 2.2rem; }
+.hibp-text { flex: 1; }
+.hibp-headline { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.08em; }
+.hibp-sub { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem; }
+.hibp-count { font-family: var(--mono); font-size: 2rem; font-weight: 700; text-align: right; }
+.hibp-safe .hibp-headline, .hibp-safe .hibp-count { color: var(--green); }
+.hibp-safe { border-color: rgba(0,255,136,0.25); }
+.hibp-pwned .hibp-headline, .hibp-pwned .hibp-count { color: #ff4d4d; }
+.hibp-pwned { border-color: rgba(255,77,77,0.25); }
+.hibp-warn .hibp-headline, .hibp-warn .hibp-count { color: #ffaa00; }
+.hibp-warn { border-color: rgba(255,170,0,0.25); }
+.hibp-note { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); margin-top: 1rem; }
+
+/* GENERATE */
+.gen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.gen-row { background: var(--bg3); border: 1px solid var(--border); padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.gen-algo { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.2em; color: var(--green); text-transform: uppercase; }
+.gen-hash { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); word-break: break-all; cursor: pointer; transition: color 0.2s; }
+.gen-hash:hover { color: var(--text); }
+.gen-copy { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; color: var(--text-faint); margin-top: 0.1rem; }
+
+/* PLAINTEXT INPUT */
+.plaintext-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+input.plain-input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border-green);
+  color: var(--text); font-family: var(--mono); font-size: 0.9rem;
+  padding: 0.7rem 1rem; outline: none; transition: border-color 0.2s;
+}
+input.plain-input:focus { border-color: var(--green); }
+input.plain-input::placeholder { color: var(--text-faint); }
+
+/* SPINNER */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 3rem 1rem; }
+.empty-state-icon { font-size: 3rem; opacity: 0.15; margin-bottom: 1rem; }
+.empty-state-text { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-faint); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  background: var(--bg2); border: 1px solid var(--green);
+  color: var(--green); padding: 0.7rem 1.2rem;
+  transform: translateY(100px); opacity: 0; transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* FOOTER */
+footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
+footer a { color: var(--green); text-decoration: none; }
+
+@media (max-width: 600px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .input-row { flex-direction: column; }
+  .btn { padding: 0.8rem; }
+  .byte-stats { grid-template-columns: repeat(2,1fr); }
+  .hero { padding: 3.5rem 1.2rem 3rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-center">Temple Tools</span>
+  <span class="nav-right">Hash Analyzer</span>
+</nav>
+
+<section class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-label">Tool 01 / Hash Analysis</div>
+    <h1 class="hero-title">Hash Analyzer</h1>
+    <p class="hero-sub">Identify · Entropy · Breach Check · Generate</p>
+  </div>
+</section>
+
+<main class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="section-label">Input Hash</div>
+    <div class="input-row">
+      <textarea class="hash-input" id="hashInput" placeholder="Paste a hash string here… e.g. 5f4dcc3b5aa765d61d8327deb882cf99" spellcheck="false"></textarea>
+      <button class="btn" id="analyzeBtn">Analyze</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsWrap" style="display:none">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" data-tab="types">Hash Types</div>
+      <div class="tab" data-tab="entropy">Entropy</div>
+      <div class="tab" data-tab="hibp">Breach Check</div>
+      <div class="tab" data-tab="generate">Generate</div>
+    </div>
+
+    <!-- TYPES TAB -->
+    <div id="tab-types" class="tab-content panel">
+      <div class="panel-title">Possible Hash Types</div>
+      <div id="typeGrid" class="type-grid"></div>
+    </div>
+
+    <!-- ENTROPY TAB -->
+    <div id="tab-entropy" class="tab-content panel" style="display:none">
+      <div class="panel-title">Byte Entropy Analysis</div>
+      <div class="entropy-display">
+        <div class="entropy-value" id="entropyVal">—</div>
+        <div class="entropy-label">bits / byte<br><span style="font-size:0.65rem;opacity:0.5">(max 8.0)</span></div>
+      </div>
+      <div class="entropy-bar-wrap"><div class="entropy-bar" id="entropyBar"></div></div>
+      <canvas id="byteChart"></canvas>
+      <div class="byte-stats">
+        <div class="byte-stat"><div class="byte-stat-val" id="statLen">—</div><div class="byte-stat-label">Characters</div></div>
+        <div class="byte-stat"><div class="byte-stat-val" id="statBytes">—</div><div class="byte-stat-label">Bytes (hex)</div></div>
+        <div class="byte-stat"><div class="byte-stat-val" id="statUniq">—</div><div class="byte-stat-label">Unique Chars</div></div>
+        <div class="byte-stat"><div class="byte-stat-val" id="statChars">—</div><div class="byte-stat-label">Hex Valid</div></div>
+      </div>
+    </div>
+
+    <!-- HIBP TAB -->
+    <div id="tab-hibp" class="tab-content panel" style="display:none">
+      <div class="panel-title">Have I Been Pwned — k-Anonymity Check</div>
+      <div id="hibpResult"></div>
+      <div class="hibp-note">⚠ Only SHA-1 hashes can be checked. The first 5 chars of the hash are sent to HIBP — your full hash is never transmitted.</div>
+    </div>
+
+    <!-- GENERATE TAB -->
+    <div id="tab-generate" class="tab-content panel" style="display:none">
+      <div class="panel-title">Generate Hashes from Plaintext</div>
+      <div class="plaintext-row">
+        <input type="text" class="plain-input" id="plainInput" placeholder="Enter plaintext to hash…">
+        <button class="btn" id="genBtn">Generate</button>
+      </div>
+      <div id="genGrid" class="gen-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY STATE (default) -->
+  <div id="emptyState" class="empty-state">
+    <div class="empty-state-icon">⬡</div>
+    <div class="empty-state-text">Paste a hash above and click Analyze</div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="../index.html">Temple Tools</a> &nbsp;/&nbsp; Hash Analyzer &nbsp;&nbsp;·&nbsp;&nbsp; HIBP API · SubtleCrypto · Client-Side Only
+</footer>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+// ── HERO CANVAS ──────────────────────────────────────────────
+(function() {
+  const c = document.getElementById('heroCanvas');
+  const ctx = c.getContext('2d');
+  const chars = '0123456789ABCDEF';
+  let cols, drops;
+  function resize() {
+    c.width = c.offsetWidth; c.height = c.offsetHeight;
+    cols = Math.floor(c.width / 16);
+    drops = Array(cols).fill(0).map(() => Math.random() * c.height / 16 * -1);
+  }
+  resize(); window.addEventListener('resize', resize);
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(10,10,12,0.07)';
+    ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle = 'rgba(0,255,136,0.6)';
+    ctx.font = '13px monospace';
+    drops.forEach((y,i) => {
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*16, y*16);
+      drops[i] = (y > c.height/16 + 5 && Math.random() > 0.97) ? 0 : y + 0.5;
+    });
+  }, 40);
+})();
+
+// ── HASH TYPE DETECTION ──────────────────────────────────────
+const HASH_TYPES = [
+  { name:'MD5',      bits:'128', regex:/^[0-9a-f]{32}$/i },
+  { name:'SHA-1',    bits:'160', regex:/^[0-9a-f]{40}$/i },
+  { name:'SHA-224',  bits:'224', regex:/^[0-9a-f]{56}$/i },
+  { name:'SHA-256',  bits:'256', regex:/^[0-9a-f]{64}$/i },
+  { name:'SHA-384',  bits:'384', regex:/^[0-9a-f]{96}$/i },
+  { name:'SHA-512',  bits:'512', regex:/^[0-9a-f]{128}$/i },
+  { name:'SHA3-224', bits:'224', regex:/^[0-9a-f]{56}$/i },
+  { name:'SHA3-256', bits:'256', regex:/^[0-9a-f]{64}$/i },
+  { name:'SHA3-512', bits:'512', regex:/^[0-9a-f]{128}$/i },
+  { name:'RIPEMD-160', bits:'160', regex:/^[0-9a-f]{40}$/i },
+  { name:'bcrypt',   bits:'?',   regex:/^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$/ },
+  { name:'scrypt',   bits:'?',   regex:/^\$scrypt\$/ },
+  { name:'Argon2',   bits:'?',   regex:/^\$argon2/ },
+  { name:'NTLM',     bits:'128', regex:/^[0-9a-f]{32}$/i },
+  { name:'CRC32',    bits:'32',  regex:/^[0-9a-f]{8}$/i },
+  { name:'Adler-32', bits:'32',  regex:/^[0-9a-f]{8}$/i },
+  { name:'BLAKE2b',  bits:'512', regex:/^[0-9a-f]{128}$/i },
+  { name:'BLAKE2s',  bits:'256', regex:/^[0-9a-f]{64}$/i },
+  { name:'Whirlpool','bits':'512', regex:/^[0-9a-f]{128}$/i },
+  { name:'Tiger',    bits:'192', regex:/^[0-9a-f]{48}$/i },
+  { name:'MD4',      bits:'128', regex:/^[0-9a-f]{32}$/i },
+  { name:'MD2',      bits:'128', regex:/^[0-9a-f]{32}$/i },
+  { name:'Snefru',   bits:'256', regex:/^[0-9a-f]{64}$/i },
+  { name:'HAVAL',    bits:'256', regex:/^[0-9a-f]{64}$/i },
+];
+
+function detectTypes(hash) {
+  const h = hash.trim();
+  return HASH_TYPES.filter(t => t.regex.test(h));
+}
+
+// ── ENTROPY ──────────────────────────────────────────────────
+function calcEntropy(str) {
+  const freq = {};
+  for (const c of str) freq[c] = (freq[c]||0)+1;
+  const n = str.length;
+  let H = 0;
+  for (const c in freq) { const p = freq[c]/n; H -= p*Math.log2(p); }
+  return H;
+}
+
+function renderByteChart(str) {
+  const freq = new Array(256).fill(0);
+  for (const c of str) freq[c.charCodeAt(0)]++;
+  const canvas = document.getElementById('byteChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 800;
+  const H = 160;
+  canvas.width = W; canvas.height = H;
+  const max = Math.max(...freq);
+  const barW = Math.max(1, Math.floor(W / 256));
+  ctx.clearRect(0,0,W,H);
+  for (let i=0; i<256; i++) {
+    if (!freq[i]) continue;
+    const h = (freq[i]/max)*H;
+    const x = (i/256)*W;
+    ctx.fillStyle = `rgba(0,255,136,${0.3 + 0.7*(freq[i]/max)})`;
+    ctx.fillRect(x, H-h, barW, h);
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display='none');
+    tab.classList.add('active');
+    document.getElementById('tab-'+tab.dataset.tab).style.display='block';
+    if (tab.dataset.tab === 'entropy') {
+      const h = document.getElementById('hashInput').value.trim();
+      if (h) renderByteChart(h);
+    }
+  });
+});
+
+// ── ANALYZE ──────────────────────────────────────────────────
+document.getElementById('analyzeBtn').addEventListener('click', analyze);
+document.getElementById('hashInput').addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); analyze(); } });
+
+function analyze() {
+  const hash = document.getElementById('hashInput').value.trim();
+  if (!hash) return;
+
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('resultsWrap').style.display='block';
+
+  // Activate types tab
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display='none');
+  document.querySelector('[data-tab="types"]').classList.add('active');
+  document.getElementById('tab-types').style.display='block';
+
+  // Types
+  const matches = detectTypes(hash);
+  const grid = document.getElementById('typeGrid');
+  if (matches.length === 0) {
+    grid.innerHTML = '<div class="no-match">No known hash type matched. Check for truncation or encoding.</div>';
+  } else {
+    grid.innerHTML = matches.map(t => `
+      <div class="type-card match">
+        <div class="type-card-name">${t.name}</div>
+        <div class="type-card-bits">${t.bits}<span style="font-size:0.7rem;opacity:0.5"> bit</span></div>
+        <div class="type-card-conf">✓ Regex match</div>
+      </div>`).join('');
+  }
+
+  // Entropy (compute but don't render chart yet — lazy)
+  const H = calcEntropy(hash);
+  document.getElementById('entropyVal').textContent = H.toFixed(3);
+  document.getElementById('entropyBar').style.width = Math.min(100, (H/8)*100)+'%';
+  document.getElementById('statLen').textContent = hash.length;
+  document.getElementById('statBytes').textContent = Math.floor(hash.replace(/\s/g,'').length/2);
+  document.getElementById('statUniq').textContent = new Set(hash).size;
+  document.getElementById('statChars').textContent = /^[0-9a-f]+$/i.test(hash) ? 'Yes' : 'No';
+
+  // Reset generate grid on new analysis
+  document.getElementById('genGrid').innerHTML = '';
+
+  // HIBP check (async)
+  runHIBP(hash);
+}
+
+// ── HIBP ─────────────────────────────────────────────────────
+async function runHIBP(hash) {
+  const el = document.getElementById('hibpResult');
+  const isSHA1 = /^[0-9a-f]{40}$/i.test(hash);
+  if (!isSHA1) {
+    el.innerHTML = `<div class="hibp-status"><div class="hibp-icon" style="opacity:0.4">🔒</div><div class="hibp-text"><div class="hibp-headline" style="color:var(--text-dim)">SHA-1 Required</div><div class="hibp-sub">HIBP k-anonymity check only works with 40-char SHA-1 hashes.</div></div></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="hibp-status"><span class="spinner"></span><span style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim)">Querying HIBP API…</span></div>`;
+  try {
+    const prefix = hash.substring(0,5).toUpperCase();
+    const suffix = hash.substring(5).toUpperCase();
+    const resp = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+    if (!resp.ok) throw new Error('API error');
+    const text = await resp.text();
+    const lines = text.split('\n');
+    let count = 0;
+    for (const line of lines) {
+      const [s, c] = line.trim().split(':');
+      if (s === suffix) { count = parseInt(c,10); break; }
+    }
+    if (count === 0) {
+      el.innerHTML = `<div class="hibp-status hibp-safe"><div class="hibp-icon">🛡️</div><div class="hibp-text"><div class="hibp-headline">Not Found in Breaches</div><div class="hibp-sub">This hash does not appear in the HIBP database.</div></div><div class="hibp-count">0</div></div>`;
+    } else if (count < 100) {
+      el.innerHTML = `<div class="hibp-status hibp-warn"><div class="hibp-icon">⚠️</div><div class="hibp-text"><div class="hibp-headline">Found in Breaches</div><div class="hibp-sub">Seen in ${count.toLocaleString()} password occurrences.</div></div><div class="hibp-count">${count.toLocaleString()}</div></div>`;
+    } else {
+      el.innerHTML = `<div class="hibp-status hibp-pwned"><div class="hibp-icon">🚨</div><div class="hibp-text"><div class="hibp-headline">PWNED — Widely Exposed</div><div class="hibp-sub">Found ${count.toLocaleString()} times. Do not use this password.</div></div><div class="hibp-count">${count.toLocaleString()}</div></div>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div class="hibp-status"><div class="hibp-icon" style="opacity:0.4">⚡</div><div class="hibp-text"><div class="hibp-headline" style="color:var(--text-dim)">Check Failed</div><div class="hibp-sub">Could not reach HIBP API. Check network/CORS.</div></div></div>`;
+  }
+}
+
+// ── GENERATE ─────────────────────────────────────────────────
+document.getElementById('genBtn').addEventListener('click', generateHashes);
+document.getElementById('plainInput').addEventListener('keydown', e => { if(e.key==='Enter') generateHashes(); });
+
+async function sha(algo, text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest(algo, enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function generateHashes() {
+  const plain = document.getElementById('plainInput').value;
+  if (!plain) return;
+  const grid = document.getElementById('genGrid');
+  grid.innerHTML = '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--text-faint)"><span class="spinner"></span> Computing…</div>';
+  const algos = [
+    ['SHA-1',    'SHA-1'],
+    ['SHA-256',  'SHA-256'],
+    ['SHA-384',  'SHA-384'],
+    ['SHA-512',  'SHA-512'],
+  ];
+  const results = await Promise.all(algos.map(async ([label,algo]) => {
+    const h = await sha(algo, plain);
+    return { label, hash: h };
+  }));
+  grid.innerHTML = results.map(r => `
+    <div class="gen-row" data-hash="${r.hash}" title="Click to copy">
+      <div class="gen-algo">${r.label}</div>
+      <div class="gen-hash" onclick="copyHash(this)">${r.hash}</div>
+      <div class="gen-copy">click to copy</div>
+    </div>`).join('');
+}
+
+function copyHash(el) {
+  navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>

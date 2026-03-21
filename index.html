@@ -175,6 +175,41 @@ section { padding: 6rem 3rem; }
 .ptag { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; padding: 0.3rem 0.75rem; border: 1px solid rgba(184,147,58,0.3); color: rgba(184,147,58,0.7); }
 .ptag.neon { border-color: rgba(0,212,255,0.25); color: rgba(0,212,255,0.6); }
 
+/* CYBER TOOLS GRID */
+.cyber-tools-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem; margin-top: 1.5rem;
+}
+.cyber-tool-card {
+  position: relative; padding: 2rem; overflow: hidden; text-decoration: none;
+  color: var(--paper); display: flex; flex-direction: column; gap: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.cyber-tool-card:hover { transform: translateY(-4px); }
+.tool-card-glow {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.cyber-tool-card:hover .tool-card-glow { opacity: 1; }
+.tool-green { }
+.tool-green:hover { border-color: rgba(0,255,136,0.3); box-shadow: 0 0 30px rgba(0,255,136,0.08), inset 0 0 30px rgba(0,255,136,0.03); }
+.tool-green .tool-card-glow { background: radial-gradient(ellipse at top left, rgba(0,255,136,0.07) 0%, transparent 70%); }
+.tool-cyan:hover { border-color: rgba(0,200,255,0.3); box-shadow: 0 0 30px rgba(0,200,255,0.08), inset 0 0 30px rgba(0,200,255,0.03); }
+.tool-cyan .tool-card-glow { background: radial-gradient(ellipse at top left, rgba(0,200,255,0.07) 0%, transparent 70%); }
+.tool-red:hover { border-color: rgba(255,77,77,0.3); box-shadow: 0 0 30px rgba(255,77,77,0.08), inset 0 0 30px rgba(255,77,77,0.03); }
+.tool-red .tool-card-glow { background: radial-gradient(ellipse at top left, rgba(255,77,77,0.07) 0%, transparent 70%); }
+.tool-card-icon { font-size: 1.8rem; margin-bottom: 0.25rem; }
+.tool-green .tool-card-icon { color: rgba(0,255,136,0.8); text-shadow: 0 0 12px rgba(0,255,136,0.5); }
+.tool-cyan .tool-card-icon { color: rgba(0,200,255,0.8); text-shadow: 0 0 12px rgba(0,200,255,0.5); }
+.tool-red .tool-card-icon { color: rgba(255,77,77,0.8); text-shadow: 0 0 12px rgba(255,77,77,0.5); }
+.tool-card-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.25em; color: rgba(245,242,236,0.25); text-transform: uppercase; }
+.tool-card-name { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.05em; }
+.tool-card-desc { font-size: 0.88rem; color: rgba(245,242,236,0.5); line-height: 1.7; margin: 0.25rem 0 0.75rem; flex: 1; }
+.tool-card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.tool-card-cta { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-top: auto; }
+
 /* GAME SECTION */
 #game-section { background: #080b10; padding: 0; }
 .game-header { padding: 4rem 3rem 0; }
@@ -850,6 +885,57 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
         </div>
         <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
       </div>
+    </div>
+
+    <!-- CYBER TOOLS GRID -->
+    <div class="tools-label fade-in">
+      <span class="section-label" style="margin-top:3rem;display:block">04b — Cyber Tools</span>
+      <h3 style="font-family:var(--head);font-size:1.4rem;font-weight:600;color:var(--paper);margin-top:0.5rem">Temple <em>Tools</em> — Live Cyber Utilities</h3>
+    </div>
+    <div class="cyber-tools-grid stagger-children fade-in">
+
+      <a href="tools/hash.html" class="cyber-tool-card tool-green">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon">⬡</div>
+        <div class="tool-card-label">01</div>
+        <div class="tool-card-name">Hash Analyzer</div>
+        <div class="tool-card-desc">Identify hash types, visualize byte entropy, check breach databases via HIBP k-anonymity, and generate hashes from plaintext in real-time.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">MD5 · SHA-1 · SHA-256</span>
+          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">HIBP Integration</span>
+          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">Entropy Analysis</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/recon.html" class="cyber-tool-card tool-cyan">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon">◎</div>
+        <div class="tool-card-label">02</div>
+        <div class="tool-card-name">Network Recon</div>
+        <div class="tool-card-desc">Resolve domains, visualize DNS records as a force graph, geolocate IPs on a live radar, and enumerate open ports via Shodan InternetDB.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">DNS Enumeration</span>
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">Geolocation Radar</span>
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">D3 Force Graph</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/osint.html" class="cyber-tool-card tool-red">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon">◈</div>
+        <div class="tool-card-label">03</div>
+        <div class="tool-card-name">OSINT Dashboard</div>
+        <div class="tool-card-desc">Full domain intelligence — subdomain enumeration via cert transparency, DNS security analysis, port exposure mapping, and a live threat score gauge.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Subdomain Enum</span>
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Threat Scoring</span>
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Cert Transparency</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
     </div>
   </div>
 </section>
@@ -2194,15 +2280,20 @@ document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.obs
 // ── v9.1: YOU DIED EXIT-INTENT ──
 (function() {
   let shown = sessionStorage.getItem('youDiedShown');
+  let timer;
   document.addEventListener('mouseleave', e => {
-    if (e.clientY < 8 && !shown) {
-      shown = true;
-      sessionStorage.setItem('youDiedShown', '1');
-      const overlay = document.getElementById('you-died-overlay');
-      overlay.style.display = 'flex';
-      requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
+    if (e.clientY <= 0 && e.relatedTarget === null && !shown) {
+      timer = setTimeout(() => {
+        if (shown) return;
+        shown = true;
+        sessionStorage.setItem('youDiedShown', '1');
+        const overlay = document.getElementById('you-died-overlay');
+        overlay.style.display = 'flex';
+        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
+      }, 200);
     }
   });
+  document.addEventListener('mouseenter', () => clearTimeout(timer));
 })();
 
 function closeYouDied() {
