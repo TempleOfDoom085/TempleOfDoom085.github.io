@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email OSINT — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --pink: #ff4da6; --pink-dim: rgba(255,77,166,0.12); --pink-mid: rgba(255,77,166,0.35);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-pink: rgba(255,77,166,0.22);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --orange: #ff8800; --yellow: #ffcc00; --green: #00ff88; --cyan: #00c8ff;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-pink);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--pink); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--pink); text-transform: uppercase; }
+
+.hero { position: relative; overflow: hidden; padding: 5rem 2.5rem 4rem; text-align: center; border-bottom: 1px solid var(--border-pink); }
+.hero-canvas { position: absolute; inset: 0; opacity: 0.15; }
+.hero-content { position: relative; z-index: 1; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--pink); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1;
+  text-shadow: 0 0 40px rgba(255,77,166,0.4); animation: glitch 4.5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(255,77,166,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(255,77,166,0.9), 2px 0 rgba(255,77,166,0.4); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(255,77,166,0.9), -2px 0 rgba(255,77,166,0.4); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(255,77,166,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--pink); text-transform: uppercase; margin-bottom: 0.75rem; }
+
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--pink-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); display: flex; align-items: center; gap: 0.75rem; }
+
+/* INPUT */
+.input-row { display: flex; gap: 0.75rem; }
+input.email-input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border-pink);
+  color: var(--text); font-family: var(--mono); font-size: 0.9rem;
+  padding: 0.85rem 1rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+input.email-input:focus { border-color: var(--pink); box-shadow: 0 0 14px rgba(255,77,166,0.15); }
+input.email-input::placeholder { color: var(--text-faint); }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0 1.5rem; background: transparent; border: 1px solid var(--pink);
+  color: var(--pink); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--pink); color: var(--bg); box-shadow: 0 0 20px rgba(255,77,166,0.3); }
+.btn:active { transform: scale(0.97); }
+.btn-sm { padding: 0.4rem 0.85rem; font-size: 0.65rem; }
+.btn-secondary { border-color: var(--border-pink); color: var(--text-dim); }
+.btn-secondary:hover { background: var(--pink-dim); color: var(--pink); box-shadow: none; }
+
+/* SPINNER */
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 0.4rem; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* VALIDATION GRID */
+.val-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 0.75rem; }
+.val-card { background: var(--bg3); border: 1px solid var(--border); padding: 0.85rem 1rem; }
+.val-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 0.3rem; }
+.val-val { font-family: var(--mono); font-size: 0.82rem; color: var(--text); word-break: break-all; }
+.val-ok { border-color: rgba(0,255,136,0.2); }
+.val-ok .val-val { color: var(--green); }
+.val-warn { border-color: rgba(255,136,0,0.2); }
+.val-warn .val-val { color: var(--orange); }
+.val-bad { border-color: rgba(255,77,77,0.2); }
+.val-bad .val-val { color: var(--red); }
+
+/* DNS ROWS */
+.dns-section { margin-bottom: 1.1rem; }
+.dns-type-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em; color: var(--pink); text-transform: uppercase; margin-bottom: 0.35rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border-pink); }
+.dns-rec { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid var(--border); word-break: break-all; }
+.dns-rec:last-child { border-bottom: none; }
+.dns-missing { font-family: var(--mono); font-size: 0.7rem; color: var(--red); padding: 0.35rem 0.6rem; background: rgba(255,77,77,0.05); border: 1px solid rgba(255,77,77,0.2); }
+
+/* DISPOSABLE WARNING */
+.disposable-banner { display: flex; align-items: center; gap: 1rem; padding: 1.1rem; background: rgba(255,77,77,0.06); border: 1px solid rgba(255,77,77,0.3); }
+.disposable-banner-safe { background: rgba(0,255,136,0.04); border-color: rgba(0,255,136,0.25); }
+.disp-icon { font-size: 2rem; flex-shrink: 0; }
+.disp-body { flex: 1; }
+.disp-title { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.08em; }
+.disp-sub { font-family: var(--mono); font-size: 0.67rem; color: var(--text-dim); margin-top: 0.2rem; }
+.disp-bad .disp-title { color: var(--red); }
+.disp-ok .disp-title { color: var(--green); }
+
+/* INVESTIGATION LINKS */
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 0.75rem; }
+.inv-card { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.85rem 1rem; background: var(--bg3); border: 1px solid var(--border-pink); text-decoration: none; transition: all 0.2s; }
+.inv-card:hover { border-color: var(--pink); background: var(--pink-dim); transform: translateY(-2px); }
+.inv-card-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em; color: var(--text-faint); text-transform: uppercase; }
+.inv-card-name { font-size: 0.95rem; font-weight: 600; color: var(--pink); }
+.inv-card-arrow { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); margin-top: auto; }
+
+/* RISK SCORE */
+.risk-row { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+.risk-score-big { font-family: var(--mono); font-size: 3.5rem; font-weight: 700; line-height: 1; }
+.risk-bar-wrap { flex: 1; min-width: 200px; }
+.risk-bar-track { height: 8px; background: var(--bg3); border: 1px solid var(--border); overflow: hidden; margin-bottom: 0.5rem; }
+.risk-bar-fill { height: 100%; transition: width 0.5s ease, background 0.5s ease; }
+.risk-verdict { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.risk-factors { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); margin-top: 0.35rem; line-height: 1.6; }
+
+/* EXPORT BAR */
+.export-bar { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+.export-bar .btn { font-size: 0.65rem; padding: 0.45rem 1rem; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 4rem 1rem; }
+.empty-icon { font-size: 3rem; opacity: 0.12; margin-bottom: 1rem; }
+.empty-text { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-faint); }
+
+/* INPUT ERROR */
+.input-error { font-family: var(--mono); font-size: 0.7rem; color: var(--red); margin-top: 0.5rem; display: none; }
+
+/* STATUS BADGE */
+.status-badge { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em; padding: 0.2rem 0.55rem; text-transform: uppercase; }
+.badge-ok { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--green); }
+.badge-warn { background: rgba(255,136,0,0.1); border: 1px solid rgba(255,136,0,0.3); color: var(--orange); }
+.badge-err { background: rgba(255,77,77,0.1); border: 1px solid rgba(255,77,77,0.3); color: var(--red); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--bg2); border: 1px solid var(--pink); color: var(--pink); font-family: var(--mono); font-size: 0.7rem; padding: 0.7rem 1.2rem; z-index: 200; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; letter-spacing: 0.1em; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+footer { border-top: 1px solid var(--border); padding: 1.5rem 2.5rem; text-align: center; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-faint); }
+footer a { color: var(--pink); text-decoration: none; }
+
+@media (max-width: 600px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .hero { padding: 3.5rem 1.2rem 3rem; }
+  .input-row { flex-direction: column; }
+  .btn { padding: 0.75rem 1rem; }
+}
+@media (max-width: 400px) {
+  .nav-center { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-center">Temple Tools</span>
+  <span class="nav-right">Email OSINT</span>
+</nav>
+
+<section class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-label">Tool 08 / Email Intelligence</div>
+    <h1 class="hero-title">Email OSINT</h1>
+    <p class="hero-sub">Validate &middot; Domain Intel &middot; Breach Links &middot; Disposable Check</p>
+  </div>
+</section>
+
+<main class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="section-label">Email Address</div>
+    <div class="input-row">
+      <input type="email" class="email-input" id="emailInput" placeholder="target@example.com" autocomplete="off" spellcheck="false">
+      <button class="btn" id="scanBtn">Scan</button>
+    </div>
+    <div class="input-error" id="inputError">Please enter a valid email address</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsWrap" style="display:none">
+
+    <div class="export-bar">
+      <button class="btn btn-secondary" onclick="exportTXT()">Export TXT</button>
+      <button class="btn btn-secondary" onclick="exportJSON()">Export JSON</button>
+    </div>
+
+    <!-- 1: EMAIL VALIDATION -->
+    <div class="panel">
+      <div class="panel-title">Email Validation <span class="status-badge badge-ok" id="validBadge">Valid</span></div>
+      <div class="val-grid" id="valGrid"></div>
+    </div>
+
+    <!-- 2: DOMAIN INTELLIGENCE -->
+    <div class="panel">
+      <div class="panel-title">Domain Intelligence <span class="spinner" id="dnsSpinner"></span></div>
+      <div id="dnsResults"></div>
+    </div>
+
+    <!-- 3: DISPOSABLE CHECK -->
+    <div class="panel">
+      <div class="panel-title">Disposable Email Check</div>
+      <div id="dispResult"></div>
+    </div>
+
+    <!-- 4: INVESTIGATION LINKS -->
+    <div class="panel">
+      <div class="panel-title">Investigation Links</div>
+      <div class="inv-grid" id="invGrid"></div>
+    </div>
+
+    <!-- 5: RISK SCORE -->
+    <div class="panel">
+      <div class="panel-title">Risk Score</div>
+      <div class="risk-row">
+        <div class="risk-score-big" id="riskScore">--</div>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar-track"><div class="risk-bar-fill" id="riskBar" style="width:0%"></div></div>
+          <div class="risk-verdict" id="riskVerdict">Analyzing…</div>
+          <div class="risk-factors" id="riskFactors"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">📧</div>
+    <div class="empty-text">Enter an email address above and click Scan</div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="../index.html">Temple Tools</a> &nbsp;/&nbsp; Email OSINT &nbsp;&nbsp;·&nbsp;&nbsp; Google DNS API · Client-Side Only
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HERO CANVAS ─────────────────────────────────────────────────
+(function(){
+  const c = document.getElementById('heroCanvas');
+  const ctx = c.getContext('2d');
+  const chars = '@.abcdefghijklmnopqrstuvwxyz0123456789_-+';
+  let cols, drops;
+  function resize(){ c.width=c.offsetWidth; c.height=c.offsetHeight; cols=Math.floor(c.width/18); drops=Array(cols).fill(0).map(()=>Math.random()*c.height/18*-1); }
+  resize(); window.addEventListener('resize', resize);
+  setInterval(()=>{
+    ctx.fillStyle='rgba(10,10,12,0.08)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(255,77,166,0.5)'; ctx.font='13px monospace';
+    drops.forEach((y,i)=>{ ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,y*18); drops[i]=(y>c.height/18+5&&Math.random()>0.97)?0:y+0.4; });
+  },50);
+})();
+
+// ── DISPOSABLE DOMAIN LIST ───────────────────────────────────────
+const DISPOSABLE_DOMAINS = new Set([
+  'mailinator.com','guerrillamail.com','tempmail.com','10minutemail.com','throwaway.email',
+  'yopmail.com','sharklasers.com','guerrillamailblock.com','grr.la','guerrillamail.info',
+  'spam4.me','trashmail.com','maildrop.cc','dispostable.com','mailnull.com',
+  'spamgourmet.com','trashmail.at','trashmail.io','trashmail.me','discard.email',
+  'fakeinbox.com','mailnesia.com','spamhereplease.com','trbvm.com','klzlk.com',
+  '0-mail.com','bobmail.info','bofthew.com','brefmail.com','chacuo.net',
+  'cool.fr.nf','courriel.fr.nf','courrieltemporaire.com','discard.cf','discard.ga',
+  'discard.gq','discard.ml','discard.tk','discardmail.com','discardmail.de',
+  'filzmail.com','fr.nf','gowikibooks.com','gowikicampus.com','gowikicars.com',
+  'gowikifilms.com','gowikigames.com','gowikimusic.com','gowikinetwork.com',
+  'gowikitravel.com','gowikitv.com','harakirimail.com','hat-geld.de',
+  'incognitomail.com','incognitomail.net','incognitomail.org','jetable.com',
+  'jetable.fr.nf','jetable.net','jetable.org','kasmail.com','keepmymail.com',
+  'kitten-mittons.com','knockoutmail.com','kulturbetrieb.info','kurzepost.de',
+  'letthemeatspam.com','link2mail.net','litedrop.com','lol.ovpn.to','lookugly.com',
+  'lortemail.dk','lr78.com','m21.cc','mail.mezimages.net','mega.zik.dj',
+  'meltmail.com','mierdamail.com','mintemail.com','mjukglass.nu','moakt.com',
+  'mobi.web.id','moburl.com','mockmail.com','moncourrier.fr.nf','monemail.fr.nf',
+  'monmail.fr.nf','tempr.email','getairmail.com','throwam.com','spamgourmet.net',
+  'spam.la','mytrashmail.com','mailsac.com','getnada.com','nwytg.com',
+  'spambox.us','spamfree24.org','trashmail.net','trashmail.org','trashmail.at',
+  'deadaddress.com','spamevader.com','mailfreeonline.com','getonemail.com'
+]);
+
+// ── EMAIL VALIDATION ─────────────────────────────────────────────
+function validateEmail(email) {
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  if (!valid) return null;
+
+  const atIdx = email.lastIndexOf('@');
+  const user = email.substring(0, atIdx);
+  const domain = email.substring(atIdx + 1).toLowerCase();
+  const tld = domain.substring(domain.lastIndexOf('.') + 1);
+  const hasPlus = user.includes('+');
+  const plusTag = hasPlus ? user.substring(user.indexOf('+') + 1) : null;
+  const baseUser = hasPlus ? user.substring(0, user.indexOf('+')) : user;
+
+  return { valid, user, domain, tld, hasPlus, plusTag, baseUser, full: email };
+}
+
+// ── DNS LOOKUP (Google DoH) ──────────────────────────────────────
+async function dnsLookup(name, type) {
+  try {
+    const resp = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data;
+  } catch(e) { return null; }
+}
+
+// ── MAIN SCAN ───────────────────────────────────────────────────
+let lastResult = null;
+
+async function runScan() {
+  const raw = document.getElementById('emailInput').value.trim();
+  document.getElementById('inputError').style.display = 'none';
+
+  const parsed = validateEmail(raw);
+  if (!parsed) {
+    document.getElementById('inputError').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('resultsWrap').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+
+  // Initialize result object
+  lastResult = { email: raw, parsed, dns: {}, disposable: false, riskScore: 0, riskFactors: [] };
+
+  // ── 1: EMAIL VALIDATION ───────────────────────────────────────
+  const badge = document.getElementById('validBadge');
+  badge.textContent = 'Valid';
+  badge.className = 'status-badge badge-ok';
+
+  const cards = [
+    { label: 'Format', val: 'Valid', cls: 'val-ok' },
+    { label: 'Username', val: parsed.baseUser, cls: '' },
+    { label: 'Domain', val: parsed.domain, cls: '' },
+    { label: 'TLD', val: '.' + parsed.tld, cls: '' },
+    { label: 'Plus Tag', val: parsed.hasPlus ? `+${parsed.plusTag}` : 'None', cls: parsed.hasPlus ? 'val-warn' : 'val-ok', note: parsed.hasPlus ? 'Tagged alias detected' : '' },
+  ];
+
+  document.getElementById('valGrid').innerHTML = cards.map(c => `
+    <div class="val-card ${c.cls}">
+      <div class="val-label">${c.label}</div>
+      <div class="val-val">${c.val}</div>
+      ${c.note ? `<div style="font-family:var(--mono);font-size:0.58rem;color:var(--orange);margin-top:0.2rem">${c.note}</div>` : ''}
+    </div>`).join('');
+
+  // ── 2: DOMAIN INTEL ───────────────────────────────────────────
+  document.getElementById('dnsSpinner').style.display = '';
+  document.getElementById('dnsResults').innerHTML = '<div style="font-family:var(--mono);font-size:0.72rem;color:var(--text-faint)">Querying DNS records…</div>';
+
+  const domain = parsed.domain;
+  const [mxData, aData, txtData, dmarcData] = await Promise.all([
+    dnsLookup(domain, 'MX'),
+    dnsLookup(domain, 'A'),
+    dnsLookup(domain, 'TXT'),
+    dnsLookup('_dmarc.' + domain, 'TXT'),
+  ]);
+
+  document.getElementById('dnsSpinner').style.display = 'none';
+
+  // Process MX
+  const mxRecords = mxData?.Answer?.filter(r => r.type === 15) || [];
+  lastResult.dns.mx = mxRecords.map(r => r.data);
+  if (mxRecords.length === 0) lastResult.riskFactors.push({ text: 'No MX records', pts: 10 });
+
+  // Process A
+  const aRecords = aData?.Answer?.filter(r => r.type === 1) || [];
+  lastResult.dns.a = aRecords.map(r => r.data);
+
+  // Process TXT / SPF
+  const txtRecords = txtData?.Answer?.filter(r => r.type === 16) || [];
+  const spfRecord = txtRecords.find(r => r.data.includes('v=spf1'));
+  lastResult.dns.spf = spfRecord ? spfRecord.data : null;
+  if (!spfRecord) lastResult.riskFactors.push({ text: 'No SPF record', pts: 15 });
+
+  // Process DMARC
+  const dmarcRecords = dmarcData?.Answer?.filter(r => r.type === 16) || [];
+  const dmarcRecord = dmarcRecords.find(r => r.data.includes('v=DMARC1'));
+  lastResult.dns.dmarc = dmarcRecord ? dmarcRecord.data : null;
+  if (!dmarcRecord) lastResult.riskFactors.push({ text: 'No DMARC record', pts: 15 });
+
+  // Render DNS
+  let dnsHtml = '';
+
+  dnsHtml += `<div class="dns-section"><div class="dns-type-label">MX Records (Mail Servers)</div>`;
+  if (mxRecords.length > 0) {
+    dnsHtml += mxRecords.map(r => `<div class="dns-rec">${r.data}</div>`).join('');
+  } else {
+    dnsHtml += `<div class="dns-missing">⚠ No MX records — this domain may not accept email</div>`;
+  }
+  dnsHtml += `</div>`;
+
+  dnsHtml += `<div class="dns-section"><div class="dns-type-label">SPF Record (Sender Policy)</div>`;
+  if (spfRecord) {
+    dnsHtml += `<div class="dns-rec" style="color:var(--green)">${spfRecord.data.replace(/"/g,'')}</div>`;
+  } else {
+    dnsHtml += `<div class="dns-missing">⚠ No SPF record — domain has no sender policy. Risk of spoofing.</div>`;
+  }
+  dnsHtml += `</div>`;
+
+  dnsHtml += `<div class="dns-section"><div class="dns-type-label">DMARC Record</div>`;
+  if (dmarcRecord) {
+    dnsHtml += `<div class="dns-rec" style="color:var(--green)">${dmarcRecord.data.replace(/"/g,'')}</div>`;
+  } else {
+    dnsHtml += `<div class="dns-missing">⚠ No DMARC record — domain has no email authentication policy.</div>`;
+  }
+  dnsHtml += `</div>`;
+
+  dnsHtml += `<div class="dns-section"><div class="dns-type-label">A Record (Primary IP)</div>`;
+  if (aRecords.length > 0) {
+    dnsHtml += aRecords.map(r => `<div class="dns-rec">${r.data}</div>`).join('');
+  } else {
+    dnsHtml += `<div class="dns-rec" style="color:var(--text-faint)">No A record found</div>`;
+  }
+  dnsHtml += `</div>`;
+
+  document.getElementById('dnsResults').innerHTML = dnsHtml;
+
+  // ── 3: DISPOSABLE CHECK ───────────────────────────────────────
+  const isDisposable = DISPOSABLE_DOMAINS.has(domain);
+  lastResult.disposable = isDisposable;
+  if (isDisposable) lastResult.riskFactors.push({ text: 'Disposable domain', pts: 20 });
+
+  if (isDisposable) {
+    document.getElementById('dispResult').innerHTML = `
+      <div class="disposable-banner disp-bad">
+        <div class="disp-icon">🚨</div>
+        <div class="disp-body">
+          <div class="disp-title">Disposable / Throwaway Email Domain</div>
+          <div class="disp-sub">${domain} is a known temporary email service. These addresses are commonly used for fraud, abuse, and bypassing verification.</div>
+        </div>
+      </div>`;
+  } else {
+    document.getElementById('dispResult').innerHTML = `
+      <div class="disposable-banner disposable-banner-safe disp-ok">
+        <div class="disp-icon">✅</div>
+        <div class="disp-body">
+          <div class="disp-title">Not a Known Disposable Domain</div>
+          <div class="disp-sub">${domain} is not in the known disposable email domain database.</div>
+        </div>
+      </div>`;
+  }
+
+  // ── 4: INVESTIGATION LINKS ────────────────────────────────────
+  const enc = encodeURIComponent(raw);
+  const links = [
+    { label: 'Breach Check', name: 'Have I Been Pwned', url: `https://haveibeenpwned.com/account/${enc}`, icon: '🔑' },
+    { label: 'Search Engine', name: 'Google Search', url: `https://www.google.com/search?q=${enc}`, icon: '🔍' },
+    { label: 'Leaked Data', name: 'DeHashed', url: `https://www.dehashed.com/search?query=${enc}`, icon: '🗃️' },
+    { label: 'Email Verify', name: 'Hunter.io', url: `https://hunter.io/email-verifier/${enc}`, icon: '🎯' },
+    { label: 'Email Lookup', name: 'Epieos', url: `https://epieos.com/?q=${enc}&t=email`, icon: '🕵️' },
+    { label: 'Social Search', name: 'Sherlock', url: `https://www.google.com/search?q=site:twitter.com+OR+site:github.com+OR+site:linkedin.com+"${enc}"`, icon: '🌐' },
+  ];
+
+  document.getElementById('invGrid').innerHTML = links.map(l => `
+    <a class="inv-card" href="${l.url}" target="_blank" rel="noopener noreferrer">
+      <div class="inv-card-label">${l.label}</div>
+      <div class="inv-card-name">${l.icon} ${l.name}</div>
+      <div class="inv-card-arrow">Open →</div>
+    </a>`).join('');
+
+  // ── 5: RISK SCORE ─────────────────────────────────────────────
+  let riskScore = 0;
+  lastResult.riskFactors.forEach(f => riskScore += f.pts);
+  riskScore = Math.min(100, riskScore);
+  lastResult.riskScore = riskScore;
+
+  const riskColor = riskScore >= 50 ? '#ff4d4d' : riskScore >= 25 ? '#ff8800' : riskScore >= 10 ? '#ffcc00' : '#00ff88';
+  const riskLabel = riskScore >= 60 ? 'HIGH RISK' : riskScore >= 35 ? 'MEDIUM RISK' : riskScore >= 15 ? 'LOW RISK' : 'CLEAN';
+
+  document.getElementById('riskScore').textContent = riskScore;
+  document.getElementById('riskScore').style.color = riskColor;
+  document.getElementById('riskBar').style.width = riskScore + '%';
+  document.getElementById('riskBar').style.background = riskColor;
+  document.getElementById('riskVerdict').textContent = riskLabel;
+  document.getElementById('riskVerdict').style.color = riskColor;
+
+  if (lastResult.riskFactors.length > 0) {
+    document.getElementById('riskFactors').innerHTML = lastResult.riskFactors.map(f =>
+      `+${f.pts} pts — ${f.text}`).join('<br>');
+  } else {
+    document.getElementById('riskFactors').textContent = 'No risk factors detected';
+  }
+}
+
+// ── EVENTS ───────────────────────────────────────────────────────
+document.getElementById('scanBtn').addEventListener('click', runScan);
+document.getElementById('emailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runScan();
+});
+document.getElementById('emailInput').addEventListener('input', () => {
+  document.getElementById('inputError').style.display = 'none';
+});
+
+// ── EXPORT ───────────────────────────────────────────────────────
+function exportTXT() {
+  if (!lastResult) return;
+  const r = lastResult;
+  const lines = [
+    'EMAIL OSINT — Temple Tools',
+    '='.repeat(50),
+    `Date: ${new Date().toUTCString()}`,
+    '',
+    `Email: ${r.email}`,
+    `Username: ${r.parsed.user}`,
+    `Domain: ${r.parsed.domain}`,
+    `TLD: .${r.parsed.tld}`,
+    `Plus Tag: ${r.parsed.hasPlus ? '+' + r.parsed.plusTag : 'None'}`,
+    '',
+    'DNS',
+    `MX: ${r.dns.mx?.join(', ') || 'None'}`,
+    `SPF: ${r.dns.spf || 'Not found'}`,
+    `DMARC: ${r.dns.dmarc || 'Not found'}`,
+    `A Records: ${r.dns.a?.join(', ') || 'None'}`,
+    '',
+    `Disposable: ${r.disposable ? 'YES' : 'No'}`,
+    `Risk Score: ${r.riskScore}/100`,
+    `Risk Factors: ${r.riskFactors.map(f => f.text + ' (+' + f.pts + ')').join(', ') || 'None'}`,
+  ];
+  downloadFile('email-osint.txt', lines.join('\n'), 'text/plain');
+  showToast('Exported TXT');
+}
+
+function exportJSON() {
+  if (!lastResult) return;
+  downloadFile('email-osint.json', JSON.stringify(lastResult, null, 2), 'application/json');
+  showToast('Exported JSON');
+}
+
+function downloadFile(name, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = name;
+  a.click();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
