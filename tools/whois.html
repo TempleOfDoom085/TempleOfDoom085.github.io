@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whois Lookup — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #00d4aa; --c-dim: rgba(0,212,170,0.08); --c-mid: rgba(0,212,170,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(0,212,170,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88; --orange: #ff7722; --yellow: #ffd700;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(0,212,170,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(0,212,170,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(0,212,170,0.9), 2px 0 rgba(255,77,166,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(0,212,170,0.9), -2px 0 rgba(255,77,166,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(0,212,170,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+.input-row { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; }
+.whois-input {
+  flex: 1; min-width: 260px; background: var(--bg3); border: 1px solid var(--border-c);
+  color: var(--text); font-family: var(--mono); font-size: 1.05rem;
+  padding: 0.8rem 1.1rem; outline: none; transition: border-color 0.2s; letter-spacing: 0.05em;
+}
+.whois-input:focus { border-color: var(--c); }
+.whois-input::placeholder { color: var(--text-faint); }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.6rem 1.6rem; cursor: pointer; transition: all 0.2s; background: none;
+  border: 1px solid var(--c); color: var(--c); white-space: nowrap;
+}
+.btn:hover { background: var(--c-dim); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.error-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--red); margin-top: 0.6rem; }
+
+/* Loading */
+.loading-wrap { text-align: center; padding: 2rem; display: none; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border-c); border-top-color: var(--c); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: var(--mono); font-size: 0.75rem; color: var(--text-faint); letter-spacing: 0.1em; }
+
+/* Info grid */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+.info-card { background: var(--bg3); border: 1px solid var(--border); padding: 0.9rem 1.1rem; }
+.info-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.35rem; }
+.info-value { font-family: var(--mono); font-size: 0.85rem; color: var(--text); word-break: break-all; line-height: 1.4; }
+.info-value.accent { color: var(--c); }
+.expiry-ok    { color: var(--green); }
+.expiry-warn  { color: var(--orange); }
+.expiry-crit  { color: var(--red); }
+
+/* Nameservers */
+.ns-list { font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); line-height: 2; }
+
+/* Status */
+.status-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.status-badge {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
+  padding: 0.2rem 0.55rem; background: rgba(0,212,170,0.07); border: 1px solid rgba(0,212,170,0.2);
+  color: var(--c); border-radius: 2px;
+}
+
+/* Raw toggle */
+.raw-toggle-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.4rem 1rem; border: 1px solid var(--border); background: none; color: var(--text-faint);
+  cursor: pointer; transition: all 0.2s; margin-top: 1rem;
+}
+.raw-toggle-btn:hover { border-color: var(--c); color: var(--c); }
+.raw-output {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.7;
+  background: var(--bg3); border: 1px solid var(--border); padding: 1rem;
+  max-height: 400px; overflow-y: auto; margin-top: 0.75rem;
+  white-space: pre-wrap; word-break: break-all; display: none;
+}
+
+/* Examples */
+.quick-examples { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.qe-btn {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em;
+  padding: 0.3rem 0.7rem; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+}
+.qe-btn:hover { border-color: var(--c); color: var(--c); background: var(--c-dim); }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+
+@media (max-width: 600px) {
+  nav { padding: 1rem 1.25rem; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .panel { padding: 1.25rem; }
+  .input-row { flex-direction: column; }
+  .whois-input { min-width: 0; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">whois</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — domain intelligence</div>
+  <div class="hero-title">WHOIS</div>
+  <div class="hero-sub">registrar · creation & expiry · nameservers · registrant · status codes</div>
+</div>
+
+<div class="main">
+
+  <!-- Quick Examples -->
+  <div class="panel">
+    <div class="panel-title">Quick Examples</div>
+    <div class="quick-examples">
+      <button class="qe-btn" onclick="setInput('google.com')">google.com</button>
+      <button class="qe-btn" onclick="setInput('cloudflare.com')">cloudflare.com</button>
+      <button class="qe-btn" onclick="setInput('github.com')">github.com</button>
+      <button class="qe-btn" onclick="setInput('8.8.8.8')">8.8.8.8</button>
+      <button class="qe-btn" onclick="setInput('1.1.1.1')">1.1.1.1</button>
+      <button class="qe-btn" onclick="setInput('shodan.io')">shodan.io</button>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="panel">
+    <div class="panel-title">Domain / IP Lookup</div>
+    <div class="input-row">
+      <input class="whois-input" id="whois-input" type="text" placeholder="example.com or 192.168.1.1" spellcheck="false"
+        onkeydown="if(event.key==='Enter')lookup()">
+      <button class="btn" id="lookup-btn" onclick="lookup()">Lookup</button>
+    </div>
+    <div class="error-msg" id="error-msg" style="display:none;"></div>
+  </div>
+
+  <div class="loading-wrap" id="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-text">Querying whois database...</div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-area" style="display:none;">
+
+    <div class="panel" id="main-info-panel">
+      <div class="panel-title">Registration Info</div>
+      <div class="info-grid" id="info-grid"></div>
+
+      <div id="ns-wrap" style="display:none; margin-top:1rem;">
+        <div class="info-label" style="margin-bottom:0.4rem;">Name Servers</div>
+        <div class="ns-list" id="ns-list"></div>
+      </div>
+
+      <div id="status-wrap" style="display:none; margin-top:1rem;">
+        <div class="info-label" style="margin-bottom:0.5rem;">Status Codes</div>
+        <div class="status-list" id="status-list"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="raw-panel">
+      <div class="panel-title">Raw Output</div>
+      <button class="raw-toggle-btn" onclick="toggleRaw()">▸ Show Raw Whois</button>
+      <pre class="raw-output" id="raw-output"></pre>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>temple tools — whois lookup &nbsp;·&nbsp; powered by HackerTarget API &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+let rawText = '';
+let rawVisible = false;
+
+function setInput(val) {
+  document.getElementById('whois-input').value = val;
+  lookup();
+}
+
+function lookup() {
+  const q = document.getElementById('whois-input').value.trim().replace(/^https?:\/\//i,'').replace(/\/.*/,'');
+  if (!q) { showError('✕ Enter a domain name or IP address.'); return; }
+
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('loading-wrap').style.display = 'block';
+  document.getElementById('lookup-btn').disabled = true;
+  rawVisible = false;
+
+  fetch(`https://api.hackertarget.com/whois/?q=${encodeURIComponent(q)}`)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(text => {
+      document.getElementById('loading-wrap').style.display = 'none';
+      document.getElementById('lookup-btn').disabled = false;
+      if (text.includes('API count exceeded') || text.includes('error') && text.length < 100) {
+        showError('⚠ Rate limited — HackerTarget allows 1 lookup per domain per hour (free tier). Try again later.');
+        return;
+      }
+      if (text.includes('no results') || text.trim().length < 30) {
+        showError('✕ No whois data found for that query.');
+        return;
+      }
+      rawText = text;
+      parseAndRender(text, q);
+    })
+    .catch(err => {
+      document.getElementById('loading-wrap').style.display = 'none';
+      document.getElementById('lookup-btn').disabled = false;
+      showError('✕ Lookup failed: ' + err.message);
+    });
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function extractField(text, patterns) {
+  for (const pat of patterns) {
+    const m = text.match(new RegExp(pat + '\\s*[:\\s]\\s*(.+)', 'im'));
+    if (m && m[1].trim() && !m[1].trim().startsWith('//')) return m[1].trim();
+  }
+  return null;
+}
+
+function extractMulti(text, patterns) {
+  const results = new Set();
+  for (const pat of patterns) {
+    const re = new RegExp(pat + '\\s*[:\\s]\\s*(.+)', 'gim');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const v = m[1].trim();
+      if (v && !v.startsWith('//')) results.add(v);
+    }
+  }
+  return [...results];
+}
+
+function parseDays(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  return Math.ceil((d - Date.now()) / 86400000);
+}
+
+function expiryClass(days) {
+  if (days === null) return '';
+  if (days < 30)  return 'expiry-crit';
+  if (days < 90)  return 'expiry-warn';
+  return 'expiry-ok';
+}
+
+function parseAndRender(text, query) {
+  // Extract fields
+  const domain     = extractField(text, ['Domain Name', 'domain']) || query;
+  const registrar  = extractField(text, ['Registrar', 'registrar']) || null;
+  const created    = extractField(text, ['Creation Date','Created Date','created','Domain Registration Date']) || null;
+  const updated    = extractField(text, ['Updated Date','Last Updated','Last Modified','last-modified','changed']) || null;
+  const expiry     = extractField(text, ['Registry Expiry Date','Expiration Date','Expiry Date','Expire Date','expires','paid-till']) || null;
+  const registrant = extractField(text, ['Registrant Organization','Registrant Name','org']) || null;
+  const country    = extractField(text, ['Registrant Country','country']) || null;
+  const dnssec     = extractField(text, ['DNSSEC','dnssec']) || null;
+
+  const nameservers = extractMulti(text, ['Name Server','nserver','nameserver']);
+  const statuses    = extractMulti(text, ['Domain Status','status']);
+
+  const days = parseDays(expiry);
+  const daysCls = expiryClass(days);
+  const daysStr = days !== null ? ` <span class="${daysCls}">(${days > 0 ? days + 'd until expiry' : Math.abs(days) + 'd EXPIRED'})</span>` : '';
+
+  // Build info cards
+  const cards = [];
+  cards.push({ label: 'Domain', value: domain.toUpperCase(), accent: true });
+  if (registrar) cards.push({ label: 'Registrar', value: registrar });
+  if (created)   cards.push({ label: 'Created', value: fmtDate(created) });
+  if (updated)   cards.push({ label: 'Last Updated', value: fmtDate(updated) });
+  if (expiry)    cards.push({ label: 'Expires', value: fmtDate(expiry), extra: daysStr });
+  if (registrant) cards.push({ label: 'Registrant', value: registrant });
+  if (country)   cards.push({ label: 'Country', value: country });
+  if (dnssec)    cards.push({ label: 'DNSSEC', value: dnssec });
+
+  document.getElementById('info-grid').innerHTML = cards.map(c =>
+    `<div class="info-card">
+      <div class="info-label">${c.label}</div>
+      <div class="info-value${c.accent ? ' accent' : ''}">${escHtml(c.value)}${c.extra || ''}</div>
+    </div>`
+  ).join('');
+
+  // Name Servers
+  if (nameservers.length) {
+    document.getElementById('ns-wrap').style.display = 'block';
+    document.getElementById('ns-list').innerHTML = nameservers
+      .map(n => `<div>${escHtml(n.toLowerCase())}</div>`).join('');
+  } else {
+    document.getElementById('ns-wrap').style.display = 'none';
+  }
+
+  // Status
+  if (statuses.length) {
+    document.getElementById('status-wrap').style.display = 'block';
+    document.getElementById('status-list').innerHTML = statuses
+      .map(s => `<span class="status-badge">${escHtml(s.split(' ')[0])}</span>`).join('');
+  } else {
+    document.getElementById('status-wrap').style.display = 'none';
+  }
+
+  // Raw output
+  document.getElementById('raw-output').textContent = text;
+  document.getElementById('raw-output').style.display = 'none';
+  document.querySelector('.raw-toggle-btn').textContent = '▸ Show Raw Whois';
+  rawVisible = false;
+
+  document.getElementById('results-area').style.display = 'block';
+  document.getElementById('results-area').scrollIntoView({ behavior: 'smooth' });
+}
+
+function fmtDate(s) {
+  if (!s) return 'N/A';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toISOString().slice(0,10);
+}
+
+function toggleRaw() {
+  rawVisible = !rawVisible;
+  const el = document.getElementById('raw-output');
+  el.style.display = rawVisible ? 'block' : 'none';
+  document.querySelector('.raw-toggle-btn').textContent = rawVisible ? '▾ Hide Raw Whois' : '▸ Show Raw Whois';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

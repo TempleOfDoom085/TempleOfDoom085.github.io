@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Generator — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #00ff88; --c-dim: rgba(0,255,136,0.08); --c-mid: rgba(0,255,136,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(0,255,136,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88; --orange: #ff7722; --yellow: #ffd700;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(0,255,136,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(0,255,136,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(0,255,136,0.9), 2px 0 rgba(255,77,166,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(0,255,136,0.9), -2px 0 rgba(255,77,166,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(0,255,136,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+/* Mode Tabs */
+.mode-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border: 1px solid var(--border-c); width: fit-content; }
+.mode-tab {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.6rem 1.6rem; cursor: pointer; background: none; border: none; color: var(--text-dim);
+  transition: all 0.2s;
+}
+.mode-tab.active { background: var(--c-dim); color: var(--c); }
+.mode-tab:hover:not(.active) { color: var(--text); }
+
+/* Controls */
+.control-group { margin-bottom: 1.25rem; }
+.control-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;
+}
+.control-value { color: var(--c); font-size: 0.8rem; }
+.slider {
+  width: 100%; -webkit-appearance: none; appearance: none; height: 4px;
+  background: var(--border-c); outline: none; cursor: pointer; border-radius: 2px;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+  background: var(--c); cursor: pointer; border-radius: 50%; box-shadow: 0 0 8px rgba(0,255,136,0.5);
+}
+.slider::-moz-range-thumb {
+  width: 16px; height: 16px; background: var(--c); cursor: pointer; border-radius: 50%;
+  border: none; box-shadow: 0 0 8px rgba(0,255,136,0.5);
+}
+
+.checkboxes { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+.check-item { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.check-item input[type="checkbox"] { display: none; }
+.check-box {
+  width: 16px; height: 16px; border: 1px solid var(--border-c); background: var(--bg3);
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
+}
+.check-item input:checked + .check-box { background: var(--c-dim); border-color: var(--c); }
+.check-item input:checked + .check-box::after { content: '✓'; color: var(--c); font-size: 0.65rem; font-family: var(--mono); }
+.check-label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); }
+
+.radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.radio-item { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+.radio-item input[type="radio"] { display: none; }
+.radio-btn {
+  padding: 0.3rem 0.75rem; border: 1px solid var(--border); background: var(--bg3);
+  font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+}
+.radio-item input:checked + .radio-btn { border-color: var(--c); color: var(--c); background: var(--c-dim); }
+
+.toggle-row { display: flex; align-items: center; gap: 0.75rem; }
+.toggle {
+  width: 36px; height: 20px; background: var(--bg3); border: 1px solid var(--border-c);
+  border-radius: 10px; position: relative; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.toggle.on { background: var(--c-dim); border-color: var(--c); }
+.toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; background: var(--text-faint); border-radius: 50%; transition: all 0.2s;
+}
+.toggle.on::after { left: 18px; background: var(--c); }
+.toggle-label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); }
+
+/* Generate button */
+.btn-generate {
+  width: 100%; font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 1rem; cursor: pointer; background: var(--c-dim); border: 1px solid var(--c);
+  color: var(--c); transition: all 0.2s; margin-top: 0.5rem;
+  box-shadow: 0 0 20px rgba(0,255,136,0.1);
+}
+.btn-generate:hover { background: rgba(0,255,136,0.15); box-shadow: 0 0 30px rgba(0,255,136,0.25); }
+
+/* Result items */
+.result-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.result-item {
+  background: var(--bg3); border: 1px solid var(--border); padding: 1rem 1.2rem;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.result-pw {
+  font-family: var(--mono); font-size: 0.9rem; color: var(--text); letter-spacing: 0.05em;
+  flex: 1; min-width: 0; word-break: break-all;
+}
+.result-meta { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; min-width: 120px; }
+.copy-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.3rem 0.8rem; border: 1px solid var(--border-c); background: none; color: var(--c);
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.copy-btn:hover { background: var(--c-dim); }
+.copy-btn.copied { border-color: var(--c); background: var(--c-dim); }
+.strength-bar-wrap { width: 120px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.strength-bar { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+.strength-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.download-btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.55rem 1.4rem; cursor: pointer; background: none; border: 1px solid var(--border-c);
+  color: var(--text-dim); transition: all 0.2s; margin-top: 1rem;
+}
+.download-btn:hover { border-color: var(--c); color: var(--c); background: var(--c-dim); }
+
+.error-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--red); margin-top: 0.6rem; }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+
+@media (max-width: 600px) {
+  nav { padding: 1rem 1.25rem; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .panel { padding: 1.25rem; }
+  .mode-tabs { width: 100%; }
+  .mode-tab { flex: 1; text-align: center; }
+  .result-item { flex-direction: column; align-items: flex-start; }
+  .result-meta { align-items: flex-start; width: 100%; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; }
+  .strength-bar-wrap { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">pwgen</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — credential security</div>
+  <div class="hero-title">PWGEN</div>
+  <div class="hero-sub">secure password & passphrase generation · entropy analysis · crypto-random</div>
+</div>
+
+<div class="main">
+
+  <div class="panel">
+    <div class="panel-title">Configuration</div>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="setMode('password')" id="tab-password">Password</button>
+      <button class="mode-tab" onclick="setMode('passphrase')" id="tab-passphrase">Passphrase</button>
+    </div>
+
+    <!-- Password Mode -->
+    <div id="mode-password">
+      <div class="control-group">
+        <div class="control-label">
+          <span>Length</span>
+          <span class="control-value" id="len-val">16</span>
+        </div>
+        <input type="range" class="slider" id="pw-length" min="8" max="128" value="16" oninput="document.getElementById('len-val').textContent=this.value">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label"><span>Character Sets</span></div>
+        <div class="checkboxes">
+          <label class="check-item"><input type="checkbox" id="opt-upper" checked><span class="check-box"></span><span class="check-label">Uppercase (A-Z)</span></label>
+          <label class="check-item"><input type="checkbox" id="opt-lower" checked><span class="check-box"></span><span class="check-label">Lowercase (a-z)</span></label>
+          <label class="check-item"><input type="checkbox" id="opt-nums" checked><span class="check-box"></span><span class="check-label">Numbers (0-9)</span></label>
+          <label class="check-item"><input type="checkbox" id="opt-syms"><span class="check-box"></span><span class="check-label">Symbols (!@#...)</span></label>
+          <label class="check-item"><input type="checkbox" id="opt-nosim"><span class="check-box"></span><span class="check-label">Exclude Similar (il1Lo0O)</span></label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Count</span>
+          <span class="control-value" id="pw-count-val">3</span>
+        </div>
+        <input type="range" class="slider" id="pw-count" min="1" max="10" value="3" oninput="document.getElementById('pw-count-val').textContent=this.value">
+      </div>
+    </div>
+
+    <!-- Passphrase Mode -->
+    <div id="mode-passphrase" style="display:none;">
+      <div class="control-group">
+        <div class="control-label">
+          <span>Word Count</span>
+          <span class="control-value" id="wc-val">4</span>
+        </div>
+        <input type="range" class="slider" id="pp-words" min="3" max="8" value="4" oninput="document.getElementById('wc-val').textContent=this.value">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label"><span>Separator</span></div>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="sep" value="-" checked><span class="radio-btn">Hyphen ( - )</span></label>
+          <label class="radio-item"><input type="radio" name="sep" value="_"><span class="radio-btn">Underscore ( _ )</span></label>
+          <label class="radio-item"><input type="radio" name="sep" value="."><span class="radio-btn">Dot ( . )</span></label>
+          <label class="radio-item"><input type="radio" name="sep" value=" "><span class="radio-btn">Space</span></label>
+          <label class="radio-item"><input type="radio" name="sep" value=""><span class="radio-btn">None</span></label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="toggle-row">
+          <div class="toggle" id="cap-toggle" onclick="toggleCap()"></div>
+          <span class="toggle-label">Capitalize first letter of each word</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Count</span>
+          <span class="control-value" id="pp-count-val">3</span>
+        </div>
+        <input type="range" class="slider" id="pp-count" min="1" max="10" value="3" oninput="document.getElementById('pp-count-val').textContent=this.value">
+      </div>
+    </div>
+
+    <div class="error-msg" id="gen-error" style="display:none;"></div>
+    <button class="btn-generate" onclick="generate()">⚡ Generate</button>
+  </div>
+
+  <div class="panel" id="results-panel" style="display:none;">
+    <div class="panel-title">Generated Results</div>
+    <div class="result-list" id="result-list"></div>
+    <button class="download-btn" onclick="downloadAll()">↓ Download All as .txt</button>
+  </div>
+
+</div>
+
+<footer>temple tools — password generator &nbsp;·&nbsp; crypto-random · client-side only &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+const WORDS = [
+  'abandon','ability','absence','accent','access','account','achieve','action','active','adapt',
+  'adjust','advance','afford','agency','agent','agree','alarm','album','alert','alien',
+  'align','allow','alpha','alter','ample','anchor','angel','angry','annual','answer',
+  'appeal','apply','arena','argue','arise','armor','around','arrange','arrive','aspect',
+  'assert','asset','assign','assist','assume','attach','audit','avoid','award','aware',
+  'balance','banner','battle','beacon','belief','belong','better','binder','bison','blaze',
+  'blend','block','bloom','blueprint','bold','boost','border','brave','breach','bridge',
+  'bright','broken','budget','buffer','build','bundle','burden','burst','bypass','cabin',
+  'cable','cache','caller','canyon','captain','carbon','carrier','castle','chain','chalk',
+  'charge','cipher','circle','citadel','claim','clarity','clash','clean','clever','climb',
+  'close','cluster','cobalt','code','comet','commit','compact','compile','connect','control',
+  'copy','coral','corner','could','council','counter','cover','craft','crash','create',
+  'credit','cross','crystal','custom','cycle','danger','dagger','dagger','debug','decide',
+  'decode','defend','define','delay','delete','deliver','delta','deploy','depth','design',
+  'detect','device','digital','direct','domain','dragon','drive','durable','dynamic','edge',
+  'elastic','emerge','enable','encode','enforce','engine','enhance','ensure','enter','equal',
+  'escape','event','evolve','exact','expand','expert','export','extend','factor','falcon',
+  'fault','feature','field','filter','finch','flame','flash','fleet','focus','force',
+  'forge','forward','found','frame','frost','fusion','future','gather','ghost','glacier',
+  'global','golden','granite','graph','green','ground','guard','guide','harbor','harvest',
+  'heart','height','hidden','horizon','hybrid','impact','index','inner','input','insight',
+  'invoke','island','isolate','jungle','kernel','laser','launch','layer','leader','legend',
+  'level','light','limit','linear','listen','logic','lunar','manage','marble','master',
+  'matrix','medium','memory','merge','mirror','mobile','module','monitor','motion','native',
+  'network','neural','noble','object','offset','online','origin','output','parser','patch',
+  'pattern','persist','pilot','pixel','planet','portal','power','pragma','probe','process',
+  'proxy','pulse','random','rapid','ready','recall','recover','reduce','relay','render',
+  'repeat','rescue','resolve','result','return','robust','rocket','route','scalar','scope',
+  'secure','select','sender','server','shadow','shield','signal','silent','silver','simple',
+  'source','stable','static','store','storm','stream','string','submit','surge','swift',
+  'system','target','tensor','thread','token','trace','trail','trust','tunnel','turbo',
+  'update','upload','valid','vector','verify','vertex','vision','vital','vault','wave'
+];
+
+let capOn = false;
+let currentMode = 'password';
+let lastResults = [];
+
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('mode-password').style.display = m === 'password' ? 'block' : 'none';
+  document.getElementById('mode-passphrase').style.display = m === 'passphrase' ? 'block' : 'none';
+  document.getElementById('tab-password').classList.toggle('active', m === 'password');
+  document.getElementById('tab-passphrase').classList.toggle('active', m === 'passphrase');
+}
+
+function toggleCap() {
+  capOn = !capOn;
+  document.getElementById('cap-toggle').classList.toggle('on', capOn);
+}
+
+function randInt(max) {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] % max;
+}
+
+function randChar(charset) {
+  return charset[randInt(charset.length)];
+}
+
+function buildCharset() {
+  const SIMILAR = 'il1Lo0O';
+  let cs = '';
+  const noSim = document.getElementById('opt-nosim').checked;
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const nums  = '0123456789';
+  const syms  = '!@#$%^&*()-_=+[]{}|;:,.<>?';
+  if (document.getElementById('opt-upper').checked) cs += upper;
+  if (document.getElementById('opt-lower').checked) cs += lower;
+  if (document.getElementById('opt-nums').checked)  cs += nums;
+  if (document.getElementById('opt-syms').checked)  cs += syms;
+  if (noSim) cs = cs.split('').filter(c => !SIMILAR.includes(c)).join('');
+  return cs;
+}
+
+function generatePassword(len, charset) {
+  let pw = '';
+  for (let i = 0; i < len; i++) pw += randChar(charset);
+  return pw;
+}
+
+function generatePassphrase(wordCount, sep, capitalize) {
+  const words = [];
+  for (let i = 0; i < wordCount; i++) {
+    let w = WORDS[randInt(WORDS.length)];
+    if (capitalize) w = w.charAt(0).toUpperCase() + w.slice(1);
+    words.push(w);
+  }
+  return words.join(sep);
+}
+
+function calcEntropy(pw, isPassphrase, charsetSize, wordCount) {
+  if (isPassphrase) {
+    // bits = wordCount * log2(wordlistSize)
+    return Math.floor(wordCount * Math.log2(WORDS.length));
+  }
+  return Math.floor(pw.length * Math.log2(charsetSize));
+}
+
+function strengthInfo(bits) {
+  if (bits < 40)  return { label: 'Weak',      color: '#ff4d4d', pct: 15 };
+  if (bits < 60)  return { label: 'Fair',      color: '#ff7722', pct: 35 };
+  if (bits < 80)  return { label: 'Good',      color: '#ffd700', pct: 58 };
+  if (bits < 100) return { label: 'Strong',    color: '#00ff88', pct: 78 };
+  return            { label: 'Excellent',  color: '#00d4ff', pct: 100 };
+}
+
+function generate() {
+  const errEl = document.getElementById('gen-error');
+  errEl.style.display = 'none';
+
+  if (currentMode === 'password') {
+    const charset = buildCharset();
+    if (!charset) {
+      errEl.textContent = '✕ Select at least one character set.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const len   = parseInt(document.getElementById('pw-length').value);
+    const count = parseInt(document.getElementById('pw-count').value);
+    lastResults = [];
+    for (let i = 0; i < count; i++) {
+      lastResults.push(generatePassword(len, charset));
+    }
+    renderResults(lastResults, false, charset.length);
+  } else {
+    const wordCount  = parseInt(document.getElementById('pp-words').value);
+    const sep        = document.querySelector('input[name="sep"]:checked').value;
+    const count      = parseInt(document.getElementById('pp-count').value);
+    lastResults = [];
+    for (let i = 0; i < count; i++) {
+      lastResults.push(generatePassphrase(wordCount, sep, capOn));
+    }
+    renderResults(lastResults, true, 0, wordCount);
+  }
+}
+
+function renderResults(list, isPassphrase, charsetSize, wordCount) {
+  const panel = document.getElementById('results-panel');
+  const ul    = document.getElementById('result-list');
+
+  ul.innerHTML = list.map((pw, idx) => {
+    const bits = calcEntropy(pw, isPassphrase, charsetSize, wordCount);
+    const si   = strengthInfo(bits);
+    return `
+      <div class="result-item">
+        <div class="result-pw" id="pw-${idx}">${escHtml(pw)}</div>
+        <div class="result-meta">
+          <button class="copy-btn" id="copybtn-${idx}" onclick="copyPw(${idx})">Copy</button>
+          <div class="strength-bar-wrap">
+            <div class="strength-bar" style="width:${si.pct}%;background:${si.color};"></div>
+          </div>
+          <span class="strength-label" style="color:${si.color};">${si.label} · ${bits} bits</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyPw(idx) {
+  navigator.clipboard.writeText(lastResults[idx]).then(() => {
+    const btn = document.getElementById('copybtn-' + idx);
+    btn.textContent = '✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function downloadAll() {
+  if (!lastResults.length) return;
+  const blob = new Blob([lastResults.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'passwords.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
