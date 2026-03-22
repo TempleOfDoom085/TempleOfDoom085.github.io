@@ -427,12 +427,39 @@ body { cursor: none; }
 a, button, [role="button"], input, textarea, select { cursor: none; }
 #cursor {
   position: fixed; pointer-events: none; z-index: 99999;
-  font-size: 20px; line-height: 1; user-select: none;
-  transform: translate(-50%, -50%) rotate(45deg);
-  filter: drop-shadow(0 0 5px rgba(184,147,58,0.7));
-  transition: font-size 0.15s ease, filter 0.15s ease;
+  width: 20px; height: 20px; user-select: none;
+  transform: translate(-50%, -50%);
+  transition: width 0.15s ease, height 0.15s ease;
 }
-body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(184,147,58,1)); }
+#cursor::before {
+  content: '';
+  position: absolute; inset: 0;
+  border: 1.5px solid rgba(184,147,58,0.85);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(184,147,58,0.45), inset 0 0 4px rgba(184,147,58,0.1);
+  transition: box-shadow 0.15s ease;
+}
+#cursor::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px; height: 3px;
+  background: rgba(184,147,58,0.95);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(184,147,58,0.9),
+    0 -7px 0 0 rgba(184,147,58,0.45),
+    0 7px 0 0 rgba(184,147,58,0.45),
+    -7px 0 0 0 rgba(184,147,58,0.45),
+    7px 0 0 0 rgba(184,147,58,0.45);
+}
+body.cursor-hover #cursor { width: 26px; height: 26px; }
+body.cursor-hover #cursor::before { box-shadow: 0 0 14px rgba(184,147,58,0.75), inset 0 0 6px rgba(184,147,58,0.15); }
+body.cursor-hover #cursor::after { box-shadow: 0 0 10px rgba(184,147,58,1),
+    0 -9px 0 0 rgba(184,147,58,0.55),
+    0 9px 0 0 rgba(184,147,58,0.55),
+    -9px 0 0 0 rgba(184,147,58,0.55),
+    9px 0 0 0 rgba(184,147,58,0.55); }
 @keyframes trailFade {
   0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
   100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
@@ -731,7 +758,7 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
 </div>
 
 <!-- CUSTOM CURSOR -->
-<div id="cursor">⚔</div>
+<div id="cursor"></div>
 
 <!-- YOU DIED OVERLAY -->
 <div id="you-died-overlay">
@@ -782,6 +809,9 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
     <li><a href="#experience">Experience</a></li>
     <li><a href="#skills">Skills</a></li>
     <li><a href="#projects">Projects</a></li>
+    <li><a href="career.html">Timeline</a></li>
+    <li><a href="ctf-writeups.html">CTF</a></li>
+    <li><a href="threat-globe.html">Globe</a></li>
     <li><a href="#certs">Certs</a></li>
     <li><a href="#education">Education</a></li>
     <li><a href="#all-skills">All Skills</a></li>
@@ -1222,7 +1252,58 @@ body.cursor-hover #cursor { font-size: 26px; filter: drop-shadow(0 0 10px rgba(1
     </div>
 
     <div style="text-align:center;margin-top:2.5rem">
-      <a href="tools/index.html" style="display:inline-block;font-family:var(--mono);font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;padding:0.85rem 2.5rem;border:1px solid rgba(0,212,255,0.4);color:rgba(0,212,255,0.8);text-decoration:none;transition:all 0.2s;background:rgba(0,212,255,0.04)" onmouseenter="this.style.background='rgba(0,212,255,0.1)';this.style.borderColor='rgba(0,212,255,0.7)';this.style.color='#00d4ff'" onmouseleave="this.style.background='rgba(0,212,255,0.04)';this.style.borderColor='rgba(0,212,255,0.4)';this.style.color='rgba(0,212,255,0.8)'">View All 17 Tools →</a>
+      <a href="tools/index.html" style="display:inline-block;font-family:var(--mono);font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;padding:0.85rem 2.5rem;border:1px solid rgba(0,212,255,0.4);color:rgba(0,212,255,0.8);text-decoration:none;transition:all 0.2s;background:rgba(0,212,255,0.04)" onmouseenter="this.style.background='rgba(0,212,255,0.1)';this.style.borderColor='rgba(0,212,255,0.7)';this.style.color='#00d4ff'" onmouseleave="this.style.background='rgba(0,212,255,0.04)';this.style.borderColor='rgba(0,212,255,0.4)';this.style.color='rgba(0,212,255,0.8)'">View All 21 Tools →</a>
+    </div>
+
+    <!-- FEATURED PAGES -->
+    <div class="tools-label fade-in" style="margin-top:4rem">
+      <span class="section-label" style="display:block">04c — Featured Pages</span>
+      <h3 style="font-family:var(--head);font-size:1.4rem;font-weight:600;color:var(--paper);margin-top:0.5rem">Beyond the <em>Tools Hub</em></h3>
+    </div>
+    <div class="cyber-tools-grid stagger-children fade-in" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+
+      <a href="threat-globe.html" class="cyber-tool-card" style="border-color:rgba(0,212,255,0.12)" onmouseenter="this.style.borderColor='rgba(0,212,255,0.35)';this.style.boxShadow='0 0 40px rgba(0,212,255,0.1),inset 0 0 30px rgba(0,212,255,0.04)'" onmouseleave="this.style.borderColor='rgba(0,212,255,0.12)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(0,212,255,0.08) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(0,212,255,0.85);text-shadow:0 0 14px rgba(0,212,255,0.6)">🌐</div>
+        <div class="tool-card-label">VIZ</div>
+        <div class="tool-card-name">Live Threat Globe</div>
+        <div class="tool-card-desc">Real-time 3D Earth visualization of global cyber attacks — powered by Three.js. Watch attack arcs trace across the globe with animated impact bursts and live stats.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(0,212,255,0.3);color:rgba(0,212,255,0.7)">Three.js WebGL</span>
+          <span class="ptag" style="border-color:rgba(0,212,255,0.3);color:rgba(0,212,255,0.7)">3D Globe</span>
+          <span class="ptag" style="border-color:rgba(0,212,255,0.3);color:rgba(0,212,255,0.7)">Live Attacks</span>
+        </div>
+        <span class="tool-card-cta">Launch Globe →</span>
+      </a>
+
+      <a href="ctf-writeups.html" class="cyber-tool-card tool-red">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(255,77,77,0.08) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(255,100,100,0.85);text-shadow:0 0 14px rgba(255,77,77,0.6)">🚩</div>
+        <div class="tool-card-label">CTF</div>
+        <div class="tool-card-name">CTF Writeups</div>
+        <div class="tool-card-desc">Capture The Flag challenge writeups — documented solutions with methodology breakdowns, tool usage, and lessons learned across web, crypto, forensics, and pwn.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Web · Crypto</span>
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Forensics</span>
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Writeups</span>
+        </div>
+        <span class="tool-card-cta">Read Writeups →</span>
+      </a>
+
+      <a href="career.html" class="cyber-tool-card" style="border-color:rgba(184,147,58,0.15)" onmouseenter="this.style.borderColor='rgba(184,147,58,0.4)';this.style.boxShadow='0 0 40px rgba(184,147,58,0.08),inset 0 0 30px rgba(184,147,58,0.03)'" onmouseleave="this.style.borderColor='rgba(184,147,58,0.15)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(184,147,58,0.07) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(184,147,58,0.85);text-shadow:0 0 14px rgba(184,147,58,0.6)">📜</div>
+        <div class="tool-card-label">BIO</div>
+        <div class="tool-card-name">Career Timeline</div>
+        <div class="tool-card-desc">An interactive vertical timeline of my professional journey — from a decade in consultative sales to AI automation and cybersecurity, each chapter with full context.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(184,147,58,0.3);color:rgba(184,147,58,0.7)">Sales → Cyber</span>
+          <span class="ptag" style="border-color:rgba(184,147,58,0.3);color:rgba(184,147,58,0.7)">Timeline</span>
+          <span class="ptag" style="border-color:rgba(184,147,58,0.3);color:rgba(184,147,58,0.7)">Journey</span>
+        </div>
+        <span class="tool-card-cta">View Timeline →</span>
+      </a>
+
     </div>
 
   </div>
