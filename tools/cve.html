@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVE Intelligence — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #ff7722; --c-dim: rgba(255,119,34,0.08); --c-mid: rgba(255,119,34,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(255,119,34,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88; --orange: #ff7722; --yellow: #ffd700; --cyan: #00c8ff;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(255,119,34,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(255,119,34,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(255,119,34,0.9), 2px 0 rgba(0,200,255,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(255,119,34,0.9), -2px 0 rgba(0,200,255,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(255,119,34,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+.input-row { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; }
+.search-input {
+  flex: 1; min-width: 260px; background: var(--bg3); border: 1px solid var(--border-c);
+  color: var(--text); font-family: var(--mono); font-size: 1rem;
+  padding: 0.8rem 1.1rem; outline: none; transition: border-color 0.2s; letter-spacing: 0.05em;
+}
+.search-input:focus { border-color: var(--c); }
+.search-input::placeholder { color: var(--text-faint); }
+
+.controls-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; align-items: center; }
+.select-wrap { position: relative; }
+.select-wrap select {
+  background: var(--bg3); border: 1px solid var(--border-c); color: var(--text);
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em;
+  padding: 0.5rem 2rem 0.5rem 0.75rem; outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+.select-wrap::after { content: '▾'; position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--c); pointer-events: none; font-size: 0.7rem; }
+
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.6rem 1.6rem; cursor: pointer; transition: all 0.2s; background: none;
+  border: 1px solid var(--c); color: var(--c); white-space: nowrap;
+}
+.btn:hover { background: var(--c-dim); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.filter-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.filter-tab {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.25rem 0.65rem; border: 1px solid var(--border); background: var(--bg3);
+  color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+}
+.filter-tab:hover { border-color: var(--c); color: var(--c); }
+.filter-tab.active { border-color: var(--c); color: var(--c); background: var(--c-dim); }
+
+.error-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--red); margin-top: 0.6rem; }
+
+/* Loading */
+.loading-wrap { text-align: center; padding: 2rem; display: none; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border-c); border-top-color: var(--c); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: var(--mono); font-size: 0.75rem; color: var(--text-faint); letter-spacing: 0.1em; }
+
+/* Results header */
+.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+.results-count { font-family: var(--mono); font-size: 0.68rem; color: var(--text-faint); letter-spacing: 0.1em; }
+
+/* CVE Cards */
+.cve-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.cve-card { background: var(--bg3); border: 1px solid var(--border); overflow: hidden; }
+.cve-card-header { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.2rem; cursor: pointer; }
+.cve-card-header:hover { background: rgba(255,255,255,0.02); }
+.cve-id {
+  font-family: var(--mono); font-size: 0.85rem; color: var(--cyan); letter-spacing: 0.06em;
+  text-decoration: none; white-space: nowrap; flex-shrink: 0;
+}
+.cve-id:hover { color: var(--c); }
+.cve-score-badge {
+  font-family: var(--mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 0.2rem 0.6rem; border-radius: 2px; flex-shrink: 0; text-align: center;
+  min-width: 52px;
+}
+.sev-critical { background: rgba(255,77,77,0.15); color: var(--red); border: 1px solid rgba(255,77,77,0.3); }
+.sev-high     { background: rgba(255,119,34,0.12); color: var(--orange); border: 1px solid rgba(255,119,34,0.3); }
+.sev-medium   { background: rgba(255,215,0,0.1);  color: var(--yellow); border: 1px solid rgba(255,215,0,0.3); }
+.sev-low      { background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+.sev-none     { background: rgba(245,242,236,0.05); color: var(--text-faint); border: 1px solid var(--border); }
+.cve-meta { flex: 1; min-width: 0; }
+.cve-desc-short { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 0.3rem; word-break: break-word; }
+.cve-date { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); }
+.expand-icon { font-family: var(--mono); font-size: 0.7rem; color: var(--text-faint); flex-shrink: 0; }
+
+.cve-card-body { padding: 0 1.2rem 1rem; display: none; border-top: 1px solid var(--border); }
+.cve-card-body.open { display: block; padding-top: 1rem; }
+.cve-full-desc { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 0.75rem; }
+.cve-vector { font-family: var(--mono); font-size: 0.68rem; color: var(--c); margin-bottom: 0.75rem; word-break: break-all; }
+.cve-refs-title { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.4rem; }
+.cve-refs-list a { display: block; font-family: var(--mono); font-size: 0.65rem; color: var(--cyan); text-decoration: none; margin-bottom: 0.2rem; word-break: break-all; }
+.cve-refs-list a:hover { color: var(--c); }
+
+/* Pagination */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; }
+.page-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.4rem 1rem; border: 1px solid var(--border-c); background: none; color: var(--c);
+  cursor: pointer; transition: all 0.2s;
+}
+.page-btn:hover:not(:disabled) { background: var(--c-dim); }
+.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.page-info { font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+
+@media (max-width: 600px) {
+  nav { padding: 1rem 1.25rem; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .panel { padding: 1.25rem; }
+  .input-row { flex-direction: column; }
+  .search-input { min-width: 0; }
+  .cve-card-header { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">cve</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — vulnerability intelligence</div>
+  <div class="hero-title">CVE INTEL</div>
+  <div class="hero-sub">nvd api v2 · cvss scoring · severity filtering · vulnerability details</div>
+</div>
+
+<div class="main">
+
+  <div class="panel">
+    <div class="panel-title">Search Vulnerabilities</div>
+    <div class="input-row">
+      <input class="search-input" id="cve-input" type="text"
+        placeholder="CVE-2021-44228 or keyword: log4j, apache, rce..."
+        spellcheck="false" onkeydown="if(event.key==='Enter')search()">
+      <button class="btn" id="search-btn" onclick="search()">Search</button>
+    </div>
+    <div class="controls-row">
+      <div class="select-wrap">
+        <select id="sev-filter">
+          <option value="">All Severities</option>
+          <option value="CRITICAL">Critical</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+          <option value="NONE">None</option>
+        </select>
+      </div>
+      <div class="select-wrap">
+        <select id="per-page">
+          <option value="10">10 per page</option>
+          <option value="20" selected>20 per page</option>
+          <option value="50">50 per page</option>
+        </select>
+      </div>
+    </div>
+    <div class="error-msg" id="error-msg" style="display:none;"></div>
+  </div>
+
+  <div class="loading-wrap" id="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-text">Querying NVD database...</div>
+  </div>
+
+  <div id="results-area" style="display:none;">
+    <div class="panel">
+      <div class="results-header">
+        <div class="results-count" id="results-count"></div>
+        <div class="pagination" id="top-pagination"></div>
+      </div>
+      <div class="cve-list" id="cve-list"></div>
+      <div class="pagination" id="bot-pagination" style="margin-top:1.5rem;"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>temple tools — cve intelligence &nbsp;·&nbsp; data from NVD / NIST &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+let currentData = [];
+let currentPage = 0;
+let totalResults = 0;
+let currentPerPage = 20;
+let currentStart = 0;
+
+function isCveId(q) {
+  return /^CVE-\d{4}-\d{4,}$/i.test(q.trim());
+}
+
+function buildUrl(query, start, perPage, severity) {
+  const base = 'https://services.nvd.nist.gov/rest/json/cves/2.0?';
+  const params = new URLSearchParams();
+  if (isCveId(query)) {
+    params.set('cveId', query.trim().toUpperCase());
+  } else {
+    params.set('keywordSearch', query.trim());
+    params.set('resultsPerPage', perPage);
+    params.set('startIndex', start);
+    if (severity) params.set('cvssV3Severity', severity);
+  }
+  return base + params.toString();
+}
+
+function search(start) {
+  const q = document.getElementById('cve-input').value.trim();
+  if (!q) { showError('✕ Enter a CVE ID or keyword.'); return; }
+
+  const severity = document.getElementById('sev-filter').value;
+  currentPerPage = parseInt(document.getElementById('per-page').value);
+  currentStart   = start || 0;
+
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('loading-wrap').style.display = 'block';
+  document.getElementById('search-btn').disabled = true;
+
+  const url = buildUrl(q, currentStart, currentPerPage, severity);
+  fetch(url)
+    .then(r => {
+      if (r.status === 429) throw new Error('RATE_LIMIT');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      document.getElementById('loading-wrap').style.display = 'none';
+      document.getElementById('search-btn').disabled = false;
+      totalResults = data.totalResults || 0;
+      currentData  = (data.vulnerabilities || []).map(v => v.cve);
+      renderResults();
+    })
+    .catch(err => {
+      document.getElementById('loading-wrap').style.display = 'none';
+      document.getElementById('search-btn').disabled = false;
+      if (err.message === 'RATE_LIMIT') {
+        showError('⚠ Rate limited — NVD allows ~5 req/30s. Wait 30 seconds and try again.');
+      } else {
+        showError('✕ API error: ' + err.message);
+      }
+    });
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function cvssColor(score) {
+  if (score === null || score === undefined) return 'sev-none';
+  if (score >= 9.0) return 'sev-critical';
+  if (score >= 7.0) return 'sev-high';
+  if (score >= 4.0) return 'sev-medium';
+  if (score > 0)    return 'sev-low';
+  return 'sev-none';
+}
+
+function getCvss(cve) {
+  const m = cve.metrics;
+  if (!m) return { score: null, severity: 'N/A', vector: '' };
+  if (m.cvssMetricV31 && m.cvssMetricV31.length) {
+    const c = m.cvssMetricV31[0].cvssData;
+    return { score: c.baseScore, severity: c.baseSeverity, vector: c.vectorString };
+  }
+  if (m.cvssMetricV30 && m.cvssMetricV30.length) {
+    const c = m.cvssMetricV30[0].cvssData;
+    return { score: c.baseScore, severity: c.baseSeverity, vector: c.vectorString };
+  }
+  if (m.cvssMetricV2 && m.cvssMetricV2.length) {
+    const c = m.cvssMetricV2[0].cvssData;
+    return { score: c.baseScore, severity: m.cvssMetricV2[0].baseSeverity, vector: c.vectorString };
+  }
+  return { score: null, severity: 'N/A', vector: '' };
+}
+
+function renderResults() {
+  const q = document.getElementById('cve-input').value.trim();
+  const area = document.getElementById('results-area');
+  const list = document.getElementById('cve-list');
+
+  if (!currentData.length) {
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:0.8rem;color:var(--text-faint);padding:2rem;text-align:center;">No results found.</div>';
+    document.getElementById('results-count').textContent = 'No results';
+    document.getElementById('top-pagination').innerHTML = '';
+    document.getElementById('bot-pagination').innerHTML = '';
+    area.style.display = 'block';
+    return;
+  }
+
+  const showing = Math.min(currentStart + currentPerPage, totalResults);
+  document.getElementById('results-count').textContent =
+    `Showing ${currentStart + 1}–${showing} of ${totalResults.toLocaleString()} results`;
+
+  list.innerHTML = currentData.map((cve, i) => {
+    const cvss    = getCvss(cve);
+    const scoreStr = cvss.score !== null ? cvss.score.toFixed(1) : 'N/A';
+    const sevCls  = cvssColor(cvss.score);
+    const desc    = (cve.descriptions && cve.descriptions.find(d => d.lang === 'en')?.value) || 'No description.';
+    const shortDesc = desc.length > 200 ? desc.slice(0, 200) + '...' : desc;
+    const pubDate = cve.published ? cve.published.slice(0,10) : 'N/A';
+    const refs    = (cve.references || []).slice(0, 5);
+    const nvdLink = `https://nvd.nist.gov/vuln/detail/${cve.id}`;
+
+    return `
+      <div class="cve-card">
+        <div class="cve-card-header" onclick="toggleCard(${i})">
+          <a class="cve-id" href="${nvdLink}" target="_blank" onclick="event.stopPropagation()">${cve.id}</a>
+          <div class="cve-score-badge ${sevCls}">${scoreStr}<br><span style="font-size:0.55rem;">${cvss.severity||'N/A'}</span></div>
+          <div class="cve-meta">
+            <div class="cve-desc-short">${escHtml(shortDesc)}</div>
+            <div class="cve-date">Published: ${pubDate}</div>
+          </div>
+          <div class="expand-icon" id="expand-icon-${i}">▸</div>
+        </div>
+        <div class="cve-card-body" id="cve-body-${i}">
+          <div class="cve-full-desc">${escHtml(desc)}</div>
+          ${cvss.vector ? `<div class="cve-vector">CVSS: ${escHtml(cvss.vector)}</div>` : ''}
+          ${refs.length ? `
+            <div class="cve-refs-title">References</div>
+            <div class="cve-refs-list">${refs.map(r => `<a href="${escHtml(r.url)}" target="_blank">${escHtml(r.url)}</a>`).join('')}</div>
+          ` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  const paginationHtml = buildPagination(q);
+  document.getElementById('top-pagination').innerHTML = paginationHtml;
+  document.getElementById('bot-pagination').innerHTML = paginationHtml;
+
+  area.style.display = 'block';
+  area.scrollIntoView({ behavior: 'smooth' });
+}
+
+function buildPagination(q) {
+  if (totalResults <= currentPerPage) return '';
+  const prevDisabled = currentStart === 0;
+  const nextDisabled = currentStart + currentPerPage >= totalResults;
+  const page = Math.floor(currentStart / currentPerPage) + 1;
+  const totalPages = Math.ceil(totalResults / currentPerPage);
+  return `
+    <button class="page-btn" onclick="search(${currentStart - currentPerPage})" ${prevDisabled ? 'disabled' : ''}>← Prev</button>
+    <span class="page-info">Page ${page} / ${totalPages}</span>
+    <button class="page-btn" onclick="search(${currentStart + currentPerPage})" ${nextDisabled ? 'disabled' : ''}>Next →</button>
+  `;
+}
+
+function toggleCard(i) {
+  const body = document.getElementById('cve-body-' + i);
+  const icon = document.getElementById('expand-icon-' + i);
+  const open = body.classList.toggle('open');
+  icon.textContent = open ? '▾' : '▸';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

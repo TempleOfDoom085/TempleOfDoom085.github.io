@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSL Certificate Checker — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #00c8ff; --c-dim: rgba(0,200,255,0.08); --c-mid: rgba(0,200,255,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(0,200,255,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --green: #00ff88; --orange: #ff7722; --yellow: #ffd700; --teal: #00d4aa;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(0,200,255,0.4); animation: glitch 5s infinite;
+}
+@keyframes glitch {
+  0%,91%,100% { text-shadow: 0 0 40px rgba(0,200,255,0.4); transform: none; }
+  92% { text-shadow: -2px 0 rgba(0,200,255,0.9), 2px 0 rgba(255,77,166,0.3); transform: skewX(-1deg); }
+  93% { text-shadow: 2px 0 rgba(0,200,255,0.9), -2px 0 rgba(255,77,166,0.3); transform: skewX(0.5deg); }
+  94% { text-shadow: 0 0 40px rgba(0,200,255,0.4); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+.input-row { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; }
+.domain-input {
+  flex: 1; min-width: 260px; background: var(--bg3); border: 1px solid var(--border-c);
+  color: var(--text); font-family: var(--mono); font-size: 1.05rem;
+  padding: 0.8rem 1.1rem; outline: none; transition: border-color 0.2s; letter-spacing: 0.05em;
+}
+.domain-input:focus { border-color: var(--c); }
+.domain-input::placeholder { color: var(--text-faint); }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.6rem 1.6rem; cursor: pointer; transition: all 0.2s; background: none;
+  border: 1px solid var(--c); color: var(--c); white-space: nowrap;
+}
+.btn:hover { background: var(--c-dim); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.error-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--red); margin-top: 0.6rem; }
+
+/* Progress */
+.progress-wrap { display: none; }
+.progress-status { font-family: var(--mono); font-size: 0.8rem; color: var(--c); margin-bottom: 0.75rem; }
+.progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--c); border-radius: 2px; transition: width 1s; width: 0; }
+.progress-log { margin-top: 0.75rem; font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); max-height: 80px; overflow-y: auto; }
+
+/* Grade */
+.grade-block { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.grade-letter {
+  font-size: 5rem; font-weight: 700; line-height: 1; font-family: var(--head);
+  min-width: 100px; text-align: center;
+  text-shadow: 0 0 40px currentColor;
+}
+.grade-meta { flex: 1; min-width: 200px; }
+.grade-domain { font-family: var(--mono); font-size: 1rem; color: var(--text); margin-bottom: 0.3rem; }
+.grade-ip { font-family: var(--mono); font-size: 0.7rem; color: var(--text-faint); }
+
+/* Info grid */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+.info-card { background: var(--bg3); border: 1px solid var(--border); padding: 0.9rem 1.1rem; }
+.info-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.3rem; }
+.info-value { font-family: var(--mono); font-size: 0.85rem; color: var(--text); word-break: break-all; }
+.info-value.accent { color: var(--c); }
+.expiry-ok { color: var(--green); }
+.expiry-warn { color: var(--orange); }
+.expiry-danger { color: var(--red); }
+
+/* Protocol / Vuln table */
+.proto-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.proto-badge {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em; padding: 0.25rem 0.7rem;
+  border-radius: 2px; border: 1px solid;
+}
+.proto-supported { background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.3); color: var(--green); }
+.proto-unsupported { background: rgba(255,77,77,0.06); border-color: rgba(255,77,77,0.2); color: var(--red); opacity: 0.6; }
+.proto-legacy { background: rgba(255,119,34,0.08); border-color: rgba(255,119,34,0.3); color: var(--orange); }
+
+.vuln-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; }
+.vuln-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: var(--bg3); border: 1px solid var(--border); }
+.vuln-icon { font-size: 0.8rem; }
+.vuln-name { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em; color: var(--text-dim); }
+
+.sans-list { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); line-height: 1.8; }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+
+@media (max-width: 600px) {
+  nav { padding: 1rem 1.25rem; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .main { padding: 2rem 1rem 4rem; }
+  .panel { padding: 1.25rem; }
+  .input-row { flex-direction: column; }
+  .domain-input { min-width: 0; }
+  .grade-block { gap: 1rem; }
+  .grade-letter { font-size: 3.5rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">ssl</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — tls analysis</div>
+  <div class="hero-title">SSL CHECKER</div>
+  <div class="hero-sub">certificate grades · tls protocols · vulnerability scanning · expiry tracking</div>
+</div>
+
+<div class="main">
+
+  <div class="panel">
+    <div class="panel-title">Domain Analysis</div>
+    <div class="input-row">
+      <input class="domain-input" id="domain-input" type="text" placeholder="example.com (no https://)" spellcheck="false"
+        onkeydown="if(event.key==='Enter')analyze()">
+      <button class="btn" id="analyze-btn" onclick="analyze()">Analyze</button>
+    </div>
+    <div class="error-msg" id="error-msg" style="display:none;"></div>
+
+    <div class="progress-wrap" id="progress-wrap" style="display:none; margin-top:1.25rem;">
+      <div class="progress-status" id="progress-status">Initiating scan...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-log" id="progress-log"></div>
+    </div>
+  </div>
+
+  <div id="results-area" style="display:none;">
+
+    <!-- Per-endpoint grades -->
+    <div class="panel" id="grades-panel">
+      <div class="panel-title">SSL Labs Grade</div>
+      <div id="grades-content"></div>
+    </div>
+
+    <!-- Certificate info -->
+    <div class="panel" id="cert-panel">
+      <div class="panel-title">Certificate Details</div>
+      <div class="info-grid" id="cert-grid"></div>
+      <div id="sans-wrap" style="display:none;">
+        <div class="info-label" style="margin-bottom:0.4rem;">Subject Alternative Names</div>
+        <div class="sans-list" id="sans-list"></div>
+      </div>
+    </div>
+
+    <!-- Protocols -->
+    <div class="panel" id="proto-panel">
+      <div class="panel-title">TLS Protocols</div>
+      <div class="proto-row" id="proto-row"></div>
+    </div>
+
+    <!-- Vulnerabilities -->
+    <div class="panel" id="vuln-panel">
+      <div class="panel-title">Vulnerability Checks</div>
+      <div class="vuln-list" id="vuln-list"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>temple tools — ssl checker &nbsp;·&nbsp; powered by SSL Labs API &nbsp;·&nbsp; <a href="index.html" style="color:var(--c);text-decoration:none;">← all tools</a></footer>
+
+<script>
+let pollTimer = null;
+let progressPct = 0;
+
+function stripDomain(raw) {
+  return raw.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
+}
+
+function gradeColor(g) {
+  if (!g) return '#888';
+  const c = g.charAt(0);
+  if (c === 'A') return '#00ff88';
+  if (c === 'B') return '#a8ff00';
+  if (c === 'C') return '#ffd700';
+  if (c === 'D') return '#ff7722';
+  return '#ff4d4d';
+}
+
+function addLog(msg) {
+  const log = document.getElementById('progress-log');
+  const line = document.createElement('div');
+  line.textContent = '> ' + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function setProgress(pct, status) {
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-status').textContent = status;
+  progressPct = pct;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function analyze() {
+  const raw   = document.getElementById('domain-input').value;
+  const domain = stripDomain(raw);
+
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('results-area').style.display = 'none';
+
+  if (!domain) { showError('✕ Enter a domain name.'); return; }
+  if (!/^[a-z0-9._-]+\.[a-z]{2,}$/i.test(domain)) { showError('✕ Invalid domain format.'); return; }
+
+  if (pollTimer) clearInterval(pollTimer);
+  document.getElementById('progress-log').innerHTML = '';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('analyze-btn').disabled = true;
+  setProgress(5, 'Submitting to SSL Labs...');
+  addLog('Starting analysis for: ' + domain);
+
+  const url = `https://api.ssllabs.com/api/v3/analyze?host=${encodeURIComponent(domain)}&startNew=on&all=done`;
+  fetchAndPoll(domain, url, true);
+}
+
+function fetchAndPoll(domain, initUrl, isFirst) {
+  const url = isFirst ? initUrl : `https://api.ssllabs.com/api/v3/analyze?host=${encodeURIComponent(domain)}&all=done`;
+  fetch(url)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      handleApiResponse(domain, data);
+    })
+    .catch(err => {
+      document.getElementById('progress-wrap').style.display = 'none';
+      document.getElementById('analyze-btn').disabled = false;
+      showError('✕ API error: ' + err.message + '. Check domain or try again.');
+    });
+}
+
+function handleApiResponse(domain, data) {
+  const status = data.status;
+  addLog('Status: ' + status + (data.statusMessage ? ' — ' + data.statusMessage : ''));
+
+  if (status === 'ERROR' || status === 'DNS') {
+    document.getElementById('progress-wrap').style.display = 'none';
+    document.getElementById('analyze-btn').disabled = false;
+    showError('✕ ' + (data.statusMessage || 'Could not resolve domain or SSL Labs error.'));
+    return;
+  }
+
+  if (status === 'READY') {
+    setProgress(100, 'Analysis complete.');
+    clearInterval(pollTimer);
+    setTimeout(() => {
+      document.getElementById('progress-wrap').style.display = 'none';
+      document.getElementById('analyze-btn').disabled = false;
+      renderResults(data);
+    }, 500);
+    return;
+  }
+
+  // IN_PROGRESS or DNS_IN_PROGRESS
+  const pct = Math.min(progressPct + 10, 85);
+  const msg = status === 'IN_PROGRESS' ? 'Analyzing endpoints...' : 'Waiting for SSL Labs...';
+  setProgress(pct, msg);
+
+  pollTimer = setTimeout(() => fetchAndPoll(domain, '', false), 10000);
+}
+
+function renderResults(data) {
+  const endpoints = data.endpoints || [];
+  document.getElementById('results-area').style.display = 'block';
+
+  // Grades
+  let gradesHtml = '';
+  endpoints.forEach(ep => {
+    const g = ep.grade || ep.gradeTrustIgnored || 'N/A';
+    gradesHtml += `
+      <div class="grade-block">
+        <div class="grade-letter" style="color:${gradeColor(g)};">${g}</div>
+        <div class="grade-meta">
+          <div class="grade-domain">${ep.ipAddress || ''}</div>
+          <div class="grade-ip">${ep.statusMessage || ''}</div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('grades-content').innerHTML = gradesHtml;
+
+  // Certificate — use first endpoint details
+  const det = (endpoints[0] && endpoints[0].details) || {};
+  const cert = (det.cert) || {};
+  const chain = (det.chain && det.chain.certs && det.chain.certs[0]) || {};
+
+  const notAfter  = cert.notAfter  || chain.notAfter;
+  const notBefore = cert.notBefore || chain.notBefore;
+  const cn        = cert.subject   || chain.subject || data.host || '';
+  const issuer    = cert.issuerLabel || chain.issuerLabel || '';
+  const serial    = cert.serialNumber || chain.serialNumber || 'N/A';
+
+  let expiryHtml = 'N/A';
+  let daysClass  = '';
+  if (notAfter) {
+    const expDate = new Date(notAfter);
+    const days    = Math.ceil((expDate - Date.now()) / 86400000);
+    daysClass     = days < 30 ? 'expiry-danger' : days < 90 ? 'expiry-warn' : 'expiry-ok';
+    expiryHtml    = expDate.toISOString().slice(0,10) + ` <span class="${daysClass}">(${days}d remaining)</span>`;
+  }
+
+  document.getElementById('cert-grid').innerHTML = `
+    <div class="info-card"><div class="info-label">Common Name</div><div class="info-value accent">${escHtml(cn)}</div></div>
+    <div class="info-card"><div class="info-label">Issuer</div><div class="info-value">${escHtml(issuer || 'N/A')}</div></div>
+    <div class="info-card"><div class="info-label">Issued</div><div class="info-value">${notBefore ? new Date(notBefore).toISOString().slice(0,10) : 'N/A'}</div></div>
+    <div class="info-card"><div class="info-label">Expires</div><div class="info-value">${expiryHtml}</div></div>
+    <div class="info-card"><div class="info-label">Serial Number</div><div class="info-value" style="font-size:0.7rem;">${escHtml(serial)}</div></div>
+    <div class="info-card"><div class="info-label">Key Strength</div><div class="info-value">${cert.keyStrength ? cert.keyStrength + ' bit' : 'N/A'}</div></div>
+  `;
+
+  // SANs
+  const altNames = cert.altNames || chain.altNames || [];
+  if (altNames.length) {
+    document.getElementById('sans-wrap').style.display = 'block';
+    document.getElementById('sans-list').innerHTML = altNames.map(n => `<span style="margin-right:1rem;">${escHtml(n)}</span>`).join('');
+  }
+
+  // Protocols
+  const protos = det.protocols || [];
+  const protoNames = { 'TLS 1.0': null, 'TLS 1.1': null, 'TLS 1.2': null, 'TLS 1.3': null };
+  protos.forEach(p => {
+    const key = p.name + ' ' + p.version;
+    if (protoNames.hasOwnProperty(key)) protoNames[key] = true;
+  });
+  document.getElementById('proto-row').innerHTML = Object.entries(protoNames).map(([name, supported]) => {
+    const cls = supported === true ? (name === 'TLS 1.0' || name === 'TLS 1.1' ? 'proto-legacy' : 'proto-supported') : 'proto-unsupported';
+    const icon = supported === true ? '✓' : '✗';
+    return `<span class="proto-badge ${cls}">${icon} ${name}</span>`;
+  }).join('');
+
+  // Vulnerabilities
+  const vulns = [
+    { name: 'Heartbleed',  val: det.heartbleed },
+    { name: 'POODLE',      val: det.poodle },
+    { name: 'BEAST',       val: det.vulnBeast },
+    { name: 'CRIME',       val: det.compressionMethods !== 0 },
+    { name: 'FREAK',       val: det.freak },
+    { name: 'Logjam',      val: det.logjam },
+    { name: 'DROWN',       val: det.drownVulnerable },
+  ];
+  document.getElementById('vuln-list').innerHTML = vulns.map(v => {
+    const vulnerable = v.val === true;
+    const icon  = vulnerable ? '<span style="color:var(--red);">✗</span>' : '<span style="color:var(--green);">✓</span>';
+    return `<div class="vuln-item"><span class="vuln-icon">${icon}</span><span class="vuln-name">${v.name}</span></div>`;
+  }).join('');
+
+  document.getElementById('results-area').scrollIntoView({ behavior: 'smooth' });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
