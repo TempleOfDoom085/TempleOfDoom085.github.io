@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP Request Builder — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --green: #00ff88; --green-dim: rgba(0,255,136,0.12); --green-mid: rgba(0,255,136,0.35);
+  --cyan: #00d4ff; --red: #ff4455; --orange: #ff8c00; --gold: #c8a96e;
+  --text: #f5f2ec; --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
+  --border: rgba(255,255,255,0.06); --border-green: rgba(0,255,136,0.2);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-green);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--green); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--green); text-transform: uppercase; }
+
+.hero {
+  position: relative; overflow: hidden;
+  padding: 5rem 2.5rem 4rem; text-align: center;
+  border-bottom: 1px solid var(--border-green);
+}
+.hero-canvas { position: absolute; inset: 0; opacity: 0.15; }
+.hero-content { position: relative; z-index: 1; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title {
+  font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1; color: var(--text);
+  text-shadow: 0 0 40px rgba(0,255,136,0.3);
+  animation: glitch 4s infinite;
+}
+@keyframes glitch {
+  0%,92%,100% { text-shadow: 0 0 40px rgba(0,255,136,0.3); transform: none; }
+  93% { text-shadow: -2px 0 rgba(0,255,136,0.8), 2px 0 rgba(0,255,136,0.4); transform: skewX(-1deg); }
+  94% { text-shadow: 2px 0 rgba(0,255,136,0.8), -2px 0 rgba(0,255,136,0.4); transform: skewX(1deg); }
+  95% { text-shadow: 0 0 40px rgba(0,255,136,0.3); transform: none; }
+}
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 1000px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+.panel {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 1.75rem; margin-bottom: 1.25rem;
+  position: relative; overflow: hidden;
+}
+.panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green-mid), transparent);
+}
+.panel-title { font-size: 1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; margin-bottom: 0.6rem; display: block; }
+
+input, textarea, select {
+  background: var(--bg3); border: 1px solid var(--border-green);
+  color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+  padding: 0.65rem 0.9rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.12); }
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
+select option { background: var(--bg2); }
+
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.6rem 1.4rem; background: transparent; border: 1px solid var(--green);
+  color: var(--green); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--green); color: var(--bg); box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+.btn:active { transform: scale(0.97); }
+.btn-sm { font-size: 0.65rem; padding: 0.35rem 0.8rem; }
+.btn-ghost { border-color: var(--border); color: var(--text-dim); }
+.btn-ghost:hover { border-color: var(--text-dim); color: var(--text); background: transparent; box-shadow: none; }
+.btn-cyan { border-color: var(--cyan); color: var(--cyan); }
+.btn-cyan:hover { background: var(--cyan); color: var(--bg); box-shadow: 0 0 20px rgba(0,212,255,0.3); }
+.btn-send {
+  font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 0.8rem 2.5rem; background: var(--green); border: none;
+  color: var(--bg); cursor: pointer; transition: all 0.2s; font-weight: 700;
+}
+.btn-send:hover { box-shadow: 0 0 30px rgba(0,255,136,0.5); filter: brightness(1.1); }
+.btn-send:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+/* URL ROW */
+.url-row { display: flex; gap: 0.75rem; align-items: stretch; }
+.method-select { width: 120px; flex-shrink: 0; font-weight: 600; letter-spacing: 0.05em; }
+.url-input { flex: 1; }
+
+/* HEADERS TABLE */
+.headers-table { width: 100%; border-collapse: collapse; }
+.headers-table td { padding: 0.35rem 0.4rem; }
+.headers-table td:first-child { width: 38%; }
+.headers-table td:last-child { width: 40px; text-align: center; }
+.del-btn {
+  background: transparent; border: 1px solid rgba(255,68,85,0.3); color: var(--red);
+  font-family: var(--mono); font-size: 0.7rem; cursor: pointer; padding: 0.3rem 0.6rem;
+  transition: all 0.2s;
+}
+.del-btn:hover { background: rgba(255,68,85,0.15); }
+.preset-select { width: auto; display: inline-block; font-size: 0.72rem; padding: 0.35rem 0.6rem; border-color: var(--border); color: var(--text-dim); }
+
+/* RESPONSE */
+.res-status {
+  display: inline-block; font-family: var(--mono); font-size: 1.2rem; font-weight: 700;
+  padding: 0.3rem 0.8rem; border: 1px solid; margin-right: 1rem;
+}
+.res-2xx { color: var(--green); border-color: rgba(0,255,136,0.4); background: rgba(0,255,136,0.05); }
+.res-3xx { color: var(--cyan); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.05); }
+.res-4xx { color: var(--orange); border-color: rgba(255,140,0,0.4); background: rgba(255,140,0,0.05); }
+.res-5xx { color: var(--red); border-color: rgba(255,68,85,0.4); background: rgba(255,68,85,0.05); }
+.res-meta { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+
+pre.res-body {
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 1rem; font-family: var(--mono); font-size: 0.78rem;
+  white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto;
+  color: var(--text); margin-top: 1rem; line-height: 1.5;
+}
+.res-headers-list { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); line-height: 1.8; }
+.res-headers-list span { color: var(--green); }
+
+/* HISTORY */
+.history-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s; font-family: var(--mono); font-size: 0.72rem;
+}
+.history-item:hover { background: rgba(0,255,136,0.03); }
+.history-method { color: var(--green); min-width: 50px; }
+.history-url { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.history-status { font-size: 0.68rem; }
+
+/* CORS WARNING */
+.cors-note {
+  background: rgba(255,140,0,0.06); border: 1px solid rgba(255,140,0,0.3);
+  color: var(--orange); font-family: var(--mono); font-size: 0.72rem;
+  padding: 0.75rem 1rem; margin-bottom: 1rem; line-height: 1.6;
+}
+
+/* CODE OUTPUT */
+.code-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid var(--border); }
+.code-tab {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.5rem 1rem; cursor: pointer; color: var(--text-dim);
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
+}
+.code-tab:hover { color: var(--text); }
+.code-tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+.toast {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg2); border: 1px solid var(--green); color: var(--green);
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em;
+  padding: 0.7rem 1.5rem; z-index: 999; transition: transform 0.3s ease; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">← Back to Tools</a>
+  <span class="nav-center">HTTP Builder</span>
+  <span class="nav-right">Tool 21</span>
+</nav>
+
+<div class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-label">// craft_and_fire</div>
+    <h1 class="hero-title">HTTP REQUEST BUILDER</h1>
+    <p class="hero-sub">Craft and fire HTTP requests in-browser</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- REQUEST PANEL -->
+  <div class="panel">
+    <div class="panel-title">Request</div>
+
+    <!-- Method + URL -->
+    <div class="section-label">// Endpoint</div>
+    <div class="url-row" style="margin-bottom:1.25rem">
+      <select class="method-select" id="method" onchange="onMethodChange()">
+        <option>GET</option><option>POST</option><option>PUT</option>
+        <option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
+      </select>
+      <input type="url" class="url-input" id="url" placeholder="https://api.example.com/endpoint">
+    </div>
+
+    <!-- Headers -->
+    <div class="section-label">// Headers</div>
+    <div style="margin-bottom:0.6rem;display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-sm btn-ghost" onclick="addHeader()">+ Add Header</button>
+      <select class="preset-select" id="presetSelect" onchange="addPreset()">
+        <option value="">— Preset headers —</option>
+        <option value="Content-Type|application/json">Content-Type: application/json</option>
+        <option value="Content-Type|application/x-www-form-urlencoded">Content-Type: form-urlencoded</option>
+        <option value="Authorization|Bearer ">Authorization: Bearer ...</option>
+        <option value="Accept|application/json">Accept: application/json</option>
+        <option value="User-Agent|Mozilla/5.0">User-Agent: Mozilla/5.0</option>
+        <option value="X-API-Key|">X-API-Key</option>
+        <option value="Origin|https://example.com">Origin</option>
+        <option value="Referer|https://example.com">Referer</option>
+      </select>
+    </div>
+    <table class="headers-table" id="headersTable">
+      <tbody id="headersBody"></tbody>
+    </table>
+
+    <!-- Body -->
+    <div id="bodySection" style="margin-top:1.25rem;display:none;">
+      <div class="section-label">// Request Body</div>
+      <textarea id="reqBody" rows="7" placeholder='{"key": "value"}'></textarea>
+    </div>
+
+    <!-- Send -->
+    <div style="margin-top:1.5rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+      <button class="btn-send" id="sendBtn" onclick="sendRequest()">Send Request</button>
+      <button class="btn btn-sm btn-ghost" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <!-- CORS NOTE -->
+  <div class="cors-note">
+    ⚠ Browser CORS restrictions apply. Cross-origin requests may be blocked unless the server sends CORS headers.
+    For full control, use a local proxy or run requests server-side.
+  </div>
+
+  <!-- RESPONSE PANEL -->
+  <div class="panel" id="responsePanel" style="display:none;">
+    <div class="panel-title">Response</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;">
+      <span class="res-status" id="resStatus"></span>
+      <span class="res-meta" id="resMeta"></span>
+      <div style="margin-left:auto;display:flex;gap:0.5rem;">
+        <button class="btn btn-sm btn-ghost" onclick="copyResponse()">Copy Body</button>
+        <button class="btn btn-sm btn-cyan" onclick="showCode('curl')">cURL</button>
+        <button class="btn btn-sm btn-cyan" onclick="showCode('fetch')">JS Fetch</button>
+      </div>
+    </div>
+
+    <!-- Response headers -->
+    <div class="section-label">// Response Headers</div>
+    <div class="res-headers-list" id="resHeaders" style="margin-bottom:1rem;"></div>
+
+    <!-- Response body -->
+    <div class="section-label">// Response Body</div>
+    <pre class="res-body" id="resBody"></pre>
+  </div>
+
+  <!-- CODE OUTPUT PANEL -->
+  <div class="panel" id="codePanel" style="display:none;">
+    <div class="code-tabs">
+      <button class="code-tab active" onclick="switchCodeTab('curl',this)">cURL</button>
+      <button class="code-tab" onclick="switchCodeTab('fetch',this)">JS Fetch</button>
+    </div>
+    <pre class="res-body" id="codeOutput"></pre>
+    <div style="margin-top:0.75rem;">
+      <button class="btn btn-sm" onclick="copyCode()">Copy</button>
+      <button class="btn btn-sm btn-ghost" style="margin-left:0.5rem;" onclick="document.getElementById('codePanel').style.display='none'">Close</button>
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="panel" id="historyPanel">
+    <div class="panel-title">Request History</div>
+    <div id="historyList"><p style="font-family:var(--mono);font-size:0.75rem;color:var(--text-faint);">No history yet.</p></div>
+    <button class="btn btn-sm btn-ghost" style="margin-top:1rem;" onclick="clearHistory()">Clear History</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let lastRequest = null;
+let lastResponse = null;
+let currentCodeMode = 'curl';
+
+// ---- HEADERS ----
+function addHeader(key='', val='') {
+  const tbody = document.getElementById('headersBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Header name" value="${esc(key)}"></td>
+    <td><input type="text" placeholder="Value" value="${esc(val)}"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function esc(s) { return s.replace(/"/g,'&quot;'); }
+
+function addPreset() {
+  const sel = document.getElementById('presetSelect');
+  const val = sel.value;
+  if (!val) return;
+  const [k, v] = val.split('|');
+  addHeader(k, v);
+  sel.value = '';
+}
+
+function getHeaders() {
+  const rows = document.querySelectorAll('#headersBody tr');
+  const h = {};
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const k = inputs[0].value.trim();
+    const v = inputs[1].value.trim();
+    if (k) h[k] = v;
+  });
+  return h;
+}
+
+// ---- METHOD CHANGE ----
+function onMethodChange() {
+  const m = document.getElementById('method').value;
+  const bodySection = document.getElementById('bodySection');
+  bodySection.style.display = ['POST','PUT','PATCH'].includes(m) ? 'block' : 'none';
+}
+
+// ---- SEND ----
+async function sendRequest() {
+  const url = document.getElementById('url').value.trim();
+  const method = document.getElementById('method').value;
+  if (!url) { showToast('Enter a URL first.'); return; }
+
+  const headers = getHeaders();
+  const body = ['POST','PUT','PATCH'].includes(method) ? document.getElementById('reqBody').value.trim() : undefined;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const t0 = Date.now();
+  try {
+    const opts = { method, headers };
+    if (body) opts.body = body;
+
+    const res = await fetch(url, opts);
+    const ms = Date.now() - t0;
+    const resText = await res.text();
+
+    lastRequest = { url, method, headers, body };
+    lastResponse = { status: res.status, statusText: res.statusText, headers: [...res.headers.entries()], body: resText, ms };
+
+    showResponse(lastResponse);
+    saveHistory({ method, url, status: res.status });
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+  }
+}
+
+function showResponse(r) {
+  const panel = document.getElementById('responsePanel');
+  panel.style.display = 'block';
+
+  const statusEl = document.getElementById('resStatus');
+  statusEl.textContent = `${r.status} ${r.statusText}`;
+  statusEl.className = 'res-status ' + (r.status < 300 ? 'res-2xx' : r.status < 400 ? 'res-3xx' : r.status < 500 ? 'res-4xx' : 'res-5xx');
+
+  document.getElementById('resMeta').textContent = `${r.ms}ms`;
+
+  const hdrs = document.getElementById('resHeaders');
+  hdrs.innerHTML = r.headers.map(([k,v]) => `<span>${k}:</span> ${v}<br>`).join('');
+
+  let body = r.body;
+  try { body = JSON.stringify(JSON.parse(body), null, 2); } catch {}
+  document.getElementById('resBody').textContent = body;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showError(msg) {
+  const panel = document.getElementById('responsePanel');
+  panel.style.display = 'block';
+  const statusEl = document.getElementById('resStatus');
+  statusEl.textContent = 'ERROR';
+  statusEl.className = 'res-status res-5xx';
+  document.getElementById('resMeta').textContent = '';
+  document.getElementById('resHeaders').innerHTML = '';
+  document.getElementById('resBody').textContent = msg + '\n\nThis may be a CORS error. Check the browser console for details.';
+}
+
+function copyResponse() {
+  const text = document.getElementById('resBody').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+}
+
+// ---- CODE GENERATION ----
+function buildCurl() {
+  if (!lastRequest) return '';
+  const { url, method, headers, body } = lastRequest;
+  let cmd = `curl -X ${method} "${url}"`;
+  Object.entries(headers).forEach(([k,v]) => { cmd += ` \\\n  -H "${k}: ${v}"`; });
+  if (body) cmd += ` \\\n  -d '${body.replace(/'/g,"'\\''")}'`;
+  return cmd;
+}
+
+function buildFetch() {
+  if (!lastRequest) return '';
+  const { url, method, headers, body } = lastRequest;
+  const opts = { method };
+  if (Object.keys(headers).length) opts.headers = headers;
+  if (body) opts.body = body;
+  return `const res = await fetch("${url}", ${JSON.stringify(opts, null, 2)});\nconst data = await res.json();\nconsole.log(data);`;
+}
+
+function showCode(mode) {
+  currentCodeMode = mode;
+  const panel = document.getElementById('codePanel');
+  panel.style.display = 'block';
+  document.getElementById('codeOutput').textContent = mode === 'curl' ? buildCurl() : buildFetch();
+  panel.scrollIntoView({ behavior: 'smooth' });
+  document.querySelectorAll('.code-tab').forEach((t,i) => t.classList.toggle('active', (mode==='curl'&&i===0)||(mode==='fetch'&&i===1)));
+}
+
+function switchCodeTab(mode, el) {
+  currentCodeMode = mode;
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('codeOutput').textContent = mode === 'curl' ? buildCurl() : buildFetch();
+}
+
+function copyCode() {
+  const text = document.getElementById('codeOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+}
+
+// ---- HISTORY ----
+function saveHistory(entry) {
+  const hist = getHistory();
+  hist.unshift({ ...entry, ts: Date.now() });
+  localStorage.setItem('http_builder_history', JSON.stringify(hist.slice(0, 10)));
+  renderHistory();
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('http_builder_history')) || []; }
+  catch { return []; }
+}
+
+function renderHistory() {
+  const hist = getHistory();
+  const list = document.getElementById('historyList');
+  if (!hist.length) { list.innerHTML = '<p style="font-family:var(--mono);font-size:0.75rem;color:var(--text-faint);">No history yet.</p>'; return; }
+  list.innerHTML = hist.map((h, i) => `
+    <div class="history-item" onclick="loadHistory(${i})">
+      <span class="history-method">${h.method}</span>
+      <span class="history-url">${h.url}</span>
+      <span class="history-status res-${h.status<300?'2xx':h.status<400?'3xx':h.status<500?'4xx':'5xx'}">${h.status}</span>
+    </div>
+  `).join('');
+}
+
+function loadHistory(i) {
+  const hist = getHistory();
+  const h = hist[i];
+  if (!h) return;
+  document.getElementById('url').value = h.url;
+  document.getElementById('method').value = h.method;
+  onMethodChange();
+  showToast('Loaded from history.');
+}
+
+function clearHistory() {
+  localStorage.removeItem('http_builder_history');
+  renderHistory();
+  showToast('History cleared.');
+}
+
+function clearAll() {
+  document.getElementById('url').value = '';
+  document.getElementById('method').value = 'GET';
+  document.getElementById('reqBody').value = '';
+  document.getElementById('headersBody').innerHTML = '';
+  document.getElementById('responsePanel').style.display = 'none';
+  document.getElementById('codePanel').style.display = 'none';
+  onMethodChange();
+}
+
+// ---- TOAST ----
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---- HERO CANVAS ----
+function initCanvas() {
+  const c = document.getElementById('heroCanvas');
+  const ctx = c.getContext('2d');
+  c.width = c.offsetWidth; c.height = c.offsetHeight;
+  const chars = 'GET POST PUT DELETE PATCH 200 404 500 HTTP/1.1 JSON API';
+  ctx.fillStyle = '#00ff88'; ctx.font = '11px Share Tech Mono';
+  for (let i = 0; i < Math.floor(c.width/22); i++) {
+    for (let j = 0; j < Math.floor(c.height/18); j++) {
+      if (Math.random() < 0.06) {
+        ctx.globalAlpha = Math.random()*0.35+0.05;
+        const word = chars.split(' ')[Math.floor(Math.random()*chars.split(' ').length)];
+        ctx.fillText(word[Math.floor(Math.random()*word.length)], i*22, j*18+12);
+      }
+    }
+  }
+}
+
+window.addEventListener('load', () => { initCanvas(); renderHistory(); onMethodChange(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTF Writeups — Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0e0e0e; --paper: #f5f2ec; --cream: #ede9e0;
+  --gold: #b8933a; --gold-light: #d4a84b; --gold2: #f0c040;
+  --cyber: #0f1623; --neon: #00d4ff; --neon-dim: rgba(0,212,255,0.12);
+  --crimson: #8B0000;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --mono: 'DM Mono', monospace;
+
+  /* Category colors */
+  --cat-web:     #00d4ff;
+  --cat-crypto:  #b96eff;
+  --cat-pwn:     #ff4d4d;
+  --cat-stego:   #f0c040;
+  --cat-misc:    #00e878;
+  --cat-reverse: #ff8c42;
+  --cat-network: #4d9fff;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--serif); background: var(--ink); color: var(--paper); line-height: 1.75; overflow-x: hidden; font-size: 17px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: var(--gold); }
+
+/* BACK TO TOP */
+.back-to-top {
+  position: fixed; bottom: 2rem; right: 2rem; width: 44px; height: 44px;
+  background: rgba(184,147,58,0.15); border: 1px solid rgba(184,147,58,0.3);
+  color: var(--gold); font-size: 1.2rem; cursor: pointer; z-index: 90;
+  display: none; align-items: center; justify-content: center;
+  transition: all 0.3s; backdrop-filter: blur(8px);
+}
+.back-to-top:hover { background: rgba(184,147,58,0.3); border-color: var(--gold); }
+.back-to-top.show { display: flex; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.2rem 3rem;
+  background: rgba(14,14,14,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(184,147,58,0.15);
+}
+.nav-logo { font-family: var(--mono); font-size: 1rem; letter-spacing: 0.2em; color: var(--gold); font-weight: 300; text-decoration: none; }
+.nav-links { display: flex; gap: 2rem; list-style: none; flex-wrap: wrap; }
+.nav-links a { color: rgba(245,242,236,0.6); text-decoration: none; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; transition: color 0.2s; }
+.nav-links a:hover { color: var(--gold); }
+.nav-links a.active { color: var(--gold); }
+
+/* PAGE HEADER */
+.page-header {
+  padding-top: 70px;
+  background: var(--cyber);
+  position: relative;
+  overflow: hidden;
+}
+.page-header::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,212,255,0.02) 40px, rgba(0,212,255,0.02) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,212,255,0.02) 40px, rgba(0,212,255,0.02) 41px);
+}
+.page-header-inner {
+  max-width: 1100px; margin: 0 auto;
+  padding: 5rem 2rem 4rem;
+  position: relative; z-index: 1;
+}
+.page-tag {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--neon); margin-bottom: 1rem; display: block;
+}
+.page-title {
+  font-size: clamp(2.4rem, 5vw, 4.2rem); font-weight: 300; line-height: 1.1; margin-bottom: 1rem;
+}
+.page-title em { font-style: italic; color: var(--gold-light); }
+.page-subtitle {
+  font-size: 1.1rem; font-weight: 300; color: rgba(245,242,236,0.55); max-width: 580px; line-height: 1.9;
+}
+
+/* STATS BAR */
+.stats-bar {
+  background: rgba(0,0,0,0.5);
+  border-top: 1px solid rgba(0,212,255,0.12);
+  border-bottom: 1px solid rgba(0,212,255,0.12);
+  position: relative; z-index: 1;
+}
+.stats-bar-inner {
+  max-width: 1100px; margin: 0 auto; padding: 1.2rem 2rem;
+  display: flex; gap: 3rem; flex-wrap: wrap; align-items: center;
+}
+.stat-item { display: flex; align-items: baseline; gap: 0.6rem; }
+.stat-val {
+  font-family: var(--mono); font-size: 1.5rem; color: var(--gold2);
+  font-weight: 400; line-height: 1;
+  text-shadow: 0 0 16px rgba(240,192,64,0.4);
+}
+.stat-lbl {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(245,242,236,0.35);
+}
+.stat-sep {
+  width: 1px; height: 2rem; background: rgba(184,147,58,0.2);
+}
+
+/* MAIN CONTENT */
+.main { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem 6rem; }
+
+/* CONTROLS */
+.controls {
+  display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+  margin-bottom: 2.5rem; padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(184,147,58,0.1);
+}
+.search-wrap {
+  position: relative; flex: 1; min-width: 220px;
+}
+.search-icon {
+  position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 0.75rem; color: rgba(245,242,236,0.3);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(184,147,58,0.18);
+  color: var(--paper); font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.06em;
+  padding: 0.65rem 1rem 0.65rem 2.5rem; outline: none; transition: border-color 0.2s;
+}
+.search-input::placeholder { color: rgba(245,242,236,0.25); }
+.search-input:focus { border-color: rgba(184,147,58,0.45); }
+
+.sort-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.sort-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(245,242,236,0.3);
+}
+.sort-select {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(184,147,58,0.18);
+  color: var(--paper); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.05em;
+  padding: 0.55rem 0.9rem; outline: none; cursor: pointer; transition: border-color 0.2s;
+  -webkit-appearance: none; appearance: none;
+}
+.sort-select:focus { border-color: rgba(184,147,58,0.45); }
+
+/* FILTER PILLS */
+.filter-row {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.filter-pill {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.35rem 0.85rem; border: 1px solid rgba(245,242,236,0.12);
+  color: rgba(245,242,236,0.45); cursor: pointer; background: none;
+  transition: all 0.2s;
+}
+.filter-pill:hover { color: var(--paper); border-color: rgba(245,242,236,0.35); }
+.filter-pill.active { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+.filter-pill[data-cat="Web"].active    { background: var(--cat-web);     border-color: var(--cat-web);     color: #000; }
+.filter-pill[data-cat="Crypto"].active { background: var(--cat-crypto);  border-color: var(--cat-crypto);  color: #fff; }
+.filter-pill[data-cat="Pwn"].active    { background: var(--cat-pwn);     border-color: var(--cat-pwn);     color: #fff; }
+.filter-pill[data-cat="Stego"].active  { background: var(--cat-stego);   border-color: var(--cat-stego);   color: #000; }
+.filter-pill[data-cat="Misc"].active   { background: var(--cat-misc);    border-color: var(--cat-misc);    color: #000; }
+.filter-pill[data-cat="Reverse"].active{ background: var(--cat-reverse); border-color: var(--cat-reverse); color: #000; }
+.filter-pill[data-cat="Network"].active{ background: var(--cat-network); border-color: var(--cat-network); color: #000; }
+
+/* RESULTS COUNT */
+.results-meta {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
+  color: rgba(245,242,236,0.3); margin-bottom: 1.5rem; text-transform: uppercase;
+}
+.results-meta span { color: var(--gold); }
+
+/* GRID */
+.writeups-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 1.5rem;
+}
+
+/* WRITEUP CARD */
+.writeup-card {
+  border: 1px solid rgba(184,147,58,0.12);
+  background: rgba(255,255,255,0.015);
+  padding: 2rem;
+  position: relative; overflow: hidden;
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.writeup-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+.writeup-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  opacity: 0; transition: opacity 0.25s;
+}
+.writeup-card:hover::before { opacity: 1; }
+
+/* Per-category card accent */
+.writeup-card[data-cat="Web"]:hover     { border-color: rgba(0,212,255,0.3); box-shadow: 0 8px 40px rgba(0,212,255,0.06); }
+.writeup-card[data-cat="Web"]::before   { background: linear-gradient(90deg, transparent, var(--cat-web), transparent); }
+.writeup-card[data-cat="Crypto"]:hover  { border-color: rgba(185,110,255,0.3); box-shadow: 0 8px 40px rgba(185,110,255,0.06); }
+.writeup-card[data-cat="Crypto"]::before{ background: linear-gradient(90deg, transparent, var(--cat-crypto), transparent); }
+.writeup-card[data-cat="Pwn"]:hover     { border-color: rgba(255,77,77,0.3); box-shadow: 0 8px 40px rgba(255,77,77,0.06); }
+.writeup-card[data-cat="Pwn"]::before   { background: linear-gradient(90deg, transparent, var(--cat-pwn), transparent); }
+.writeup-card[data-cat="Stego"]:hover   { border-color: rgba(240,192,64,0.3); box-shadow: 0 8px 40px rgba(240,192,64,0.06); }
+.writeup-card[data-cat="Stego"]::before { background: linear-gradient(90deg, transparent, var(--cat-stego), transparent); }
+.writeup-card[data-cat="Misc"]:hover    { border-color: rgba(0,232,120,0.3); box-shadow: 0 8px 40px rgba(0,232,120,0.06); }
+.writeup-card[data-cat="Misc"]::before  { background: linear-gradient(90deg, transparent, var(--cat-misc), transparent); }
+.writeup-card[data-cat="Reverse"]:hover { border-color: rgba(255,140,66,0.3); box-shadow: 0 8px 40px rgba(255,140,66,0.06); }
+.writeup-card[data-cat="Reverse"]::before{ background: linear-gradient(90deg, transparent, var(--cat-reverse), transparent); }
+.writeup-card[data-cat="Network"]:hover { border-color: rgba(77,159,255,0.3); box-shadow: 0 8px 40px rgba(77,159,255,0.06); }
+.writeup-card[data-cat="Network"]::before{ background: linear-gradient(90deg, transparent, var(--cat-network), transparent); }
+
+/* CARD HEADER ROW */
+.card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.card-ctf-name {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(245,242,236,0.4); margin-bottom: 0.3rem;
+}
+.card-challenge-name { font-size: 1.35rem; font-weight: 300; line-height: 1.2; }
+.card-badge {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em;
+  text-transform: uppercase; padding: 0.28rem 0.75rem; border: 1px solid;
+  white-space: nowrap; flex-shrink: 0; margin-top: 0.1rem;
+}
+.badge-Web     { color: var(--cat-web);     border-color: var(--cat-web);     background: rgba(0,212,255,0.07); }
+.badge-Crypto  { color: var(--cat-crypto);  border-color: var(--cat-crypto);  background: rgba(185,110,255,0.07); }
+.badge-Pwn     { color: var(--cat-pwn);     border-color: var(--cat-pwn);     background: rgba(255,77,77,0.07); }
+.badge-Stego   { color: var(--cat-stego);   border-color: var(--cat-stego);   background: rgba(240,192,64,0.07); }
+.badge-Misc    { color: var(--cat-misc);    border-color: var(--cat-misc);    background: rgba(0,232,120,0.07); }
+.badge-Reverse { color: var(--cat-reverse); border-color: var(--cat-reverse); background: rgba(255,140,66,0.07); }
+.badge-Network { color: var(--cat-network); border-color: var(--cat-network); background: rgba(77,159,255,0.07); }
+
+/* META ROW */
+.card-meta { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.card-meta-item {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  color: rgba(245,242,236,0.35); display: flex; align-items: center; gap: 0.35rem;
+}
+.card-meta-item .meta-val { color: var(--gold); font-weight: 400; }
+.diff-Hard   { color: #ff6b6b !important; }
+.diff-Medium { color: #ffa94d !important; }
+.diff-Easy   { color: #69db7c !important; }
+
+/* APPROACH */
+.card-approach {
+  font-size: 0.98rem; font-weight: 300; color: rgba(245,242,236,0.6);
+  line-height: 1.85; border-left: 2px solid rgba(184,147,58,0.2);
+  padding-left: 1rem;
+}
+
+/* TECHNIQUE TAGS */
+.card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.card-tag {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  padding: 0.22rem 0.6rem; border: 1px solid rgba(245,242,236,0.1);
+  color: rgba(245,242,236,0.45); transition: all 0.2s;
+}
+.writeup-card:hover .card-tag { border-color: rgba(245,242,236,0.15); color: rgba(245,242,236,0.6); }
+
+/* READ MORE */
+.card-footer { margin-top: auto; display: flex; justify-content: flex-end; }
+.read-more-wrap { position: relative; display: inline-block; }
+.read-more-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.55rem 1.4rem; border: 1px solid rgba(184,147,58,0.25);
+  color: rgba(184,147,58,0.5); background: none; cursor: not-allowed;
+  transition: all 0.2s; position: relative;
+}
+.read-more-btn::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent, transparent 4px,
+    rgba(184,147,58,0.04) 4px, rgba(184,147,58,0.04) 5px
+  );
+}
+.tooltip {
+  position: absolute; bottom: calc(100% + 8px); right: 0;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; white-space: nowrap;
+  background: rgba(14,14,14,0.95); border: 1px solid rgba(184,147,58,0.25);
+  color: var(--gold-light); padding: 0.4rem 0.85rem;
+  opacity: 0; pointer-events: none; transform: translateY(4px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.tooltip::after {
+  content: ''; position: absolute; top: 100%; right: 1rem;
+  border: 5px solid transparent; border-top-color: rgba(184,147,58,0.25);
+}
+.read-more-wrap:hover .tooltip { opacity: 1; transform: translateY(0); }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 5rem 2rem; display: none;
+}
+.empty-state.show { display: block; }
+.empty-state-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.4; }
+.empty-state-title { font-size: 1.4rem; font-weight: 300; color: rgba(245,242,236,0.4); margin-bottom: 0.5rem; }
+.empty-state-sub { font-family: var(--mono); font-size: 0.7rem; color: rgba(245,242,236,0.2); letter-spacing: 0.1em; }
+
+/* FADE IN */
+.fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.55s ease, transform 0.55s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+
+/* FOOTER */
+footer {
+  text-align: center; padding: 2rem;
+  border-top: 1px solid rgba(184,147,58,0.1);
+  font-family: var(--mono); font-size: 0.68rem;
+  color: rgba(245,242,236,0.2); letter-spacing: 0.1em;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { gap: 1rem; }
+  .page-header-inner { padding: 3.5rem 1.5rem 2.5rem; }
+  .stats-bar-inner { gap: 1.5rem; }
+  .stat-sep { display: none; }
+  .main { padding: 2rem 1.5rem 4rem; }
+  .writeups-grid { grid-template-columns: 1fr; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .sort-wrap { justify-content: flex-end; }
+}
+</style>
+</head>
+<body>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<nav>
+  <a href="/" class="nav-logo">BRIAN TEMPLE</a>
+  <ul class="nav-links">
+    <li><a href="/#about">About</a></li>
+    <li><a href="/#experience">Experience</a></li>
+    <li><a href="/#skills">Skills</a></li>
+    <li><a href="/#projects">Projects</a></li>
+    <li><a href="/#certs">Certs</a></li>
+    <li><a href="/#education">Education</a></li>
+    <li><a href="/#all-skills">All Skills</a></li>
+    <li><a href="/#cooking">Kitchen</a></li>
+    <li><a href="/#volunteering">Volunteer</a></li>
+    <li><a href="/ctf-writeups.html" class="active">CTF Writeups</a></li>
+    <li><a href="/#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- PAGE HEADER -->
+<header class="page-header">
+  <div class="page-header-inner">
+    <span class="page-tag">// Capture The Flag — Writeups &amp; Analysis</span>
+    <h1 class="page-title">CTF <em>Writeups</em></h1>
+    <p class="page-subtitle">Documented exploits, techniques, and post-mortems from competitive security challenges. Each entry traces the kill chain from recon to flag.</p>
+  </div>
+  <div class="stats-bar">
+    <div class="stats-bar-inner">
+      <div class="stat-item">
+        <span class="stat-val">8</span>
+        <span class="stat-lbl">Total Solved</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <span class="stat-val">12</span>
+        <span class="stat-lbl">CTFs Competed</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <span class="stat-val">293</span>
+        <span class="stat-lbl">Avg Points</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search challenges, CTFs, techniques..." autocomplete="off">
+    </div>
+    <div class="sort-wrap">
+      <span class="sort-label">Sort</span>
+      <select class="sort-select" id="sortSelect">
+        <option value="newest">Newest First</option>
+        <option value="points">Points — High to Low</option>
+        <option value="difficulty">Difficulty</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- FILTER PILLS -->
+  <div class="filter-row" id="filterRow">
+    <button class="filter-pill active" data-cat="All">All</button>
+    <button class="filter-pill" data-cat="Web">Web</button>
+    <button class="filter-pill" data-cat="Crypto">Crypto</button>
+    <button class="filter-pill" data-cat="Pwn">Pwn</button>
+    <button class="filter-pill" data-cat="Stego">Stego</button>
+    <button class="filter-pill" data-cat="Misc">Misc</button>
+    <button class="filter-pill" data-cat="Reverse">Reverse</button>
+    <button class="filter-pill" data-cat="Network">Network</button>
+  </div>
+
+  <!-- RESULTS META -->
+  <div class="results-meta" id="resultsMeta"><span>8</span> writeups found</div>
+
+  <!-- GRID -->
+  <div class="writeups-grid" id="writeupsGrid"></div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-state-icon">◈</div>
+    <div class="empty-state-title">No writeups match your filter</div>
+    <div class="empty-state-sub">Try a different category or search term</div>
+  </div>
+
+</main>
+
+<footer>&copy; 2026 Brian Temple &nbsp;·&nbsp; Towaco, New Jersey &nbsp;·&nbsp; Deus Vult</footer>
+
+<script>
+const writeups = [
+  {
+    id: 1,
+    ctf: 'PicoCTF 2024',
+    year: 2024,
+    challenge: 'Flag in the Machine',
+    category: 'Web',
+    points: 300,
+    difficulty: 'Medium',
+    approach: 'Identified a second-order SQL injection vulnerability in the login form that allowed extraction of the session signing secret. Combined with a crafted JWT bearing an elevated role claim, the challenge yielded full admin access and the flag buried in a protected API endpoint.',
+    tags: ['SQL Injection', 'JWT Forgery', 'Second-Order SQLi', 'UNION SELECT', 'HS256'],
+    order: 1
+  },
+  {
+    id: 2,
+    ctf: 'HackTheBox — Fortress "Olympus"',
+    year: 2024,
+    challenge: 'Olympus',
+    category: 'Pwn',
+    points: 0,
+    difficulty: 'Hard',
+    label: 'Red Team',
+    approach: 'Leveraged a server-side request forgery vulnerability in the internal metadata service to pivot to a back-end document parser. The parser\'s Java deserialization routine accepted arbitrary gadget chains, enabling remote code execution as a privileged service account and full host compromise.',
+    tags: ['SSRF', 'Java Deserialization', 'RCE', 'Gadget Chain', 'Metadata Service'],
+    order: 2
+  },
+  {
+    id: 3,
+    ctf: 'CTFd Challenge',
+    year: 2023,
+    challenge: 'Zero Day Café',
+    category: 'Pwn',
+    points: 500,
+    difficulty: 'Hard',
+    approach: 'Reversed a 64-bit ELF binary to locate an unbounded strcpy into a stack buffer. Crafted a ROP chain to defeat stack canaries via a format-string leak, then chained ret2libc to call system("/bin/sh") and read the flag from the container filesystem.',
+    tags: ['Buffer Overflow', 'ret2libc', 'ROP Chain', 'Format String Leak', 'Stack Canary Bypass'],
+    order: 3
+  },
+  {
+    id: 4,
+    ctf: 'DEFCON CTF Quals',
+    year: 2023,
+    challenge: 'Crypto Dungeon',
+    category: 'Crypto',
+    points: 400,
+    difficulty: 'Hard',
+    approach: 'The service encrypted a chosen plaintext under AES-128-CBC and returned a padding-valid/invalid oracle. Using a byte-by-byte padding oracle attack, the full plaintext was decrypted block by block without the key, revealing the flag encoded in the ciphertext\'s plaintext layer.',
+    tags: ['AES-CBC', 'Padding Oracle', 'Block Cipher', 'Chosen Plaintext', 'PKCS#7'],
+    order: 4
+  },
+  {
+    id: 5,
+    ctf: 'NahamCon 2023',
+    year: 2023,
+    challenge: 'Stealth Mode',
+    category: 'Stego',
+    points: 200,
+    difficulty: 'Easy',
+    approach: 'Analysed a provided WAV file and noticed statistical anomalies in the LSB plane of each audio sample. Extracting the least-significant bits and reassembling them byte-by-byte with Python revealed a Base64-encoded payload that decoded directly to the challenge flag.',
+    tags: ['LSB Steganography', 'Audio Analysis', 'WAV', 'Python', 'Base64'],
+    order: 5
+  },
+  {
+    id: 6,
+    ctf: 'TryHackMe — Advent of Cyber',
+    year: 2023,
+    challenge: 'Advent of Cyber',
+    category: 'Misc',
+    points: 150,
+    difficulty: 'Easy',
+    approach: 'Discovered an IDOR vulnerability in the gift-order endpoint by incrementing the user ID parameter to access another account\'s profile. From there, the admin panel\'s file-upload feature was exploited with a misconfigured sudo rule to escalate to root and capture the system flag.',
+    tags: ['IDOR', 'Privilege Escalation', 'Sudo Misconfiguration', 'File Upload', 'Linux'],
+    order: 6
+  },
+  {
+    id: 7,
+    ctf: 'Google CTF',
+    year: 2024,
+    challenge: 'Rev the Engine',
+    category: 'Reverse',
+    points: 350,
+    difficulty: 'Hard',
+    approach: 'Decompiled a WebAssembly module exported by a browser-based validator. Traced the flag verification logic through a series of bitwise XOR transformations and table lookups using wabt and a custom Python emulator, then solved the constraint system backwards to reconstruct the valid flag string.',
+    tags: ['WebAssembly', 'WASM', 'Reverse Engineering', 'wabt', 'Constraint Solving'],
+    order: 7
+  },
+  {
+    id: 8,
+    ctf: 'ångstromCTF',
+    year: 2023,
+    challenge: 'Net Nerd',
+    category: 'Network',
+    points: 250,
+    difficulty: 'Medium',
+    approach: 'Loaded a multi-thousand-packet PCAP into Wireshark and filtered for a non-standard port exhibiting structured binary exchanges. Wrote a Scapy dissector to reconstruct the custom TLV-based protocol, revealing an authentication handshake whose final payload field contained the flag in cleartext.',
+    tags: ['PCAP Analysis', 'Wireshark', 'Scapy', 'Protocol Reconstruction', 'TLV Protocol'],
+    order: 8
+  }
+];
+
+const difficultyOrder = { Easy: 1, Medium: 2, Hard: 3 };
+
+function renderBadge(cat) {
+  return `<span class="card-badge badge-${cat}">${cat}</span>`;
+}
+
+function renderCard(w) {
+  const pts = w.points > 0 ? `<span class="meta-val">${w.points} pts</span>` : `<span class="meta-val" style="color:rgba(245,242,236,0.35);">—</span>`;
+  const diffClass = `diff-${w.difficulty}`;
+  const label = w.label || w.category;
+  return `
+    <article class="writeup-card fade-in" data-cat="${w.category}" data-points="${w.points}" data-year="${w.year}" data-difficulty="${difficultyOrder[w.difficulty]}" data-id="${w.id}">
+      <div class="card-header">
+        <div>
+          <div class="card-ctf-name">${w.ctf}</div>
+          <div class="card-challenge-name">&ldquo;${w.challenge}&rdquo;</div>
+        </div>
+        ${renderBadge(w.category)}
+      </div>
+
+      <div class="card-meta">
+        <div class="card-meta-item">
+          <span>pts</span> ${pts}
+        </div>
+        <div class="card-meta-item">
+          <span>diff</span> <span class="meta-val ${diffClass}">${w.difficulty}</span>
+        </div>
+        <div class="card-meta-item">
+          <span>year</span> <span class="meta-val">${w.year}</span>
+        </div>
+      </div>
+
+      <p class="card-approach">${w.approach}</p>
+
+      <div class="card-tags">
+        ${w.tags.map(t => `<span class="card-tag">${t}</span>`).join('')}
+      </div>
+
+      <div class="card-footer">
+        <div class="read-more-wrap">
+          <button class="read-more-btn" disabled>Read More</button>
+          <span class="tooltip">Coming Soon</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function getFiltered() {
+  const cat = document.querySelector('.filter-pill.active').dataset.cat;
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const sort = document.getElementById('sortSelect').value;
+
+  let filtered = writeups.filter(w => {
+    const matchCat = cat === 'All' || w.category === cat;
+    const searchStr = `${w.ctf} ${w.challenge} ${w.category} ${w.tags.join(' ')}`.toLowerCase();
+    const matchQuery = !query || searchStr.includes(query);
+    return matchCat && matchQuery;
+  });
+
+  if (sort === 'newest') {
+    filtered.sort((a, b) => b.year - a.year || a.order - b.order);
+  } else if (sort === 'points') {
+    filtered.sort((a, b) => b.points - a.points || a.order - b.order);
+  } else if (sort === 'difficulty') {
+    filtered.sort((a, b) => b.difficulty_order - a.difficulty_order || a.order - b.order);
+  }
+
+  // Attach numeric difficulty order for sort
+  filtered.forEach(w => { w.difficulty_order = difficultyOrder[w.difficulty]; });
+  if (sort === 'difficulty') {
+    filtered.sort((a, b) => b.difficulty_order - a.difficulty_order || a.order - b.order);
+  }
+
+  return filtered;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const grid = document.getElementById('writeupsGrid');
+  const empty = document.getElementById('emptyState');
+  const meta = document.getElementById('resultsMeta');
+
+  grid.innerHTML = filtered.map(renderCard).join('');
+  meta.innerHTML = `<span>${filtered.length}</span> writeup${filtered.length !== 1 ? 's' : ''} found`;
+
+  if (filtered.length === 0) {
+    empty.classList.add('show');
+  } else {
+    empty.classList.remove('show');
+  }
+
+  // Trigger fade-in
+  requestAnimationFrame(() => {
+    grid.querySelectorAll('.fade-in').forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 60);
+    });
+  });
+}
+
+// Filter pills
+document.getElementById('filterRow').addEventListener('click', e => {
+  const pill = e.target.closest('.filter-pill');
+  if (!pill) return;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  render();
+});
+
+// Search
+document.getElementById('searchInput').addEventListener('input', render);
+
+// Sort
+document.getElementById('sortSelect').addEventListener('change', render);
+
+// Back to top
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTop');
+  btn.classList.toggle('show', window.scrollY > 400);
+});
+
+// Initial render
+render();
+</script>
+</body>
+</html>
