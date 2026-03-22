@@ -614,7 +614,7 @@ const atmosphereMat = new THREE.ShaderMaterial({
     void main() {
       float d = dot(vNormal, vec3(0,0,1.0));
       float intensity = pow(max(0.0, 0.7 - d), 3.0);
-      gl_FragColor = vec4(glowColor, intensity * 0.75);
+      gl_FragColor = vec4(glowColor, intensity * 0.95);
     }
   `,
 });
@@ -627,7 +627,7 @@ const innerAtmMat = new THREE.ShaderMaterial({
   transparent: true,
   uniforms: { glowColor: { value: new THREE.Color(0x00ffaa) } },
   vertexShader: `varying vec3 vNormal; void main(){ vNormal=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.5); }`,
+  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.65); }`,
 });
 scene.add(new THREE.Mesh(innerAtmGeo, innerAtmMat));
 
