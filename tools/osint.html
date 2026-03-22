@@ -154,6 +154,36 @@ footer a { color: var(--red); text-decoration: none; }
   .hero { padding: 3.5rem 1.2rem 3rem; }
   .progress-step { font-size: 0.5rem; padding: 0.5rem 0.2rem; }
 }
+
+/* ── GOLD CURSOR ── */
+body { cursor: none; }
+a, button, [role="button"], input, textarea, select { cursor: none; }
+#cursor {
+  position: fixed; pointer-events: none; z-index: 99999;
+  width: 8px; height: 8px;
+  transform: translate(-50%, -50%);
+  background: rgba(184,147,58,0.95);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(184,147,58,0.5);
+  transition: width 0.12s ease, height 0.12s ease;
+}
+body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba(184,147,58,0.7); }
+@keyframes trailFade {
+  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
+}
+.cursor-trail {
+  position: fixed; width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(184,147,58,0.7); pointer-events: none; z-index: 99998;
+  animation: trailFade 0.55s forwards;
+}
+@media (max-width: 768px) {
+  body { cursor: auto !important; }
+  a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, .cursor-trail { display: none !important; }
+}
+
+html { font-size: 18px; }
 </style>
 </head>
 <body>
@@ -626,6 +656,29 @@ async function startOSINT(){
     dns: { A: aRecords.map(r=>r.data), AAAA: resAAAA?.Answer?.map(r=>r.data)||[], MX: resMX?.Answer?.map(r=>r.data)||[], NS: resNS?.Answer?.map(r=>r.data)||[] }
   };
 }
+</script>
+<div id="cursor"></div>
+<script>
+(function(){
+  const c = document.getElementById('cursor');
+  if(!c) return;
+  let t = 0;
+  document.addEventListener('mousemove', e => {
+    c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
+    const now = Date.now();
+    if(now - t > 40){ t = now;
+      const p = document.createElement('div'); p.className = 'cursor-trail';
+      p.style.left = e.clientX + 'px'; p.style.top = e.clientY + 'px';
+      document.body.appendChild(p); setTimeout(() => p.remove(), 560);
+    }
+  });
+  document.addEventListener('mouseleave', () => c.style.opacity = '0');
+  document.addEventListener('mouseenter', () => c.style.opacity = '1');
+  document.querySelectorAll('a,button,[role="button"]').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+})();
 </script>
 </body>
 </html>
