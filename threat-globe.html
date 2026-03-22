@@ -486,16 +486,39 @@ const GLOBE_R = 1.0;
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
 scene.add(ambientLight);
 
-// ─── GLOBE SPHERE (solid dark base) ─────────────────────────────────────────
+// ─── GLOBE SPHERE WITH EARTH TEXTURE ─────────────────────────────────────────
 const sphereGeo = new THREE.SphereGeometry(GLOBE_R, 64, 64);
 const sphereMat = new THREE.MeshPhongMaterial({
-  color: 0x050810,
-  emissive: 0x001122,
-  transparent: true,
-  opacity: 0.97,
+  color: 0xffffff,
+  specular: new THREE.Color(0x222244),
+  shininess: 12,
 });
 const sphere = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
+
+// Load Earth textures from jsDelivr CDN (CORS-friendly)
+const loader = new THREE.TextureLoader();
+loader.crossOrigin = 'anonymous';
+loader.load(
+  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg',
+  (tex) => { sphereMat.map = tex; sphereMat.needsUpdate = true; },
+  undefined,
+  () => {
+    // Fallback: if CDN fails, try NASA Blue Marble
+    loader.load(
+      'https://unpkg.com/three@0.128.0/examples/textures/planets/earth_atmos_2048.jpg',
+      (tex) => { sphereMat.map = tex; sphereMat.needsUpdate = true; }
+    );
+  }
+);
+loader.load(
+  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_specular_2048.jpg',
+  (tex) => { sphereMat.specularMap = tex; sphereMat.needsUpdate = true; }
+);
+loader.load(
+  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_normal_2048.jpg',
+  (tex) => { sphereMat.normalMap = tex; sphereMat.normalScale.set(0.5, 0.5); sphereMat.needsUpdate = true; }
+);
 
 // ─── ATMOSPHERE GLOW ────────────────────────────────────────────────────────
 const atmosphereGeo = new THREE.SphereGeometry(GLOBE_R * 1.06, 64, 64);
