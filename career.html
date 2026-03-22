@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Timeline — Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #0e0e0e; --paper: #f5f2ec; --cream: #ede9e0;
+  --gold: #b8933a; --gold-light: #d4a84b; --gold2: #f0c040;
+  --cyber: #0f1623; --neon: #00d4ff; --neon-dim: rgba(0,212,255,0.12);
+  --crimson: #8B0000;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --mono: 'DM Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--serif);
+  background: var(--ink);
+  color: var(--paper);
+  line-height: 1.75;
+  overflow-x: hidden;
+  font-size: 17px;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: var(--gold); }
+
+/* SCROLL ANIMATIONS */
+.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.2rem 3rem;
+  background: rgba(14,14,14,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(184,147,58,0.15);
+}
+.nav-logo {
+  font-family: var(--mono); font-size: 1rem;
+  letter-spacing: 0.2em; color: var(--gold); font-weight: 300;
+  text-decoration: none;
+}
+.nav-links { display: flex; gap: 2rem; list-style: none; flex-wrap: wrap; }
+.nav-links a {
+  color: rgba(245,242,236,0.6); text-decoration: none;
+  font-family: var(--mono); font-size: 0.68rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--gold); }
+.nav-links a.active { color: var(--gold); }
+
+/* BACK TO TOP */
+.back-to-top {
+  position: fixed; bottom: 2rem; right: 2rem;
+  width: 44px; height: 44px;
+  background: rgba(184,147,58,0.15);
+  border: 1px solid rgba(184,147,58,0.3);
+  color: var(--gold); font-size: 1.2rem;
+  cursor: pointer; z-index: 90;
+  display: none; align-items: center; justify-content: center;
+  transition: all 0.3s; backdrop-filter: blur(8px);
+}
+.back-to-top:hover { background: rgba(184,147,58,0.3); border-color: var(--gold); }
+.back-to-top.show { display: flex; }
+
+/* PAGE HERO */
+.page-hero {
+  padding-top: 70px;
+  min-height: 38vh;
+  display: flex; align-items: center;
+  background: var(--cyber);
+  position: relative; overflow: hidden;
+}
+.page-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,212,255,0.02) 40px, rgba(0,212,255,0.02) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,212,255,0.02) 40px, rgba(0,212,255,0.02) 41px);
+}
+.page-hero::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.page-hero-inner {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 5rem 4rem;
+}
+.page-label {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--neon); margin-bottom: 1rem; display: block;
+}
+.page-title {
+  font-size: clamp(2.8rem, 5vw, 5rem); font-weight: 300; line-height: 1.08;
+  margin-bottom: 1.2rem;
+}
+.page-title em { font-style: italic; color: var(--gold-light); }
+.page-subtitle {
+  font-size: 1.15rem; font-weight: 300;
+  color: rgba(245,242,236,0.55); max-width: 520px; line-height: 1.9;
+}
+
+/* SECTIONS */
+section { padding: 7rem 4rem; }
+.inner { max-width: 1100px; margin: 0 auto; }
+.section-label {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem;
+}
+.section-title {
+  font-size: clamp(2.2rem, 3.5vw, 3.5rem); font-weight: 300; margin-bottom: 3.5rem;
+}
+.section-title em { font-style: italic; color: var(--gold-light); }
+
+/* ── TIMELINE ── */
+#timeline { background: #0c0c0c; }
+
+.timeline-wrap {
+  position: relative;
+  padding: 1rem 0 2rem;
+}
+
+/* Central gold line */
+.timeline-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(184,147,58,0.5) 5%,
+    rgba(184,147,58,0.5) 95%,
+    transparent 100%
+  );
+}
+
+/* Each timeline row */
+.tl-event {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  align-items: start;
+  margin-bottom: 3.5rem;
+  position: relative;
+}
+
+/* The dot on the line */
+.tl-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--ink);
+  box-shadow: 0 0 10px rgba(184,147,58,0.5);
+  margin: 1.4rem auto 0;
+  position: relative; z-index: 2;
+  flex-shrink: 0;
+}
+.tl-dot.milestone {
+  background: var(--neon);
+  box-shadow: 0 0 12px rgba(0,212,255,0.6);
+}
+
+/* Card on left side */
+.tl-card-left {
+  grid-column: 1;
+  text-align: right;
+  padding-right: 2.5rem;
+}
+
+/* Card on right side */
+.tl-card-right {
+  grid-column: 3;
+  text-align: left;
+  padding-left: 2.5rem;
+}
+
+/* Empty spacer on opposite side */
+.tl-empty { /* grid-column set inline */ }
+
+/* The actual card box */
+.tl-card {
+  border: 1px solid rgba(184,147,58,0.15);
+  padding: 1.6rem 1.8rem;
+  background: rgba(255,255,255,0.015);
+  transition: border-color 0.25s, transform 0.25s, background 0.25s;
+  display: inline-block;
+  width: 100%;
+  text-align: left;
+}
+.tl-card:hover {
+  border-color: rgba(184,147,58,0.38);
+  transform: translateY(-3px);
+  background: rgba(184,147,58,0.03);
+}
+.tl-card.milestone-card {
+  border-color: rgba(0,212,255,0.18);
+}
+.tl-card.milestone-card:hover {
+  border-color: rgba(0,212,255,0.38);
+  background: rgba(0,212,255,0.03);
+}
+
+.tl-date {
+  display: inline-block;
+  font-family: var(--mono); font-size: 0.62rem;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 0.6rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid rgba(184,147,58,0.3);
+  background: rgba(184,147,58,0.06);
+}
+.tl-card.milestone-card .tl-date {
+  color: var(--neon);
+  border-color: rgba(0,212,255,0.3);
+  background: rgba(0,212,255,0.06);
+}
+
+.tl-role { font-size: 1.3rem; font-weight: 300; margin-bottom: 0.2rem; }
+.tl-company {
+  font-family: var(--mono); font-size: 0.65rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold-light); margin-bottom: 0.75rem;
+}
+.tl-card.milestone-card .tl-company { color: var(--neon); }
+.tl-desc {
+  font-size: 0.95rem; color: rgba(245,242,236,0.55);
+  line-height: 1.8; margin-bottom: 0.9rem;
+}
+.tl-tags {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+}
+.tl-tag {
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.08em; padding: 0.25rem 0.65rem;
+  border: 1px solid rgba(184,147,58,0.22);
+  color: rgba(184,147,58,0.65);
+}
+.tl-tag.neon {
+  border-color: rgba(0,212,255,0.22);
+  color: rgba(0,212,255,0.6);
+}
+
+/* ── CERTIFICATIONS ── */
+#certifications { background: #111; }
+
+.cert-grid-career {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.2rem;
+}
+.cert-card-career {
+  border: 1px solid rgba(184,147,58,0.15);
+  padding: 1.8rem;
+  transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.cert-card-career::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0; transition: opacity 0.25s;
+}
+.cert-card-career:hover { border-color: rgba(184,147,58,0.4); transform: translateY(-3px); background: rgba(184,147,58,0.03); }
+.cert-card-career:hover::before { opacity: 1; }
+.cert-card-career.featured {
+  border-color: rgba(0,212,255,0.2);
+}
+.cert-card-career.featured::before {
+  background: linear-gradient(90deg, transparent, var(--neon), transparent);
+}
+.cert-card-career.featured:hover { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.03); }
+
+.cert-year {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em;
+  color: var(--gold); text-transform: uppercase; margin-bottom: 0.6rem;
+}
+.cert-card-career.featured .cert-year { color: var(--neon); }
+.cert-title-career {
+  font-size: 1.15rem; font-weight: 300; margin-bottom: 0.3rem; line-height: 1.3;
+}
+.cert-body-career {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: rgba(245,242,236,0.35); letter-spacing: 0.08em; margin-bottom: 0.8rem;
+}
+.cert-badge {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(184,147,58,0.35); color: rgba(184,147,58,0.7);
+  display: inline-block;
+}
+.cert-card-career.featured .cert-badge {
+  border-color: rgba(0,212,255,0.35); color: rgba(0,212,255,0.7);
+}
+
+/* ── SKILLS ── */
+#skills { background: var(--cyber); }
+
+.skills-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+.skills-category-block {
+  border: 1px solid rgba(184,147,58,0.1);
+  padding: 1.6rem;
+}
+.skills-cat-label {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--gold);
+  margin-bottom: 1rem; padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(184,147,58,0.12);
+}
+.pill-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.skill-pill-career {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid rgba(245,242,236,0.1);
+  color: rgba(245,242,236,0.55);
+  transition: all 0.2s;
+}
+.skill-pill-career:hover {
+  border-color: var(--neon); color: var(--neon);
+}
+.skill-pill-career.gold {
+  border-color: rgba(184,147,58,0.3); color: rgba(184,147,58,0.75);
+}
+.skill-pill-career.gold:hover {
+  border-color: var(--gold); color: var(--gold);
+}
+.skill-pill-career.neon {
+  border-color: rgba(0,212,255,0.25); color: rgba(0,212,255,0.65);
+}
+.skill-pill-career.neon:hover {
+  border-color: var(--neon); color: var(--neon);
+}
+
+/* FOOTER */
+footer {
+  text-align: center; padding: 2rem;
+  border-top: 1px solid rgba(184,147,58,0.1);
+  font-family: var(--mono); font-size: 0.68rem;
+  color: rgba(245,242,236,0.2); letter-spacing: 0.1em;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .page-hero-inner { padding: 4rem 2rem; }
+
+  /* Collapse to single column */
+  .timeline-wrap::before { left: 28px; transform: none; }
+
+  .tl-event {
+    grid-template-columns: 56px 1fr;
+    margin-bottom: 2rem;
+  }
+  .tl-dot { margin: 1.2rem 0 0 11px; }
+
+  /* All cards go to right column */
+  .tl-card-left,
+  .tl-card-right {
+    grid-column: 2;
+    text-align: left;
+    padding-left: 1.5rem;
+    padding-right: 0;
+  }
+  .tl-empty { display: none; }
+}
+
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { gap: 1rem; }
+  section { padding: 4rem 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">BRIAN TEMPLE</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="/tools/">Tools</a></li>
+    <li><a href="career.html" class="active">Career</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- PAGE HERO -->
+<header class="page-hero">
+  <div class="page-hero-inner">
+    <span class="page-label">// career_timeline.log</span>
+    <h1 class="page-title">Career <em>Timeline</em></h1>
+    <p class="page-subtitle">
+      A decade of breaking things, defending systems, and chasing adversaries
+      across web, mobile, cloud, and the spaces in between.
+    </p>
+  </div>
+</header>
+
+<!-- TIMELINE SECTION -->
+<section id="timeline">
+  <div class="inner">
+    <div class="section-label">// experience</div>
+    <h2 class="section-title">Professional <em>History</em></h2>
+
+    <div class="timeline-wrap">
+
+      <!-- 2024–Present: Apex Dynamics -->
+      <div class="tl-event fade-in">
+        <div class="tl-card-left">
+          <div class="tl-card">
+            <span class="tl-date">2024 — Present</span>
+            <h3 class="tl-role">Lead Security Engineer</h3>
+            <div class="tl-company">Apex Dynamics</div>
+            <p class="tl-desc">
+              Leading a red team of six, conducting adversarial simulations against critical infrastructure clients.
+              Pioneered AI-assisted threat modeling workflows, reducing engagement scoping time by 40%.
+              Active 0-day research with two responsible disclosures under review.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag neon">Red Team</span>
+              <span class="tl-tag neon">AI Threat Modeling</span>
+              <span class="tl-tag neon">0-day Research</span>
+              <span class="tl-tag">Team Lead</span>
+              <span class="tl-tag">CVE Research</span>
+            </div>
+          </div>
+        </div>
+        <div class="tl-dot" style="grid-column:2"></div>
+        <div class="tl-empty" style="grid-column:3"></div>
+      </div>
+
+      <!-- 2022–2024: CipherCore -->
+      <div class="tl-event fade-in">
+        <div class="tl-empty" style="grid-column:1"></div>
+        <div class="tl-dot" style="grid-column:2"></div>
+        <div class="tl-card-right" style="grid-column:3">
+          <div class="tl-card">
+            <span class="tl-date">2022 — 2024</span>
+            <h3 class="tl-role">Senior Penetration Tester</h3>
+            <div class="tl-company">CipherCore</div>
+            <p class="tl-desc">
+              Delivered 60+ web, mobile, and cloud penetration tests for fintech and healthcare clients.
+              Led CVE research programme resulting in three published advisories. Mentored junior testers
+              and co-authored internal mobile testing methodology.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag neon">Web Pentesting</span>
+              <span class="tl-tag neon">Mobile Security</span>
+              <span class="tl-tag neon">Cloud Pentesting</span>
+              <span class="tl-tag">CVE Research</span>
+              <span class="tl-tag">Burp Suite</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2022: OSCP milestone -->
+      <div class="tl-event fade-in">
+        <div class="tl-card-left">
+          <div class="tl-card milestone-card">
+            <span class="tl-date">2022</span>
+            <h3 class="tl-role">OSCP Certified</h3>
+            <div class="tl-company">Offensive Security</div>
+            <p class="tl-desc">
+              Passed the 24-hour OSCP exam on first attempt, demonstrating real-world exploitation
+              and post-exploitation skills across a live lab network.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag neon">Certification</span>
+              <span class="tl-tag neon">Exploitation</span>
+            </div>
+          </div>
+        </div>
+        <div class="tl-dot milestone" style="grid-column:2"></div>
+        <div class="tl-empty" style="grid-column:3"></div>
+      </div>
+
+      <!-- 2021–2022: Veridian Systems -->
+      <div class="tl-event fade-in">
+        <div class="tl-empty" style="grid-column:1"></div>
+        <div class="tl-dot" style="grid-column:2"></div>
+        <div class="tl-card-right" style="grid-column:3">
+          <div class="tl-card">
+            <span class="tl-date">2021 — 2022</span>
+            <h3 class="tl-role">Security Analyst</h3>
+            <div class="tl-company">Veridian Systems</div>
+            <p class="tl-desc">
+              Tier 2 SOC analyst handling escalated incidents across a 4,000-seat enterprise.
+              Developed SIEM correlation rules that cut false-positive alert volume by 35%.
+              Led incident response for two significant ransomware near-misses.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag">SOC Tier 2</span>
+              <span class="tl-tag">Incident Response</span>
+              <span class="tl-tag">Splunk</span>
+              <span class="tl-tag">SIEM Tuning</span>
+              <span class="tl-tag">Threat Hunting</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2021: CEH milestone -->
+      <div class="tl-event fade-in">
+        <div class="tl-card-left">
+          <div class="tl-card milestone-card">
+            <span class="tl-date">2021</span>
+            <h3 class="tl-role">CEH Certified</h3>
+            <div class="tl-company">EC-Council</div>
+            <p class="tl-desc">
+              Certified Ethical Hacker — formalising knowledge of attack vectors, countermeasures
+              and ethical hacking methodology.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag neon">Certification</span>
+            </div>
+          </div>
+        </div>
+        <div class="tl-dot milestone" style="grid-column:2"></div>
+        <div class="tl-empty" style="grid-column:3"></div>
+      </div>
+
+      <!-- 2019–2021: DataVault Inc -->
+      <div class="tl-event fade-in">
+        <div class="tl-empty" style="grid-column:1"></div>
+        <div class="tl-dot" style="grid-column:2"></div>
+        <div class="tl-card-right" style="grid-column:3">
+          <div class="tl-card">
+            <span class="tl-date">2019 — 2021</span>
+            <h3 class="tl-role">Junior Security Analyst</h3>
+            <div class="tl-company">DataVault Inc</div>
+            <p class="tl-desc">
+              First dedicated security role. Managed vulnerability scanning cycles with Nessus and Nmap,
+              coordinated patch management across 200+ servers, and began competing seriously in CTF
+              events — placing top-10 in three nationals.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag">Vulnerability Scanning</span>
+              <span class="tl-tag">Patch Management</span>
+              <span class="tl-tag">Nmap</span>
+              <span class="tl-tag">CTF Competitions</span>
+              <span class="tl-tag">Nessus</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2018: Security+ milestone -->
+      <div class="tl-event fade-in">
+        <div class="tl-card-left">
+          <div class="tl-card milestone-card">
+            <span class="tl-date">2018</span>
+            <h3 class="tl-role">CompTIA Security+ Certified</h3>
+            <div class="tl-company">CompTIA</div>
+            <p class="tl-desc">
+              First professional security certification — the foundation that confirmed a career pivot
+              from general IT into cybersecurity.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag neon">Certification</span>
+              <span class="tl-tag neon">Career Pivot</span>
+            </div>
+          </div>
+        </div>
+        <div class="tl-dot milestone" style="grid-column:2"></div>
+        <div class="tl-empty" style="grid-column:3"></div>
+      </div>
+
+      <!-- 2017–2019: LocalTech Solutions -->
+      <div class="tl-event fade-in">
+        <div class="tl-empty" style="grid-column:1"></div>
+        <div class="tl-dot" style="grid-column:2"></div>
+        <div class="tl-card-right" style="grid-column:3">
+          <div class="tl-card">
+            <span class="tl-date">2017 — 2019</span>
+            <h3 class="tl-role">IT Support Technician</h3>
+            <div class="tl-company">LocalTech Solutions</div>
+            <p class="tl-desc">
+              First professional role in technology. Managed helpdesk, desktop support, and basic
+              network administration for SMB clients. Discovered a passion for security after
+              responding to a phishing incident and began self-studying ethical hacking in evenings.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag">IT Support</span>
+              <span class="tl-tag">Networking</span>
+              <span class="tl-tag">Windows Server</span>
+              <span class="tl-tag">Helpdesk</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2016–2017: University of Bristol -->
+      <div class="tl-event fade-in">
+        <div class="tl-card-left">
+          <div class="tl-card">
+            <span class="tl-date">2016 — 2017</span>
+            <h3 class="tl-role">B.Sc. Computer Science</h3>
+            <div class="tl-company">University of Bristol</div>
+            <p class="tl-desc">
+              Graduated with a Bachelor of Science in Computer Science. Dissertation on network
+              anomaly detection using statistical analysis. Active member of the university
+              cybersecurity society.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag">Algorithms</span>
+              <span class="tl-tag">Networking</span>
+              <span class="tl-tag">Dissertation</span>
+              <span class="tl-tag">CyberSoc</span>
+            </div>
+          </div>
+        </div>
+        <div class="tl-dot" style="grid-column:2"></div>
+        <div class="tl-empty" style="grid-column:3"></div>
+      </div>
+
+    </div><!-- /.timeline-wrap -->
+  </div><!-- /.inner -->
+</section>
+
+<!-- CERTIFICATIONS SECTION -->
+<section id="certifications">
+  <div class="inner">
+    <div class="section-label">// credentials</div>
+    <h2 class="section-title"><em>Certifications</em></h2>
+
+    <div class="cert-grid-career">
+
+      <div class="cert-card-career featured fade-in">
+        <div class="cert-year">Obtained 2022</div>
+        <h3 class="cert-title-career">Offensive Security Certified Professional</h3>
+        <div class="cert-body-career">Offensive Security · OSCP</div>
+        <span class="cert-badge">Active</span>
+      </div>
+
+      <div class="cert-card-career featured fade-in">
+        <div class="cert-year">Obtained 2023</div>
+        <h3 class="cert-title-career">AWS Certified Security — Specialty</h3>
+        <div class="cert-body-career">Amazon Web Services</div>
+        <span class="cert-badge">Active</span>
+      </div>
+
+      <div class="cert-card-career fade-in">
+        <div class="cert-year">Obtained 2021</div>
+        <h3 class="cert-title-career">Certified Ethical Hacker</h3>
+        <div class="cert-body-career">EC-Council · CEH v11</div>
+        <span class="cert-badge">Active</span>
+      </div>
+
+      <div class="cert-card-career fade-in">
+        <div class="cert-year">Obtained 2018</div>
+        <h3 class="cert-title-career">CompTIA Security+</h3>
+        <div class="cert-body-career">CompTIA · SY0-601</div>
+        <span class="cert-badge">Active</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS SECTION -->
+<section id="skills">
+  <div class="inner">
+    <div class="section-label">// technical_proficiencies</div>
+    <h2 class="section-title">Skills &amp; <em>Tooling</em></h2>
+
+    <div class="skills-pill-grid">
+
+      <div class="skills-category-block fade-in">
+        <div class="skills-cat-label">Offensive Security</div>
+        <div class="pill-row">
+          <span class="skill-pill-career neon">Burp Suite</span>
+          <span class="skill-pill-career neon">Metasploit</span>
+          <span class="skill-pill-career neon">Nmap</span>
+          <span class="skill-pill-career neon">Wireshark</span>
+          <span class="skill-pill-career">SQLMap</span>
+          <span class="skill-pill-career">Cobalt Strike</span>
+        </div>
+      </div>
+
+      <div class="skills-category-block fade-in">
+        <div class="skills-cat-label">Cloud &amp; Infrastructure</div>
+        <div class="pill-row">
+          <span class="skill-pill-career gold">AWS Security</span>
+          <span class="skill-pill-career gold">Docker</span>
+          <span class="skill-pill-career gold">Kubernetes</span>
+          <span class="skill-pill-career">Terraform</span>
+          <span class="skill-pill-career">Linux</span>
+        </div>
+      </div>
+
+      <div class="skills-category-block fade-in">
+        <div class="skills-cat-label">SIEM &amp; Monitoring</div>
+        <div class="pill-row">
+          <span class="skill-pill-career neon">Splunk</span>
+          <span class="skill-pill-career">ELK Stack</span>
+          <span class="skill-pill-career">Sentinel</span>
+          <span class="skill-pill-career">Wazuh</span>
+          <span class="skill-pill-career">QRadar</span>
+        </div>
+      </div>
+
+      <div class="skills-category-block fade-in">
+        <div class="skills-cat-label">Programming &amp; Scripting</div>
+        <div class="pill-row">
+          <span class="skill-pill-career gold">Python</span>
+          <span class="skill-pill-career gold">Bash</span>
+          <span class="skill-pill-career">JavaScript</span>
+          <span class="skill-pill-career">PowerShell</span>
+          <span class="skill-pill-career">Go</span>
+        </div>
+      </div>
+
+      <div class="skills-category-block fade-in">
+        <div class="skills-cat-label">Dev &amp; Collaboration</div>
+        <div class="pill-row">
+          <span class="skill-pill-career">Git</span>
+          <span class="skill-pill-career">GitHub Actions</span>
+          <span class="skill-pill-career">Jira</span>
+          <span class="skill-pill-career">Confluence</span>
+          <span class="skill-pill-career">VS Code</span>
+        </div>
+      </div>
+
+      <div class="skills-category-block fade-in">
+        <div class="skills-cat-label">Methodologies</div>
+        <div class="pill-row">
+          <span class="skill-pill-career gold">OWASP Top 10</span>
+          <span class="skill-pill-career gold">MITRE ATT&amp;CK</span>
+          <span class="skill-pill-career">PTES</span>
+          <span class="skill-pill-career">NIST CSF</span>
+          <span class="skill-pill-career">ISO 27001</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>&copy; 2026 Brian Temple &nbsp;&middot;&nbsp; Towaco, New Jersey &nbsp;&middot;&nbsp; Deus Vult</footer>
+
+<!-- BACK TO TOP -->
+<button class="back-to-top" id="backToTop" aria-label="Back to top">&#8593;</button>
+
+<script>
+// ── Scroll fade-in ──
+const fadeEls = document.querySelectorAll('.fade-in');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+fadeEls.forEach(el => observer.observe(el));
+
+// ── Back to top ──
+const btt = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  btt.classList.toggle('show', window.scrollY > 400);
+});
+btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+</body>
+</html>
