@@ -489,36 +489,40 @@ scene.add(ambientLight);
 // ─── GLOBE SPHERE WITH EARTH TEXTURE ─────────────────────────────────────────
 const sphereGeo = new THREE.SphereGeometry(GLOBE_R, 64, 64);
 const sphereMat = new THREE.MeshPhongMaterial({
-  color: 0xffffff,
-  specular: new THREE.Color(0x222244),
-  shininess: 12,
+  color: 0x113355,           // ocean blue placeholder while texture loads
+  specular: new THREE.Color(0x333355),
+  shininess: 15,
 });
 const sphere = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
 
-// Load Earth textures from jsDelivr CDN (CORS-friendly)
-const loader = new THREE.TextureLoader();
-loader.crossOrigin = 'anonymous';
-loader.load(
-  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg',
-  (tex) => { sphereMat.map = tex; sphereMat.needsUpdate = true; },
-  undefined,
-  () => {
-    // Fallback: if CDN fails, try NASA Blue Marble
-    loader.load(
-      'https://unpkg.com/three@0.128.0/examples/textures/planets/earth_atmos_2048.jpg',
-      (tex) => { sphereMat.map = tex; sphereMat.needsUpdate = true; }
-    );
-  }
-);
-loader.load(
-  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_specular_2048.jpg',
-  (tex) => { sphereMat.specularMap = tex; sphereMat.needsUpdate = true; }
-);
-loader.load(
-  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_normal_2048.jpg',
-  (tex) => { sphereMat.normalMap = tex; sphereMat.normalScale.set(0.5, 0.5); sphereMat.needsUpdate = true; }
-);
+// Load Earth texture — raw.githubusercontent.com guarantees CORS (Access-Control-Allow-Origin: *)
+// and definitely contains the three.js example texture files
+(function loadEarthTexture() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const tex = new THREE.Texture(img);
+    tex.needsUpdate = true;
+    sphereMat.map = tex;
+    sphereMat.color.set(0xffffff); // let texture show true colors
+    sphereMat.needsUpdate = true;
+  };
+  img.onerror = function() {
+    // Try Wikimedia Blue Marble if GitHub raw fails
+    const img2 = new Image();
+    img2.crossOrigin = 'anonymous';
+    img2.onload = function() {
+      const tex = new THREE.Texture(img2);
+      tex.needsUpdate = true;
+      sphereMat.map = tex;
+      sphereMat.color.set(0xffffff);
+      sphereMat.needsUpdate = true;
+    };
+    img2.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Land_ocean_ice_2048.jpg/2048px-Land_ocean_ice_2048.jpg';
+  };
+  img.src = 'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_atmos_2048.jpg';
+})();
 
 // ─── ATMOSPHERE GLOW ────────────────────────────────────────────────────────
 const atmosphereGeo = new THREE.SphereGeometry(GLOBE_R * 1.06, 64, 64);
