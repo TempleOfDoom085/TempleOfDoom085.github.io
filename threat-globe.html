@@ -539,7 +539,7 @@ scene.add(sphere);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.12, transparent: true, opacity: 0.75 });
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8, sizeAttenuation: false, transparent: true, opacity: 0.8 });
   scene.add(new THREE.Points(geo, mat));
 })();
 
@@ -612,8 +612,9 @@ const atmosphereMat = new THREE.ShaderMaterial({
     uniform vec3 glowColor;
     varying vec3 vNormal;
     void main() {
-      float intensity = pow(0.7 - dot(vNormal, vec3(0,0,1.0)), 3.0);
-      gl_FragColor = vec4(glowColor, intensity * 1.8);
+      float d = dot(vNormal, vec3(0,0,1.0));
+      float intensity = pow(max(0.0, 0.7 - d), 3.0);
+      gl_FragColor = vec4(glowColor, intensity * 0.75);
     }
   `,
 });
@@ -626,7 +627,7 @@ const innerAtmMat = new THREE.ShaderMaterial({
   transparent: true,
   uniforms: { glowColor: { value: new THREE.Color(0x00ffaa) } },
   vertexShader: `varying vec3 vNormal; void main(){ vNormal=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float i=pow(0.85-dot(vNormal,vec3(0,0,1.0)),4.0); gl_FragColor=vec4(glowColor,i*1.4); }`,
+  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.5); }`,
 });
 scene.add(new THREE.Mesh(innerAtmGeo, innerAtmMat));
 
