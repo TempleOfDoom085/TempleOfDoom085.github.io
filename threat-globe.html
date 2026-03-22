@@ -513,31 +513,65 @@ camera.position.set(0, 0, 2.8);
 const GLOBE_R = 1.0;
 
 // ─── AMBIENT GLOW ────────────────────────────────────────────────────────────
-const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
-scene.add(ambientLight);
-
-// Sun-like directional light for depth
-const sunLight = new THREE.DirectionalLight(0xfff8ee, 2.5);
-sunLight.position.set(5, 3, 5);
-scene.add(sunLight);
-
-// Fill light from the other side so dark side isn't pitch black
-const fillLight = new THREE.DirectionalLight(0x223355, 0.6);
-fillLight.position.set(-5, -2, -3);
-scene.add(fillLight);
+// MeshBasicMaterial handles brightness — lights only needed for rim glow effect
+const rimLight = new THREE.DirectionalLight(0x00ff88, 0.4);
+rimLight.position.set(-3, 2, -2);
+scene.add(rimLight);
 
 // ─── GLOBE SPHERE WITH EARTH TEXTURE ─────────────────────────────────────────
 const sphereGeo = new THREE.SphereGeometry(GLOBE_R, 64, 64);
-const sphereMat = new THREE.MeshPhongMaterial({
-  color: 0x336699,           // brighter ocean blue placeholder while texture loads
-  specular: new THREE.Color(0x8899cc),
-  shininess: 30,
-});
+// MeshBasicMaterial = texture at 100% brightness, no lighting math
+const sphereMat = new THREE.MeshBasicMaterial({ color: 0x336699 });
 const sphere = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
 
-// Load Earth texture — raw.githubusercontent.com guarantees CORS (Access-Control-Allow-Origin: *)
-// and definitely contains the three.js example texture files
+// ── STAR FIELD ──────────────────────────────────────────────────────────────
+(function addStars() {
+  const N = 4000;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi   = Math.acos(2 * Math.random() - 1);
+    const r     = 60 + Math.random() * 40;
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8, sizeAttenuation: false, transparent: true, opacity: 0.8 });
+  scene.add(new THREE.Points(geo, mat));
+})();
+
+// ── ORBITAL SATELLITE RINGS ──────────────────────────────────────────────────
+const satellites = [];
+[
+  { tilt: 0.45, speed: 0.004,  color: 0x00ff88, r: 1.38 },
+  { tilt: -0.7, speed: -0.003, color: 0x00ccff, r: 1.5  },
+  { tilt: 1.15, speed: 0.0025, color: 0xb8933a, r: 1.62 },
+].forEach(({ tilt, speed, color, r }) => {
+  // Orbit ring
+  const pts = [];
+  for (let a = 0; a <= 360; a += 2)
+    pts.push(new THREE.Vector3(r * Math.cos(a * Math.PI/180), 0, r * Math.sin(a * Math.PI/180)));
+  const orbitGeo = new THREE.BufferGeometry().setFromPoints(pts);
+  const orbitMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.18 });
+  const orbit = new THREE.Line(orbitGeo, orbitMat);
+  orbit.rotation.x = tilt;
+  scene.add(orbit);
+
+  // Satellite dot
+  const satGeo = new THREE.SphereGeometry(0.018, 6, 6);
+  const satMat = new THREE.MeshBasicMaterial({ color });
+  const sat = new THREE.Mesh(satGeo, satMat);
+  const pivot = new THREE.Object3D();
+  pivot.rotation.x = tilt;
+  pivot.add(sat);
+  scene.add(pivot);
+  satellites.push({ sat, pivot, r, speed, angle: Math.random() * Math.PI * 2 });
+});
+
+// ── EARTH TEXTURE LOAD ───────────────────────────────────────────────────────
 (function loadEarthTexture() {
   const img = new Image();
   img.crossOrigin = 'anonymous';
@@ -545,18 +579,15 @@ scene.add(sphere);
     const tex = new THREE.Texture(img);
     tex.needsUpdate = true;
     sphereMat.map = tex;
-    sphereMat.color.set(0xffffff); // let texture show true colors
     sphereMat.needsUpdate = true;
   };
   img.onerror = function() {
-    // Try Wikimedia Blue Marble if GitHub raw fails
     const img2 = new Image();
     img2.crossOrigin = 'anonymous';
     img2.onload = function() {
       const tex = new THREE.Texture(img2);
       tex.needsUpdate = true;
       sphereMat.map = tex;
-      sphereMat.color.set(0xffffff);
       sphereMat.needsUpdate = true;
     };
     img2.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Land_ocean_ice_2048.jpg/2048px-Land_ocean_ice_2048.jpg';
@@ -565,7 +596,7 @@ scene.add(sphere);
 })();
 
 // ─── ATMOSPHERE GLOW ────────────────────────────────────────────────────────
-const atmosphereGeo = new THREE.SphereGeometry(GLOBE_R * 1.06, 64, 64);
+const atmosphereGeo = new THREE.SphereGeometry(GLOBE_R * 1.08, 64, 64);
 const atmosphereMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   transparent: true,
@@ -581,12 +612,24 @@ const atmosphereMat = new THREE.ShaderMaterial({
     uniform vec3 glowColor;
     varying vec3 vNormal;
     void main() {
-      float intensity = pow(0.7 - dot(vNormal, vec3(0,0,1.0)), 3.0);
-      gl_FragColor = vec4(glowColor, intensity * 1.1);
+      float d = dot(vNormal, vec3(0,0,1.0));
+      float intensity = pow(max(0.0, 0.7 - d), 3.0);
+      gl_FragColor = vec4(glowColor, intensity * 0.75);
     }
   `,
 });
 scene.add(new THREE.Mesh(atmosphereGeo, atmosphereMat));
+
+// Inner atmosphere corona
+const innerAtmGeo = new THREE.SphereGeometry(GLOBE_R * 1.02, 64, 64);
+const innerAtmMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  transparent: true,
+  uniforms: { glowColor: { value: new THREE.Color(0x00ffaa) } },
+  vertexShader: `varying vec3 vNormal; void main(){ vNormal=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.5); }`,
+});
+scene.add(new THREE.Mesh(innerAtmGeo, innerAtmMat));
 
 // ─── LAT/LNG → 3D VECTOR ─────────────────────────────────────────────────────
 function latLngToVec3(lat, lng, r) {
@@ -615,7 +658,7 @@ for (let lat = -75; lat <= 75; lat += 15) {
   for (let lng = 0; lng <= 360; lng += 2) {
     pts.push(latLngToVec3(lat, lng - 180, GLOBE_R + 0.001));
   }
-  const opacity = lat === 0 ? 0.25 : 0.07;
+  const opacity = lat === 0 ? 0.5 : 0.18;
   lineGroup.add(makeLine(pts, 0x00ff88, opacity));
 }
 
@@ -625,7 +668,7 @@ for (let lng = 0; lng < 360; lng += 15) {
   for (let lat = -90; lat <= 90; lat += 2) {
     pts.push(latLngToVec3(lat, lng - 180, GLOBE_R + 0.001));
   }
-  lineGroup.add(makeLine(pts, 0x00ff88, 0.07));
+  lineGroup.add(makeLine(pts, 0x00ff88, 0.18));
 }
 
 // ─── CITY DOTS ───────────────────────────────────────────────────────────────
@@ -688,12 +731,12 @@ function spawnArc(srcCity, dstCity, severity) {
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setDrawRange(0, 0);
 
-  const mat  = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.85 });
+  const mat  = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 1.0, linewidth: 2 });
   const line = new THREE.Line(geo, mat);
   arcGroup.add(line);
 
   // Head glow sphere
-  const headGeo = new THREE.SphereGeometry(0.016, 8, 8);
+  const headGeo = new THREE.SphereGeometry(0.022, 8, 8);
   const headMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 });
   const head    = new THREE.Mesh(headGeo, headMat);
   arcGroup.add(head);
@@ -891,10 +934,10 @@ function animate(timestamp) {
 
   // Spawn new attacks
   if (timestamp - lastSpawn > nextSpawnDelay) {
-    const count = Math.random() < 0.3 ? 2 : 1;
+    const count = Math.random() < 0.5 ? 2 : 1;
     for (let i = 0; i < count; i++) spawnAttack();
     lastSpawn = timestamp;
-    nextSpawnDelay = 800 + Math.random() * 1800;
+    nextSpawnDelay = 400 + Math.random() * 900;
   }
 
   // Update arcs
@@ -930,10 +973,34 @@ function animate(timestamp) {
       statActive = Math.max(0, statActive - 1);
       updateStats();
 
-      // Flash destination
+      // Flash destination + spawn explosion rings
       if (arc.dstObj) {
         arc.dstObj.pulsing = true;
         arc.dstObj.pulseT  = 0;
+      }
+      // Impact explosion — 3 expanding rings
+      const impactPos = arc.curvePts[arc.curvePts.length - 1];
+      const impactColor = arc.headMat.color;
+      for (let ri = 0; ri < 3; ri++) {
+        const rGeo = new THREE.RingGeometry(0.01, 0.025, 24);
+        const rMat = new THREE.MeshBasicMaterial({ color: impactColor, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+        const rMesh = new THREE.Mesh(rGeo, rMat);
+        rMesh.position.copy(impactPos);
+        rMesh.lookAt(new THREE.Vector3(0,0,0));
+        arcGroup.add(rMesh);
+        const delay = ri * 120;
+        setTimeout(() => {
+          let t = 0;
+          const expand = () => {
+            t += 0.06;
+            const s = 1 + t * 4;
+            rMesh.scale.set(s, s, s);
+            rMat.opacity = Math.max(0, 0.9 - t * 1.1);
+            if (t < 1) requestAnimationFrame(expand);
+            else { arcGroup.remove(rMesh); rGeo.dispose(); rMat.dispose(); }
+          };
+          requestAnimationFrame(expand);
+        }, delay);
       }
 
       // Fade out after 1.5s
@@ -949,6 +1016,12 @@ function animate(timestamp) {
       }, 1500);
     }
   }
+
+  // Satellite orbit animation
+  satellites.forEach(s => {
+    s.angle += s.speed;
+    s.sat.position.set(s.r * Math.cos(s.angle), 0, s.r * Math.sin(s.angle));
+  });
 
   // City pulse animations
   cityObjects.forEach(obj => {
