@@ -614,7 +614,7 @@ const atmosphereMat = new THREE.ShaderMaterial({
     void main() {
       float d = dot(vNormal, vec3(0,0,1.0));
       float intensity = pow(max(0.0, 0.7 - d), 3.0);
-      gl_FragColor = vec4(glowColor, intensity * 0.75);
+      gl_FragColor = vec4(glowColor, intensity * 0.95);
     }
   `,
 });
@@ -627,9 +627,61 @@ const innerAtmMat = new THREE.ShaderMaterial({
   transparent: true,
   uniforms: { glowColor: { value: new THREE.Color(0x00ffaa) } },
   vertexShader: `varying vec3 vNormal; void main(){ vNormal=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.5); }`,
+  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.65); }`,
 });
 scene.add(new THREE.Mesh(innerAtmGeo, innerAtmMat));
+
+// ── CLOUD LAYER ───────────────────────────────────────────────────────────────
+const cloudGeo  = new THREE.SphereGeometry(GLOBE_R * 1.012, 64, 64);
+const cloudMat  = new THREE.MeshBasicMaterial({ color: 0xddeeff, transparent: true, opacity: 0.0, depthWrite: false });
+const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+scene.add(cloudMesh);
+
+(function loadCloudTexture() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const tex = new THREE.Texture(img);
+    tex.needsUpdate = true;
+    cloudMat.alphaMap = tex;
+    cloudMat.opacity  = 0.82;
+    cloudMat.needsUpdate = true;
+  };
+  img.onerror = function() {
+    cloudMat.opacity = 0.03;
+    cloudMat.needsUpdate = true;
+  };
+  img.src = 'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_clouds_2048.jpg';
+})();
+
+// ── MOON ──────────────────────────────────────────────────────────────────────
+const MOON_ORBIT_R     = 3.3;
+const MOON_ORBIT_SPEED = 0.00055;
+const MOON_TILT        = 0.22;
+let   moonAngle        = 1.1;
+
+const moonGeo  = new THREE.SphereGeometry(0.115, 32, 32);
+const moonMat  = new THREE.MeshBasicMaterial({ color: 0x888888 });
+const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+scene.add(moonMesh);
+
+const moonHaloGeo = new THREE.SphereGeometry(0.16, 32, 32);
+const moonHaloMat = new THREE.MeshBasicMaterial({ color: 0x8899bb, transparent: true, opacity: 0.07, depthWrite: false });
+const moonHalo    = new THREE.Mesh(moonHaloGeo, moonHaloMat);
+scene.add(moonHalo);
+
+(function loadMoonTexture() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const tex = new THREE.Texture(img);
+    tex.needsUpdate = true;
+    moonMat.map = tex;
+    moonMat.color.setHex(0xffffff);
+    moonMat.needsUpdate = true;
+  };
+  img.src = 'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/moon_1024.jpg';
+})();
 
 // ─── LAT/LNG → 3D VECTOR ─────────────────────────────────────────────────────
 function latLngToVec3(lat, lng, r) {
@@ -692,6 +744,11 @@ CITIES.forEach(city => {
   lineGroup.add(dot);
 
   cityObjects.push({ city, pos, dot, ring, dotMat, ringMat, pulseT: 0, pulsing: false });
+});
+
+// Stagger sonar ping timers across all cities
+cityObjects.forEach((obj, i) => {
+  obj.nextSonar = performance.now() + i * 160 + Math.random() * 500;
 });
 
 // ─── ARC MANAGEMENT ──────────────────────────────────────────────────────────
@@ -838,6 +895,27 @@ function spawnAttack() {
   updateStats();
 }
 
+// ── SONAR PING EMITTER ────────────────────────────────────────────────────────
+function emitSonarPing(cityObj) {
+  const rGeo  = new THREE.RingGeometry(0.012, 0.022, 20);
+  const rMat  = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+  const rMesh = new THREE.Mesh(rGeo, rMat);
+  rMesh.position.copy(cityObj.pos);
+  rMesh.lookAt(new THREE.Vector3(0, 0, 0));
+  lineGroup.add(rMesh);
+
+  let t = 0;
+  const expand = () => {
+    t += 0.02;
+    const s = 1 + t * 9;
+    rMesh.scale.set(s, s, s);
+    rMat.opacity = Math.max(0, 0.55 * (1 - t));
+    if (t < 1) requestAnimationFrame(expand);
+    else { lineGroup.remove(rMesh); rGeo.dispose(); rMat.dispose(); }
+  };
+  requestAnimationFrame(expand);
+}
+
 // ─── ORBIT CONTROLS (manual drag) ────────────────────────────────────────────
 let isDragging  = false;
 let prevMouse   = { x: 0, y: 0 };
@@ -863,12 +941,14 @@ window.addEventListener('mousemove', e => {
   const dy = e.clientY - prevMouse.y;
   rotVelX = dy * 0.004;
   rotVelY = dx * 0.004;
-  lineGroup.rotation.x += rotVelX;
-  lineGroup.rotation.y += rotVelY;
-  sphere.rotation.x    += rotVelX;
-  sphere.rotation.y    += rotVelY;
-  arcGroup.rotation.x  += rotVelX;
-  arcGroup.rotation.y  += rotVelY;
+  lineGroup.rotation.x  += rotVelX;
+  lineGroup.rotation.y  += rotVelY;
+  sphere.rotation.x     += rotVelX;
+  sphere.rotation.y     += rotVelY;
+  arcGroup.rotation.x   += rotVelX;
+  arcGroup.rotation.y   += rotVelY;
+  cloudMesh.rotation.x  += rotVelX;
+  cloudMesh.rotation.y  += rotVelY;
   prevMouse = { x: e.clientX, y: e.clientY };
 });
 
@@ -890,12 +970,14 @@ window.addEventListener('touchmove', e => {
   const dy = e.touches[0].clientY - prevMouse.y;
   rotVelX = dy * 0.004;
   rotVelY = dx * 0.004;
-  lineGroup.rotation.x += rotVelX;
-  lineGroup.rotation.y += rotVelY;
-  sphere.rotation.x    += rotVelX;
-  sphere.rotation.y    += rotVelY;
-  arcGroup.rotation.x  += rotVelX;
-  arcGroup.rotation.y  += rotVelY;
+  lineGroup.rotation.x  += rotVelX;
+  lineGroup.rotation.y  += rotVelY;
+  sphere.rotation.x     += rotVelX;
+  sphere.rotation.y     += rotVelY;
+  arcGroup.rotation.x   += rotVelX;
+  arcGroup.rotation.y   += rotVelY;
+  cloudMesh.rotation.x  += rotVelX;
+  cloudMesh.rotation.y  += rotVelY;
   prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 }, { passive: true });
 
@@ -924,13 +1006,22 @@ function animate(timestamp) {
 
   // Auto rotate
   if (autoRotate && !isDragging) {
-    lineGroup.rotation.y += AUTO_SPEED;
-    sphere.rotation.y    += AUTO_SPEED;
-    arcGroup.rotation.y  += AUTO_SPEED;
+    lineGroup.rotation.y  += AUTO_SPEED;
+    sphere.rotation.y     += AUTO_SPEED;
+    arcGroup.rotation.y   += AUTO_SPEED;
+    cloudMesh.rotation.y  += AUTO_SPEED + 0.00028; // clouds drift slightly faster
   } else if (!isDragging) {
     rotVelX *= 0.92;
     rotVelY *= 0.92;
   }
+
+  // Sonar pings — fire from each city on a rolling timer
+  cityObjects.forEach(obj => {
+    if (timestamp >= obj.nextSonar) {
+      obj.nextSonar = timestamp + 2500 + Math.random() * 2500;
+      emitSonarPing(obj);
+    }
+  });
 
   // Spawn new attacks
   if (timestamp - lastSpawn > nextSpawnDelay) {
@@ -1023,6 +1114,15 @@ function animate(timestamp) {
     s.sat.position.set(s.r * Math.cos(s.angle), 0, s.r * Math.sin(s.angle));
   });
 
+  // Moon orbit
+  moonAngle += MOON_ORBIT_SPEED;
+  const mx = MOON_ORBIT_R * Math.cos(moonAngle);
+  const my = -MOON_ORBIT_R * Math.sin(moonAngle) * Math.sin(MOON_TILT);
+  const mz =  MOON_ORBIT_R * Math.sin(moonAngle) * Math.cos(MOON_TILT);
+  moonMesh.position.set(mx, my, mz);
+  moonHalo.position.set(mx, my, mz);
+  moonMesh.rotation.y += 0.0008;
+
   // City pulse animations
   cityObjects.forEach(obj => {
     if (obj.pulsing) {
@@ -1068,6 +1168,47 @@ animate(0);
   document.querySelectorAll('a,button,[role="button"]').forEach(el => {
     el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
     el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+})();
+</script>
+
+<script>
+/* ── GOLD PARTICLE BURST ON CLICK ─────────────────────────────────────── */
+(function(){
+  var COLORS = ['rgba(184,147,58,0.95)','rgba(212,180,88,0.9)','rgba(255,215,80,0.85)','rgba(201,168,76,0.8)'];
+  document.addEventListener('click', function(e){
+    var N = 20;
+    for(var i = 0; i < N; i++){
+      (function(i){
+        var s = document.createElement('div');
+        var angle = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+        var speed = 50 + Math.random() * 80;
+        var size  = 2 + Math.random() * 4;
+        var color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        s.style.cssText = 'position:fixed;pointer-events:none;z-index:99997;border-radius:50%;'
+          + 'width:' + size + 'px;height:' + size + 'px;'
+          + 'background:' + color + ';'
+          + 'left:' + e.clientX + 'px;top:' + e.clientY + 'px;'
+          + 'transform:translate(-50%,-50%);transition:none;';
+        document.body.appendChild(s);
+        var vx = Math.cos(angle) * speed;
+        var vy = Math.sin(angle) * speed;
+        var dur = 500 + Math.random() * 300;
+        var start = null;
+        function step(ts){
+          if(!start) start = ts;
+          var p = (ts - start) / dur;
+          if(p >= 1){ s.remove(); return; }
+          s.style.left = (e.clientX + vx * p) + 'px';
+          s.style.top  = (e.clientY + vy * p + 120 * p * p) + 'px';
+          s.style.opacity = 1 - p;
+          s.style.width  = (size * (1 - p * 0.5)) + 'px';
+          s.style.height = (size * (1 - p * 0.5)) + 'px';
+          requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      })(i);
+    }
   });
 })();
 </script>
