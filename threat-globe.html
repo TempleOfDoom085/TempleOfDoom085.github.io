@@ -1328,9 +1328,14 @@ composer.addPass(bloomPass);
 const GLOBE_R = 1.0;
 
 // ─── LIGHTING ────────────────────────────────────────────────────────────────
-const ambientLight = new THREE.AmbientLight(0x112244, 1.1);
+// Ambient: dark-side fill so globe is never pitch black even on night side
+const ambientLight = new THREE.AmbientLight(0x223355, 2.2);
 scene.add(ambientLight);
-const sunLight = new THREE.DirectionalLight(0xfff0d8, 0.85);
+// Secondary fill from camera direction so texture always shows
+const fillLight = new THREE.DirectionalLight(0x334466, 0.45);
+fillLight.position.set(0, 0, 5);
+scene.add(fillLight);
+const sunLight = new THREE.DirectionalLight(0xfff0d8, 1.1);
 sunLight.position.set(5, 3, 5); // will be updated each frame from sharedSunDir
 scene.add(sunLight);
 
@@ -1704,32 +1709,53 @@ function triggerCME(ts) {
 }
 
 // ── EARTH TEXTURE LOAD ───────────────────────────────────────────────────────
+// Uses THREE.TextureLoader (more reliable than new Image) + sequential fallbacks.
+// MUST set sphereMat.color = white or the texture gets tinted by 0xaabbcc.
 (function loadEarthTexture() {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = function() {
-    const tex = new THREE.Texture(img);
-    tex.needsUpdate = true;
+  const loader = new THREE.TextureLoader();
+  loader.crossOrigin = 'anonymous';
+
+  const DAY_URLS = [
+    'https://unpkg.com/three@0.128.0/examples/textures/planets/earth_atmos_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_atmos_2048.jpg',
+    'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
+  ];
+  const SPEC_URLS = [
+    'https://unpkg.com/three@0.128.0/examples/textures/planets/earth_specular_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_specular_2048.jpg',
+  ];
+
+  function applyDay(tex) {
     sphereMat.map = tex;
+    sphereMat.color.set(0xffffff); // MUST be white — otherwise color multiplies texture
     sphereMat.needsUpdate = true;
-    // Specular map (white = water = shiny)
-    new THREE.TextureLoader().load(
-      'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_specular_2048.jpg',
-      tex2 => { sphereMat.specularMap = tex2; sphereMat.needsUpdate = true; }
-    );
-  };
-  img.onerror = function() {
-    const img2 = new Image();
-    img2.crossOrigin = 'anonymous';
-    img2.onload = function() {
-      const tex = new THREE.Texture(img2);
-      tex.needsUpdate = true;
-      sphereMat.map = tex;
+    console.log('[earth] day texture applied');
+    // Try to also load specular map
+    trySpec(0);
+  }
+
+  function tryDay(idx) {
+    if (idx >= DAY_URLS.length) {
+      // All day URLs failed — keep plain sphere color but make it look like ocean
+      sphereMat.color.set(0x1a3d5c);
       sphereMat.needsUpdate = true;
-    };
-    img2.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Land_ocean_ice_2048.jpg/2048px-Land_ocean_ice_2048.jpg';
-  };
-  img.src = 'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_atmos_2048.jpg';
+      console.warn('[earth] all day texture URLs failed, using fallback color');
+      return;
+    }
+    loader.load(DAY_URLS[idx], applyDay, undefined, () => tryDay(idx + 1));
+  }
+
+  function trySpec(idx) {
+    if (idx >= SPEC_URLS.length) return;
+    loader.load(
+      SPEC_URLS[idx],
+      tex => { sphereMat.specularMap = tex; sphereMat.needsUpdate = true; },
+      undefined,
+      () => trySpec(idx + 1)
+    );
+  }
+
+  tryDay(0);
 })();
 
 // ─── ATMOSPHERE GLOW ────────────────────────────────────────────────────────
