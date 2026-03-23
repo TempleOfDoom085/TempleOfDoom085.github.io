@@ -655,6 +655,10 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x0a0a0c, 1);
 
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 1000);
+camera.position.set(0, 0, 3.4);
+
 // ─── POST-PROCESSING: BLOOM ───────────────────────────────────────────────────
 const composer = new THREE.EffectComposer(renderer);
 const renderPass = new THREE.RenderPass(scene, camera);
@@ -666,10 +670,6 @@ const bloomPass = new THREE.UnrealBloomPass(
   0.72    // threshold
 );
 composer.addPass(bloomPass);
-
-const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 1000);
-camera.position.set(0, 0, 3.4);
 
 const GLOBE_R = 1.0;
 
