@@ -1540,7 +1540,10 @@ const WIND_N = 1400;
 const windPos  = new Float32Array(WIND_N * 3);
 const windVel  = new Float32Array(WIND_N * 3);
 function initWindParticle(i) {
-  const sd = sharedSunDir;
+  // computeSunDir() is a hoisted function declaration — safe to call
+  // before sharedSunDir const is reached. Direct reference to sharedSunDir
+  // here crashes with TDZ ReferenceError because this runs at init time.
+  const sd = typeof sharedSunDir !== 'undefined' ? sharedSunDir : computeSunDir();
   const r  = 13 + Math.random() * 4;
   const sp = 2.5;
   windPos[i*3]   = sd.x * r + (Math.random()-0.5) * sp;
