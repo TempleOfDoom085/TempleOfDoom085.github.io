@@ -982,9 +982,9 @@ composer.addPass(bloomPass);
 const GLOBE_R = 1.0;
 
 // ─── LIGHTING ────────────────────────────────────────────────────────────────
-const ambientLight = new THREE.AmbientLight(0x112244, 0.9);
+const ambientLight = new THREE.AmbientLight(0x112244, 1.1);
 scene.add(ambientLight);
-const sunLight = new THREE.DirectionalLight(0xfff8e7, 1.6);
+const sunLight = new THREE.DirectionalLight(0xfff0d8, 0.85);
 sunLight.position.set(5, 3, 5); // will be updated each frame from sharedSunDir
 scene.add(sunLight);
 
@@ -1007,9 +1007,9 @@ const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
   blending: THREE.AdditiveBlending,
   transparent: true,
   depthWrite: false,
-  opacity: 0.92,
+  opacity: 0.52,
 }));
-sunSprite.scale.set(2.2, 2.2, 2.2);
+sunSprite.scale.set(1.3, 1.3, 1.3);
 scene.add(sunSprite);
 
 // ─── GLOBE SPHERE WITH EARTH TEXTURE ─────────────────────────────────────────
@@ -1017,8 +1017,8 @@ const sphereGeo = new THREE.SphereGeometry(GLOBE_R, 128, 128);
 const sphereMat = new THREE.MeshPhongMaterial({
   color: 0xaabbcc,
   emissive: 0x000408,
-  shininess: 60,
-  specular: new THREE.Color(0x223344),
+  shininess: 22,
+  specular: new THREE.Color(0x0d1a22),
 });
 const sphere = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
