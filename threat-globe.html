@@ -445,7 +445,24 @@ html { font-size: 18px; }
 }
 .mp-track-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 .mp-track-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,204,255,0.1); }
-#yt-player-container { display: none; }
+#yt-player-container {
+  position: fixed; left: -9999px; top: -9999px;
+  width: 320px; height: 180px; overflow: hidden; opacity: 0;
+  pointer-events: none;
+}
+
+/* ── DEFCON BADGE ── */
+.defcon-badge {
+  font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.25em; padding: 0.32rem 0.75rem;
+  border: 1px solid; transition: color 0.6s, border-color 0.6s, box-shadow 0.6s;
+}
+.defcon-badge.d5 { color: #00ff88; border-color: rgba(0,255,136,0.35); box-shadow: none; }
+.defcon-badge.d4 { color: #88ff44; border-color: rgba(136,255,68,0.4); }
+.defcon-badge.d3 { color: #ffcc00; border-color: rgba(255,204,0,0.45); }
+.defcon-badge.d2 { color: #ff8800; border-color: rgba(255,136,0,0.5); animation: defcon-pulse 0.9s ease infinite; }
+.defcon-badge.d1 { color: #ff3333; border-color: rgba(255,51,51,0.6); box-shadow: 0 0 12px rgba(255,51,51,0.4); animation: defcon-pulse 0.4s ease infinite; }
+@keyframes defcon-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
 </style>
 </head>
 <body>
@@ -455,7 +472,7 @@ html { font-size: 18px; }
 <nav>
   <a href="/" class="nav-back">← PORTFOLIO</a>
   <span class="nav-center">THREAT GLOBE v2.0</span>
-  <span class="nav-right">SIM MODE ACTIVE</span>
+  <div class="defcon-badge d5" id="defcon-badge">DEFCON <span id="defcon-level">5</span></div>
 </nav>
 
 <div class="globe-layout">
@@ -502,15 +519,11 @@ html { font-size: 18px; }
     <!-- Music Player -->
     <div id="music-player">
       <div class="mp-label">NOW PLAYING</div>
-      <div class="mp-track-name" id="mp-title">LORD OF THE RINGS</div>
-      <div class="mp-track-sub" id="mp-sub">Fellowship Suite</div>
+      <div class="mp-track-name" id="mp-title">HALO 3</div>
+      <div class="mp-track-sub" id="mp-sub">Original Soundtrack</div>
       <div class="mp-controls">
         <button class="mp-btn" id="mp-play">▶ PLAY</button>
-        <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="60">
-      </div>
-      <div class="mp-tracks">
-        <button class="mp-track-btn active" data-track="0">LOTR</button>
-        <button class="mp-track-btn" data-track="1">HALO 3</button>
+        <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="65">
       </div>
     </div>
     <div id="yt-player-container"><div id="yt-player"></div></div>
@@ -877,7 +890,7 @@ const CABLE_ROUTES = [
   });
 })();
 
-// ─── NIGHT SHADOW (TERMINATOR) ───────────────────────────────────────────────
+// ─── NIGHT SHADOW + CITY LIGHTS ──────────────────────────────────────────────
 function computeSunDir() {
   const now   = new Date();
   const start = Date.UTC(now.getFullYear(), 0, 0);
@@ -892,11 +905,13 @@ function computeSunDir() {
   ).normalize();
 }
 
+const sharedSunDir = computeSunDir(); // shared by night shadow + city lights
+
 const nightGeo = new THREE.SphereGeometry(GLOBE_R * 1.007, 64, 64);
 const nightMat = new THREE.ShaderMaterial({
   transparent: true,
   depthWrite: false,
-  uniforms: { sunDir: { value: computeSunDir() } },
+  uniforms: { sunDir: { value: sharedSunDir } },
   vertexShader: `
     varying vec3 vWorldPos;
     void main() {
@@ -916,6 +931,55 @@ const nightMat = new THREE.ShaderMaterial({
 });
 const nightMesh = new THREE.Mesh(nightGeo, nightMat);
 scene.add(nightMesh);
+
+// ─── CITY LIGHTS (glows on night side, rotates with globe) ───────────────────
+const cityLightsGeo = new THREE.SphereGeometry(GLOBE_R * 1.001, 64, 64);
+const cityLightsMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: {
+    lightsMap: { value: null },
+    sunDir:    { value: sharedSunDir },
+  },
+  vertexShader: `
+    varying vec3 vWorldPos;
+    varying vec2 vUv;
+    void main() {
+      vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D lightsMap;
+    uniform vec3 sunDir;
+    varying vec3 vWorldPos;
+    varying vec2 vUv;
+    void main() {
+      float d = dot(normalize(vWorldPos), normalize(sunDir));
+      float night = smoothstep(0.12, -0.08, d);
+      if (night < 0.01) discard;
+      float l = texture2D(lightsMap, vUv).r;
+      if (l < 0.04) discard;
+      vec3 warm = mix(vec3(1.0, 0.82, 0.42), vec3(0.88, 0.93, 1.0), l * 0.25);
+      gl_FragColor = vec4(warm * l * night * 2.8, l * night * 0.98);
+    }
+  `,
+});
+const cityLightsMesh = new THREE.Mesh(cityLightsGeo, cityLightsMat);
+sphere.add(cityLightsMesh); // child of sphere — auto-rotates with the globe
+
+(function loadCityLights() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const tex = new THREE.Texture(img);
+    tex.needsUpdate = true;
+    cityLightsMat.uniforms.lightsMap.value = tex;
+  };
+  img.src = 'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_lights_2048.jpg';
+})();
 
 // ─── AURORA BOREALIS ──────────────────────────────────────────────────────────
 const auroraGeo = new THREE.SphereGeometry(GLOBE_R * 1.06, 64, 64);
@@ -1088,6 +1152,29 @@ function spawnArc(srcCity, dstCity, severity) {
   return arc;
 }
 
+// ─── DEFCON SYSTEM ───────────────────────────────────────────────────────────
+const atkTimestamps = [];
+let currentDefcon   = 5;
+const defconBadge   = document.getElementById('defcon-badge');
+const defconLevel   = document.getElementById('defcon-level');
+
+const DEFCON_GLOW = { 5: 0x00ff88, 4: 0x88ff44, 3: 0xffcc00, 2: 0xff8800, 1: 0xff3333 };
+
+function tickDefcon() {
+  const now = Date.now();
+  const cutoff = now - 10000;
+  while (atkTimestamps.length && atkTimestamps[0] < cutoff) atkTimestamps.shift();
+  const rate = atkTimestamps.length / 10; // per-second over 10s window
+
+  const lvl = rate >= 3.5 ? 1 : rate >= 2.5 ? 2 : rate >= 1.5 ? 3 : rate >= 0.8 ? 4 : 5;
+  if (lvl !== currentDefcon) {
+    currentDefcon = lvl;
+    defconBadge.className = `defcon-badge d${lvl}`;
+    defconLevel.textContent = lvl;
+    atmosphereMat.uniforms.glowColor.value.setHex(DEFCON_GLOW[lvl]);
+  }
+}
+
 // ─── STATS ───────────────────────────────────────────────────────────────────
 let statTotal     = 0;
 let statActive    = 0;
@@ -1172,6 +1259,10 @@ function spawnAttack() {
   // Heat up destination hex
   const heatAmt = { LOW: 0.12, MED: 0.22, HIGH: 0.38, CRITICAL: 0.65 }[severity] || 0.15;
   addHeat(dst.lat, dst.lng, heatAmt);
+
+  // DEFCON tracking
+  atkTimestamps.push(Date.now());
+  tickDefcon();
 
   statTotal++;
   statActive++;
@@ -1430,9 +1521,9 @@ function animate(timestamp) {
     }
   }
 
-  // Night shadow sun direction update (once per minute is fine)
+  // Sun direction update (once per minute) — shared by night shadow + city lights
   if (Math.round(timestamp / 16) % 3600 === 0) {
-    nightMat.uniforms.sunDir.value.copy(computeSunDir());
+    sharedSunDir.copy(computeSunDir());
   }
 
   // Meteor shower
@@ -1570,86 +1661,53 @@ animate(0);
 <!-- ── YOUTUBE MUSIC PLAYER ────────────────────────────────────────────── -->
 <script>
 (function() {
-  const TRACKS = [
-    { id: 'IiIltLoN-6Q', title: 'LORD OF THE RINGS',  sub: 'Fellowship Suite'    },
-    { id: 'hMDFm0yNDUk', title: 'HALO 3',              sub: 'Mjolnir Mix'         },
-  ];
+  const VIDEO_ID = 'IiIltLoN-6Q';
+  let player  = null;
+  let playing = false;
 
-  let player    = null;
-  let curTrack  = 0;
-  let playing   = false;
-  let ytReady   = false;
-
-  const elPlay  = document.getElementById('mp-play');
-  const elTitle = document.getElementById('mp-title');
-  const elSub   = document.getElementById('mp-sub');
-  const elVol   = document.getElementById('mp-vol');
-  const trackBtns = document.querySelectorAll('.mp-track-btn');
-
-  function setTrackUI(idx) {
-    curTrack = idx;
-    elTitle.textContent = TRACKS[idx].title;
-    elSub.textContent   = TRACKS[idx].sub;
-    trackBtns.forEach((b, i) => b.classList.toggle('active', i === idx));
-  }
-
-  function tryPlay() {
-    if (!ytReady || !player) return;
-    player.loadVideoById(TRACKS[curTrack].id);
-    player.setVolume(parseInt(elVol.value));
-    playing = true;
-    elPlay.textContent = '⏸ PAUSE';
-    elPlay.classList.add('active');
-  }
+  const elPlay = document.getElementById('mp-play');
+  const elVol  = document.getElementById('mp-vol');
 
   window.onYouTubeIframeAPIReady = function() {
-    ytReady = true;
     player = new YT.Player('yt-player', {
-      height: '1', width: '1',
-      playerVars: { autoplay: 0, controls: 0, modestbranding: 1, playsinline: 1 },
+      height: '200', width: '320',
+      videoId: VIDEO_ID,
+      playerVars: {
+        autoplay: 0, controls: 0, modestbranding: 1,
+        playsinline: 1, rel: 0, loop: 1,
+        playlist: VIDEO_ID,
+      },
       events: {
-        onStateChange: (e) => {
-          if (e.data === YT.PlayerState.ENDED) {
+        onReady(e) { e.target.setVolume(parseInt(elVol.value)); },
+        onStateChange(e) {
+          if (e.data === YT.PlayerState.ENDED || e.data === YT.PlayerState.PAUSED) {
             playing = false;
             elPlay.textContent = '▶ PLAY';
             elPlay.classList.remove('active');
           }
+          if (e.data === YT.PlayerState.PLAYING) {
+            playing = true;
+            elPlay.textContent = '⏸ PAUSE';
+            elPlay.classList.add('active');
+          }
+        },
+        onError() {
+          elPlay.textContent = '✕ ERROR';
+          elPlay.style.color = 'var(--red)';
         }
       }
     });
   };
 
   elPlay.addEventListener('click', () => {
-    if (!ytReady || !player) return;
-    if (playing) {
-      player.pauseVideo();
-      playing = false;
-      elPlay.textContent = '▶ PLAY';
-      elPlay.classList.remove('active');
-    } else {
-      if (player.getPlayerState && player.getPlayerState() === -1) {
-        tryPlay();
-      } else {
-        player.playVideo();
-        playing = true;
-        elPlay.textContent = '⏸ PAUSE';
-        elPlay.classList.add('active');
-      }
-    }
+    if (!player) return;
+    playing ? player.pauseVideo() : player.playVideo();
   });
 
   elVol.addEventListener('input', () => {
-    if (player && ytReady) player.setVolume(parseInt(elVol.value));
+    if (player) player.setVolume(parseInt(elVol.value));
   });
 
-  trackBtns.forEach((btn, i) => {
-    btn.addEventListener('click', () => {
-      setTrackUI(i);
-      if (playing && ytReady && player) tryPlay();
-    });
-  });
-
-  // Load YouTube IFrame API
   const tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(tag);
