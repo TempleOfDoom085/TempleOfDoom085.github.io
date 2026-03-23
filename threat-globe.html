@@ -388,8 +388,8 @@ html { font-size: 18px; }
   background: rgba(10,10,12,0.92);
   border: 1px solid var(--border-green);
   backdrop-filter: blur(14px);
-  padding: 0.7rem 0.9rem;
-  width: 220px;
+  padding: 0.5rem 0.7rem;
+  width: 175px;
   pointer-events: all;
 }
 #music-player::before {
@@ -398,7 +398,7 @@ html { font-size: 18px; }
   background: linear-gradient(90deg, transparent, var(--cyan), transparent);
 }
 .mp-label {
-  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.3em;
+  font-family: var(--mono); font-size: 0.45rem; letter-spacing: 0.3em;
   color: var(--cyan); text-transform: uppercase; margin-bottom: 0.5rem;
   display: flex; align-items: center; gap: 0.4rem;
 }
@@ -407,12 +407,12 @@ html { font-size: 18px; }
   background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
 }
 .mp-track-name {
-  font-family: var(--head); font-size: 0.7rem; font-weight: 600;
+  font-family: var(--head); font-size: 0.6rem; font-weight: 600;
   letter-spacing: 0.1em; color: var(--text); margin-bottom: 0.15rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mp-track-sub {
-  font-family: var(--mono); font-size: 0.52rem; color: var(--text-faint);
+  font-family: var(--mono); font-size: 0.47rem; color: var(--text-faint);
   letter-spacing: 0.15em; margin-bottom: 0.6rem;
 }
 .mp-controls {
@@ -463,6 +463,46 @@ html { font-size: 18px; }
 .defcon-badge.d2 { color: #ff8800; border-color: rgba(255,136,0,0.5); animation: defcon-pulse 0.9s ease infinite; }
 .defcon-badge.d1 { color: #ff3333; border-color: rgba(255,51,51,0.6); box-shadow: 0 0 12px rgba(255,51,51,0.4); animation: defcon-pulse 0.4s ease infinite; }
 @keyframes defcon-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* CRT scan lines */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.06) 3px,
+    rgba(0,0,0,0.06) 4px
+  );
+  pointer-events: none;
+  z-index: 99999;
+}
+
+/* Nav UTC clock + center block */
+.nav-center-block { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
+.nav-title { font-family: var(--head); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.3em; color: var(--text); }
+.nav-sub   { font-family: var(--mono); font-size: 0.42rem; letter-spacing: 0.35em; color: var(--cyan); opacity: 0.7; }
+.nav-right-group { display: flex; align-items: center; gap: 1rem; }
+.nav-clock { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em; color: var(--text-faint); }
+
+/* DEFCON alert banner */
+.defcon-alert {
+  position: fixed; top: 4.2rem; left: 50%;
+  transform: translateX(-50%) translateY(-16px);
+  background: rgba(10,10,12,0.97); border: 1px solid;
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em;
+  padding: 0.55rem 1.8rem; z-index: 9998;
+  opacity: 0; transition: all 0.45s; pointer-events: none;
+  text-transform: uppercase;
+}
+.defcon-alert.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.defcon-alert.d1 { color: #ff3333; border-color: rgba(255,51,51,0.6); }
+.defcon-alert.d2 { color: #ff8800; border-color: rgba(255,136,0,0.5); }
+.defcon-alert.d3 { color: #ffcc00; border-color: rgba(255,204,0,0.45); }
+.defcon-alert.d4 { color: #88ff44; border-color: rgba(136,255,68,0.4); }
+.defcon-alert.d5 { color: #00ff88; border-color: rgba(0,255,136,0.35); }
 </style>
 </head>
 <body>
@@ -471,8 +511,14 @@ html { font-size: 18px; }
 
 <nav>
   <a href="/" class="nav-back">← PORTFOLIO</a>
-  <span class="nav-center">THREAT GLOBE v2.0</span>
-  <div class="defcon-badge d5" id="defcon-badge">DEFCON <span id="defcon-level">5</span></div>
+  <div class="nav-center-block">
+    <span class="nav-title">THREAT GLOBE</span>
+    <span class="nav-sub">LIVE CYBER MONITOR</span>
+  </div>
+  <div class="nav-right-group">
+    <span class="nav-clock" id="utc-clock">00:00:00 UTC</span>
+    <div class="defcon-badge d5" id="defcon-badge">DEFCON <span id="defcon-level">5</span></div>
+  </div>
 </nav>
 
 <div class="globe-layout">
@@ -552,6 +598,12 @@ html { font-size: 18px; }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script>
 'use strict';
 
@@ -603,40 +655,97 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x0a0a0c, 1);
 
+// ─── POST-PROCESSING: BLOOM ───────────────────────────────────────────────────
+const composer = new THREE.EffectComposer(renderer);
+const renderPass = new THREE.RenderPass(scene, camera);
+composer.addPass(renderPass);
+const bloomPass = new THREE.UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.85,   // strength
+  0.25,   // radius
+  0.72    // threshold
+);
+composer.addPass(bloomPass);
+
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-camera.position.set(0, 0, 2.8);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 1000);
+camera.position.set(0, 0, 3.4);
 
 const GLOBE_R = 1.0;
 
-// ─── AMBIENT GLOW ────────────────────────────────────────────────────────────
-// MeshBasicMaterial handles brightness — lights only needed for rim glow effect
-const rimLight = new THREE.DirectionalLight(0x00ff88, 0.4);
-rimLight.position.set(-3, 2, -2);
-scene.add(rimLight);
+// ─── LIGHTING ────────────────────────────────────────────────────────────────
+const ambientLight = new THREE.AmbientLight(0x0d1a2e, 0.35);
+scene.add(ambientLight);
+const sunLight = new THREE.DirectionalLight(0xfff8e7, 4.5);
+sunLight.position.set(5, 3, 5); // will be updated each frame from sharedSunDir
+scene.add(sunLight);
+
+// ─── SUN SPRITE ───────────────────────────────────────────────────────────────
+function makeSunTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0,   'rgba(255,255,230,1)');
+  g.addColorStop(0.08,'rgba(255,240,160,0.95)');
+  g.addColorStop(0.3, 'rgba(255,200,60,0.45)');
+  g.addColorStop(0.6, 'rgba(255,130,20,0.12)');
+  g.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: makeSunTexture(),
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+  depthWrite: false,
+  opacity: 0.92,
+}));
+sunSprite.scale.set(2.2, 2.2, 2.2);
+scene.add(sunSprite);
 
 // ─── GLOBE SPHERE WITH EARTH TEXTURE ─────────────────────────────────────────
-const sphereGeo = new THREE.SphereGeometry(GLOBE_R, 64, 64);
-// MeshBasicMaterial = texture at 100% brightness, no lighting math
-const sphereMat = new THREE.MeshBasicMaterial({ color: 0x336699 });
+const sphereGeo = new THREE.SphereGeometry(GLOBE_R, 128, 128);
+const sphereMat = new THREE.MeshPhongMaterial({
+  color: 0xffffff,
+  emissive: 0x000511,
+  shininess: 90,
+  specular: new THREE.Color(0x336688),
+});
 const sphere = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
 
 // ── STAR FIELD ──────────────────────────────────────────────────────────────
 (function addStars() {
-  const N = 4000;
-  const pos = new Float32Array(N * 3);
+  const N = 7000;
+  const pos   = new Float32Array(N * 3);
+  const col   = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     const theta = Math.random() * Math.PI * 2;
     const phi   = Math.acos(2 * Math.random() - 1);
-    const r     = 60 + Math.random() * 40;
+    const r     = 65 + Math.random() * 35;
     pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
     pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
     pos[i*3+2] = r * Math.cos(phi);
+    // Star color variety: white, blue-white, warm-yellow
+    const t = Math.random();
+    if (t < 0.15)       { col[i*3]=0.7; col[i*3+1]=0.8; col[i*3+2]=1.0; }  // blue-white
+    else if (t < 0.25)  { col[i*3]=1.0; col[i*3+1]=0.95; col[i*3+2]=0.7; } // warm yellow
+    else                { col[i*3]=1.0; col[i*3+1]=1.0;  col[i*3+2]=1.0; } // white
+    sizes[i] = Math.random() < 0.05 ? 3.5 : (Math.random() < 0.2 ? 2.5 : 1.5);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8, sizeAttenuation: false, transparent: true, opacity: 0.8 });
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+  const mat = new THREE.PointsMaterial({
+    vertexColors: true,
+    sizeAttenuation: false,
+    transparent: true,
+    opacity: 0.88,
+    size: 1.6,
+  });
   scene.add(new THREE.Points(geo, mat));
 })();
 
@@ -677,6 +786,11 @@ const satellites = [];
     tex.needsUpdate = true;
     sphereMat.map = tex;
     sphereMat.needsUpdate = true;
+    // Specular map (white = water = shiny)
+    new THREE.TextureLoader().load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_specular_2048.jpg',
+      tex2 => { sphereMat.specularMap = tex2; sphereMat.needsUpdate = true; }
+    );
   };
   img.onerror = function() {
     const img2 = new Image();
@@ -693,40 +807,63 @@ const satellites = [];
 })();
 
 // ─── ATMOSPHERE GLOW ────────────────────────────────────────────────────────
-const atmosphereGeo = new THREE.SphereGeometry(GLOBE_R * 1.08, 64, 64);
 const atmosphereMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   transparent: true,
-  uniforms: { glowColor: { value: new THREE.Color(0x00ff88) } },
+  depthWrite: false,
+  uniforms: {
+    glowColor: { value: new THREE.Color(0x00aaff) },
+    sunDir:    { value: new THREE.Vector3(1, 0, 0) },
+  },
   vertexShader: `
-    varying vec3 vNormal;
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPos;
     void main() {
-      vNormal = normalize(normalMatrix * normal);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+      vWorldPos    = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
   `,
   fragmentShader: `
     uniform vec3 glowColor;
-    varying vec3 vNormal;
+    uniform vec3 sunDir;
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPos;
     void main() {
-      float d = dot(vNormal, vec3(0,0,1.0));
-      float intensity = pow(max(0.0, 0.7 - d), 3.0);
-      gl_FragColor = vec4(glowColor, intensity * 0.95);
+      vec3  N   = normalize(vWorldNormal);
+      vec3  S   = normalize(sunDir);
+      float cam = dot(N, vec3(0.0, 0.0, 1.0));
+      float limb = pow(max(0.0, 0.72 - cam), 2.8);
+      float sunDot = dot(N, S) * 0.5 + 0.5;
+      float mie    = pow(sunDot, 6.0) * 0.55;
+      vec3 blue    = vec3(0.15, 0.50, 1.0);
+      vec3 golden  = vec3(1.0,  0.72, 0.30);
+      vec3 col     = mix(mix(blue, golden, mie), glowColor * 0.5, 0.15) * (limb + mie * 0.25);
+      float alpha  = (limb + mie * 0.3) * 0.88;
+      gl_FragColor = vec4(col, alpha);
     }
   `,
 });
-scene.add(new THREE.Mesh(atmosphereGeo, atmosphereMat));
+const atmosphereMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(GLOBE_R * 1.18, 64, 64),
+  atmosphereMat
+);
+scene.add(atmosphereMesh);
 
 // Inner atmosphere corona
-const innerAtmGeo = new THREE.SphereGeometry(GLOBE_R * 1.02, 64, 64);
 const innerAtmMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   transparent: true,
-  uniforms: { glowColor: { value: new THREE.Color(0x00ffaa) } },
+  depthWrite: false,
+  uniforms: { glowColor: { value: new THREE.Color(0x0044ff) } },
   vertexShader: `varying vec3 vNormal; void main(){ vNormal=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1.0)); float i=pow(max(0.0,0.85-d),4.0); gl_FragColor=vec4(glowColor,i*0.65); }`,
+  fragmentShader: `uniform vec3 glowColor; varying vec3 vNormal; void main(){ float d=dot(vNormal,vec3(0,0,1)); float i=pow(max(0.0,0.88-d),5.0); gl_FragColor=vec4(vec3(0.1,0.45,1.0),i*0.55); }`,
 });
-scene.add(new THREE.Mesh(innerAtmGeo, innerAtmMat));
+const innerAtmMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(GLOBE_R * 1.025, 64, 64),
+  innerAtmMat
+);
+scene.add(innerAtmMesh);
 
 // ── CLOUD LAYER ───────────────────────────────────────────────────────────────
 const cloudGeo  = new THREE.SphereGeometry(GLOBE_R * 1.012, 64, 64);
@@ -1172,6 +1309,14 @@ function tickDefcon() {
     defconBadge.className = `defcon-badge d${lvl}`;
     defconLevel.textContent = lvl;
     atmosphereMat.uniforms.glowColor.value.setHex(DEFCON_GLOW[lvl]);
+    // Show alert banner on DEFCON change
+    const DEFCON_LABELS = ['','MAXIMUM','SEVERE','HIGH','ELEVATED','NORMAL'];
+    const alertEl = document.createElement('div');
+    alertEl.className = `defcon-alert d${lvl}`;
+    alertEl.textContent = `\u26a0  DEFCON ${lvl} \u2014 THREAT LEVEL ${DEFCON_LABELS[lvl]}`;
+    document.body.appendChild(alertEl);
+    setTimeout(() => alertEl.classList.add('show'), 30);
+    setTimeout(() => { alertEl.classList.remove('show'); setTimeout(() => alertEl.remove(), 500); }, 3200);
   }
 }
 
@@ -1364,6 +1509,7 @@ function onResize() {
   const w = container.clientWidth;
   const h = container.clientHeight;
   renderer.setSize(w, h, false);
+  composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -1379,6 +1525,12 @@ let nextSpawnDelay = 1200;
 
 function animate(timestamp) {
   requestAnimationFrame(animate);
+
+  // Sync sun light + sprite + atmosphere to sharedSunDir
+  const _sp = sharedSunDir.clone().multiplyScalar(12);
+  sunLight.position.copy(_sp);
+  sunSprite.position.copy(_sp);
+  atmosphereMat.uniforms.sunDir.value.copy(sharedSunDir);
 
   // Auto rotate
   if (autoRotate && !isDragging) {
@@ -1585,13 +1737,34 @@ function animate(timestamp) {
     }
   });
 
-  renderer.render(scene, camera);
+  composer.render();
 }
 
 // ─── KICK OFF ─────────────────────────────────────────────────────────────────
 // Pre-seed a few attacks
 for (let i = 0; i < 4; i++) spawnAttack();
 animate(0);
+
+// UTC Clock
+(function() {
+  const el = document.getElementById('utc-clock');
+  if (!el) return;
+  function tick() {
+    const n = new Date();
+    el.textContent = n.getUTCHours().toString().padStart(2,'0') + ':' +
+                     n.getUTCMinutes().toString().padStart(2,'0') + ':' +
+                     n.getUTCSeconds().toString().padStart(2,'0') + ' UTC';
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+// Animated page title
+(function() {
+  const titles = ['THREAT GLOBE — CYBER MONITOR', 'LIVE ATTACK FEED', 'GLOBAL THREAT MAP'];
+  let ti = 0;
+  setInterval(() => { ti = (ti + 1) % titles.length; document.title = titles[ti]; }, 4000);
+})();
 </script>
 <div id="cursor"></div>
 <script>
