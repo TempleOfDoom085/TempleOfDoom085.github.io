@@ -609,37 +609,23 @@ body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba
 
 html { font-size: 18px; }
 
-/* ── MUSIC PLAYER ── */
+/* ── MUSIC PLAYER — minimal strip ── */
 #music-player {
   position: absolute;
-  bottom: 5.5rem;
+  bottom: 1.2rem;
   left: 1.2rem;
   z-index: 20;
-  background: rgba(10,10,12,0.92);
-  border: 1px solid var(--border-green);
-  backdrop-filter: blur(14px);
-  padding: 0.65rem 0.85rem;
-  width: 200px;
+  background: rgba(6,8,6,0.88);
+  border: 1px solid rgba(0,204,255,0.18);
+  padding: 0.3rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   pointer-events: all;
 }
-#music-player::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.mp-label {
-  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.3em;
-  color: var(--cyan); text-transform: uppercase; margin-bottom: 0.5rem;
-  display: flex; align-items: center; gap: 0.4rem;
-}
-.mp-label::before {
-  content: ''; width: 5px; height: 5px; border-radius: 50%;
-  background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
-}
+.mp-label, .mp-track-name, .mp-track-sub { display: none; }
 .mp-track-name {
-  font-family: var(--head); font-size: 0.68rem; font-weight: 600;
-  letter-spacing: 0.1em; color: var(--text); margin-bottom: 0.15rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: none;
 }
 .mp-track-sub {
   font-family: var(--mono); font-size: 0.5rem; color: var(--text-faint);
@@ -1006,6 +992,7 @@ body::after {
   <div id="globe-container">
     <canvas id="globe-canvas"></canvas>
     <div id="defcon-vignette"></div>
+    <canvas id="matrix-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:11;opacity:0.88"></canvas>
 
     <!-- Decorative corners -->
     <div class="corner-tl"></div>
@@ -1042,15 +1029,11 @@ body::after {
       </div>
     </div>
 
-    <!-- Music Player -->
+    <!-- Music Player — minimal strip -->
     <div id="music-player">
-      <div class="mp-label">NOW PLAYING</div>
-      <div class="mp-track-name" id="mp-title">HALO 3</div>
-      <div class="mp-track-sub" id="mp-sub">Original Soundtrack</div>
-      <div class="mp-controls">
-        <button class="mp-btn" id="mp-play">▶ PLAY</button>
-        <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="65">
-      </div>
+      <button class="mp-btn" id="mp-play">▶</button>
+      <span style="font-family:var(--mono);font-size:0.48rem;letter-spacing:0.15em;color:rgba(0,204,255,0.5)">HALO 3 OST</span>
+      <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="65">
     </div>
     <div id="yt-player-container"><div id="yt-player"></div></div>
 
@@ -1421,7 +1404,7 @@ let starColBuf = null, starPhases = null, starPoints2 = null;
   const pts = new THREE.Points(geo, mat);
   scene.add(pts);
   // Expose for twinkle animation
-  starColBuf = col;
+  starColBuf = col.slice(); // copy — preserve base values for twinkling math
   starPoints2 = { geo, mat };
   const N_ = N;
   starPhases = new Float32Array(N_);
@@ -1464,42 +1447,40 @@ const satellites = [];
   scene.add(trailLine);
 
   satellites.push({ sat, pivot, r, speed, angle: Math.random() * Math.PI * 2,
-    trail: { line: trailLine, geo: trailGeo, pts: trailPts, head: 0 } });
+    trail: { line: trailLine, geo: trailGeo, pts: trailPts, mat: trailMat, head: 0 } });
 });
 
 // ── RADAR SWEEP RING ─────────────────────────────────────────────────────────
+// Flat RingGeometry in local XY plane, rotated to lie in XZ (equatorial)
 const radarSweepMat = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, side: THREE.DoubleSide,
   uniforms: { time: { value: 0 } },
   vertexShader: `
-    varying vec3 vPos;
+    varying vec2 vXY;
     void main() {
-      vPos = position;
+      vXY = position.xy;
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
   `,
   fragmentShader: `
     uniform float time;
-    varying vec3 vPos;
+    varying vec2 vXY;
     void main() {
-      float r = length(vPos.xz);
-      if (r < 1.04 || r > 1.55) { gl_FragColor = vec4(0.0); return; }
-      float angle = atan(vPos.z, vPos.x);
+      float r = length(vXY);
+      float angle = atan(vXY.y, vXY.x);
       float sweep = mod(-time * 0.55, 6.28318);
       float diff  = mod(sweep - angle + 6.28318, 6.28318);
-      // bright arm + rapid fade
-      float arm   = exp(-diff * 3.5) * 0.35;
-      // subtle ring ghost
-      float ghost = exp(-diff * 0.4) * 0.05;
-      float radFade = 1.0 - abs(r - 1.28) * 2.2;
-      gl_FragColor = vec4(0.0, 1.0, 0.53, (arm + ghost) * max(0.0, radFade));
+      float arm   = exp(-diff * 3.2) * 0.40;
+      float ghost = exp(-diff * 0.45) * 0.07;
+      gl_FragColor = vec4(0.0, 1.0, 0.53, arm + ghost);
     }
   `,
 });
 const radarSweepMesh = new THREE.Mesh(
-  new THREE.CylinderGeometry(1.55, 1.55, 0.001, 128, 1, true),
+  new THREE.RingGeometry(1.06, 1.56, 128, 1),
   radarSweepMat
 );
+radarSweepMesh.rotation.x = -Math.PI / 2; // lie flat in XZ plane
 scene.add(radarSweepMesh);
 
 // ── SATELLITE LASER COMMS — reusable line pool ────────────────────────────────
@@ -1526,6 +1507,200 @@ function fireSatLaser(wPos1, wPos2, laserColor) {
   slot.mat.opacity = 0.9;
   slot.active = true;
   slot.t = 0;
+}
+
+// ── ORBITAL DEBRIS FIELD ─────────────────────────────────────────────────────
+(function addDebrisField() {
+  const N = 550;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const r     = 1.18 + Math.random() * 0.55;
+    const theta = Math.random() * Math.PI * 2;
+    const phi   = Math.acos(2 * Math.random() - 1);
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ size: 1.2, color: 0x556677, transparent: true, opacity: 0.45, sizeAttenuation: false });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  // Drift at different rate from globe for orbital differentiation
+  (function tick() { pts.rotation.y += 0.00042; pts.rotation.x += 0.00011; requestAnimationFrame(tick); })();
+})();
+
+// ── SOLAR WIND PARTICLES ──────────────────────────────────────────────────────
+const WIND_N = 1400;
+const windPos  = new Float32Array(WIND_N * 3);
+const windVel  = new Float32Array(WIND_N * 3);
+function initWindParticle(i) {
+  const sd = sharedSunDir;
+  const r  = 13 + Math.random() * 4;
+  const sp = 2.5;
+  windPos[i*3]   = sd.x * r + (Math.random()-0.5) * sp;
+  windPos[i*3+1] = sd.y * r + (Math.random()-0.5) * sp;
+  windPos[i*3+2] = sd.z * r + (Math.random()-0.5) * sp;
+  const spd = 0.035 + Math.random() * 0.025;
+  windVel[i*3]   = -sd.x * spd;
+  windVel[i*3+1] = -sd.y * spd;
+  windVel[i*3+2] = -sd.z * spd;
+}
+for (let i = 0; i < WIND_N; i++) {
+  initWindParticle(i);
+  // stagger start positions along the stream
+  const t = Math.random();
+  windPos[i*3]   += windVel[i*3]   * 300 * t;
+  windPos[i*3+1] += windVel[i*3+1] * 300 * t;
+  windPos[i*3+2] += windVel[i*3+2] * 300 * t;
+}
+const windGeo = new THREE.BufferGeometry();
+windGeo.setAttribute('position', new THREE.BufferAttribute(windPos, 3));
+const windMat  = new THREE.PointsMaterial({ size: 1.4, color: 0xffcc55, transparent: true, opacity: 0.28, sizeAttenuation: false });
+const windMesh = new THREE.Points(windGeo, windMat);
+scene.add(windMesh);
+
+// ── MATRIX RAIN OVERLAY ───────────────────────────────────────────────────────
+const matCanvas = document.getElementById('matrix-canvas');
+const matCtx    = matCanvas ? matCanvas.getContext('2d') : null;
+const matRains  = [];
+const MATRIX_CHARS = 'アイウエオカキクケコサシスセソタチツテトナ01ハヒフヘホマミムメモラリルレロABCDEF0123456789!@#$%';
+
+function triggerMatrixRain(screenX, screenY) {
+  if (!matCtx) return;
+  const cols = 10 + Math.floor(Math.random() * 8);
+  const rain = {
+    x: screenX, y: screenY,
+    cols: Array.from({ length: cols }, (_, ci) => ({
+      x: screenX + (ci - cols / 2) * 13,
+      head: Math.random() * -40,
+      speed: 2.5 + Math.random() * 3,
+      chars: Array.from({ length: 18 }, () => MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]),
+    })),
+    startT: performance.now(), duration: 3200,
+  };
+  matRains.push(rain);
+}
+
+let lastMatFrame = 0;
+function drawMatrixRain(now) {
+  if (!matCtx) return;
+  if (now - lastMatFrame < 40) return; // ~25fps is plenty
+  lastMatFrame = now;
+  matCtx.clearRect(0, 0, matCanvas.width, matCanvas.height);
+  for (let ri = matRains.length - 1; ri >= 0; ri--) {
+    const rain = matRains[ri];
+    const age  = now - rain.startT;
+    if (age > rain.duration) { matRains.splice(ri, 1); continue; }
+    const alpha = age < 300 ? age / 300 : age > rain.duration - 400 ? (rain.duration - age) / 400 : 1;
+    for (const col of rain.cols) {
+      col.head += col.speed;
+      // Occasionally change a char
+      if (Math.random() < 0.06) col.chars[Math.floor(Math.random() * col.chars.length)] = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+      for (let ci = 0; ci < col.chars.length; ci++) {
+        const yy = rain.y + col.head - ci * 16;
+        if (yy < 0 || yy > matCanvas.height) continue;
+        const bright = ci === 0 ? 1.0 : Math.max(0, 1 - ci / col.chars.length) * 0.75;
+        const g = Math.floor(220 * bright);
+        const b = Math.floor(40 * bright);
+        matCtx.fillStyle = `rgba(0,${g},${b},${alpha * bright})`;
+        matCtx.font = `bold 13px monospace`;
+        matCtx.fillText(col.chars[ci], col.x, yy);
+      }
+    }
+  }
+}
+
+// ── SATELLITE HACK EVENT ──────────────────────────────────────────────────────
+let hackedSat       = null;
+let hackEndTime     = 0;
+let hackBeamSlot    = null;
+let nextHackTime    = 90000 + Math.random() * 60000;
+
+function triggerSatHack(ts) {
+  if (hackedSat) return;
+  const idx  = Math.floor(Math.random() * satellites.length);
+  const s    = satellites[idx];
+  hackedSat  = s;
+  hackEndTime = ts + 18000 + Math.random() * 10000;
+  s.sat.material.color.setHex(0xff2200);
+  s.trail.mat.color.setHex(0xff3300);
+  // Banner
+  const banner = document.createElement('div');
+  banner.className = 'emp-banner';
+  banner.style.color = '#ff3300';
+  banner.innerHTML = '⚠ SATELLITE COMPROMISED — ADVERSARY CONTROL DETECTED';
+  document.getElementById('globe-container').appendChild(banner);
+  setTimeout(() => { banner.classList.add('show'); }, 30);
+  setTimeout(() => { banner.classList.remove('show'); setTimeout(() => banner.remove(), 500); }, 4000);
+  // Fire a beam to a random city
+  const dstCity = CITIES[Math.floor(Math.random() * CITIES.length)];
+  const wp1 = new THREE.Vector3(); s.sat.getWorldPosition(wp1);
+  const wp2 = latLngToVec3(dstCity.lat, dstCity.lng, GLOBE_R + 0.01);
+  hackBeamSlot = satLaserPool.find(sl => !sl.active);
+  if (hackBeamSlot) {
+    const pa = hackBeamSlot.line.geometry.attributes.position.array;
+    pa[0]=wp1.x; pa[1]=wp1.y; pa[2]=wp1.z;
+    pa[3]=wp2.x; pa[4]=wp2.y; pa[5]=wp2.z;
+    hackBeamSlot.line.geometry.attributes.position.needsUpdate = true;
+    hackBeamSlot.mat.color.set(0xff2200);
+    hackBeamSlot.mat.opacity = 0.85;
+    hackBeamSlot.active = true; hackBeamSlot.t = -999; // prevent normal decay
+  }
+}
+
+function releaseSatHack() {
+  if (!hackedSat) return;
+  hackedSat.sat.material.color.setHex(hackedSat.trail.mat.color.getHex() === 0xff3300 ? 0x00ff88 : hackedSat.sat.material.color.getHex());
+  hackedSat.sat.material.color.setHex(0x00ff88); // restore (simplified)
+  hackedSat.trail.mat.color.setHex(0x00ccff);
+  if (hackBeamSlot) { hackBeamSlot.mat.opacity = 0; hackBeamSlot.active = false; hackBeamSlot = null; }
+  hackedSat = null;
+}
+
+// ── CORONAL MASS EJECTION (CME) ───────────────────────────────────────────────
+let nextCMETime = 240000 + Math.random() * 180000; // first CME 4–7 min in
+
+function triggerCME(ts) {
+  const sunPos = sharedSunDir.clone().multiplyScalar(5);
+  // Expanding shock sphere
+  const cGeo = new THREE.SphereGeometry(0.18, 24, 24);
+  const cMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.0, depthWrite: false });
+  const cMesh = new THREE.Mesh(cGeo, cMat);
+  cMesh.position.copy(sunPos);
+  scene.add(cMesh);
+
+  let t = 0;
+  const expand = () => {
+    t += 0.007;
+    const s = 1 + t * 28;
+    cMesh.scale.set(s, s, s);
+    cMat.opacity = t < 0.25 ? t * 2.4 : Math.max(0, 0.6 - (t - 0.25) * 1.0);
+    if (t < 0.75) requestAnimationFrame(expand);
+    else { scene.remove(cMesh); cGeo.dispose(); cMat.dispose(); }
+  };
+  requestAnimationFrame(expand);
+
+  // When wave hits globe (~1.2s) — hex flash + screen bloom
+  setTimeout(() => {
+    for (const h of hexes) h.heat = Math.max(h.heat, 0.25 + Math.random() * 0.35);
+    const gc = document.getElementById('globe-container');
+    gc.style.transition = 'filter 0.12s';
+    gc.style.filter = 'brightness(1.9) saturate(2)';
+    setTimeout(() => { gc.style.filter = ''; }, 120);
+    setTimeout(() => { gc.style.filter = 'brightness(1.2)'; }, 240);
+    setTimeout(() => { gc.style.filter = ''; }, 480);
+    // CME banner
+    const banner = document.createElement('div');
+    banner.className = 'emp-banner';
+    banner.style.color = '#ff8800';
+    banner.innerHTML = '☀ CORONAL MASS EJECTION — GEOMAGNETIC STORM INBOUND';
+    document.getElementById('globe-container').appendChild(banner);
+    setTimeout(() => banner.classList.add('show'), 30);
+    setTimeout(() => { banner.classList.remove('show'); setTimeout(() => banner.remove(), 500); }, 5000);
+  }, 1200);
+
+  nextCMETime = ts + 240000 + Math.random() * 180000;
 }
 
 // ── EARTH TEXTURE LOAD ───────────────────────────────────────────────────────
@@ -2463,6 +2638,19 @@ function spawnAttack() {
   // Pulse country border
   pulseCountryBorder(dst.country);
 
+  // BREACH → matrix rain at destination
+  if (evKey === 'breach' || evKey === 'ransomware') {
+    const dstPos3D = latLngToVec3(dst.lat, dst.lng, GLOBE_R + 0.05);
+    const projected = dstPos3D.clone().project(camera);
+    const rect = renderer.domElement.getBoundingClientRect();
+    const sx = ((projected.x + 1) / 2) * rect.width;
+    const sy = ((-projected.y + 1) / 2) * rect.height;
+    if (projected.z < 1) { // visible side
+      if (matCanvas) { matCanvas.width = rect.width; matCanvas.height = rect.height; }
+      triggerMatrixRain(sx, sy);
+    }
+  }
+
   // Critical event visual shock
   if (severity === 'CRITICAL') {
     const gc  = document.getElementById('globe-container');
@@ -2817,8 +3005,7 @@ function animate(timestamp) {
       posArr[ti * 3 + 2] = pt.z;
     }
     s.trail.geo.attributes.position.needsUpdate = true;
-    // Fade the oldest points — mat opacity based on how many points are "real"
-    s.trail.mat.opacity = Math.min(0.55, (timestamp * 0.001) % 1.0 > 0 ? 0.55 : 0);
+    s.trail.mat.opacity = 0.50;
   });
 
   // Satellite laser comms — random cross-links between satellites
@@ -2886,6 +3073,51 @@ function animate(timestamp) {
     spawnEMP();
     nextEMP = timestamp + 60000 + Math.random() * 90000;
   }
+
+  // ── SOLAR WIND UPDATE ──
+  {
+    const posArr = windGeo.attributes.position.array;
+    for (let wi = 0; wi < WIND_N; wi++) {
+      posArr[wi*3]   += windVel[wi*3];
+      posArr[wi*3+1] += windVel[wi*3+1];
+      posArr[wi*3+2] += windVel[wi*3+2];
+      // Reset if past globe or escaped anti-sun
+      const dx = posArr[wi*3], dy = posArr[wi*3+1], dz = posArr[wi*3+2];
+      const d2 = dx*dx + dy*dy + dz*dz;
+      const dot = dx*sharedSunDir.x + dy*sharedSunDir.y + dz*sharedSunDir.z;
+      if (d2 < 0.9 || dot < -8) initWindParticle(wi);
+    }
+    windGeo.attributes.position.needsUpdate = true;
+  }
+
+  // ── SATELLITE HACK TIMER ──
+  if (!hackedSat && timestamp >= nextHackTime) {
+    triggerSatHack(timestamp);
+    nextHackTime = timestamp + 90000 + Math.random() * 60000;
+  }
+  if (hackedSat && timestamp >= hackEndTime) {
+    releaseSatHack();
+  }
+  // Pulse the hacked satellite bright red
+  if (hackedSat) {
+    const pulse = 0.5 + 0.5 * Math.sin(timestamp * 0.008);
+    hackedSat.sat.material.color.setRGB(1, pulse * 0.15, 0);
+    // Keep hack beam pointing at its current targets
+    if (hackBeamSlot) {
+      const wp1 = new THREE.Vector3();
+      hackedSat.sat.getWorldPosition(wp1);
+      const pa = hackBeamSlot.line.geometry.attributes.position.array;
+      pa[0] = wp1.x; pa[1] = wp1.y; pa[2] = wp1.z;
+      hackBeamSlot.line.geometry.attributes.position.needsUpdate = true;
+      hackBeamSlot.mat.opacity = 0.65 + 0.25 * Math.sin(timestamp * 0.012);
+    }
+  }
+
+  // ── CME EVENT ──
+  if (timestamp >= nextCMETime) triggerCME(timestamp);
+
+  // ── MATRIX RAIN DRAW ──
+  drawMatrixRain(timestamp);
 
   // Hex heat cooldown + recolor (throttled to every 3 frames)
   if (Math.round(timestamp / 16) % 3 === 0) {
