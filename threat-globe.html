@@ -149,6 +149,63 @@ nav {
   cursor: grab;
 }
 #globe-container:active { cursor: grabbing; }
+
+/* ── CRT SCANLINES ── */
+#globe-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,0,0,0.045) 3px,
+    rgba(0,0,0,0.045) 4px
+  );
+  pointer-events: none;
+  z-index: 8;
+}
+
+/* ── DEFCON VIGNETTE ── */
+#defcon-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(255,20,0,0.45) 100%);
+  pointer-events: none;
+  z-index: 7;
+  opacity: 0;
+  transition: opacity 3s ease;
+}
+
+/* ── CRITICAL GLITCH on canvas ── */
+@keyframes critGlitch {
+  0%,100% { transform: translate(0,0);  filter: none; }
+  8%      { transform: translate(-5px,2px);   filter: hue-rotate(75deg) brightness(1.18) saturate(2); }
+  16%     { transform: translate(4px,-2px);   filter: hue-rotate(-50deg) brightness(0.88); }
+  25%     { transform: translate(-2px,3px);   filter: hue-rotate(20deg) contrast(1.1); }
+  33%     { transform: translate(0,0);  filter: none; }
+  42%     { transform: translate(4px,0);      filter: hue-rotate(130deg) brightness(1.1); }
+  50%     { transform: translate(-1px,-1px);  filter: hue-rotate(-30deg); }
+  60%     { transform: translate(0,0);  filter: none; }
+}
+.crit-glitch { animation: critGlitch 0.48s steps(2) forwards; }
+
+/* ── CRITICAL EDGE FLASH ── */
+@keyframes edgeFlashKf {
+  0%   { box-shadow: inset 0 0 80px rgba(255,0,0,0.55), inset 0 0 30px rgba(255,0,0,0.3); }
+  60%  { box-shadow: inset 0 0 40px rgba(255,0,0,0.2); }
+  100% { box-shadow: none; }
+}
+.edge-flash { animation: edgeFlashKf 0.75s ease forwards; }
+
+/* ── HEX WAVE RIPPLE (CSS-side keyframe, toggled by JS) ── */
+@keyframes hexWave {
+  0%,100% { opacity: 0.13; }
+  50%     { opacity: 0.55; }
+}
+
+/* ── SATELLITE GLOW PULSE ── */
+@keyframes satGlow { 0%,100%{opacity:0.8} 50%{opacity:0.3} }
 #globe-canvas {
   display: block;
   width: 100%;
@@ -948,6 +1005,7 @@ body::after {
   <!-- GLOBE -->
   <div id="globe-container">
     <canvas id="globe-canvas"></canvas>
+    <div id="defcon-vignette"></div>
 
     <!-- Decorative corners -->
     <div class="corner-tl"></div>
@@ -1329,6 +1387,7 @@ const sphere = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
 
 // ── STAR FIELD ──────────────────────────────────────────────────────────────
+let starColBuf = null, starPhases = null, starPoints2 = null;
 (function addStars() {
   const N = 7000;
   const pos   = new Float32Array(N * 3);
@@ -1359,7 +1418,14 @@ scene.add(sphere);
     opacity: 0.88,
     size: 1.6,
   });
-  scene.add(new THREE.Points(geo, mat));
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  // Expose for twinkle animation
+  starColBuf = col;
+  starPoints2 = { geo, mat };
+  const N_ = N;
+  starPhases = new Float32Array(N_);
+  for (let i = 0; i < N_; i++) starPhases[i] = Math.random() * Math.PI * 2;
 })();
 
 // ── ORBITAL SATELLITE RINGS ──────────────────────────────────────────────────
@@ -1387,8 +1453,80 @@ const satellites = [];
   pivot.rotation.x = tilt;
   pivot.add(sat);
   scene.add(pivot);
-  satellites.push({ sat, pivot, r, speed, angle: Math.random() * Math.PI * 2 });
+  // Satellite trail — circular buffer of world positions
+  const TRAIL_LEN = 55;
+  const trailPts  = Array.from({ length: TRAIL_LEN }, () => new THREE.Vector3());
+  const trailGeo  = new THREE.BufferGeometry().setFromPoints(trailPts);
+  const trailMat  = new THREE.LineBasicMaterial({
+    color, transparent: true, opacity: 0.55, depthWrite: false,
+  });
+  const trailLine = new THREE.Line(trailGeo, trailMat);
+  scene.add(trailLine);
+
+  satellites.push({ sat, pivot, r, speed, angle: Math.random() * Math.PI * 2,
+    trail: { line: trailLine, geo: trailGeo, pts: trailPts, head: 0 } });
 });
+
+// ── RADAR SWEEP RING ─────────────────────────────────────────────────────────
+const radarSweepMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide,
+  uniforms: { time: { value: 0 } },
+  vertexShader: `
+    varying vec3 vPos;
+    void main() {
+      vPos = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float time;
+    varying vec3 vPos;
+    void main() {
+      float r = length(vPos.xz);
+      if (r < 1.04 || r > 1.55) { gl_FragColor = vec4(0.0); return; }
+      float angle = atan(vPos.z, vPos.x);
+      float sweep = mod(-time * 0.55, 6.28318);
+      float diff  = mod(sweep - angle + 6.28318, 6.28318);
+      // bright arm + rapid fade
+      float arm   = exp(-diff * 3.5) * 0.35;
+      // subtle ring ghost
+      float ghost = exp(-diff * 0.4) * 0.05;
+      float radFade = 1.0 - abs(r - 1.28) * 2.2;
+      gl_FragColor = vec4(0.0, 1.0, 0.53, (arm + ghost) * max(0.0, radFade));
+    }
+  `,
+});
+const radarSweepMesh = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.55, 1.55, 0.001, 128, 1, true),
+  radarSweepMat
+);
+scene.add(radarSweepMesh);
+
+// ── SATELLITE LASER COMMS — reusable line pool ────────────────────────────────
+const satLaserPool = [];
+const SAT_LASER_COUNT = 6;
+for (let li = 0; li < SAT_LASER_COUNT; li++) {
+  const lGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  const lMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, depthWrite: false });
+  const lLine = new THREE.Line(lGeo, lMat);
+  scene.add(lLine);
+  satLaserPool.push({ line: lLine, mat: lMat, active: false, t: 0 });
+}
+let laserIdx = 0;
+
+function fireSatLaser(wPos1, wPos2, laserColor) {
+  const slot = satLaserPool[laserIdx % SAT_LASER_COUNT];
+  laserIdx++;
+  if (slot.active) return;
+  const pos = slot.line.geometry.attributes.position.array;
+  pos[0]=wPos1.x; pos[1]=wPos1.y; pos[2]=wPos1.z;
+  pos[3]=wPos2.x; pos[4]=wPos2.y; pos[5]=wPos2.z;
+  slot.line.geometry.attributes.position.needsUpdate = true;
+  slot.mat.color.set(laserColor || 0x88ffff);
+  slot.mat.opacity = 0.9;
+  slot.active = true;
+  slot.t = 0;
+}
 
 // ── EARTH TEXTURE LOAD ───────────────────────────────────────────────────────
 (function loadEarthTexture() {
@@ -2061,6 +2199,9 @@ function tickDefcon() {
     defconBadge.className = `defcon-badge d${lvl}`;
     defconLevel.textContent = lvl;
     atmosphereMat.uniforms.glowColor.value.setHex(DEFCON_GLOW[lvl]);
+    // Vignette intensifies as DEFCON rises (D5=0%, D1=80%)
+    const vigEl = document.getElementById('defcon-vignette');
+    if (vigEl) vigEl.style.opacity = ((5 - lvl) / 4) * 0.8;
     // Show alert banner on DEFCON change
     const DEFCON_LABELS = ['','MAXIMUM','SEVERE','HIGH','ELEVATED','NORMAL'];
     const alertEl = document.createElement('div');
@@ -2322,6 +2463,18 @@ function spawnAttack() {
   // Pulse country border
   pulseCountryBorder(dst.country);
 
+  // Critical event visual shock
+  if (severity === 'CRITICAL') {
+    const gc  = document.getElementById('globe-container');
+    const gcv = document.getElementById('globe-canvas');
+    gcv.classList.remove('crit-glitch');
+    gc.classList.remove('edge-flash');
+    void gcv.offsetWidth; // reflow to restart animation
+    gcv.classList.add('crit-glitch');
+    gc.classList.add('edge-flash');
+    setTimeout(() => { gcv.classList.remove('crit-glitch'); gc.classList.remove('edge-flash'); }, 750);
+  }
+
   // Track stats
   countryHits[dst.country]  = (countryHits[dst.country]  || 0) + 1;
   vectorCounts[evKey]        = (vectorCounts[evKey]        || 0) + 1;
@@ -2486,6 +2639,27 @@ const AUTO_SPEED = 0.0015;
 let lastSpawn = 0;
 let nextSpawnDelay = 1200;
 
+// ─── HEX SCAN WAVE ────────────────────────────────────────────────────────────
+// Sends a brightness wave radiating from a random lat/lng across all hexes
+let hexWaveActive = false;
+let hexWaveOrigin = null;
+let hexWaveT      = 0;
+
+function triggerHexScanWave() {
+  if (hexWaveActive) return;
+  hexWaveActive = true;
+  hexWaveT = 0;
+  const idx = Math.floor(Math.random() * hexes.length);
+  hexWaveOrigin = hexes[idx].center.clone();
+}
+// Kick one off every 18–35 seconds
+setInterval(triggerHexScanWave, 18000 + Math.random() * 17000);
+
+// ─── STAR TWINKLE POOL ────────────────────────────────────────────────────────
+// Pre-built random offsets for per-star brightness wobble
+let starPoints   = null; // filled after stars are created
+let starOpacBase = null;
+
 function animate(timestamp) {
   requestAnimationFrame(animate);
 
@@ -2622,11 +2796,51 @@ function animate(timestamp) {
     }
   }
 
-  // Satellite orbit animation
+  // Satellite orbit + trails + laser comms
+  const tmpSatPos = new THREE.Vector3();
   satellites.forEach(s => {
     s.angle += s.speed;
     s.sat.position.set(s.r * Math.cos(s.angle), 0, s.r * Math.sin(s.angle));
+
+    // Record trail point
+    s.sat.getWorldPosition(tmpSatPos);
+    s.trail.pts[s.trail.head].copy(tmpSatPos);
+    s.trail.head = (s.trail.head + 1) % s.trail.pts.length;
+
+    // Write trail geometry in chronological order (oldest → newest)
+    const posArr = s.trail.geo.attributes.position.array;
+    const tLen   = s.trail.pts.length;
+    for (let ti = 0; ti < tLen; ti++) {
+      const pt = s.trail.pts[(s.trail.head + ti) % tLen];
+      posArr[ti * 3]     = pt.x;
+      posArr[ti * 3 + 1] = pt.y;
+      posArr[ti * 3 + 2] = pt.z;
+    }
+    s.trail.geo.attributes.position.needsUpdate = true;
+    // Fade the oldest points — mat opacity based on how many points are "real"
+    s.trail.mat.opacity = Math.min(0.55, (timestamp * 0.001) % 1.0 > 0 ? 0.55 : 0);
   });
+
+  // Satellite laser comms — random cross-links between satellites
+  if (Math.random() < 0.008) {
+    const i = Math.floor(Math.random() * satellites.length);
+    const j = (i + 1 + Math.floor(Math.random() * (satellites.length - 1))) % satellites.length;
+    const wp1 = new THREE.Vector3(); const wp2 = new THREE.Vector3();
+    satellites[i].sat.getWorldPosition(wp1);
+    satellites[j].sat.getWorldPosition(wp2);
+    fireSatLaser(wp1, wp2, satellites[i].trail.mat.color);
+  }
+
+  // Animate active laser comms (fade out)
+  for (const slot of satLaserPool) {
+    if (!slot.active) continue;
+    slot.t += 0.04;
+    slot.mat.opacity = Math.max(0, 0.9 - slot.t * 2.5);
+    if (slot.t >= 0.36) { slot.mat.opacity = 0; slot.active = false; }
+  }
+
+  // Radar sweep rotation
+  radarSweepMat.uniforms.time.value = timestamp * 0.001;
 
   // Moon orbit
   moonAngle += MOON_ORBIT_SPEED;
@@ -2636,6 +2850,24 @@ function animate(timestamp) {
   moonMesh.position.set(mx, my, mz);
   moonHalo.position.set(mx, my, mz);
   moonMesh.rotation.y += 0.0008;
+
+  // ── STAR TWINKLE (update 120 random stars per frame) ──
+  if (starColBuf && starPoints2 && starPhases) {
+    const t  = timestamp * 0.0007;
+    const ca = starPoints2.geo.attributes.color;
+    const BATCH = 120;
+    const N7 = starPhases.length;
+    // deterministic batch offset so all stars get updated over time
+    const base = (Math.round(timestamp / 16) * BATCH) % N7;
+    for (let bi = 0; bi < BATCH; bi++) {
+      const i = (base + bi) % N7;
+      const bright = 0.55 + 0.45 * Math.sin(t * (0.8 + (i % 7) * 0.15) + starPhases[i]);
+      ca.array[i*3]   = starColBuf[i*3]   * bright;
+      ca.array[i*3+1] = starColBuf[i*3+1] * bright;
+      ca.array[i*3+2] = starColBuf[i*3+2] * bright;
+    }
+    ca.needsUpdate = true;
+  }
 
   // Aurora time + DEFCON scaling
   auroraMat.uniforms.time.value = timestamp * 0.001;
@@ -2670,6 +2902,26 @@ function animate(timestamp) {
       } else {
         h.mat.color.setHex(0x00ff88);
         h.mat.opacity = 0.13;
+      }
+    }
+
+    // ── HEX SCAN WAVE ──
+    if (hexWaveActive && hexWaveOrigin) {
+      hexWaveT += 0.022;
+      const waveFront = hexWaveT * 1.8; // wave expands at this rate
+      for (const h of hexes) {
+        if (h.heat > 0.05) continue; // don't interfere with hot hexes
+        const dist = h.center.distanceTo(hexWaveOrigin);
+        const d = Math.abs(dist - waveFront);
+        if (d < 0.22) {
+          const brightness = 0.13 + Math.max(0, (0.22 - d) / 0.22) * 0.42;
+          h.mat.color.setHex(0x00ffaa);
+          h.mat.opacity = brightness;
+        }
+      }
+      if (hexWaveT > 2.5) {
+        hexWaveActive = false;
+        hexWaveOrigin = null;
       }
     }
   }
