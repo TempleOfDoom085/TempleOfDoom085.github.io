@@ -61,13 +61,85 @@ nav {
   color: var(--text-faint); text-transform: uppercase;
 }
 
-/* MAIN LAYOUT */
+/* MAIN LAYOUT — 3 column command center */
 .globe-layout {
   flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 270px 1fr 290px;
   overflow: hidden;
-  position: relative;
 }
+
+/* ── LEFT PANEL — LIVE INTELLIGENCE TERMINAL ── */
+.left-panel {
+  background: rgba(4,6,4,0.98);
+  border-right: 1px solid rgba(0,255,136,0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--mono);
+}
+.panel-hdr {
+  padding: 0.7rem 0.9rem 0.6rem;
+  border-bottom: 1px solid rgba(0,255,136,0.1);
+  font-size: 0.5rem;
+  letter-spacing: 0.32em;
+  color: rgba(0,255,136,0.55);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+.panel-hdr-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: blink 1.4s ease infinite;
+  flex-shrink: 0;
+}
+.terminal-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.4rem 0;
+  font-size: 0.6rem;
+  line-height: 1.75;
+}
+.terminal-feed::-webkit-scrollbar { width: 2px; }
+.terminal-feed::-webkit-scrollbar-track { background: transparent; }
+.terminal-feed::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.15); }
+.term-line {
+  padding: 0.04rem 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: termEntry 0.25s ease;
+  border-left: 2px solid transparent;
+  transition: background 0.3s;
+}
+.term-line:hover { background: rgba(0,255,136,0.04); }
+@keyframes termEntry {
+  from { opacity: 0; background: rgba(0,255,136,0.07); }
+  to   { opacity: 1; background: transparent; }
+}
+.term-ts  { color: rgba(0,255,136,0.28); }
+.term-ddos      { color: #ff3333; border-left-color: #ff3333; }
+.term-scan      { color: #00ccff; border-left-color: #00ccff; }
+.term-breach    { color: #ff8800; border-left-color: #ff8800; }
+.term-botnet    { color: #bb44ff; border-left-color: #bb44ff; }
+.term-ransomware{ color: #ff0066; border-left-color: #ff0066; }
+.term-phishing  { color: #ffcc00; border-left-color: #ffcc00; }
+.term-mitm      { color: #44ff88; border-left-color: #44ff88; }
+.term-msg { color: rgba(245,242,236,0.35); margin-left: 0.3rem; }
+
+/* subtle CRT flicker on the terminal */
+@keyframes crtFlicker {
+  0%,94%,100% { opacity: 1; }
+  95% { opacity: 0.94; }
+  97% { opacity: 0.97; }
+  98% { opacity: 0.90; }
+}
+.terminal-feed { animation: crtFlicker 11s infinite; }
 
 /* GLOBE CANVAS AREA */
 #globe-container {
@@ -182,21 +254,123 @@ nav {
   pointer-events: none;
 }
 
-/* SIDEBAR */
+/* ── RIGHT PANEL — GLOBAL STATE ── */
 .sidebar {
-  width: 320px;
-  flex-shrink: 0;
-  background: rgba(10,10,12,0.95);
-  border-left: 1px solid var(--border-green);
+  background: rgba(4,6,4,0.98);
+  border-left: 1px solid rgba(0,255,136,0.12);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
+.sidebar::-webkit-scrollbar { width: 2px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.15); }
 .sidebar-header {
-  padding: 1rem 1.25rem 0;
+  padding: 0.7rem 0.9rem 0;
   flex-shrink: 0;
 }
+
+/* ── RIGHT PANEL SECTIONS ── */
+.rp-section {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+.rp-section-title {
+  font-family: var(--mono);
+  font-size: 0.46rem;
+  letter-spacing: 0.3em;
+  color: rgba(0,255,136,0.4);
+  text-transform: uppercase;
+  margin-bottom: 0.55rem;
+}
+/* Global threat bar */
+.gtl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+.gtl-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+.gtl-pct {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--green);
+}
+.gtl-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-bottom: 0.22rem;
+}
+.gtl-fill {
+  height: 100%;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #00ff88 0%, #ffcc00 50%, #ff3333 100%);
+  background-size: 200% 100%;
+  transition: width 1.2s ease;
+}
+/* Top targets */
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+}
+.target-num  { color: rgba(0,255,136,0.35); min-width: 1.1rem; font-size: 0.5rem; }
+.target-name { flex: 1; color: var(--text-dim); }
+.target-hits { color: var(--green); font-size: 0.55rem; }
+.target-bar-wrap { width: 50px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow:hidden; }
+.target-bar-fill { height: 100%; background: var(--green); border-radius: 1px; transition: width 0.8s; }
+/* Event counters grid */
+.rp-counters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.rp-counter {
+  background: rgba(0,255,136,0.025);
+  border: 1px solid rgba(0,255,136,0.08);
+  padding: 0.5rem 0.6rem;
+}
+.rp-counter-val {
+  font-family: var(--mono);
+  font-size: 1.0rem;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 0.18rem;
+}
+.rp-counter-val.alert { color: var(--red); }
+.rp-counter-label {
+  font-family: var(--mono);
+  font-size: 0.42rem;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+/* Scan rate indicator */
+.rate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  margin-bottom: 0.22rem;
+}
+.rate-key  { color: var(--text-faint); letter-spacing: 0.06em; }
+.rate-val  { letter-spacing: 0.15em; font-weight: 600; }
+.rate-high   { color: var(--red); }
+.rate-med    { color: var(--orange); }
+.rate-normal { color: var(--green); }
 .sidebar-title {
   font-family: var(--mono);
   font-size: 0.62rem;
@@ -479,6 +653,34 @@ body::after {
   z-index: 99999;
 }
 
+/* Nav controls */
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.nav-ctrl-btn {
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid rgba(0,255,136,0.25);
+  background: none;
+  color: rgba(0,255,136,0.5);
+  cursor: none;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.nav-ctrl-btn.active {
+  color: var(--green);
+  border-color: rgba(0,255,136,0.55);
+  background: rgba(0,255,136,0.06);
+}
+.nav-ctrl-btn.live-on::before {
+  content: '● ';
+  color: var(--red);
+}
+
 /* Nav UTC clock + center block */
 .nav-center-block { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
 .nav-title { font-family: var(--head); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.3em; color: var(--text); }
@@ -720,15 +922,28 @@ body::after {
   <a href="/" class="nav-back">← PORTFOLIO</a>
   <div class="nav-center-block">
     <span class="nav-title">THREAT GLOBE</span>
-    <span class="nav-sub">LIVE CYBER MONITOR</span>
+    <span class="nav-sub">CYBER THREAT INTELLIGENCE INTERFACE</span>
   </div>
   <div class="nav-right-group">
+    <div class="nav-controls">
+      <button class="nav-ctrl-btn active live-on" id="ctrl-live">LIVE</button>
+      <button class="nav-ctrl-btn active" id="ctrl-borders">BORDERS</button>
+    </div>
     <span class="nav-clock" id="utc-clock">00:00:00 UTC</span>
     <div class="defcon-badge d5" id="defcon-badge">DEFCON <span id="defcon-level">5</span></div>
   </div>
 </nav>
 
 <div class="globe-layout">
+
+  <!-- LEFT PANEL — LIVE INTELLIGENCE TERMINAL -->
+  <div class="left-panel">
+    <div class="panel-hdr">
+      <div class="panel-hdr-dot"></div>
+      LIVE INTELLIGENCE FEED
+    </div>
+    <div class="terminal-feed" id="terminal-feed"></div>
+  </div>
 
   <!-- GLOBE -->
   <div id="globe-container">
@@ -815,33 +1030,92 @@ body::after {
     <div class="disclaimer">⚠ SIMULATED DATA — FOR DEMONSTRATION PURPOSES ONLY</div>
   </div>
 
-  <!-- SIDEBAR -->
+  <!-- RIGHT PANEL — GLOBAL STATE -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-title">
-        THREAT INTEL
-        <span class="feed-count" id="feed-count">0 EVENTS</span>
-      </div>
-      <div class="sidebar-tabs">
-        <div class="sidebar-tab active" id="tab-feed-btn">ATTACK FEED</div>
-        <div class="sidebar-tab" id="tab-intel-btn">INTEL</div>
+      <div class="panel-hdr" style="padding:0;border:none;margin-bottom:0.4rem;">
+        <div class="panel-hdr-dot"></div>
+        GLOBAL STATE
       </div>
     </div>
 
-    <!-- FEED TAB -->
-    <div class="tab-content active" id="tab-feed-panel">
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot critical"></div>CRITICAL</div>
-        <div class="legend-item"><div class="legend-dot high"></div>HIGH</div>
-        <div class="legend-item"><div class="legend-dot medium"></div>MED</div>
-        <div class="legend-item"><div class="legend-dot low"></div>LOW</div>
+    <!-- Global Threat Level -->
+    <div class="rp-section">
+      <div class="rp-section-title">Global Threat Level</div>
+      <div class="gtl-row">
+        <span class="gtl-label">CURRENT INDEX</span>
+        <span class="gtl-pct" id="rp-gtl-pct">0%</span>
       </div>
-      <div class="feed" id="attack-feed"></div>
+      <div class="gtl-bar"><div class="gtl-fill" id="rp-gtl-fill" style="width:0%"></div></div>
+      <div class="gtl-row" style="margin-top:0.3rem">
+        <span class="gtl-label">STATUS</span>
+        <span class="gtl-pct" id="rp-status" style="font-size:0.56rem;letter-spacing:0.2em">NORMAL</span>
+      </div>
     </div>
 
-    <!-- INTEL TAB -->
-    <div class="tab-content" id="tab-intel-panel">
-      <div class="intel-feed" id="intel-feed"></div>
+    <!-- Event Counters -->
+    <div class="rp-section">
+      <div class="rp-section-title">Active Telemetry</div>
+      <div class="rp-counters">
+        <div class="rp-counter">
+          <div class="rp-counter-val" id="rp-active">0</div>
+          <div class="rp-counter-label">Active Threats</div>
+        </div>
+        <div class="rp-counter">
+          <div class="rp-counter-val alert" id="rp-critical">0</div>
+          <div class="rp-counter-label">Critical Alerts</div>
+        </div>
+        <div class="rp-counter">
+          <div class="rp-counter-val" id="rp-total">0</div>
+          <div class="rp-counter-label">Total Events</div>
+        </div>
+        <div class="rp-counter">
+          <div class="rp-counter-val" id="rp-countries">0</div>
+          <div class="rp-counter-label">Nations Targeted</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rate indicators -->
+    <div class="rp-section">
+      <div class="rp-section-title">Signal Analysis</div>
+      <div class="rate-row">
+        <span class="rate-key">BOTNET CLUSTERS</span>
+        <span class="rate-val" id="rp-botnets">0</span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-key">SCAN RATE</span>
+        <span class="rate-val" id="rp-scan-rate">LOW</span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-key">TOP VECTOR</span>
+        <span class="rate-val" id="rp-top-vector">—</span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-key">EVENT/MIN</span>
+        <span class="rate-val rate-high" id="rp-epm">0</span>
+      </div>
+    </div>
+
+    <!-- Top Targets -->
+    <div class="rp-section">
+      <div class="rp-section-title">Top Targets</div>
+      <div id="rp-top-targets">
+        <div class="target-row" style="color:rgba(245,242,236,0.15);font-size:0.52rem">AWAITING DATA...</div>
+      </div>
+    </div>
+
+    <!-- Attack type breakdown -->
+    <div class="rp-section">
+      <div class="rp-section-title">Attack Vectors</div>
+      <div id="rp-vectors"></div>
+    </div>
+
+    <!-- Hidden legacy elements for JS compatibility -->
+    <div style="display:none">
+      <span id="feed-count">0</span>
+      <div id="attack-feed"></div>
+      <div id="intel-feed"></div>
     </div>
   </div>
 
@@ -954,6 +1228,37 @@ const COUNTRY_PROFILES = {
 
 // ─── FILTER STATE ─────────────────────────────────────────────────────────────
 const activeFilters = new Set(EVENT_TYPE_KEYS);
+
+// ─── REGIONAL THREAT WEIGHTS ─────────────────────────────────────────────────
+// Higher = more likely to be targeted or source of attacks
+const REGION_THREAT = {
+  'USA': 0.88, 'Canada': 0.52, 'Mexico': 0.62,
+  'UK': 0.72, 'Germany': 0.64, 'France': 0.60,
+  'Sweden': 0.44, 'Netherlands': 0.55,
+  'Russia': 0.90, 'China': 0.85, 'Japan': 0.66,
+  'South Korea': 0.72, 'India': 0.74, 'Singapore': 0.50,
+  'Australia': 0.54, 'Brazil': 0.78, 'Argentina': 0.60,
+  'Nigeria': 0.82, 'Egypt': 0.65, 'UAE': 0.50,
+};
+
+function pickWeightedCity(excludeIdx) {
+  const weights = CITIES.map(c => REGION_THREAT[c.country] || 0.5);
+  let total = 0;
+  for (let i = 0; i < weights.length; i++) if (i !== excludeIdx) total += weights[i];
+  let r = Math.random() * total;
+  for (let i = 0; i < CITIES.length; i++) {
+    if (i === excludeIdx) continue;
+    r -= weights[i];
+    if (r <= 0) return i;
+  }
+  return (excludeIdx + 1) % CITIES.length;
+}
+
+// ─── GLOBAL STATS TRACKING ───────────────────────────────────────────────────
+const countryHits  = {};  // country → hit count
+const vectorCounts = {};  // event type → count
+let   simLive      = true;
+let   bordersOn    = true;
 
 // ─── THREE.JS SETUP ──────────────────────────────────────────────────────────
 const container = document.getElementById('globe-container');
@@ -1577,6 +1882,89 @@ CITIES.forEach(city => {
   cityObjects.push({ city, pos, dot, ring, dotMat, ringMat, pulseT: 0, pulsing: false });
 });
 
+// ─── TRON COUNTRY BORDERS ─────────────────────────────────────────────────────
+const borderLines = {};  // nameKey → [{line, mat}]
+const BORDER_OPACITY_BASE  = 0.14;
+const BORDER_OPACITY_PULSE = 0.80;
+
+// Map GeoJSON country names → our city data country names
+const GEO_NAME_MAP = {
+  'United States of America': 'USA',
+  'United Kingdom':           'UK',
+  'Russian Federation':       'Russia',
+  'Republic of Korea':        'South Korea',
+  'Korea, Republic of':       'South Korea',
+  'United Arab Emirates':     'UAE',
+  'Dem. Rep. Korea':          'North Korea',
+};
+
+function resolveGeoName(rawName) {
+  return GEO_NAME_MAP[rawName] || rawName;
+}
+
+function processGeoRing(ring, nameKey) {
+  if (!ring || ring.length < 2) return;
+  const pts = ring.map(([lng, lat]) => latLngToVec3(lat, lng, GLOBE_R + 0.0035));
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({
+    color: 0x00ff88, transparent: true,
+    opacity: BORDER_OPACITY_BASE, depthWrite: false,
+  });
+  const line = new THREE.Line(geo, mat);
+  lineGroup.add(line);
+  if (!borderLines[nameKey]) borderLines[nameKey] = [];
+  borderLines[nameKey].push({ line, mat });
+}
+
+async function loadCountryBorders() {
+  const URLS = [
+    'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2/geojson/ne_110m_admin_0_countries.geojson',
+    'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson',
+  ];
+  let data = null;
+  for (const url of URLS) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) { data = await r.json(); break; }
+    } catch(_) {}
+  }
+  if (!data) { console.warn('Country borders unavailable'); return; }
+
+  data.features.forEach(f => {
+    const rawName = f.properties?.NAME || f.properties?.ADMIN || f.properties?.name || '';
+    const nameKey = resolveGeoName(rawName);
+    const geom = f.geometry;
+    if (!geom) return;
+    if (geom.type === 'Polygon') {
+      geom.coordinates.forEach(ring => processGeoRing(ring, nameKey));
+      geom.coordinates.forEach(ring => processGeoRing(ring, rawName));
+    } else if (geom.type === 'MultiPolygon') {
+      geom.coordinates.forEach(poly => poly.forEach(ring => {
+        processGeoRing(ring, nameKey);
+        processGeoRing(ring, rawName);
+      }));
+    }
+  });
+  console.log(`Country borders loaded: ${Object.keys(borderLines).length} entries`);
+}
+
+function pulseCountryBorder(countryName) {
+  const lines = borderLines[countryName] || borderLines[resolveGeoName(countryName)];
+  if (!lines || !bordersOn) return;
+  let t = 0;
+  const pulse = () => {
+    t += 0.022;
+    const wave = Math.sin(t * Math.PI);
+    const op = BORDER_OPACITY_BASE + wave * (BORDER_PULSE_OPACITY - BORDER_OPACITY_BASE);
+    for (const { mat } of lines) mat.opacity = Math.max(BORDER_OPACITY_BASE, op);
+    if (t < 2.2) requestAnimationFrame(pulse);
+    else for (const { mat } of lines) mat.opacity = BORDER_OPACITY_BASE;
+  };
+  requestAnimationFrame(pulse);
+}
+
+const BORDER_PULSE_OPACITY = BORDER_OPACITY_PULSE; // alias
+
 // Stagger sonar ping timers across all cities
 cityObjects.forEach((obj, i) => {
   obj.nextSonar = performance.now() + i * 160 + Math.random() * 500;
@@ -1620,12 +2008,14 @@ function spawnArc(srcCity, dstCity, severity, eventTypeKey) {
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setDrawRange(0, 0);
 
-  const mat  = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 1.0, linewidth: 2 });
+  // Scan = very thin/dim, DDoS = slightly heavier, others = moderate
+  const baseOpacity = eventTypeKey === 'scan' ? 0.45 : eventTypeKey === 'ddos' ? 0.75 : 0.60;
+  const mat  = new THREE.LineBasicMaterial({ color, transparent: true, opacity: baseOpacity, linewidth: 1 });
   const line = new THREE.Line(geo, mat);
   arcGroup.add(line);
 
   // Head glow sphere
-  const headSize = eventTypeKey === 'ddos' ? 0.032 : eventTypeKey === 'scan' ? 0.012 : 0.022;
+  const headSize = eventTypeKey === 'ddos' ? 0.020 : eventTypeKey === 'scan' ? 0.008 : 0.013;
   const headGeo = new THREE.SphereGeometry(headSize, 8, 8);
   const headMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 });
   const head    = new THREE.Mesh(headGeo, headMat);
@@ -1780,11 +2170,123 @@ function addIntelEntry(srcCity, dstCity, evKey, severity) {
   while (intelFeedEl.children.length > 40) intelFeedEl.removeChild(intelFeedEl.lastChild);
 }
 
+// ─── TERMINAL FEED ────────────────────────────────────────────────────────────
+const terminalEl = document.getElementById('terminal-feed');
+
+const TERM_MESSAGES = {
+  ddos:       ['Volumetric flood detected','DDoS cluster incoming','Amplification surge','Bandwidth saturation attempt'],
+  scan:       ['Port sweep activity','Reconnaissance sweep','Fingerprinting detected','Stealth scan in progress'],
+  breach:     ['Data exfiltration attempt','Credential compromise','Lateral movement confirmed','Zero-day exploitation'],
+  botnet:     ['C2 beacon traffic','Zombie network activation','Coordinated surge','Payload distribution active'],
+  ransomware: ['Crypto-ransomware deployed','File encryption in progress','Shadow copies destroyed','Double extortion active'],
+  phishing:   ['Spear phishing campaign','Credential harvesting','BEC attempt detected','Social engineering wave'],
+  mitm:       ['SSL stripping detected','Traffic interception','ARP poisoning attempt','Session hijack in progress'],
+};
+
+function addTerminalLine(srcCity, dstCity, evKey, severity) {
+  if (!terminalEl) return;
+  const msgs = TERM_MESSAGES[evKey] || ['Activity detected'];
+  const msg  = msgs[Math.floor(Math.random() * msgs.length)];
+  const evType = EVENT_TYPES[evKey];
+
+  const line = document.createElement('div');
+  line.className = `term-line term-${evKey}`;
+  line.innerHTML =
+    `<span class="term-ts">[${nowStr()}]</span> ` +
+    `<strong>${evType.label.toUpperCase()}</strong>` +
+    `<span class="term-msg">${msg} → ${dstCity.country}</span>`;
+
+  terminalEl.insertBefore(line, terminalEl.firstChild);
+  while (terminalEl.children.length > 100) terminalEl.removeChild(terminalEl.lastChild);
+}
+
+// ─── RIGHT PANEL UPDATE ───────────────────────────────────────────────────────
+const rpGtlPct    = document.getElementById('rp-gtl-pct');
+const rpGtlFill   = document.getElementById('rp-gtl-fill');
+const rpStatus    = document.getElementById('rp-status');
+const rpActive    = document.getElementById('rp-active');
+const rpCritical  = document.getElementById('rp-critical');
+const rpTotal     = document.getElementById('rp-total');
+const rpCountries = document.getElementById('rp-countries');
+const rpBotnets   = document.getElementById('rp-botnets');
+const rpScanRate  = document.getElementById('rp-scan-rate');
+const rpTopVector = document.getElementById('rp-top-vector');
+const rpEpm       = document.getElementById('rp-epm');
+const rpTopTargets= document.getElementById('rp-top-targets');
+const rpVectors   = document.getElementById('rp-vectors');
+
+let epmWindow = [];  // timestamps for events-per-minute
+
+function updateRightPanel() {
+  // Global threat level (0–100) based on recent attack rate
+  const now60 = Date.now() - 60000;
+  epmWindow = epmWindow.filter(t => t > now60);
+  const epm = epmWindow.length;
+  const threatPct = Math.min(100, Math.round(epm / 0.6));
+  if (rpGtlPct)  rpGtlPct.textContent  = threatPct + '%';
+  if (rpGtlFill) rpGtlFill.style.width = threatPct + '%';
+  if (rpGtlFill) rpGtlFill.style.backgroundPosition = (100 - threatPct) + '% 0';
+  const statusLabel = threatPct >= 80 ? 'CRITICAL' : threatPct >= 55 ? 'ELEVATED' : threatPct >= 30 ? 'GUARDED' : 'NORMAL';
+  const statusColor = { CRITICAL:'#ff3333', ELEVATED:'#ff8800', GUARDED:'#ffcc00', NORMAL:'#00ff88' }[statusLabel];
+  if (rpStatus) { rpStatus.textContent = statusLabel; rpStatus.style.color = statusColor; }
+
+  if (rpActive)    rpActive.textContent    = statActive;
+  if (rpCritical)  rpCritical.textContent  = statCritical.toLocaleString();
+  if (rpTotal)     rpTotal.textContent     = statTotal.toLocaleString();
+  if (rpCountries) rpCountries.textContent = targetedSet.size;
+  if (rpEpm)       rpEpm.textContent       = epm;
+
+  // Botnet clusters
+  const botnets = activeArcs.filter(a => !a.done && a.eventTypeKey === 'botnet').length;
+  if (rpBotnets) rpBotnets.textContent = botnets;
+
+  // Scan rate label
+  const scans = activeArcs.filter(a => !a.done && a.eventTypeKey === 'scan').length;
+  const rateLabel = scans > 8 ? 'CRITICAL' : scans > 4 ? 'HIGH' : scans > 1 ? 'MODERATE' : 'LOW';
+  const rateClass = { CRITICAL:'rate-high', HIGH:'rate-high', MODERATE:'rate-med', LOW:'rate-normal' }[rateLabel];
+  if (rpScanRate) { rpScanRate.textContent = rateLabel; rpScanRate.className = `rate-val ${rateClass}`; }
+
+  // Top vector
+  let topVec = '—', topCount = 0;
+  for (const [k,v] of Object.entries(vectorCounts)) {
+    if (v > topCount) { topCount = v; topVec = EVENT_TYPES[k]?.label || k; }
+  }
+  if (rpTopVector) rpTopVector.textContent = topVec;
+
+  // Top targets (top 6 by hit count)
+  if (rpTopTargets) {
+    const sorted = Object.entries(countryHits).sort((a,b) => b[1]-a[1]).slice(0,6);
+    const maxHits = sorted[0]?.[1] || 1;
+    rpTopTargets.innerHTML = sorted.map(([country, hits], i) =>
+      `<div class="target-row">
+        <span class="target-num">${i+1}.</span>
+        <span class="target-name">${country}</span>
+        <div class="target-bar-wrap"><div class="target-bar-fill" style="width:${Math.round(hits/maxHits*100)}%"></div></div>
+        <span class="target-hits">${hits}</span>
+      </div>`
+    ).join('') || '<div style="color:rgba(245,242,236,0.15);font-size:0.52rem;font-family:var(--mono)">AWAITING DATA...</div>';
+  }
+
+  // Attack vector breakdown
+  if (rpVectors) {
+    const sorted = Object.entries(vectorCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+    const maxV = sorted[0]?.[1] || 1;
+    rpVectors.innerHTML = sorted.map(([k,v]) => {
+      const et = EVENT_TYPES[k];
+      return `<div class="rate-row">
+        <span class="rate-key">${et?.label?.toUpperCase() || k.toUpperCase()}</span>
+        <span class="rate-val" style="color:${et?.hexColor || '#fff'}">${v}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
 // ─── SPAWN ATTACK ─────────────────────────────────────────────────────────────
 function spawnAttack() {
-  let srcIdx = Math.floor(Math.random() * CITIES.length);
-  let dstIdx = Math.floor(Math.random() * CITIES.length);
-  while (dstIdx === srcIdx) dstIdx = Math.floor(Math.random() * CITIES.length);
+  if (!simLive) return;
+
+  const srcIdx   = Math.floor(Math.random() * CITIES.length);
+  const dstIdx   = pickWeightedCity(srcIdx);
 
   const src      = CITIES[srcIdx];
   const dst      = CITIES[dstIdx];
@@ -1811,10 +2313,19 @@ function spawnAttack() {
 
   addFeedEntry(src, dst, evType.label, severity, evKey);
   addIntelEntry(src, dst, evKey, severity);
+  addTerminalLine(src, dst, evKey, severity);
 
   // Heat up destination hex
   const baseHeat = { LOW: 0.10, MED: 0.20, HIGH: 0.35, CRITICAL: 0.60 }[severity] || 0.15;
   addHeat(dst.lat, dst.lng, baseHeat * evType.heatMult);
+
+  // Pulse country border
+  pulseCountryBorder(dst.country);
+
+  // Track stats
+  countryHits[dst.country]  = (countryHits[dst.country]  || 0) + 1;
+  vectorCounts[evKey]        = (vectorCounts[evKey]        || 0) + 1;
+  epmWindow.push(Date.now());
 
   // DEFCON tracking
   atkTimestamps.push(Date.now());
@@ -2047,8 +2558,9 @@ function animate(timestamp) {
       }
     }
 
-    // Fade tail
-    arc.mat.opacity = 0.85 - progress * 0.4;
+    // Fade tail — tactical dimming as arc progresses
+    const arcBase = arc.eventTypeKey === 'scan' ? 0.45 : arc.eventTypeKey === 'ddos' ? 0.75 : 0.60;
+    arc.mat.opacity = arcBase - progress * (arcBase * 0.45);
 
     if (arc.t >= 1) {
       arc.done = true;
@@ -2233,6 +2745,30 @@ function animate(timestamp) {
 nextEMP = 30000 + Math.random() * 60000; // first EMP 30–90s after load
 for (let i = 0; i < 4; i++) spawnAttack();
 animate(0);
+
+// Right panel updates every 2 seconds
+updateRightPanel();
+setInterval(updateRightPanel, 2000);
+
+// Load Tron country borders
+loadCountryBorders();
+
+// ─── NAV CONTROLS ─────────────────────────────────────────────────────────────
+document.getElementById('ctrl-live').addEventListener('click', function() {
+  simLive = !simLive;
+  this.classList.toggle('active', simLive);
+  this.classList.toggle('live-on', simLive);
+  this.style.color = simLive ? '' : 'rgba(255,255,255,0.3)';
+});
+
+document.getElementById('ctrl-borders').addEventListener('click', function() {
+  bordersOn = !bordersOn;
+  this.classList.toggle('active', bordersOn);
+  // Show/hide all border lines
+  for (const lines of Object.values(borderLines)) {
+    for (const { line } of lines) line.visible = bordersOn;
+  }
+});
 
 // ─── FILTER BAR LOGIC ─────────────────────────────────────────────────────────
 document.querySelectorAll('.filter-btn').forEach(btn => {
