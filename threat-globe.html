@@ -378,6 +378,74 @@ body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba
 }
 
 html { font-size: 18px; }
+
+/* ── MUSIC PLAYER ── */
+#music-player {
+  position: absolute;
+  bottom: 5.5rem;
+  left: 1.2rem;
+  z-index: 20;
+  background: rgba(10,10,12,0.92);
+  border: 1px solid var(--border-green);
+  backdrop-filter: blur(14px);
+  padding: 0.7rem 0.9rem;
+  width: 220px;
+  pointer-events: all;
+}
+#music-player::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+.mp-label {
+  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.3em;
+  color: var(--cyan); text-transform: uppercase; margin-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.mp-label::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+}
+.mp-track-name {
+  font-family: var(--head); font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.1em; color: var(--text); margin-bottom: 0.15rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mp-track-sub {
+  font-family: var(--mono); font-size: 0.52rem; color: var(--text-faint);
+  letter-spacing: 0.15em; margin-bottom: 0.6rem;
+}
+.mp-controls {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.mp-btn {
+  background: none; border: 1px solid var(--border-green); color: var(--cyan);
+  font-family: var(--mono); font-size: 0.6rem; padding: 0.3rem 0.55rem;
+  letter-spacing: 0.1em; cursor: none; transition: all 0.15s;
+}
+.mp-btn:hover { background: rgba(0,204,255,0.1); border-color: var(--cyan); }
+.mp-btn.active { background: rgba(0,204,255,0.18); border-color: var(--cyan); color: var(--text); }
+.mp-vol {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 2px; background: rgba(0,204,255,0.2); outline: none; cursor: none;
+}
+.mp-vol::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--cyan); cursor: none;
+}
+.mp-tracks {
+  display: flex; gap: 0.4rem; margin-top: 0.55rem;
+}
+.mp-track-btn {
+  flex: 1; background: none; border: 1px solid rgba(0,204,255,0.2);
+  color: var(--text-faint); font-family: var(--mono); font-size: 0.48rem;
+  letter-spacing: 0.08em; padding: 0.28rem 0.2rem; text-align: center;
+  cursor: none; transition: all 0.15s; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mp-track-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.mp-track-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,204,255,0.1); }
+#yt-player-container { display: none; }
 </style>
 </head>
 <body>
@@ -430,6 +498,22 @@ html { font-size: 18px; }
         <div class="stat-label">Critical Alerts</div>
       </div>
     </div>
+
+    <!-- Music Player -->
+    <div id="music-player">
+      <div class="mp-label">NOW PLAYING</div>
+      <div class="mp-track-name" id="mp-title">LORD OF THE RINGS</div>
+      <div class="mp-track-sub" id="mp-sub">Fellowship Suite</div>
+      <div class="mp-controls">
+        <button class="mp-btn" id="mp-play">▶ PLAY</button>
+        <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="60">
+      </div>
+      <div class="mp-tracks">
+        <button class="mp-track-btn active" data-track="0">LOTR</button>
+        <button class="mp-track-btn" data-track="1">HALO 3</button>
+      </div>
+    </div>
+    <div id="yt-player-container"><div id="yt-player"></div></div>
 
     <!-- Disclaimer -->
     <div class="disclaimer">⚠ SIMULATED DATA — FOR DEMONSTRATION PURPOSES ONLY</div>
@@ -694,33 +778,230 @@ function latLngToVec3(lat, lng, r) {
   );
 }
 
-// ─── LATITUDE LINES ──────────────────────────────────────────────────────────
+// ─── HEX GRID ────────────────────────────────────────────────────────────────
 const lineGroup = new THREE.Group();
 scene.add(lineGroup);
 
-function makeLine(points, color, opacity) {
-  const geo = new THREE.BufferGeometry().setFromPoints(points);
-  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
-  return new THREE.Line(geo, mat);
+const hexes = [];
+const HEX_R = 0.082;
+
+(function buildHexGrid() {
+  const LAT_STEP = 14;
+  for (let latDeg = -84; latDeg <= 84; latDeg += LAT_STEP) {
+    const cosLat = Math.cos(latDeg * Math.PI / 180);
+    const nHex   = Math.max(1, Math.round(26 * cosLat));
+    const lngStep = 360 / nHex;
+    const rowOff  = (Math.round((latDeg + 90) / LAT_STEP) % 2) * (lngStep * 0.5);
+    for (let i = 0; i < nHex; i++) {
+      const lngDeg = i * lngStep + rowOff - 180;
+      const center = latLngToVec3(latDeg, lngDeg, GLOBE_R + 0.002);
+      const normal = center.clone().normalize();
+      let up = new THREE.Vector3(0, 1, 0);
+      if (Math.abs(normal.dot(up)) > 0.95) up.set(1, 0, 0);
+      const tangent   = new THREE.Vector3().crossVectors(normal, up).normalize();
+      const bitangent = new THREE.Vector3().crossVectors(tangent, normal).normalize();
+      const pts = [];
+      for (let v = 0; v <= 6; v++) {
+        const angle = (v / 6) * Math.PI * 2 + Math.PI / 6;
+        const pt = center.clone()
+          .addScaledVector(tangent,   Math.cos(angle) * HEX_R)
+          .addScaledVector(bitangent, Math.sin(angle) * HEX_R);
+        pt.normalize().multiplyScalar(GLOBE_R + 0.002);
+        pts.push(pt.clone());
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.13 });
+      lineGroup.add(new THREE.Line(geo, mat));
+      hexes.push({ latDeg, lngDeg, center, mat, heat: 0 });
+    }
+  }
+})();
+
+function addHeat(lat, lng, amount) {
+  const pos = latLngToVec3(lat, lng, GLOBE_R);
+  let closest = null, minD = Infinity;
+  for (const h of hexes) {
+    const d = pos.distanceToSquared(h.center);
+    if (d < minD) { minD = d; closest = h; }
+  }
+  if (closest) closest.heat = Math.min(1.0, closest.heat + amount);
+  // also warm neighbours
+  for (const h of hexes) {
+    if (h === closest) continue;
+    const d = pos.distanceTo(h.center);
+    if (d < HEX_R * 3.5) h.heat = Math.min(1.0, h.heat + amount * (1 - d / (HEX_R * 3.5)) * 0.4);
+  }
 }
 
-// Latitude rings
-for (let lat = -75; lat <= 75; lat += 15) {
-  const pts = [];
-  for (let lng = 0; lng <= 360; lng += 2) {
-    pts.push(latLngToVec3(lat, lng - 180, GLOBE_R + 0.001));
-  }
-  const opacity = lat === 0 ? 0.5 : 0.18;
-  lineGroup.add(makeLine(pts, 0x00ff88, opacity));
+// ─── UNDERSEA CABLES ─────────────────────────────────────────────────────────
+const CABLE_ROUTES = [
+  // Transatlantic
+  [[40.7,-74.0],[45.5,-53.0],[51.5,-0.1]],
+  [[37.8,-122.4],[51.5,-0.1]],
+  // Trans-Pacific
+  [[37.8,-122.4],[35.7,139.7]],
+  [[35.7,139.7],[1.35,103.82]],
+  [[1.35,103.82],[-33.9,151.2]],
+  // Indian Ocean
+  [[19.08,72.88],[1.35,103.82]],
+  [[51.5,-0.1],[30.04,31.24]],
+  [[30.04,31.24],[19.08,72.88]],
+  // Atlantic ↔ Africa
+  [[51.5,-0.1],[6.52,3.38]],
+  [[6.52,3.38],[-33.9,18.4]],
+  // Pacific rim
+  [[-33.9,151.2],[35.7,139.7]],
+  [[37.8,-122.4],[-33.9,-70.7]],
+  // Europe ↔ Americas
+  [[48.85,2.35],[40.7,-74.0]],
+  [[52.37,4.90],[40.7,-74.0]],
+];
+
+(function buildCables() {
+  CABLE_ROUTES.forEach(route => {
+    for (let seg = 0; seg < route.length - 1; seg++) {
+      const [lat1,lng1] = route[seg];
+      const [lat2,lng2] = route[seg+1];
+      const pts = [];
+      const STEPS = 60;
+      for (let t = 0; t <= STEPS; t++) {
+        const f   = t / STEPS;
+        const lat = lat1 + (lat2 - lat1) * f;
+        const lng = lng1 + (lng2 - lng1) * f;
+        pts.push(latLngToVec3(lat, lng, GLOBE_R - 0.003));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({ color: 0x0088cc, transparent: true, opacity: 0.35 });
+      lineGroup.add(new THREE.Line(geo, mat));
+    }
+  });
+})();
+
+// ─── NIGHT SHADOW (TERMINATOR) ───────────────────────────────────────────────
+function computeSunDir() {
+  const now   = new Date();
+  const start = Date.UTC(now.getFullYear(), 0, 0);
+  const doy   = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - start) / 86400000);
+  const decl  = -23.45 * Math.cos((360/365 * (doy + 10)) * Math.PI / 180) * Math.PI / 180;
+  const utcH  = now.getUTCHours() + now.getUTCMinutes()/60 + now.getUTCSeconds()/3600;
+  const hAngle = (utcH / 24 - 0.5) * Math.PI * 2;
+  return new THREE.Vector3(
+    Math.cos(decl) * Math.cos(hAngle),
+    Math.sin(decl),
+    Math.cos(decl) * Math.sin(hAngle)
+  ).normalize();
 }
 
-// Longitude meridians
-for (let lng = 0; lng < 360; lng += 15) {
-  const pts = [];
-  for (let lat = -90; lat <= 90; lat += 2) {
-    pts.push(latLngToVec3(lat, lng - 180, GLOBE_R + 0.001));
-  }
-  lineGroup.add(makeLine(pts, 0x00ff88, 0.18));
+const nightGeo = new THREE.SphereGeometry(GLOBE_R * 1.007, 64, 64);
+const nightMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  uniforms: { sunDir: { value: computeSunDir() } },
+  vertexShader: `
+    varying vec3 vWorldPos;
+    void main() {
+      vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 sunDir;
+    varying vec3 vWorldPos;
+    void main() {
+      float d = dot(normalize(vWorldPos), normalize(sunDir));
+      float night = smoothstep(0.06, -0.18, d);
+      gl_FragColor = vec4(0.0, 0.0, 0.04, night * 0.76);
+    }
+  `,
+});
+const nightMesh = new THREE.Mesh(nightGeo, nightMat);
+scene.add(nightMesh);
+
+// ─── AURORA BOREALIS ──────────────────────────────────────────────────────────
+const auroraGeo = new THREE.SphereGeometry(GLOBE_R * 1.06, 64, 64);
+const auroraMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  uniforms: { time: { value: 0 } },
+  vertexShader: `
+    varying vec3 vWorldNorm;
+    varying vec3 vPos;
+    void main() {
+      vWorldNorm = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+      vPos = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float time;
+    varying vec3 vWorldNorm;
+    varying vec3 vPos;
+    void main() {
+      float absLat = abs(asin(clamp(normalize(vPos).y, -1.0, 1.0)));
+      // aurora band: 60°–80° (1.047–1.396 rad)
+      float band = smoothstep(1.02, 1.15, absLat) * (1.0 - smoothstep(1.35, 1.52, absLat));
+      if (band < 0.005) discard;
+      float lng = atan(vPos.z, vPos.x);
+      float wave  = (sin(lng * 9.0  + time * 0.45) * 0.5 + 0.5)
+                  * (sin(lng * 3.5  - time * 0.28 + 1.3) * 0.5 + 0.5);
+      float wave2 = (sin(lng * 14.0 + time * 0.7 + 2.0) * 0.5 + 0.5) * 0.4;
+      float w = wave + wave2;
+      vec3 col = mix(vec3(0.0,1.0,0.55), vec3(0.0,0.85,1.0), wave);
+      col = mix(col, vec3(0.55,0.0,1.0), wave2 * 0.6);
+      gl_FragColor = vec4(col, band * w * 0.62);
+    }
+  `,
+});
+const auroraMesh = new THREE.Mesh(auroraGeo, auroraMat);
+scene.add(auroraMesh);
+
+// ─── METEOR SHOWER ────────────────────────────────────────────────────────────
+const meteors = [];
+let nextMeteor = 0;
+
+function spawnMeteor() {
+  const theta = Math.random() * Math.PI * 2;
+  const phi   = Math.acos(2 * Math.random() - 1);
+  const r     = 55 + Math.random() * 15;
+  const start = new THREE.Vector3(
+    r * Math.sin(phi) * Math.cos(theta),
+    r * Math.sin(phi) * Math.sin(theta),
+    r * Math.cos(phi)
+  );
+  // travel direction: inward + sideways drift
+  const dir = start.clone().normalize().negate()
+    .addScaledVector(new THREE.Vector3(
+      (Math.random()-0.5)*0.8,
+      (Math.random()-0.5)*0.8,
+      (Math.random()-0.5)*0.8
+    ).normalize(), 0.55).normalize();
+
+  const length = 3 + Math.random() * 4;
+  const end    = start.clone().addScaledVector(dir, length);
+  const pts    = [start, end];
+  const geo    = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat    = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+  const line   = new THREE.Line(geo, mat);
+  scene.add(line);
+  meteors.push({ line, mat, dir, speed: 0.6 + Math.random() * 0.7, life: 0 });
+}
+
+// ─── LIGHTNING STORMS ────────────────────────────────────────────────────────
+const lightningFlashes = [];
+let nextLightning = 0;
+
+function spawnLightning() {
+  const lat = (Math.random() - 0.5) * 120;
+  const lng = (Math.random() - 0.5) * 360;
+  const pos = latLngToVec3(lat, lng, GLOBE_R * 1.015);
+
+  const fGeo  = new THREE.SphereGeometry(0.04, 8, 8);
+  const fMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, depthWrite: false });
+  const flash = new THREE.Mesh(fGeo, fMat);
+  flash.position.copy(pos);
+  lineGroup.add(flash);
+  lightningFlashes.push({ flash, fMat, t: 0 });
 }
 
 // ─── CITY DOTS ───────────────────────────────────────────────────────────────
@@ -887,6 +1168,10 @@ function spawnAttack() {
 
   spawnArc(src, dst, severity);
   addFeedEntry(src, dst, type, severity);
+
+  // Heat up destination hex
+  const heatAmt = { LOW: 0.12, MED: 0.22, HIGH: 0.38, CRITICAL: 0.65 }[severity] || 0.15;
+  addHeat(dst.lat, dst.lng, heatAmt);
 
   statTotal++;
   statActive++;
@@ -1123,6 +1408,75 @@ function animate(timestamp) {
   moonHalo.position.set(mx, my, mz);
   moonMesh.rotation.y += 0.0008;
 
+  // Aurora time
+  auroraMat.uniforms.time.value = timestamp * 0.001;
+
+  // Hex heat cooldown + recolor (throttled to every 3 frames)
+  if (Math.round(timestamp / 16) % 3 === 0) {
+    for (const h of hexes) {
+      h.heat *= 0.991;
+      if (h.heat > 0.02) {
+        const v = h.heat;
+        let r, g, b;
+        if      (v < 0.33) { r = v * 3; g = 1;           b = 0; }
+        else if (v < 0.66) { r = 1;     g = 1-(v-0.33)*3; b = 0; }
+        else               { r = 1;     g = 0;            b = 0; }
+        h.mat.color.setRGB(r, g, b);
+        h.mat.opacity = 0.13 + v * 0.72;
+      } else {
+        h.mat.color.setHex(0x00ff88);
+        h.mat.opacity = 0.13;
+      }
+    }
+  }
+
+  // Night shadow sun direction update (once per minute is fine)
+  if (Math.round(timestamp / 16) % 3600 === 0) {
+    nightMat.uniforms.sunDir.value.copy(computeSunDir());
+  }
+
+  // Meteor shower
+  if (timestamp >= nextMeteor) {
+    spawnMeteor();
+    nextMeteor = timestamp + 800 + Math.random() * 3500;
+  }
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.life += 0.035;
+    // Move both endpoints inward
+    const pts = m.line.geometry.attributes.position;
+    pts.array[0] += m.dir.x * m.speed; pts.array[1] += m.dir.y * m.speed; pts.array[2] += m.dir.z * m.speed;
+    pts.array[3] += m.dir.x * m.speed; pts.array[4] += m.dir.y * m.speed; pts.array[5] += m.dir.z * m.speed;
+    pts.needsUpdate = true;
+    m.mat.opacity = Math.max(0, 0.9 * (1 - m.life));
+    if (m.life >= 1) {
+      scene.remove(m.line);
+      m.line.geometry.dispose();
+      m.line.material.dispose();
+      meteors.splice(i, 1);
+    }
+  }
+
+  // Lightning storms
+  if (timestamp >= nextLightning) {
+    spawnLightning();
+    nextLightning = timestamp + 400 + Math.random() * 2200;
+  }
+  for (let i = lightningFlashes.length - 1; i >= 0; i--) {
+    const lf = lightningFlashes[i];
+    lf.t += 0.18;
+    // quick flash: up then down
+    lf.fMat.opacity = Math.sin(lf.t * Math.PI) * 0.85;
+    const s = 1 + lf.t * 3;
+    lf.flash.scale.set(s, s, s);
+    if (lf.t >= 1) {
+      lineGroup.remove(lf.flash);
+      lf.flash.geometry.dispose();
+      lf.flash.material.dispose();
+      lightningFlashes.splice(i, 1);
+    }
+  }
+
   // City pulse animations
   cityObjects.forEach(obj => {
     if (obj.pulsing) {
@@ -1210,6 +1564,95 @@ animate(0);
       })(i);
     }
   });
+})();
+</script>
+
+<!-- ── YOUTUBE MUSIC PLAYER ────────────────────────────────────────────── -->
+<script>
+(function() {
+  const TRACKS = [
+    { id: 'IiIltLoN-6Q', title: 'LORD OF THE RINGS',  sub: 'Fellowship Suite'    },
+    { id: 'hMDFm0yNDUk', title: 'HALO 3',              sub: 'Mjolnir Mix'         },
+  ];
+
+  let player    = null;
+  let curTrack  = 0;
+  let playing   = false;
+  let ytReady   = false;
+
+  const elPlay  = document.getElementById('mp-play');
+  const elTitle = document.getElementById('mp-title');
+  const elSub   = document.getElementById('mp-sub');
+  const elVol   = document.getElementById('mp-vol');
+  const trackBtns = document.querySelectorAll('.mp-track-btn');
+
+  function setTrackUI(idx) {
+    curTrack = idx;
+    elTitle.textContent = TRACKS[idx].title;
+    elSub.textContent   = TRACKS[idx].sub;
+    trackBtns.forEach((b, i) => b.classList.toggle('active', i === idx));
+  }
+
+  function tryPlay() {
+    if (!ytReady || !player) return;
+    player.loadVideoById(TRACKS[curTrack].id);
+    player.setVolume(parseInt(elVol.value));
+    playing = true;
+    elPlay.textContent = '⏸ PAUSE';
+    elPlay.classList.add('active');
+  }
+
+  window.onYouTubeIframeAPIReady = function() {
+    ytReady = true;
+    player = new YT.Player('yt-player', {
+      height: '1', width: '1',
+      playerVars: { autoplay: 0, controls: 0, modestbranding: 1, playsinline: 1 },
+      events: {
+        onStateChange: (e) => {
+          if (e.data === YT.PlayerState.ENDED) {
+            playing = false;
+            elPlay.textContent = '▶ PLAY';
+            elPlay.classList.remove('active');
+          }
+        }
+      }
+    });
+  };
+
+  elPlay.addEventListener('click', () => {
+    if (!ytReady || !player) return;
+    if (playing) {
+      player.pauseVideo();
+      playing = false;
+      elPlay.textContent = '▶ PLAY';
+      elPlay.classList.remove('active');
+    } else {
+      if (player.getPlayerState && player.getPlayerState() === -1) {
+        tryPlay();
+      } else {
+        player.playVideo();
+        playing = true;
+        elPlay.textContent = '⏸ PAUSE';
+        elPlay.classList.add('active');
+      }
+    }
+  });
+
+  elVol.addEventListener('input', () => {
+    if (player && ytReady) player.setVolume(parseInt(elVol.value));
+  });
+
+  trackBtns.forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      setTrackUI(i);
+      if (playing && ytReady && player) tryPlay();
+    });
+  });
+
+  // Load YouTube IFrame API
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
 })();
 </script>
 </body>
