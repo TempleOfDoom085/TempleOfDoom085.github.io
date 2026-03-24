@@ -118,7 +118,7 @@ let displayMaterial, displayMesh;
 let core, innerCore, coreGlow;
 let particleMesh;
 let orbitRing1, orbitRing2;
-let mouse = { x: 0.5, y: 0.5 };
+let mouse = { x: -2, y: -2 }; // off-screen until first mousemove
 let time = 0;
 let W = window.innerWidth;
 let H = window.innerHeight;
@@ -172,17 +172,17 @@ function init() {
         vec2 uv = gl_FragCoord.xy / resolution;
         vec3 col = texture2D(prev, uv).rgb;
 
-        // Mouse splash
+        // Mouse splash — only when mouse is on screen
         float d = distance(uv, mouse);
-        float splash = exp(-d * 22.0) * 0.35;
-        vec3 splashCol = vec3(0.05, 0.55, 1.0) * splash;
+        float onScreen = step(0.0, mouse.x) * step(mouse.x, 1.0);
+        float splash = exp(-d * 20.0) * 0.18 * onScreen;
+        col += vec3(0.04, 0.45, 1.0) * splash;
 
-        // Subtle background turbulence
-        float turb = noise(uv * 2.5) * 0.008;
-        vec3 turbCol = vec3(0.01, 0.04, 0.12) * (turb + 0.5);
+        // Turbulence oscillates around 0 — no constant DC offset
+        float turb = noise(uv * 2.5) * 0.005;
+        col += vec3(0.0, 0.03, 0.08) * max(0.0, turb);
 
-        col += splashCol + turbCol;
-        col *= 0.978; // fade toward black
+        col *= 0.955; // faster fade keeps steady-state dark
 
         gl_FragColor = vec4(col, 1.0);
       }
