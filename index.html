@@ -1310,6 +1310,48 @@ nav.scrolled {
         <span class="tool-card-cta">Launch Tool →</span>
       </a>
 
+      <a href="tools/pentest.html" class="cyber-tool-card tool-red">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon" style="color:rgba(255,77,77,0.85);text-shadow:0 0 14px rgba(255,77,77,0.6)">📋</div>
+        <div class="tool-card-label">18</div>
+        <div class="tool-card-name">Pentest Checklist</div>
+        <div class="tool-card-desc">Interactive penetration testing checklist — track recon, enumeration, exploitation, post-ex, and reporting phases with progress indicators and phase scoring.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Recon · Enum</span>
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Exploitation</span>
+          <span class="ptag" style="border-color:rgba(255,77,77,0.3);color:rgba(255,100,100,0.7)">Progress Track</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/dns.html" class="cyber-tool-card tool-cyan">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon" style="color:rgba(0,200,255,0.8);text-shadow:0 0 12px rgba(0,200,255,0.5)">📡</div>
+        <div class="tool-card-label">19</div>
+        <div class="tool-card-name">DNS Propagation</div>
+        <div class="tool-card-desc">Check DNS propagation across global resolvers — query A, AAAA, MX, NS, TXT, CNAME records and see live results from multiple geographic nameservers.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">DNS Records</span>
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">Global Resolvers</span>
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">Propagation</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
+      <a href="tools/http-builder.html" class="cyber-tool-card" style="border-color:rgba(255,119,34,0.12)" onmouseenter="this.style.borderColor='rgba(255,119,34,0.3)';this.style.boxShadow='0 0 30px rgba(255,119,34,0.08),inset 0 0 30px rgba(255,119,34,0.03)'" onmouseleave="this.style.borderColor='rgba(255,119,34,0.12)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(255,119,34,0.07) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(255,119,34,0.8);text-shadow:0 0 12px rgba(255,119,34,0.5)">🔧</div>
+        <div class="tool-card-label">20</div>
+        <div class="tool-card-name">HTTP Builder</div>
+        <div class="tool-card-desc">Craft and fire HTTP requests from the browser — set method, headers, body, and auth. Inspect the full response with status, headers, timing, and formatted body.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(255,119,34,0.3);color:rgba(255,119,34,0.7)">HTTP Requests</span>
+          <span class="ptag" style="border-color:rgba(255,119,34,0.3);color:rgba(255,119,34,0.7)">Headers · Auth</span>
+          <span class="ptag" style="border-color:rgba(255,119,34,0.3);color:rgba(255,119,34,0.7)">Response Inspector</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
     </div>
 
     <div style="text-align:center;margin-top:2.5rem">
@@ -2939,6 +2981,14 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     { icon: '🖥', name: 'CIDR Calculator', desc: 'Subnet ranges and IP math',           tag: 'tool', href: 'tools/cidr.html' },
     { icon: '⏱', name: 'Cron Parser',     desc: 'Decode cron expressions plainly',     tag: 'tool', href: 'tools/cron.html' },
     { icon: '🔒', name: 'HTTP Headers',    desc: 'Security header grade analyzer',      tag: 'tool', href: 'tools/headers.html' },
+    { icon: '🎲', name: 'Password Generator', desc: 'Cryptographically secure passwords', tag: 'tool', href: 'tools/pwgen.html' },
+    { icon: '🛡', name: 'SSL Checker',     desc: 'TLS grade, certs, and vuln scan',     tag: 'tool', href: 'tools/ssl.html' },
+    { icon: '⚡', name: 'Payload Library', desc: 'XSS, SQLi, CMDi — 76 payloads',      tag: 'tool', href: 'tools/payloads.html' },
+    { icon: '🔎', name: 'CVE Search',      desc: 'NVD vulnerability database lookup',   tag: 'tool', href: 'tools/cve.html' },
+    { icon: '🌍', name: 'WHOIS Lookup',    desc: 'Domain registrar and expiry info',    tag: 'tool', href: 'tools/whois.html' },
+    { icon: '📋', name: 'Pentest Checklist', desc: 'Interactive pentest phase tracker', tag: 'tool', href: 'tools/pentest.html' },
+    { icon: '📡', name: 'DNS Propagation', desc: 'Global DNS record checker',           tag: 'tool', href: 'tools/dns.html' },
+    { icon: '🔧', name: 'HTTP Builder',    desc: 'Craft and fire HTTP requests',        tag: 'tool', href: 'tools/http-builder.html' },
     { icon: '💻', name: 'Open Terminal',   desc: 'Interactive portfolio shell',          tag: 'action', action: 'terminal' },
   ];
   let selected = 0, filtered = [...ITEMS];
@@ -3063,13 +3113,13 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+<script>
 // Show mobile game hint
 if (window.innerWidth <= 768) {
   const hint = document.getElementById('mobile-game-hint');
   if (hint) hint.style.display = 'inline';
 }
 
-<script>
 /* ── GOLD PARTICLE BURST ON CLICK ─────────────────────────────────────── */
 (function(){
   var COLORS = ['rgba(184,147,58,0.95)','rgba(212,180,88,0.9)','rgba(255,215,80,0.85)','rgba(201,168,76,0.8)'];
