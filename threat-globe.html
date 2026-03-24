@@ -992,7 +992,6 @@ body::after {
   <div id="globe-container">
     <canvas id="globe-canvas"></canvas>
     <div id="defcon-vignette"></div>
-    <canvas id="matrix-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:11;opacity:0.88"></canvas>
 
     <!-- Decorative corners -->
     <div class="corner-tl"></div>
@@ -1568,56 +1567,6 @@ const windMat  = new THREE.PointsMaterial({ size: 1.4, color: 0xffcc55, transpar
 const windMesh = new THREE.Points(windGeo, windMat);
 scene.add(windMesh);
 
-// ── MATRIX RAIN OVERLAY ───────────────────────────────────────────────────────
-const matCanvas = document.getElementById('matrix-canvas');
-const matCtx    = matCanvas ? matCanvas.getContext('2d') : null;
-const matRains  = [];
-const MATRIX_CHARS = 'アイウエオカキクケコサシスセソタチツテトナ01ハヒフヘホマミムメモラリルレロABCDEF0123456789!@#$%';
-
-function triggerMatrixRain(screenX, screenY) {
-  if (!matCtx) return;
-  const cols = 10 + Math.floor(Math.random() * 8);
-  const rain = {
-    x: screenX, y: screenY,
-    cols: Array.from({ length: cols }, (_, ci) => ({
-      x: screenX + (ci - cols / 2) * 13,
-      head: Math.random() * -40,
-      speed: 2.5 + Math.random() * 3,
-      chars: Array.from({ length: 18 }, () => MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]),
-    })),
-    startT: performance.now(), duration: 3200,
-  };
-  matRains.push(rain);
-}
-
-let lastMatFrame = 0;
-function drawMatrixRain(now) {
-  if (!matCtx) return;
-  if (now - lastMatFrame < 40) return; // ~25fps is plenty
-  lastMatFrame = now;
-  matCtx.clearRect(0, 0, matCanvas.width, matCanvas.height);
-  for (let ri = matRains.length - 1; ri >= 0; ri--) {
-    const rain = matRains[ri];
-    const age  = now - rain.startT;
-    if (age > rain.duration) { matRains.splice(ri, 1); continue; }
-    const alpha = age < 300 ? age / 300 : age > rain.duration - 400 ? (rain.duration - age) / 400 : 1;
-    for (const col of rain.cols) {
-      col.head += col.speed;
-      // Occasionally change a char
-      if (Math.random() < 0.06) col.chars[Math.floor(Math.random() * col.chars.length)] = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
-      for (let ci = 0; ci < col.chars.length; ci++) {
-        const yy = rain.y + col.head - ci * 16;
-        if (yy < 0 || yy > matCanvas.height) continue;
-        const bright = ci === 0 ? 1.0 : Math.max(0, 1 - ci / col.chars.length) * 0.75;
-        const g = Math.floor(220 * bright);
-        const b = Math.floor(40 * bright);
-        matCtx.fillStyle = `rgba(0,${g},${b},${alpha * bright})`;
-        matCtx.font = `bold 13px monospace`;
-        matCtx.fillText(col.chars[ci], col.x, yy);
-      }
-    }
-  }
-}
 
 // ── SATELLITE HACK EVENT ──────────────────────────────────────────────────────
 let hackedSat       = null;
@@ -2667,18 +2616,6 @@ function spawnAttack() {
   // Pulse country border
   pulseCountryBorder(dst.country);
 
-  // BREACH → matrix rain at destination
-  if (evKey === 'breach' || evKey === 'ransomware') {
-    const dstPos3D = latLngToVec3(dst.lat, dst.lng, GLOBE_R + 0.05);
-    const projected = dstPos3D.clone().project(camera);
-    const rect = renderer.domElement.getBoundingClientRect();
-    const sx = ((projected.x + 1) / 2) * rect.width;
-    const sy = ((-projected.y + 1) / 2) * rect.height;
-    if (projected.z < 1) { // visible side
-      if (matCanvas) { matCanvas.width = rect.width; matCanvas.height = rect.height; }
-      triggerMatrixRain(sx, sy);
-    }
-  }
 
   // Critical event visual shock
   if (severity === 'CRITICAL') {
@@ -3144,9 +3081,6 @@ function animate(timestamp) {
 
   // ── CME EVENT ──
   if (timestamp >= nextCMETime) triggerCME(timestamp);
-
-  // ── MATRIX RAIN DRAW ──
-  drawMatrixRain(timestamp);
 
   // Hex heat cooldown + recolor (throttled to every 3 frames)
   if (Math.round(timestamp / 16) % 3 === 0) {
