@@ -75,7 +75,7 @@ nav {
 .nav-links a:hover { color: var(--gold); }
 
 /* HERO */
-.hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; padding-top: 70px; }
+.hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; padding-top: 70px; position: relative; overflow: hidden; }
 .hero-left {
   background: var(--cyber); display: flex; flex-direction: column;
   justify-content: center; padding: 5rem 4rem; position: relative; overflow: hidden;
@@ -773,6 +773,29 @@ body.cursor-hover #cursor {
 }
 
 html { font-size: 18px; }
+
+/* ── NAV SCROLLED ── */
+nav.scrolled {
+  padding-top: 0.75rem; padding-bottom: 0.75rem;
+  background: rgba(10,9,7,0.97);
+  box-shadow: 0 1px 30px rgba(0,0,0,0.6);
+  border-bottom-color: rgba(184,147,58,0.22);
+}
+
+/* ── HERO HEADLINE GLITCH ── */
+@keyframes glitch {
+  0%, 88%, 100% { clip-path: none; transform: none; text-shadow: none; }
+  90% { clip-path: polygon(0 18%, 100% 18%, 100% 28%, 0 28%); transform: translateX(-5px); text-shadow: 3px 0 #00d4ff; }
+  92% { clip-path: polygon(0 55%, 100% 55%, 100% 68%, 0 68%); transform: translateX(5px); text-shadow: -3px 0 #ff2255; }
+  94% { clip-path: none; transform: none; text-shadow: none; }
+  96% { clip-path: polygon(0 35%, 100% 35%, 100% 45%, 0 45%); transform: translateX(-3px); text-shadow: 2px 0 rgba(0,212,255,0.6); }
+  98% { clip-path: none; transform: translateX(0); }
+}
+.hero-left .hero-name { animation: glitch 7s ease-in-out infinite; }
+
+/* ── HERO CANVAS PANELS: let canvas bleed through slightly ── */
+.hero-left { background: rgba(15,22,35,0.88); }
+.hero-right { background: rgba(20,16,8,0.88); }
 </style>
 </head>
 <body>
@@ -850,30 +873,24 @@ html { font-size: 18px; }
   <ul class="nav-links">
     <li><a href="#about">About</a></li>
     <li><a href="#experience">Experience</a></li>
-    <li><a href="#skills">Skills</a></li>
     <li><a href="#projects">Projects</a></li>
-    <li><a href="career.html">Timeline</a></li>
-    <li><a href="ctf-writeups.html">CTF</a></li>
+    <li><a href="tools/index.html">Tools</a></li>
     <li><a href="threat-globe.html">Globe</a></li>
-    <li><a href="insane-engine.html">Engine</a></li>
-    <li><a href="#certs">Certs</a></li>
-    <li><a href="#education">Education</a></li>
-    <li><a href="#all-skills">All Skills</a></li>
-    <li><a href="kitchen.html">Kitchen</a></li>
-    <li><a href="#volunteering">Volunteer</a></li>
     <li><a href="#contact">Contact</a></li>
+    <li><button class="cmd-palette-trigger" onclick="openCmdPalette()" title="Search (Ctrl+K)">⌘K</button></li>
   </ul>
 </nav>
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-left">
+  <canvas id="heroBgCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <div class="hero-left" style="position:relative;z-index:1">
     <span class="tag tag-cyber">// AI Automation & Cybersecurity</span>
     <h1 class="hero-name">Building<br><em id="hero-cycle-left">intelligent</em><br>systems.</h1>
     <p class="hero-desc">Voice AI, workflow automation, and cybersecurity — I design systems that are fast, secure, and built to scale. Currently studying at SNHU with a focus on security operations.</p>
     <a href="#experience" class="hero-cta cta-cyber">View My Work</a>
   </div>
-  <div class="hero-right">
+  <div class="hero-right" style="position:relative;z-index:1">
     <span class="tag tag-gold">— The Human Side</span>
     <h1 class="hero-name">Sales instinct<br>meets <em id="hero-cycle-right">technical</em><br>precision.</h1>
     <p class="hero-desc">A decade in consultative sales taught me how to listen, communicate, and deliver. Now I apply that same edge to technical systems and client-facing automation.</p>
@@ -1050,7 +1067,7 @@ html { font-size: 18px; }
 
     <!-- CYBER TOOLS GRID -->
     <div class="tools-label fade-in">
-      <span class="section-label" style="margin-top:3rem;display:block">04b — Cyber Tools</span>
+      <span class="section-label" style="margin-top:3rem;display:block">05 — Cyber Tools</span>
       <h3 style="font-family:var(--head);font-size:1.4rem;font-weight:600;color:var(--paper);margin-top:0.5rem">Temple <em>Tools</em> — Live Cyber Utilities</h3>
     </div>
     <div class="cyber-tools-grid stagger-children fade-in">
@@ -1301,7 +1318,7 @@ html { font-size: 18px; }
 
     <!-- FEATURED PAGES -->
     <div class="tools-label fade-in" style="margin-top:4rem">
-      <span class="section-label" style="display:block">04c — Featured Pages</span>
+      <span class="section-label" style="display:block">06 — Featured Pages</span>
       <h3 style="font-family:var(--head);font-size:1.4rem;font-weight:600;color:var(--paper);margin-top:0.5rem">Beyond the <em>Tools Hub</em></h3>
     </div>
     <div class="cyber-tools-grid stagger-children fade-in" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
@@ -2478,14 +2495,16 @@ window.addEventListener('scroll', () => {
   else navEl.classList.remove('scrolled');
 }, { passive: true });
 
-// ── v9.0: PARTICLE NETWORK CANVAS ──
+// ── PARTICLE NETWORK CANVAS (full-hero, mouse-interactive) ──
 (function() {
   const canvas = document.getElementById('heroBgCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const PARTICLE_COUNT = 55;
-  const MAX_DIST = 120;
+  const COUNT = 90;
+  const MAX_DIST = 150;
+  const MOUSE_REPEL = 100;
   let W, H, particles = [];
+  let mx = -999, my = -999;
 
   function resize() {
     W = canvas.width  = canvas.offsetWidth;
@@ -2493,53 +2512,89 @@ window.addEventListener('scroll', () => {
   }
 
   function Particle() {
-    this.x = Math.random() * W;
-    this.y = Math.random() * H;
-    this.vx = (Math.random() - 0.5) * 0.4;
-    this.vy = (Math.random() - 0.5) * 0.4;
-    this.r  = 1.5 + Math.random() * 1.5;
+    this.x  = Math.random() * W;
+    this.y  = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.55;
+    this.vy = (Math.random() - 0.5) * 0.55;
+    this.r  = 1.2 + Math.random() * 1.8;
+    // Color varies: left half = cyan, right half = gold
+    this.isCyan = Math.random() > 0.3;
   }
 
-  function init() {
-    resize();
-    particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
-  }
+  function init() { resize(); particles = Array.from({ length: COUNT }, () => new Particle()); }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    // Move
+
     particles.forEach(p => {
+      // Mouse repulsion
+      const ddx = p.x - mx, ddy = p.y - my;
+      const dd = Math.sqrt(ddx*ddx + ddy*ddy);
+      if (dd < MOUSE_REPEL && dd > 0) {
+        const force = (MOUSE_REPEL - dd) / MOUSE_REPEL * 0.8;
+        p.vx += (ddx / dd) * force;
+        p.vy += (ddy / dd) * force;
+      }
+      // Damping
+      p.vx *= 0.98; p.vy *= 0.98;
+      // Clamp speed
+      const spd = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+      if (spd > 1.8) { p.vx = (p.vx/spd)*1.8; p.vy = (p.vy/spd)*1.8; }
+
       p.x += p.vx; p.y += p.vy;
       if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
       if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
     });
-    // Lines
+
+    // Lines between nearby particles
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const d  = Math.sqrt(dx*dx + dy*dy);
         if (d < MAX_DIST) {
+          const alpha = 0.25 * (1 - d / MAX_DIST);
+          // Blend color based on position in hero (left=cyan, right=gold)
+          const midX = (particles[i].x + particles[j].x) / 2;
+          const blend = midX / W;
+          const r = Math.round(blend * 184);
+          const g = Math.round(blend * 147 + (1-blend) * 212);
+          const b = Math.round((1-blend) * 255 + blend * 58);
           ctx.beginPath();
-          ctx.strokeStyle = `rgba(0,212,255,${0.18 * (1 - d / MAX_DIST)})`;
-          ctx.lineWidth = 0.8;
+          ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+          ctx.lineWidth = 0.7;
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
           ctx.stroke();
         }
       }
     }
+
     // Dots
     particles.forEach(p => {
+      const blend = p.x / W;
+      const r = Math.round(blend * 212);
+      const g = Math.round(blend * 168 + (1-blend) * 220);
+      const b = Math.round((1-blend) * 255 + blend * 76);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0,212,255,0.55)';
+      ctx.fillStyle = `rgba(${r},${g},${b},0.7)`;
       ctx.fill();
     });
+
     requestAnimationFrame(draw);
   }
 
-  window.addEventListener('resize', () => { resize(); }, { passive: true });
+  // Mouse tracking relative to canvas
+  const hero = canvas.parentElement;
+  hero.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mx = e.clientX - rect.left;
+    my = e.clientY - rect.top;
+  }, { passive: true });
+  hero.addEventListener('mouseleave', () => { mx = -999; my = -999; }, { passive: true });
+
+  window.addEventListener('resize', resize, { passive: true });
   init();
   draw();
 })();
