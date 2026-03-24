@@ -7,73 +7,41 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
     background: #000;
     font-family: 'Share Tech Mono', monospace;
   }
-
-  /* ── NAV ── */
   nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    padding: 0.65rem 1.8rem;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(14px);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; padding: 0.65rem 1.8rem;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(0,204,255,0.1);
   }
   .nav-back {
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    color: rgba(0,204,255,0.75);
-    text-decoration: none;
-    transition: color 0.2s;
+    font-size: 0.68rem; letter-spacing: 0.14em;
+    color: rgba(0,204,255,0.75); text-decoration: none; transition: color 0.2s;
   }
   .nav-back:hover { color: #00ccff; }
   .nav-title-block {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
+    position: absolute; left: 50%; transform: translateX(-50%); text-align: center;
   }
   .nav-title {
-    display: block;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.38em;
-    color: rgba(255,255,255,0.9);
-    text-transform: uppercase;
+    display: block; font-family: 'Rajdhani', sans-serif;
+    font-size: 0.82rem; font-weight: 700; letter-spacing: 0.38em;
+    color: rgba(255,255,255,0.9); text-transform: uppercase;
   }
   .nav-sub {
-    display: block;
-    font-size: 0.55rem;
-    letter-spacing: 0.28em;
-    color: rgba(0,204,255,0.45);
-    text-transform: uppercase;
+    display: block; font-size: 0.55rem; letter-spacing: 0.28em;
+    color: rgba(0,204,255,0.45); text-transform: uppercase;
   }
-
-  /* ── CANVAS ── */
   #engine-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: block;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: block;
   }
-
-  /* ── CORNER LABELS ── */
   .corner-label {
-    position: fixed;
-    font-size: 0.52rem;
-    letter-spacing: 0.2em;
-    color: rgba(0,204,255,0.22);
-    text-transform: uppercase;
-    pointer-events: none;
+    position: fixed; font-size: 0.52rem; letter-spacing: 0.2em;
+    color: rgba(0,204,255,0.22); text-transform: uppercase; pointer-events: none;
   }
   .corner-label.tl { top: 3.5rem; left: 1.2rem; }
   .corner-label.tr { top: 3.5rem; right: 1.2rem; text-align: right; }
@@ -94,11 +62,10 @@
 <canvas id="engine-canvas"></canvas>
 
 <div class="corner-label tl">GPU FLUID SIM<br>ENERGY CORE ACTIVE</div>
-<div class="corner-label tr">BLOOM: ON<br>POST-PROC: ON</div>
+<div class="corner-label tr">POST-PROC: ON</div>
 <div class="corner-label bl">MOVE MOUSE TO DISTURB FLUID</div>
 <div class="corner-label br">THREE.JS r128<br>60FPS TARGET</div>
 
-<!-- THREE.js r128 — same proven CDN as globe (examples/js exists here) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -110,368 +77,336 @@
 <script>
 'use strict';
 
-// ── GLOBALS ─────────────────────────────────────────────────────────────────
-let scene, camera, renderer, composer;
-let rt1, rt2;
-let simScene, simCam, simMaterial;
-let displayMaterial, displayMesh;
-let core, innerCore, coreGlow;
-let particleMesh;
-let orbitRing1, orbitRing2;
-let mouseActive = false;
-let mouse = { x: -2, y: -2 };
-let time = 0;
+/* ═══════════════════════════════════════════════════════════════════════════
+   CINEMATIC ENGINE — dark-first approach
+   Render pipeline: fluid sim → background plane → core → particles → bloom
+   Everything is deliberately dark; bloom only adds a gentle glow on edges.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 let W = window.innerWidth;
 let H = window.innerHeight;
 
 const canvas = document.getElementById('engine-canvas');
 
-init();
-animate();
+// ── RENDERER ─────────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setSize(W, H);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 1);
+renderer.autoClear = true;
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
-  // Renderer — NO tone mapping (it amplifies values), just raw output
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 1);
+// ── SCENE + CAMERA ───────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 100);
+camera.position.z = 3;
 
-  // Main scene + camera
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 100);
-  camera.position.z = 3;
+// ── FLUID SIM (ping-pong off-screen) ─────────────────────────────────────────
+let rt1 = makeRT(W, H);
+let rt2 = makeRT(W, H);
 
-  // ── FLUID SIMULATION (ping-pong render targets) ────────────────────────────
-  rt1 = makeRT(W, H);
-  rt2 = makeRT(W, H);
+// Explicitly clear both RTs to pure black
+clearRT(rt1);
+clearRT(rt2);
 
-  // Clear both render targets to black on init
-  renderer.setRenderTarget(rt1);
-  renderer.clear();
-  renderer.setRenderTarget(rt2);
-  renderer.clear();
-  renderer.setRenderTarget(null);
+let mouseActive = false;
+let mouseX = -5, mouseY = -5;
 
-  simMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      prev:       { value: rt1.texture },
-      mouse:      { value: new THREE.Vector2(-2, -2) },
-      resolution: { value: new THREE.Vector2(W, H) },
-      time:       { value: 0 },
-      mouseActive: { value: 0.0 },
-    },
-    vertexShader: `
-      void main() {
-        gl_Position = vec4(position, 1.0);
+const simMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    prev:        { value: null },
+    mouse:       { value: new THREE.Vector2(-5, -5) },
+    resolution:  { value: new THREE.Vector2(W, H) },
+    mouseActive: { value: 0.0 },
+  },
+  vertexShader: 'void main(){ gl_Position = vec4(position,1.0); }',
+  fragmentShader: `
+    uniform sampler2D prev;
+    uniform vec2 mouse;
+    uniform vec2 resolution;
+    uniform float mouseActive;
+
+    void main(){
+      vec2 uv = gl_FragCoord.xy / resolution;
+      vec3 col = texture2D(prev, uv).rgb;
+
+      // Mouse disturbance
+      if(mouseActive > 0.5){
+        float d = distance(uv, mouse);
+        col += vec3(0.008, 0.04, 0.09) * exp(-d * 16.0);
       }
-    `,
-    fragmentShader: `
-      uniform sampler2D prev;
-      uniform vec2 mouse;
-      uniform vec2 resolution;
-      uniform float time;
-      uniform float mouseActive;
 
-      void main() {
-        vec2 uv = gl_FragCoord.xy / resolution;
-        vec3 col = texture2D(prev, uv).rgb;
+      // Aggressive fade — 8% loss per frame keeps everything dark
+      col *= 0.92;
 
-        // Mouse splash — only when mouse has actually moved
-        if (mouseActive > 0.5) {
-          float d = distance(uv, mouse);
-          float splash = exp(-d * 18.0) * 0.12;
-          col += vec3(0.02, 0.12, 0.35) * splash;
-        }
+      // Hard ceiling — nothing in the fluid can ever exceed 0.25
+      col = min(col, vec3(0.25));
 
-        // Fade toward black every frame — this is what keeps it dark
-        col *= 0.94;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
 
-        // Clamp to prevent any runaway accumulation
-        col = min(col, vec3(0.5));
+const simScene = new THREE.Scene();
+const simCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+simScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), simMaterial));
 
-        gl_FragColor = vec4(col, 1.0);
-      }
-    `,
-  });
+// ── BACKGROUND DISPLAY PLANE ─────────────────────────────────────────────────
+// Uses a ShaderMaterial with hard brightness cap — can never output > 0.15
+const bgMat = new THREE.ShaderMaterial({
+  uniforms: { tex: { value: null } },
+  vertexShader: `
+    varying vec2 vUv;
+    void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+  `,
+  fragmentShader: `
+    uniform sampler2D tex;
+    varying vec2 vUv;
+    void main(){
+      vec3 c = texture2D(tex, vUv).rgb * 0.5;
+      gl_FragColor = vec4(min(c, vec3(0.15)), 1.0);
+    }
+  `,
+  depthWrite: false,
+});
+const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(14,14), bgMat);
+bgPlane.position.z = -3;
+scene.add(bgPlane);
 
-  simScene = new THREE.Scene();
-  simCam   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const simQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), simMaterial);
-  simScene.add(simQuad);
+// ── LIGHTING ─────────────────────────────────────────────────────────────────
+// All lights are very dim — the scene should be nearly black
+const ambient = new THREE.AmbientLight(0x030508, 1.0);
+scene.add(ambient);
 
-  // Background display — shader material so we control brightness exactly
-  displayMaterial = new THREE.ShaderMaterial({
-    uniforms: { tex: { value: rt1.texture } },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D tex;
-      varying vec2 vUv;
-      void main() {
-        vec3 col = texture2D(tex, vUv).rgb;
-        // Keep background dim — it's behind the core, not the star
-        gl_FragColor = vec4(col * 0.6, 1.0);
-      }
-    `,
-    depthWrite: false,
-  });
-  displayMesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), displayMaterial);
-  displayMesh.position.z = -2.5;
-  scene.add(displayMesh);
+const coreLight = new THREE.PointLight(0x005566, 1.0, 5);
+scene.add(coreLight);
 
-  // ── LIGHTING — conservative values ─────────────────────────────────────────
-  scene.add(new THREE.AmbientLight(0x000510, 0.8));
+// ── ENERGY CORE ──────────────────────────────────────────────────────────────
+// Outer shell: dark, metallic, slightly transparent — NO transmission
+const outerGeo = new THREE.IcosahedronGeometry(0.65, 4);
+const outerMat = new THREE.MeshStandardMaterial({
+  color: 0x0a1a22,
+  emissive: 0x001115,
+  emissiveIntensity: 0.2,
+  roughness: 0.1,
+  metalness: 0.95,
+  transparent: true,
+  opacity: 0.4,
+  side: THREE.DoubleSide,
+});
+const core = new THREE.Mesh(outerGeo, outerMat);
+scene.add(core);
 
-  const coreLight = new THREE.PointLight(0x0088aa, 1.5, 6);
-  coreLight.position.set(0, 0, 0);
-  scene.add(coreLight);
+// Inner nucleus: the one bright thing — emissive glow, small
+const innerGeo = new THREE.IcosahedronGeometry(0.3, 3);
+const innerMat = new THREE.MeshBasicMaterial({
+  color: 0x00bbdd,
+  transparent: true,
+  opacity: 0.85,
+});
+const innerCore = new THREE.Mesh(innerGeo, innerMat);
+scene.add(innerCore);
 
-  const rimLight1 = new THREE.PointLight(0x002266, 0.6, 6);
-  rimLight1.position.set(-3, 2, 1);
-  scene.add(rimLight1);
+// Wireframe overlay on inner core for structure
+const wireGeo = new THREE.IcosahedronGeometry(0.32, 2);
+const wireMat = new THREE.MeshBasicMaterial({
+  color: 0x00ddff,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.15,
+});
+const wireCore = new THREE.Mesh(wireGeo, wireMat);
+scene.add(wireCore);
 
-  const rimLight2 = new THREE.PointLight(0x440044, 0.4, 6);
-  rimLight2.position.set(3, -1.5, -1);
-  scene.add(rimLight2);
+// Halo — barely visible
+const haloMat = new THREE.MeshBasicMaterial({
+  color: 0x002233,
+  transparent: true,
+  opacity: 0.04,
+  depthWrite: false,
+  side: THREE.BackSide,
+});
+const halo = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 32), haloMat);
+scene.add(halo);
 
-  // ── ENERGY CORE ────────────────────────────────────────────────────────────
-  // Outer shell — NO transmission (that causes brightness feedback in r128)
-  // Use a standard material with transparency for glass look
-  const coreGeo = new THREE.IcosahedronGeometry(0.68, 4);
-  const coreMat = new THREE.MeshStandardMaterial({
-    color:              0x113344,
-    emissive:           0x002233,
-    emissiveIntensity:  0.3,
-    roughness:          0.05,
-    metalness:          0.9,
-    transparent:        true,
-    opacity:            0.35,
-    side:               THREE.DoubleSide,
-  });
-  core = new THREE.Mesh(coreGeo, coreMat);
-  scene.add(core);
+// ── ORBIT RINGS ──────────────────────────────────────────────────────────────
+const ring1 = makeOrbitRing(1.4, 0x004455, 0.2);
+ring1.rotation.x = Math.PI / 4;
+scene.add(ring1);
 
-  // Inner glowing nucleus — the bright part, but controlled
-  const innerGeo = new THREE.IcosahedronGeometry(0.35, 3);
-  const innerMat = new THREE.MeshStandardMaterial({
-    color:             0x003344,
-    emissive:          0x00aacc,
-    emissiveIntensity: 0.6,
-    roughness:         0.15,
-    metalness:         0.5,
-  });
-  innerCore = new THREE.Mesh(innerGeo, innerMat);
-  scene.add(innerCore);
+const ring2 = makeOrbitRing(1.7, 0x220033, 0.15);
+ring2.rotation.x = -Math.PI / 5;
+ring2.rotation.z = Math.PI / 6;
+scene.add(ring2);
 
-  // Soft glow halo — very subtle
-  const haloGeo = new THREE.SphereGeometry(1.05, 32, 32);
-  const haloMat = new THREE.MeshBasicMaterial({
-    color:       0x003355,
-    transparent: true,
-    opacity:     0.03,
-    depthWrite:  false,
-    side:        THREE.BackSide,
-  });
-  coreGlow = new THREE.Mesh(haloGeo, haloMat);
-  scene.add(coreGlow);
+// ── PARTICLES ────────────────────────────────────────────────────────────────
+// Dim, small, spread out — should NOT contribute significant brightness
+const P_COUNT = 1500;
+const pPos = new Float32Array(P_COUNT * 3);
+const pCol = new Float32Array(P_COUNT * 3);
 
-  // ── ORBIT RINGS ────────────────────────────────────────────────────────────
-  orbitRing1 = makeOrbitRing(1.45, 0x006688, 0.3);
-  orbitRing1.rotation.x = Math.PI / 4;
-  scene.add(orbitRing1);
+for (let i = 0; i < P_COUNT; i++) {
+  const r     = 1.3 + Math.random() * 3.0;
+  const theta = Math.random() * Math.PI * 2;
+  const phi   = Math.acos(2 * Math.random() - 1);
+  pPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+  pPos[i*3+2] = r * Math.cos(phi);
 
-  orbitRing2 = makeOrbitRing(1.75, 0x442266, 0.2);
-  orbitRing2.rotation.x = -Math.PI / 5;
-  orbitRing2.rotation.z = Math.PI / 6;
-  scene.add(orbitRing2);
-
-  // ── PARTICLE SYSTEM ────────────────────────────────────────────────────────
-  const COUNT = 2000;
-  const pPos  = new Float32Array(COUNT * 3);
-  const pCol  = new Float32Array(COUNT * 3);
-  const pSize = new Float32Array(COUNT);
-
-  for (let i = 0; i < COUNT; i++) {
-    const r     = 1.2 + Math.random() * 2.8;
-    const theta = Math.random() * Math.PI * 2;
-    const phi   = Math.acos(2 * Math.random() - 1);
-    pPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-    pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-    pPos[i*3+2] = r * Math.cos(phi);
-
-    // Dim cyan-to-purple gradient
-    const t = (r - 1.2) / 2.8;
-    pCol[i*3]   = t * 0.15;
-    pCol[i*3+1] = (0.3 - t * 0.15);
-    pCol[i*3+2] = 0.35;
-
-    pSize[i] = 0.4 + Math.random() * 0.8;
-  }
-
-  const pGeo = new THREE.BufferGeometry();
-  pGeo.setAttribute('position',  new THREE.BufferAttribute(pPos, 3));
-  pGeo.setAttribute('aColor',    new THREE.BufferAttribute(pCol, 3));
-  pGeo.setAttribute('size',      new THREE.BufferAttribute(pSize, 1));
-
-  const pMat = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 } },
-    vertexShader: `
-      attribute vec3 aColor;
-      attribute float size;
-      uniform float time;
-      varying vec3 vColor;
-      void main() {
-        vColor = aColor;
-        float wave = sin(time * 1.2 + position.x * 3.1 + position.y * 2.7) * 0.06;
-        vec3 pos = position * (1.0 + wave);
-        vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-        gl_PointSize = size * (200.0 / -mv.z);
-        gl_Position = projectionMatrix * mv;
-      }
-    `,
-    fragmentShader: `
-      varying vec3 vColor;
-      void main() {
-        float d = length(gl_PointCoord - 0.5) * 2.0;
-        if (d > 1.0) discard;
-        float alpha = pow(1.0 - d, 3.0) * 0.45;
-        gl_FragColor = vec4(vColor, alpha);
-      }
-    `,
-    transparent: true,
-    depthWrite:  false,
-    blending:    THREE.AdditiveBlending,
-  });
-
-  particleMesh = new THREE.Points(pGeo, pMat);
-  scene.add(particleMesh);
-
-  // ── BLOOM — gentle, only hits the core emissive ────────────────────────────
-  composer = new THREE.EffectComposer(renderer);
-  composer.addPass(new THREE.RenderPass(scene, camera));
-  const bloom = new THREE.UnrealBloomPass(
-    new THREE.Vector2(W, H),
-    0.4,   // strength — subtle
-    0.3,   // radius
-    0.85   // threshold — only the brightest emissive pixels bloom
-  );
-  composer.addPass(bloom);
-
-  // ── INPUT ──────────────────────────────────────────────────────────────────
-  window.addEventListener('mousemove', e => {
-    mouseActive = true;
-    mouse.x = e.clientX / W;
-    mouse.y = 1 - e.clientY / H;
-  });
-
-  window.addEventListener('resize', onResize);
+  // Very dim colors: max 0.12 per channel
+  const t = (r - 1.3) / 3.0;
+  pCol[i*3]   = 0.02 + t * 0.06;
+  pCol[i*3+1] = 0.06 + (1 - t) * 0.06;
+  pCol[i*3+2] = 0.10;
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-function makeRT(w, h) {
-  return new THREE.WebGLRenderTarget(w, h, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    format:    THREE.RGBAFormat,
-  });
-}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('aColor',   new THREE.BufferAttribute(pCol, 3));
 
-function makeOrbitRing(radius, color, opacity) {
-  const points = [];
-  const SEG = 128;
-  for (let i = 0; i <= SEG; i++) {
-    const a = (i / SEG) * Math.PI * 2;
-    points.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0));
-  }
-  const geo = new THREE.BufferGeometry().setFromPoints(points);
-  const mat = new THREE.LineBasicMaterial({
-    color, transparent: true, opacity, depthWrite: false,
-  });
-  return new THREE.Line(geo, mat);
-}
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { time: { value: 0 } },
+  vertexShader: `
+    attribute vec3 aColor;
+    uniform float time;
+    varying vec3 vColor;
+    void main(){
+      vColor = aColor;
+      float wave = sin(time * 1.0 + position.x * 2.0 + position.y * 1.7) * 0.04;
+      vec3 p = position * (1.0 + wave);
+      vec4 mv = modelViewMatrix * vec4(p, 1.0);
+      gl_PointSize = max(1.0, 140.0 / -mv.z);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vColor;
+    void main(){
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      if(d > 1.0) discard;
+      float a = (1.0 - d) * 0.3;
+      gl_FragColor = vec4(vColor, a);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
 
-// ── RESIZE ───────────────────────────────────────────────────────────────────
-function onResize() {
+const particles = new THREE.Points(pGeo, pMat);
+scene.add(particles);
+
+// ── BLOOM (very conservative) ────────────────────────────────────────────────
+const composer = new THREE.EffectComposer(renderer);
+const renderPass = new THREE.RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloom = new THREE.UnrealBloomPass(
+  new THREE.Vector2(W, H),
+  0.3,   // strength — barely there
+  0.4,   // radius
+  0.92   // threshold — only the innerCore MeshBasicMaterial will bloom
+);
+composer.addPass(bloom);
+
+// ── INPUT ────────────────────────────────────────────────────────────────────
+window.addEventListener('mousemove', e => {
+  mouseActive = true;
+  mouseX = e.clientX / W;
+  mouseY = 1 - e.clientY / H;
+});
+
+window.addEventListener('resize', () => {
   W = window.innerWidth;
   H = window.innerHeight;
   renderer.setSize(W, H);
   composer.setSize(W, H);
   camera.aspect = W / H;
   camera.updateProjectionMatrix();
-
   rt1.dispose(); rt2.dispose();
   rt1 = makeRT(W, H);
   rt2 = makeRT(W, H);
-
-  // Clear new RTs to black
-  renderer.setRenderTarget(rt1);
-  renderer.clear();
-  renderer.setRenderTarget(rt2);
-  renderer.clear();
-  renderer.setRenderTarget(null);
-
+  clearRT(rt1); clearRT(rt2);
   simMaterial.uniforms.resolution.value.set(W, H);
-  simMaterial.uniforms.prev.value = rt1.texture;
-  displayMaterial.uniforms.tex.value = rt1.texture;
+});
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function makeRT(w, h) {
+  return new THREE.WebGLRenderTarget(w, h, {
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat,
+  });
 }
 
-// ── FLUID STEP ───────────────────────────────────────────────────────────────
-function stepFluid() {
+function clearRT(rt) {
+  renderer.setRenderTarget(rt);
+  renderer.setClearColor(0x000000, 1);
+  renderer.clear(true, true, true);
+  renderer.setRenderTarget(null);
+}
+
+function makeOrbitRing(radius, color, opacity) {
+  const pts = [];
+  for (let i = 0; i <= 128; i++) {
+    const a = (i / 128) * Math.PI * 2;
+    pts.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0));
+  }
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false })
+  );
+}
+
+// ── ANIMATE ──────────────────────────────────────────────────────────────────
+let time = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.008;
+
+  // Step fluid sim
   simMaterial.uniforms.prev.value = rt1.texture;
-  simMaterial.uniforms.mouse.value.set(mouse.x, mouse.y);
-  simMaterial.uniforms.time.value = time;
+  simMaterial.uniforms.mouse.value.set(mouseX, mouseY);
   simMaterial.uniforms.mouseActive.value = mouseActive ? 1.0 : 0.0;
 
   renderer.setRenderTarget(rt2);
   renderer.render(simScene, simCam);
   renderer.setRenderTarget(null);
 
-  // Ping-pong
   const tmp = rt1; rt1 = rt2; rt2 = tmp;
-  displayMaterial.uniforms.tex.value = rt1.texture;
-}
+  bgMat.uniforms.tex.value = rt1.texture;
 
-// ── ANIMATE ──────────────────────────────────────────────────────────────────
-function animate() {
-  requestAnimationFrame(animate);
-  time += 0.008;
+  // Core rotation
+  core.rotation.x += 0.005;
+  core.rotation.y += 0.008;
+  innerCore.rotation.x -= 0.01;
+  innerCore.rotation.y += 0.014;
+  wireCore.rotation.x += 0.007;
+  wireCore.rotation.y -= 0.009;
+  wireCore.rotation.z += 0.003;
 
-  stepFluid();
+  // Inner core gentle pulse — stays between 0.55 and 0.85 opacity
+  innerCore.material.opacity = 0.65 + Math.sin(time * 2.0) * 0.12;
 
-  // Core rotation + pulse
-  core.rotation.x      += 0.006;
-  core.rotation.y      += 0.009;
-  innerCore.rotation.x -= 0.012;
-  innerCore.rotation.y += 0.016;
-  innerCore.rotation.z += 0.007;
+  // Orbit rings
+  ring1.rotation.z += 0.003;
+  ring2.rotation.y += 0.002;
 
-  const pulse = 0.5 + Math.sin(time * 2.4) * 0.15 + Math.sin(time * 5.1) * 0.05;
-  innerCore.material.emissiveIntensity = pulse;
-  coreGlow.material.opacity = 0.02 + Math.sin(time * 1.8) * 0.01;
-
-  // Orbit rings drift
-  orbitRing1.rotation.z += 0.004;
-  orbitRing2.rotation.y += 0.003;
-  orbitRing1.material.opacity = 0.25 + Math.sin(time * 1.3) * 0.08;
-
-  // Particle system slow orbit
-  particleMesh.rotation.y += 0.0007;
-  particleMesh.rotation.x += 0.0003;
-  particleMesh.material.uniforms.time.value = time;
+  // Particles
+  particles.rotation.y += 0.0006;
+  particles.rotation.x += 0.0002;
+  pMat.uniforms.time.value = time;
 
   // Cinematic camera drift
-  camera.position.x = Math.sin(time * 0.18) * 0.28;
-  camera.position.y = Math.cos(time * 0.13) * 0.18;
+  camera.position.x = Math.sin(time * 0.18) * 0.25;
+  camera.position.y = Math.cos(time * 0.13) * 0.15;
   camera.lookAt(0, 0, 0);
 
   composer.render();
 }
+
+animate();
 </script>
 </body>
 </html>
