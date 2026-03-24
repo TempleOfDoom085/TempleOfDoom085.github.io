@@ -96,16 +96,16 @@
 <div class="corner-label tl">GPU FLUID SIM<br>ENERGY CORE ACTIVE</div>
 <div class="corner-label tr">BLOOM: ON<br>POST-PROC: ON</div>
 <div class="corner-label bl">MOVE MOUSE TO DISTURB FLUID</div>
-<div class="corner-label br">THREE.JS r161<br>60FPS TARGET</div>
+<div class="corner-label br">THREE.JS r128<br>60FPS TARGET</div>
 
-<!-- THREE.js r161 + post-processing -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/shaders/CopyShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<!-- THREE.js r128 — same proven CDN as globe (examples/js exists here) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
 <script>
 'use strict';
@@ -224,7 +224,6 @@ function init() {
     roughness:          0.0,
     metalness:          0.0,
     thickness:          1.5,
-    ior:                1.6,
     envMapIntensity:    1.0,
     emissive:           0x003366,
     emissiveIntensity:  0.4,
@@ -295,18 +294,18 @@ function init() {
 
   const pGeo = new THREE.BufferGeometry();
   pGeo.setAttribute('position',  new THREE.BufferAttribute(pPos, 3));
-  pGeo.setAttribute('color',     new THREE.BufferAttribute(pCol, 3));
+  pGeo.setAttribute('aColor',    new THREE.BufferAttribute(pCol, 3));
   pGeo.setAttribute('size',      new THREE.BufferAttribute(pSize, 1));
 
   const pMat = new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 } },
     vertexShader: `
-      attribute vec3 color;
+      attribute vec3 aColor;
       attribute float size;
       uniform float time;
       varying vec3 vColor;
       void main() {
-        vColor = color;
+        vColor = aColor;
         // Subtle breathing per-particle
         float wave = sin(time * 1.2 + position.x * 3.1 + position.y * 2.7) * 0.06;
         vec3 pos = position * (1.0 + wave);
@@ -327,7 +326,6 @@ function init() {
     transparent: true,
     depthWrite:  false,
     blending:    THREE.AdditiveBlending,
-    vertexColors: true,
   });
 
   particleMesh = new THREE.Points(pGeo, pMat);
