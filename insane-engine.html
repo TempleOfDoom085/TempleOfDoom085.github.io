@@ -3,68 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CINEMATIC ENGINE — Visual Demo</title>
+<title>CINEMATIC ENGINE</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: 'Share Tech Mono', monospace;
-  }
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: flex; align-items: center; padding: 0.65rem 1.8rem;
-    background: rgba(0,0,0,0.7); backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(0,204,255,0.1);
-  }
-  .nav-back {
-    font-size: 0.68rem; letter-spacing: 0.14em;
-    color: rgba(0,204,255,0.75); text-decoration: none; transition: color 0.2s;
-  }
-  .nav-back:hover { color: #00ccff; }
-  .nav-title-block {
-    position: absolute; left: 50%; transform: translateX(-50%); text-align: center;
-  }
-  .nav-title {
-    display: block; font-family: 'Rajdhani', sans-serif;
-    font-size: 0.82rem; font-weight: 700; letter-spacing: 0.38em;
-    color: rgba(255,255,255,0.9); text-transform: uppercase;
-  }
-  .nav-sub {
-    display: block; font-size: 0.55rem; letter-spacing: 0.28em;
-    color: rgba(0,204,255,0.45); text-transform: uppercase;
-  }
-  #engine-canvas {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: block;
-  }
-  .corner-label {
-    position: fixed; font-size: 0.52rem; letter-spacing: 0.2em;
-    color: rgba(0,204,255,0.22); text-transform: uppercase; pointer-events: none;
-  }
-  .corner-label.tl { top: 3.5rem; left: 1.2rem; }
-  .corner-label.tr { top: 3.5rem; right: 1.2rem; text-align: right; }
-  .corner-label.bl { bottom: 1.2rem; left: 1.2rem; }
-  .corner-label.br { bottom: 1.2rem; right: 1.2rem; text-align: right; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace}
+  #c{position:fixed;top:0;left:0;width:100%;height:100%;display:block}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;
+    padding:0.65rem 1.8rem;background:rgba(0,0,0,0.7);backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(0,204,255,0.1)}
+  .nb{font-size:0.68rem;letter-spacing:0.14em;color:rgba(0,204,255,0.75);text-decoration:none;transition:color 0.2s}
+  .nb:hover{color:#00ccff}
+  .nt{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
+  .nt span:first-child{display:block;font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.38em;color:rgba(255,255,255,0.9);text-transform:uppercase}
+  .nt span:last-child{display:block;font-size:0.55rem;letter-spacing:0.28em;color:rgba(0,204,255,0.45);text-transform:uppercase}
+  .cl{position:fixed;font-size:0.5rem;letter-spacing:0.2em;color:rgba(0,204,255,0.18);text-transform:uppercase;pointer-events:none}
+  .cl.tl{top:3.5rem;left:1.2rem} .cl.br{bottom:1.2rem;right:1.2rem;text-align:right}
+  .cl.bl{bottom:1.2rem;left:1.2rem}
+
+  /* Vignette overlay */
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:10;
+    background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.7) 100%)}
+
+  /* Scanlines */
+  #scanlines{position:fixed;inset:0;pointer-events:none;z-index:11;opacity:0.04;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.4) 2px,rgba(0,0,0,0.4) 4px)}
 </style>
 </head>
 <body>
-
 <nav>
-  <a href="/" class="nav-back">← PORTFOLIO</a>
-  <div class="nav-title-block">
-    <span class="nav-title">CINEMATIC ENGINE</span>
-    <span class="nav-sub">GPU VISUAL DEMO</span>
-  </div>
+  <a href="/" class="nb">← PORTFOLIO</a>
+  <div class="nt"><span>CINEMATIC ENGINE</span><span>GPU VISUAL DEMO</span></div>
 </nav>
-
-<canvas id="engine-canvas"></canvas>
-
-<div class="corner-label tl">GPU FLUID SIM<br>ENERGY CORE ACTIVE</div>
-<div class="corner-label tr">POST-PROC: ON</div>
-<div class="corner-label bl">MOVE MOUSE TO DISTURB FLUID</div>
-<div class="corner-label br">THREE.JS r128<br>60FPS TARGET</div>
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div class="cl tl">ENERGY CORE ACTIVE<br>PARTICLE FIELD: ONLINE</div>
+<div class="cl bl">MOVE MOUSE TO INTERACT</div>
+<div class="cl br">WEBGL 2.0<br>60FPS TARGET</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
@@ -73,340 +49,415 @@
 <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-
 <script>
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   CINEMATIC ENGINE — dark-first approach
-   Render pipeline: fluid sim → background plane → core → particles → bloom
-   Everything is deliberately dark; bloom only adds a gentle glow on edges.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-let W = window.innerWidth;
-let H = window.innerHeight;
-
-const canvas = document.getElementById('engine-canvas');
-
-// ── RENDERER ─────────────────────────────────────────────────────────────────
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+let W = innerWidth, H = innerHeight;
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: false});
 renderer.setSize(W, H);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 1);
-renderer.autoClear = true;
 
-// ── SCENE + CAMERA ───────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 100);
-camera.position.z = 3;
+// Fog pushes distant particles to black — natural depth
+scene.fog = new THREE.FogExp2(0x000000, 0.18);
 
-// ── FLUID SIM (ping-pong off-screen) ─────────────────────────────────────────
-let rt1 = makeRT(W, H);
-let rt2 = makeRT(W, H);
+const camera = new THREE.PerspectiveCamera(55, W/H, 0.1, 80);
+camera.position.z = 4.5;
 
-// Explicitly clear both RTs to pure black
-clearRT(rt1);
-clearRT(rt2);
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLUID SIM — ping-pong GPU render-to-texture
+// ═══════════════════════════════════════════════════════════════════════════════
+let rt1 = makeRT(W, H), rt2 = makeRT(W, H);
+clearRT(rt1); clearRT(rt2);
 
-let mouseActive = false;
-let mouseX = -5, mouseY = -5;
+let mxActive = false, mx = -9, my = -9, mxPrev = -9, myPrev = -9;
 
-const simMaterial = new THREE.ShaderMaterial({
+const fluidMat = new THREE.ShaderMaterial({
   uniforms: {
-    prev:        { value: null },
-    mouse:       { value: new THREE.Vector2(-5, -5) },
-    resolution:  { value: new THREE.Vector2(W, H) },
-    mouseActive: { value: 0.0 },
+    prev: {value:null}, mouse: {value:new THREE.Vector2(-9,-9)},
+    prevMouse: {value:new THREE.Vector2(-9,-9)},
+    res: {value:new THREE.Vector2(W,H)}, active: {value:0.0}
   },
-  vertexShader: 'void main(){ gl_Position = vec4(position,1.0); }',
+  vertexShader: 'void main(){gl_Position=vec4(position,1.0);}',
   fragmentShader: `
     uniform sampler2D prev;
-    uniform vec2 mouse;
-    uniform vec2 resolution;
-    uniform float mouseActive;
-
+    uniform vec2 mouse, prevMouse, res;
+    uniform float active;
     void main(){
-      vec2 uv = gl_FragCoord.xy / resolution;
+      vec2 uv = gl_FragCoord.xy / res;
       vec3 col = texture2D(prev, uv).rgb;
 
-      // Mouse disturbance
-      if(mouseActive > 0.5){
+      if(active > 0.5){
+        // Velocity-based splash: stronger when mouse moves fast
+        vec2 vel = mouse - prevMouse;
+        float speed = length(vel) * 12.0;
         float d = distance(uv, mouse);
-        col += vec3(0.008, 0.04, 0.09) * exp(-d * 16.0);
+        float splash = exp(-d * 14.0) * min(speed, 0.4) * 0.6;
+        // Color shifts with mouse position for variety
+        vec3 inkColor = vec3(
+          0.01 + mouse.x * 0.04,
+          0.06 + (1.0 - mouse.y) * 0.08,
+          0.18 + mouse.y * 0.12
+        );
+        col += inkColor * splash;
+
+        // Directional smear — drags ink along movement
+        vec2 smearUV = uv - vel * 0.03;
+        vec3 smear = texture2D(prev, smearUV).rgb;
+        col = mix(col, smear, 0.15);
       }
 
-      // Aggressive fade — 8% loss per frame keeps everything dark
-      col *= 0.92;
-
-      // Hard ceiling — nothing in the fluid can ever exceed 0.25
-      col = min(col, vec3(0.25));
-
+      col *= 0.965;
+      col = min(col, vec3(0.35));
       gl_FragColor = vec4(col, 1.0);
     }
   `,
 });
+const fluidScene = new THREE.Scene();
+const fluidCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+fluidScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), fluidMat));
 
-const simScene = new THREE.Scene();
-const simCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-simScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), simMaterial));
-
-// ── BACKGROUND DISPLAY PLANE ─────────────────────────────────────────────────
-// Uses a ShaderMaterial with hard brightness cap — can never output > 0.15
+// Background plane — shows fluid, hard capped
 const bgMat = new THREE.ShaderMaterial({
-  uniforms: { tex: { value: null } },
-  vertexShader: `
-    varying vec2 vUv;
-    void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
-  `,
+  uniforms: {tex:{value:null}},
+  vertexShader: 'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
   fragmentShader: `
     uniform sampler2D tex;
-    varying vec2 vUv;
+    varying vec2 v;
     void main(){
-      vec3 c = texture2D(tex, vUv).rgb * 0.5;
-      gl_FragColor = vec4(min(c, vec3(0.15)), 1.0);
+      vec3 c = texture2D(tex, v).rgb;
+      gl_FragColor = vec4(min(c * 0.7, vec3(0.2)), 1.0);
     }
   `,
   depthWrite: false,
 });
-const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(14,14), bgMat);
-bgPlane.position.z = -3;
+const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(18,18), bgMat);
+bgPlane.position.z = -5;
 scene.add(bgPlane);
 
-// ── LIGHTING ─────────────────────────────────────────────────────────────────
-// All lights are very dim — the scene should be nearly black
-const ambient = new THREE.AmbientLight(0x030508, 1.0);
-scene.add(ambient);
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEBULA / SPACE DUST — volumetric-looking background particles
+// ═══════════════════════════════════════════════════════════════════════════════
+const DUST = 4000;
+const dPos = new Float32Array(DUST*3), dCol = new Float32Array(DUST*3), dSz = new Float32Array(DUST);
+for(let i=0;i<DUST;i++){
+  const r = 3 + Math.random()*20;
+  const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
+  dPos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+  dPos[i*3+1] = r*Math.sin(ph)*Math.sin(th);
+  dPos[i*3+2] = r*Math.cos(ph);
+  // Deep space colors: dark blue, purple, teal
+  const palette = Math.random();
+  if(palette < 0.33){ dCol[i*3]=0.04; dCol[i*3+1]=0.02; dCol[i*3+2]=0.08; }
+  else if(palette < 0.66){ dCol[i*3]=0.01; dCol[i*3+1]=0.04; dCol[i*3+2]=0.06; }
+  else { dCol[i*3]=0.06; dCol[i*3+1]=0.01; dCol[i*3+2]=0.05; }
+  dSz[i] = 0.8 + Math.random()*2.5;
+}
+const dGeo = new THREE.BufferGeometry();
+dGeo.setAttribute('position', new THREE.BufferAttribute(dPos,3));
+dGeo.setAttribute('aCol', new THREE.BufferAttribute(dCol,3));
+dGeo.setAttribute('aSize', new THREE.BufferAttribute(dSz,1));
+const dustMat = new THREE.ShaderMaterial({
+  uniforms:{time:{value:0}},
+  vertexShader:`
+    attribute vec3 aCol; attribute float aSize;
+    uniform float time; varying vec3 vC; varying float vDist;
+    void main(){
+      vC = aCol;
+      vec4 mv = modelViewMatrix * vec4(position,1.0);
+      vDist = -mv.z;
+      gl_PointSize = aSize * (300.0 / vDist);
+      gl_Position = projectionMatrix * mv;
+    }`,
+  fragmentShader:`
+    varying vec3 vC; varying float vDist;
+    void main(){
+      float d = length(gl_PointCoord - 0.5)*2.0;
+      if(d>1.0) discard;
+      float fade = exp(-vDist * 0.06);
+      float a = pow(1.0-d, 2.5) * 0.4 * fade;
+      gl_FragColor = vec4(vC, a);
+    }`,
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+});
+const dustField = new THREE.Points(dGeo, dustMat);
+scene.add(dustField);
 
-const coreLight = new THREE.PointLight(0x005566, 1.0, 5);
+// ═══════════════════════════════════════════════════════════════════════════════
+// LIGHTING
+// ═══════════════════════════════════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0x040610, 1.0));
+const coreLight = new THREE.PointLight(0x0099bb, 1.5, 8);
 scene.add(coreLight);
+const rimLight = new THREE.PointLight(0x220044, 0.6, 6);
+rimLight.position.set(2, -2, -1);
+scene.add(rimLight);
 
-// ── ENERGY CORE ──────────────────────────────────────────────────────────────
-// Outer shell: dark, metallic, slightly transparent — NO transmission
-const outerGeo = new THREE.IcosahedronGeometry(0.65, 4);
-const outerMat = new THREE.MeshStandardMaterial({
-  color: 0x0a1a22,
-  emissive: 0x001115,
-  emissiveIntensity: 0.2,
-  roughness: 0.1,
-  metalness: 0.95,
-  transparent: true,
-  opacity: 0.4,
-  side: THREE.DoubleSide,
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENERGY CORE — multi-layer for depth
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Layer 1: outer shell — dark metallic frame
+const shellGeo = new THREE.IcosahedronGeometry(0.72, 1); // Low-poly = faceted look
+const shellMat = new THREE.MeshStandardMaterial({
+  color: 0x0a1520, emissive: 0x001822, emissiveIntensity: 0.15,
+  roughness: 0.15, metalness: 0.95, wireframe: true, transparent: true, opacity: 0.35,
 });
-const core = new THREE.Mesh(outerGeo, outerMat);
-scene.add(core);
+const shell = new THREE.Mesh(shellGeo, shellMat);
+scene.add(shell);
 
-// Inner nucleus: the one bright thing — emissive glow, small
-const innerGeo = new THREE.IcosahedronGeometry(0.3, 3);
-const innerMat = new THREE.MeshBasicMaterial({
-  color: 0x00bbdd,
-  transparent: true,
-  opacity: 0.85,
+// Layer 2: mid cage — icosahedron wireframe, brighter
+const cageGeo = new THREE.IcosahedronGeometry(0.55, 2);
+const cageMat = new THREE.MeshBasicMaterial({
+  color: 0x005577, wireframe: true, transparent: true, opacity: 0.2,
 });
-const innerCore = new THREE.Mesh(innerGeo, innerMat);
-scene.add(innerCore);
+const cage = new THREE.Mesh(cageGeo, cageMat);
+scene.add(cage);
 
-// Wireframe overlay on inner core for structure
-const wireGeo = new THREE.IcosahedronGeometry(0.32, 2);
-const wireMat = new THREE.MeshBasicMaterial({
-  color: 0x00ddff,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.15,
+// Layer 3: inner energy sphere — the bright glowing heart
+// Custom shader so we control EXACTLY the output brightness
+const coreGeo = new THREE.IcosahedronGeometry(0.36, 4);
+const coreMat = new THREE.ShaderMaterial({
+  uniforms: {time:{value:0}, camPos:{value:camera.position}},
+  vertexShader:`
+    varying vec3 vNorm; varying vec3 vWorldPos;
+    void main(){
+      vNorm = normalize(normalMatrix * normal);
+      vWorldPos = (modelMatrix * vec4(position,1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`,
+  fragmentShader:`
+    uniform float time; uniform vec3 camPos;
+    varying vec3 vNorm; varying vec3 vWorldPos;
+    void main(){
+      vec3 viewDir = normalize(camPos - vWorldPos);
+      float fresnel = pow(1.0 - abs(dot(vNorm, viewDir)), 3.0);
+      float pulse = 0.7 + sin(time*2.5)*0.12 + sin(time*6.0)*0.05;
+
+      // Core color: cyan center, blue-purple fresnel edges
+      vec3 center = vec3(0.0, 0.55, 0.65) * pulse;
+      vec3 edge   = vec3(0.15, 0.1, 0.55) * fresnel * 1.5;
+      vec3 col = center + edge;
+
+      // Hard cap: maximum output is 0.7 in any channel
+      col = min(col, vec3(0.7));
+
+      gl_FragColor = vec4(col, 0.92);
+    }`,
+  transparent: true, side: THREE.DoubleSide,
 });
-const wireCore = new THREE.Mesh(wireGeo, wireMat);
-scene.add(wireCore);
+const coreObj = new THREE.Mesh(coreGeo, coreMat);
+scene.add(coreObj);
 
-// Halo — barely visible
-const haloMat = new THREE.MeshBasicMaterial({
-  color: 0x002233,
-  transparent: true,
-  opacity: 0.04,
-  depthWrite: false,
-  side: THREE.BackSide,
+// Layer 4: volumetric glow shell — fresnel edge glow
+const glowGeo = new THREE.SphereGeometry(0.85, 32, 32);
+const glowMat = new THREE.ShaderMaterial({
+  uniforms: {camPos:{value:camera.position}, time:{value:0}},
+  vertexShader:`
+    varying vec3 vNorm; varying vec3 vWorld;
+    void main(){
+      vNorm = normalize(normalMatrix * normal);
+      vWorld = (modelMatrix * vec4(position,1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`,
+  fragmentShader:`
+    uniform vec3 camPos; uniform float time;
+    varying vec3 vNorm; varying vec3 vWorld;
+    void main(){
+      vec3 view = normalize(camPos - vWorld);
+      float rim = pow(1.0 - abs(dot(vNorm, view)), 4.0);
+      float flicker = 0.8 + sin(time*3.0 + vWorld.y*8.0)*0.15;
+      vec3 col = vec3(0.0, 0.25, 0.4) * rim * flicker;
+      col = min(col, vec3(0.25));
+      gl_FragColor = vec4(col, rim * 0.5);
+    }`,
+  transparent:true, depthWrite:false, side:THREE.BackSide, blending:THREE.AdditiveBlending,
 });
-const halo = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 32), haloMat);
-scene.add(halo);
+const glowShell = new THREE.Mesh(glowGeo, glowMat);
+scene.add(glowShell);
 
-// ── ORBIT RINGS ──────────────────────────────────────────────────────────────
-const ring1 = makeOrbitRing(1.4, 0x004455, 0.2);
-ring1.rotation.x = Math.PI / 4;
-scene.add(ring1);
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORBIT RINGS — 3 tilted at different angles
+// ═══════════════════════════════════════════════════════════════════════════════
+const rings = [];
+[[1.2, 0x006688, 0.25, 0.6, 0, 0],
+ [1.55, 0x553388, 0.18, 0, 0.8, 0.4],
+ [1.9, 0x884422, 0.12, -0.5, 0.3, 0.7]].forEach(([r, col, op, rx, ry, rz]) => {
+  const ring = makeOrbitRing(r, col, op);
+  ring.rotation.set(rx, ry, rz);
+  scene.add(ring);
+  rings.push(ring);
+});
 
-const ring2 = makeOrbitRing(1.7, 0x220033, 0.15);
-ring2.rotation.x = -Math.PI / 5;
-ring2.rotation.z = Math.PI / 6;
-scene.add(ring2);
-
-// ── PARTICLES ────────────────────────────────────────────────────────────────
-// Dim, small, spread out — should NOT contribute significant brightness
-const P_COUNT = 1500;
-const pPos = new Float32Array(P_COUNT * 3);
-const pCol = new Float32Array(P_COUNT * 3);
-
-for (let i = 0; i < P_COUNT; i++) {
-  const r     = 1.3 + Math.random() * 3.0;
-  const theta = Math.random() * Math.PI * 2;
-  const phi   = Math.acos(2 * Math.random() - 1);
-  pPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-  pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-  pPos[i*3+2] = r * Math.cos(phi);
-
-  // Very dim colors: max 0.12 per channel
-  const t = (r - 1.3) / 3.0;
-  pCol[i*3]   = 0.02 + t * 0.06;
-  pCol[i*3+1] = 0.06 + (1 - t) * 0.06;
-  pCol[i*3+2] = 0.10;
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORBITING PARTICLES — small glowing dots on ring paths
+// ═══════════════════════════════════════════════════════════════════════════════
+const orbiters = [];
+for(let i=0;i<24;i++){
+  const r = 1.1 + Math.random()*1.0;
+  const speed = 0.3 + Math.random()*0.5;
+  const tilt = (Math.random()-0.5)*1.2;
+  const phase = Math.random()*Math.PI*2;
+  const geo = new THREE.SphereGeometry(0.02 + Math.random()*0.02, 8, 8);
+  const brightness = 0.15 + Math.random()*0.2;
+  const mat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(brightness*0.2, brightness*0.6, brightness),
+    transparent: true, opacity: 0.7,
+  });
+  const dot = new THREE.Mesh(geo, mat);
+  scene.add(dot);
+  orbiters.push({dot, r, speed, tilt, phase});
 }
 
-const pGeo = new THREE.BufferGeometry();
-pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-pGeo.setAttribute('aColor',   new THREE.BufferAttribute(pCol, 3));
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENERGY TENDRILS — curved lines from core outward
+// ═══════════════════════════════════════════════════════════════════════════════
+const tendrils = [];
+for(let t=0;t<8;t++){
+  const pts = [];
+  const baseAngle = (t/8)*Math.PI*2;
+  const elevation = (Math.random()-0.5)*0.8;
+  for(let s=0;s<=20;s++){
+    const frac = s/20;
+    const r = 0.4 + frac * 1.8;
+    const wobble = Math.sin(frac*Math.PI*3 + baseAngle)*0.3*frac;
+    pts.push(new THREE.Vector3(
+      Math.cos(baseAngle + wobble)*r,
+      elevation*r + Math.sin(frac*Math.PI*2)*0.15,
+      Math.sin(baseAngle + wobble)*r
+    ));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({
+    color: 0x004466, transparent:true, opacity:0.08, depthWrite:false,
+  });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  tendrils.push({line, baseAngle, elevation});
+}
 
-const pMat = new THREE.ShaderMaterial({
-  uniforms: { time: { value: 0 } },
-  vertexShader: `
-    attribute vec3 aColor;
-    uniform float time;
-    varying vec3 vColor;
-    void main(){
-      vColor = aColor;
-      float wave = sin(time * 1.0 + position.x * 2.0 + position.y * 1.7) * 0.04;
-      vec3 p = position * (1.0 + wave);
-      vec4 mv = modelViewMatrix * vec4(p, 1.0);
-      gl_PointSize = max(1.0, 140.0 / -mv.z);
-      gl_Position = projectionMatrix * mv;
-    }
-  `,
-  fragmentShader: `
-    varying vec3 vColor;
-    void main(){
-      float d = length(gl_PointCoord - 0.5) * 2.0;
-      if(d > 1.0) discard;
-      float a = (1.0 - d) * 0.3;
-      gl_FragColor = vec4(vColor, a);
-    }
-  `,
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
-});
-
-const particles = new THREE.Points(pGeo, pMat);
-scene.add(particles);
-
-// ── BLOOM (very conservative) ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// BLOOM — targeted, only hits the core's 0.5+ output
+// ═══════════════════════════════════════════════════════════════════════════════
 const composer = new THREE.EffectComposer(renderer);
-const renderPass = new THREE.RenderPass(scene, camera);
-composer.addPass(renderPass);
-
-const bloom = new THREE.UnrealBloomPass(
-  new THREE.Vector2(W, H),
-  0.3,   // strength — barely there
-  0.4,   // radius
-  0.92   // threshold — only the innerCore MeshBasicMaterial will bloom
-);
+composer.addPass(new THREE.RenderPass(scene, camera));
+const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W,H), 0.5, 0.6, 0.55);
 composer.addPass(bloom);
 
-// ── INPUT ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════════════════════════════
 window.addEventListener('mousemove', e => {
-  mouseActive = true;
-  mouseX = e.clientX / W;
-  mouseY = 1 - e.clientY / H;
+  mxActive = true;
+  mxPrev = mx; myPrev = my;
+  mx = e.clientX / W;
+  my = 1 - e.clientY / H;
 });
 
 window.addEventListener('resize', () => {
-  W = window.innerWidth;
-  H = window.innerHeight;
-  renderer.setSize(W, H);
-  composer.setSize(W, H);
-  camera.aspect = W / H;
-  camera.updateProjectionMatrix();
+  W = innerWidth; H = innerHeight;
+  renderer.setSize(W,H); composer.setSize(W,H);
+  camera.aspect = W/H; camera.updateProjectionMatrix();
   rt1.dispose(); rt2.dispose();
-  rt1 = makeRT(W, H);
-  rt2 = makeRT(W, H);
+  rt1 = makeRT(W,H); rt2 = makeRT(W,H);
   clearRT(rt1); clearRT(rt2);
-  simMaterial.uniforms.resolution.value.set(W, H);
+  fluidMat.uniforms.res.value.set(W,H);
 });
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-function makeRT(w, h) {
-  return new THREE.WebGLRenderTarget(w, h, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    format: THREE.RGBAFormat,
-  });
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+function makeRT(w,h){
+  return new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});
 }
-
-function clearRT(rt) {
-  renderer.setRenderTarget(rt);
-  renderer.setClearColor(0x000000, 1);
-  renderer.clear(true, true, true);
-  renderer.setRenderTarget(null);
+function clearRT(rt){
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000,1);
+  renderer.clear(true,true,true); renderer.setRenderTarget(null);
 }
-
-function makeOrbitRing(radius, color, opacity) {
+function makeOrbitRing(radius, color, opacity){
   const pts = [];
-  for (let i = 0; i <= 128; i++) {
-    const a = (i / 128) * Math.PI * 2;
-    pts.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0));
+  for(let i=0;i<=256;i++){
+    const a = (i/256)*Math.PI*2;
+    pts.push(new THREE.Vector3(Math.cos(a)*radius, Math.sin(a)*radius, 0));
   }
   return new THREE.Line(
     new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false })
+    new THREE.LineBasicMaterial({color, transparent:true, opacity, depthWrite:false})
   );
 }
 
-// ── ANIMATE ──────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANIMATE
+// ═══════════════════════════════════════════════════════════════════════════════
 let time = 0;
-
-function animate() {
+(function animate(){
   requestAnimationFrame(animate);
-  time += 0.008;
+  time += 0.006;
 
-  // Step fluid sim
-  simMaterial.uniforms.prev.value = rt1.texture;
-  simMaterial.uniforms.mouse.value.set(mouseX, mouseY);
-  simMaterial.uniforms.mouseActive.value = mouseActive ? 1.0 : 0.0;
-
+  // ── Fluid sim step ──
+  fluidMat.uniforms.prev.value = rt1.texture;
+  fluidMat.uniforms.mouse.value.set(mx, my);
+  fluidMat.uniforms.prevMouse.value.set(mxPrev, myPrev);
+  fluidMat.uniforms.active.value = mxActive ? 1.0 : 0.0;
   renderer.setRenderTarget(rt2);
-  renderer.render(simScene, simCam);
+  renderer.render(fluidScene, fluidCam);
   renderer.setRenderTarget(null);
-
   const tmp = rt1; rt1 = rt2; rt2 = tmp;
   bgMat.uniforms.tex.value = rt1.texture;
 
-  // Core rotation
-  core.rotation.x += 0.005;
-  core.rotation.y += 0.008;
-  innerCore.rotation.x -= 0.01;
-  innerCore.rotation.y += 0.014;
-  wireCore.rotation.x += 0.007;
-  wireCore.rotation.y -= 0.009;
-  wireCore.rotation.z += 0.003;
+  // ── Core layers rotation — each at different speed/axis ──
+  shell.rotation.x += 0.003; shell.rotation.y += 0.005;
+  cage.rotation.x -= 0.007;  cage.rotation.y += 0.009; cage.rotation.z += 0.002;
+  coreObj.rotation.x += 0.004; coreObj.rotation.y -= 0.006;
+  glowShell.rotation.y += 0.002;
 
-  // Inner core gentle pulse — stays between 0.55 and 0.85 opacity
-  innerCore.material.opacity = 0.65 + Math.sin(time * 2.0) * 0.12;
+  // Update core shader uniforms
+  coreMat.uniforms.time.value = time;
+  coreMat.uniforms.camPos.value.copy(camera.position);
+  glowMat.uniforms.time.value = time;
+  glowMat.uniforms.camPos.value.copy(camera.position);
 
-  // Orbit rings
-  ring1.rotation.z += 0.003;
-  ring2.rotation.y += 0.002;
+  // ── Orbit rings slow spin ──
+  rings[0].rotation.z += 0.003;
+  rings[1].rotation.x += 0.002;
+  rings[2].rotation.y += 0.004;
 
-  // Particles
-  particles.rotation.y += 0.0006;
-  particles.rotation.x += 0.0002;
-  pMat.uniforms.time.value = time;
+  // ── Orbiter dots ──
+  orbiters.forEach(o => {
+    const angle = time * o.speed + o.phase;
+    o.dot.position.set(
+      Math.cos(angle) * o.r,
+      Math.sin(o.tilt) * Math.sin(angle) * o.r * 0.6,
+      Math.sin(angle) * o.r * Math.cos(o.tilt)
+    );
+  });
 
-  // Cinematic camera drift
-  camera.position.x = Math.sin(time * 0.18) * 0.25;
-  camera.position.y = Math.cos(time * 0.13) * 0.15;
+  // ── Tendrils pulse ──
+  tendrils.forEach((t, i) => {
+    t.line.material.opacity = 0.04 + Math.sin(time*1.5 + i*0.8)*0.04;
+    t.line.rotation.y += 0.001;
+  });
+
+  // ── Dust field slow drift ──
+  dustField.rotation.y += 0.00015;
+  dustField.rotation.x += 0.00005;
+  dustMat.uniforms.time.value = time;
+
+  // ── Background particles ──
+
+  // ── Cinematic camera — slow orbit + breathing ──
+  const camR = 4.5 + Math.sin(time*0.3)*0.4;
+  const camAngle = time * 0.08;
+  camera.position.x = Math.sin(camAngle) * camR * 0.35;
+  camera.position.y = Math.sin(time*0.11) * 0.6;
+  camera.position.z = Math.cos(camAngle) * camR * 0.85;
   camera.lookAt(0, 0, 0);
 
   composer.render();
-}
-
-animate();
+})();
 </script>
 </body>
 </html>
