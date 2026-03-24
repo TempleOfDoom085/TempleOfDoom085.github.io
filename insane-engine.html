@@ -135,7 +135,7 @@ function init() {
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 0.7;
 
   // Main scene + camera
   scene = new THREE.Scene();
@@ -201,17 +201,17 @@ function init() {
   scene.add(displayMesh);
 
   // ── LIGHTING ───────────────────────────────────────────────────────────────
-  scene.add(new THREE.AmbientLight(0x000814, 3.0));
+  scene.add(new THREE.AmbientLight(0x000814, 1.2));
 
-  const coreLight = new THREE.PointLight(0x00eeff, 8, 12);
+  const coreLight = new THREE.PointLight(0x00eeff, 2.5, 10);
   coreLight.position.set(0, 0, 0);
   scene.add(coreLight);
 
-  const rimLight1 = new THREE.PointLight(0x0044ff, 3, 10);
+  const rimLight1 = new THREE.PointLight(0x0044ff, 1.2, 8);
   rimLight1.position.set(-3, 2, 1);
   scene.add(rimLight1);
 
-  const rimLight2 = new THREE.PointLight(0xff00aa, 2, 10);
+  const rimLight2 = new THREE.PointLight(0xff00aa, 0.8, 8);
   rimLight2.position.set(3, -1.5, -1);
   scene.add(rimLight2);
 
@@ -239,7 +239,7 @@ function init() {
   const innerMat = new THREE.MeshStandardMaterial({
     color:             0x00ffff,
     emissive:          0x00ccff,
-    emissiveIntensity: 3.0,
+    emissiveIntensity: 1.0,
     roughness:         0.1,
     metalness:         0.6,
   });
@@ -336,9 +336,9 @@ function init() {
   composer.addPass(new THREE.RenderPass(scene, camera));
   const bloom = new THREE.UnrealBloomPass(
     new THREE.Vector2(W, H),
-    1.8,  // strength
-    0.55, // radius
-    0.25  // threshold — lower = more blooms
+    0.7,  // strength
+    0.5,  // radius
+    0.72  // threshold — only bright emissives bloom
   );
   composer.addPass(bloom);
 
@@ -423,7 +423,7 @@ function animate() {
   innerCore.rotation.y += 0.016;
   innerCore.rotation.z += 0.007;
 
-  const pulse = 1.8 + Math.sin(time * 2.4) * 0.6 + Math.sin(time * 5.1) * 0.25;
+  const pulse = 0.85 + Math.sin(time * 2.4) * 0.25 + Math.sin(time * 5.1) * 0.1;
   innerCore.material.emissiveIntensity = pulse;
   coreGlow.material.opacity = 0.04 + Math.sin(time * 1.8) * 0.025;
 
