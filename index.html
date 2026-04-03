@@ -306,14 +306,64 @@ section { padding: 7.5rem 4rem; }
 
 /* CONTACT */
 #contact { background: var(--ink); text-align: center; }
-.contact-sub { font-size: 1.1rem; color: rgba(245,242,236,0.5); margin-bottom: 3rem; font-weight: 300; }
-.contact-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
-.contact-link {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--paper); text-decoration: none; padding: 1rem 2rem;
-  border: 1px solid rgba(245,242,236,0.12); transition: all 0.2s;
+.contact-sub { font-size: 1.1rem; color: rgba(245,242,236,0.5); margin-bottom: 2rem; font-weight: 300; }
+
+/* Status badge */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: #00e878; border: 1px solid rgba(0,232,120,0.22); padding: 0.4rem 1.1rem;
+  background: rgba(0,232,120,0.04); margin-bottom: 3rem;
 }
-.contact-link:hover { border-color: var(--gold); color: var(--gold); }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #00e878; box-shadow: 0 0 6px rgba(0,232,120,0.65);
+  animation: pulse-green 2.2s ease-in-out infinite;
+}
+@keyframes pulse-green {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.65; }
+}
+
+/* Contact grid */
+.contact-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem;
+  text-align: left; max-width: 860px; margin: 0 auto;
+}
+.contact-card {
+  border: 1px solid rgba(184,147,58,0.13); padding: 2rem;
+  background: rgba(184,147,58,0.02); transition: border-color 0.25s, background 0.25s;
+}
+.contact-card:hover { border-color: rgba(184,147,58,0.28); background: rgba(184,147,58,0.04); }
+.contact-card-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.32em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 1.2rem;
+}
+.contact-info-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 0.85rem; font-family: var(--mono); font-size: 0.7rem;
+}
+.contact-info-row a {
+  color: rgba(245,242,236,0.75); text-decoration: none;
+  transition: color 0.2s; letter-spacing: 0.03em;
+}
+.contact-info-row a:hover { color: var(--gold); }
+.contact-info-icon { font-size: 0.85rem; min-width: 1.2rem; }
+.contact-looking-item {
+  display: flex; align-items: baseline; gap: 0.65rem;
+  margin-bottom: 0.7rem; font-family: var(--mono); font-size: 0.68rem;
+  color: rgba(245,242,236,0.5); letter-spacing: 0.02em;
+}
+.contact-looking-item::before { content: '→'; color: var(--gold); font-size: 0.62rem; flex-shrink: 0; }
+.contact-meta {
+  margin-top: 1.4rem; padding-top: 1.4rem;
+  border-top: 1px solid rgba(184,147,58,0.1);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  color: rgba(245,242,236,0.22); display: flex; flex-direction: column; gap: 0.4rem;
+}
+@media (max-width: 768px) {
+  .contact-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+}
 
 footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(184,147,58,0.1); font-family: var(--mono); font-size: 0.68rem; color: rgba(245,242,236,0.2); letter-spacing: 0.1em; }
 
@@ -1445,7 +1495,7 @@ nav.scrolled {
       <div id="gameLauncher">
         <button class="game-launch-btn" onclick="launchGame()">
           <div class="game-launch-title">KNIGHTS TEMPLAR</div>
-          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 9.1 —</div>
+          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — VERSION 10.0 —</div>
           <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
         </button>
       </div>
@@ -1460,6 +1510,35 @@ nav.scrolled {
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v11.0</span>
+        <span class="patch-version-name">Tools Expansion &amp; Contact Upgrade</span>
+        <span class="patch-date">April 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Portfolio — Tools Hub</div>
+        <ul class="patch-list">
+          <li>Main page tools grid expanded from 17 to 20 — Pentest Checklist, DNS Propagation Checker, and HTTP Request Builder now visible on the home page</li>
+          <li>Command Palette (Ctrl+K) expanded with 8 previously missing tools — all 20 tools now searchable from anywhere on the site</li>
+          <li>Fixed a bare-JS bug where the mobile game hint script was floating outside a &lt;script&gt; tag in the HTML body</li>
+        </ul>
+        <div class="patch-category">Portfolio — Contact Section</div>
+        <ul class="patch-list">
+          <li>Contact section rebuilt with a two-column layout — reach-out links on the left, "What I'm Looking For" on the right</li>
+          <li>Live availability status badge added — animated green pulse dot signals "Open to Opportunities"</li>
+          <li>Location, timezone, and response-time metadata added to the contact card</li>
+          <li>Current study status (SNHU IT Security, CompTIA Security+) surfaced in the contact panel</li>
+        </ul>
+        <div class="patch-category">Site Polish</div>
+        <ul class="patch-list">
+          <li>Game launch button version updated to v10.0</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
@@ -2452,11 +2531,51 @@ nav.scrolled {
     <span class="section-label fade-in">11 — Contact</span>
     <h2 class="section-title fade-in">Let's <em>work together.</em></h2>
     <p class="contact-sub">Open to new projects, consulting, and conversations about AI automation, security, or sales strategy.</p>
-    <div class="contact-links fade-in">
-      <a href="/cdn-cgi/l/email-protection#137167767e63232b2653747e727a7f3d707c7e" class="contact-link">📧 Email Me</a>
-      <a href="tel:9737149974" class="contact-link">📞 973-714-9974</a>
-      <a href="https://www.linkedin.com/in/briantemple1" class="contact-link" target="_blank">🔗 LinkedIn</a>
-      <a href="https://github.com/TempleOfDoom085" class="contact-link" target="_blank" id="githubLink">⌨ GitHub</a>
+
+    <div class="status-badge fade-in">
+      <span class="status-dot"></span>
+      Open to Opportunities
+    </div>
+
+    <div class="contact-grid fade-in">
+
+      <div class="contact-card">
+        <div class="contact-card-label">// Reach Out</div>
+        <div class="contact-info-row">
+          <span class="contact-info-icon">📧</span>
+          <a href="/cdn-cgi/l/email-protection#137167767e63232b2653747e727a7f3d707c7e">Email Brian</a>
+        </div>
+        <div class="contact-info-row">
+          <span class="contact-info-icon">📞</span>
+          <a href="tel:9737149974">973-714-9974</a>
+        </div>
+        <div class="contact-info-row">
+          <span class="contact-info-icon">🔗</span>
+          <a href="https://www.linkedin.com/in/briantemple1" target="_blank">linkedin.com/in/briantemple1</a>
+        </div>
+        <div class="contact-info-row">
+          <span class="contact-info-icon">⌨</span>
+          <a href="https://github.com/TempleOfDoom085" target="_blank" id="githubLink">github.com/TempleOfDoom085</a>
+        </div>
+        <div class="contact-meta">
+          <span>📍 Towaco, NJ &nbsp;·&nbsp; EST (UTC−5)</span>
+          <span>⏱ Usually responds within 24 hours</span>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <div class="contact-card-label">// What I'm Looking For</div>
+        <div class="contact-looking-item">AI automation consulting &amp; deployments</div>
+        <div class="contact-looking-item">Security operations &amp; DFIR roles</div>
+        <div class="contact-looking-item">Voice AI &amp; workflow automation projects</div>
+        <div class="contact-looking-item">Technical sales engineering</div>
+        <div class="contact-looking-item">Remote or NJ / NYC-based positions</div>
+        <div class="contact-meta">
+          <span>🎓 SNHU IT Security — In Progress</span>
+          <span>🛡 CompTIA Security+ — In Progress</span>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
