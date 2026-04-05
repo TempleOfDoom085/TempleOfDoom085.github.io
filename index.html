@@ -491,25 +491,91 @@ body { cursor: none; }
 a, button, [role="button"], input, textarea, select { cursor: none; }
 #cursor {
   position: fixed; pointer-events: none; z-index: 99999;
-  width: 8px; height: 8px;
+  width: 7px; height: 7px;
   transform: translate(-50%, -50%);
-  background: rgba(184,147,58,0.95);
+  background: rgba(184,147,58,0.98);
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(184,147,58,0.5);
-  transition: width 0.12s ease, height 0.12s ease;
+  box-shadow: 0 0 6px rgba(184,147,58,0.8), 0 0 18px rgba(184,147,58,0.3);
+  transition: width 0.08s ease, height 0.08s ease, background 0.15s;
+  will-change: left, top;
+}
+#cursor-ring {
+  position: fixed; pointer-events: none; z-index: 99998;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(184,147,58,0.55);
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease, height 0.2s ease, border-color 0.2s, opacity 0.2s;
+  will-change: left, top;
+  box-shadow: 0 0 10px rgba(184,147,58,0.12) inset;
 }
 body.cursor-hover #cursor {
-  width: 12px; height: 12px;
-  box-shadow: 0 0 14px rgba(184,147,58,0.7);
+  width: 5px; height: 5px;
+  background: rgba(0,212,255,0.95);
+  box-shadow: 0 0 8px rgba(0,212,255,0.9);
+}
+body.cursor-hover #cursor-ring {
+  width: 38px; height: 38px;
+  border-color: rgba(0,212,255,0.6);
+  box-shadow: 0 0 16px rgba(0,212,255,0.08) inset;
+}
+body.cursor-click #cursor {
+  width: 4px; height: 4px;
+  background: #fff;
+  box-shadow: 0 0 12px #fff;
+}
+body.cursor-click #cursor-ring {
+  width: 18px; height: 18px;
+  border-color: rgba(255,255,255,0.9);
+  border-width: 2px;
 }
 @keyframes trailFade {
-  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
-  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
+  0%   { opacity: 0.85; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 18px)) scale(0.08); }
 }
 .cursor-trail {
-  position: fixed; width: 5px; height: 5px; border-radius: 50%;
-  background: var(--gold); pointer-events: none; z-index: 99998;
-  animation: trailFade 0.55s forwards;
+  position: fixed; width: 4px; height: 4px; border-radius: 50%;
+  pointer-events: none; z-index: 99996;
+  animation: trailFade 0.5s forwards;
+}
+/* ── CARD SPECULAR SHINE ── */
+.skill-card, .project-item, .cert-card-full {
+  overflow: hidden;
+}
+.card-shine {
+  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.12) 0%, transparent 65%);
+  opacity: 0; transition: opacity 0.3s;
+  z-index: 2; mix-blend-mode: screen;
+}
+.skill-card:hover .card-shine,
+.project-item:hover .card-shine,
+.cert-card-full:hover .card-shine { opacity: 1; }
+/* ── SECTION SCAN REVEAL ── */
+.scan-heading { position: relative; overflow: hidden; }
+.scan-heading::after {
+  content: ''; position: absolute; bottom: -2px; left: -100%;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon), var(--gold), transparent);
+  transition: none;
+}
+.scan-heading.scanned::after {
+  animation: scanLine 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes scanLine {
+  from { left: -100%; opacity: 1; }
+  to   { left: 100%; opacity: 0.3; }
+}
+.scan-heading .scan-mask {
+  display: block; overflow: hidden;
+}
+.scan-heading .scan-mask span {
+  display: block;
+  transform: translateY(110%);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scan-heading.scanned .scan-mask span {
+  transform: translateY(0);
 }
 
 /* ── YOU DIED OVERLAY ── */
@@ -792,7 +858,7 @@ body.cursor-hover #cursor {
 @media (max-width: 768px) {
   body { cursor: auto; }
   a, button, [role="button"], input, textarea, select { cursor: auto; }
-  #cursor, .cursor-trail { display: none !important; }
+  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
 
   .nav-hamburger { display: flex; }
   nav { padding: 1rem 1.2rem; position: relative; flex-wrap: wrap; }
@@ -848,14 +914,28 @@ nav.scrolled {
 
 /* ── HERO HEADLINE GLITCH ── */
 @keyframes glitch {
-  0%, 88%, 100% { clip-path: none; transform: none; text-shadow: none; }
-  90% { clip-path: polygon(0 18%, 100% 18%, 100% 28%, 0 28%); transform: translateX(-5px); text-shadow: 3px 0 #00d4ff; }
-  92% { clip-path: polygon(0 55%, 100% 55%, 100% 68%, 0 68%); transform: translateX(5px); text-shadow: -3px 0 #ff2255; }
-  94% { clip-path: none; transform: none; text-shadow: none; }
-  96% { clip-path: polygon(0 35%, 100% 35%, 100% 45%, 0 45%); transform: translateX(-3px); text-shadow: 2px 0 rgba(0,212,255,0.6); }
-  98% { clip-path: none; transform: translateX(0); }
+  0%, 88%, 100% { clip-path: none; transform: none; text-shadow: none; filter: none; }
+  90% { clip-path: polygon(0 18%, 100% 18%, 100% 28%, 0 28%); transform: translateX(-6px) skewX(-1deg); text-shadow: 4px 0 #00d4ff, -2px 0 rgba(255,34,85,0.4); }
+  91% { clip-path: none; transform: none; filter: brightness(1.4); }
+  92% { clip-path: polygon(0 55%, 100% 55%, 100% 68%, 0 68%); transform: translateX(6px) skewX(1deg); text-shadow: -4px 0 #ff2255, 2px 0 rgba(0,212,255,0.4); }
+  93% { clip-path: none; transform: none; filter: none; }
+  94% { clip-path: polygon(0 0, 100% 0, 100% 8%, 0 8%); transform: translateX(-3px); text-shadow: 2px 0 rgba(0,212,255,0.8); }
+  95% { clip-path: none; transform: none; }
+  96% { clip-path: polygon(0 35%, 100% 35%, 100% 45%, 0 45%); transform: translateX(-4px) skewX(-0.5deg); text-shadow: 3px 0 rgba(0,212,255,0.7); }
+  97% { clip-path: polygon(0 70%, 100% 70%, 100% 85%, 0 85%); transform: translateX(3px); text-shadow: -2px 0 rgba(255,34,85,0.5); }
+  98% { clip-path: none; transform: translateX(0); filter: none; }
 }
-.hero-left .hero-name { animation: glitch 7s ease-in-out infinite; }
+@keyframes glitchLoad {
+  0%   { clip-path: none; transform: none; opacity: 0; }
+  5%   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translateX(-8px); opacity: 1; text-shadow: 6px 0 #00d4ff; filter: brightness(2); }
+  10%  { transform: translateX(8px); text-shadow: -6px 0 #ff2255; }
+  15%  { transform: translateX(-4px); clip-path: polygon(0 20%, 100% 20%, 100% 60%, 0 60%); }
+  20%  { transform: translateX(0); clip-path: none; text-shadow: none; filter: brightness(1); }
+  100% { clip-path: none; transform: none; opacity: 1; text-shadow: none; filter: none; }
+}
+.hero-left .hero-name {
+  animation: glitchLoad 1.2s ease forwards, glitch 8s ease-in-out 1.5s infinite;
+}
 
 /* ── HERO CANVAS PANELS: let canvas bleed through slightly ── */
 .hero-left { background: rgba(15,22,35,0.88); }
@@ -886,6 +966,8 @@ nav.scrolled {
 
 <!-- CUSTOM CURSOR -->
 <div id="cursor"></div>
+<div id="cursor-ring"></div>
+<canvas id="clickCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:99997;width:100%;height:100%"></canvas>
 
 <!-- YOU DIED OVERLAY -->
 <div id="you-died-overlay">
@@ -2784,16 +2866,18 @@ window.addEventListener('scroll', () => {
   else navEl.classList.remove('scrolled');
 }, { passive: true });
 
-// ── PARTICLE NETWORK CANVAS (full-hero, mouse-interactive) ──
+// ── v12.0: PARTICLE NETWORK — mouse-interactive, click pulse ──
 (function() {
   const canvas = document.getElementById('heroBgCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const COUNT = 90;
-  const MAX_DIST = 150;
-  const MOUSE_REPEL = 100;
+  const COUNT    = 95;
+  const MAX_DIST = 155;
+  const ATTRACT  = 160;  // attraction outer radius
+  const REPEL    = 75;   // repulsion inner radius
   let W, H, particles = [];
   let mx = -999, my = -999;
+  const pulses = [];  // click shockwaves on canvas
 
   function resize() {
     W = canvas.width  = canvas.offsetWidth;
@@ -2803,55 +2887,87 @@ window.addEventListener('scroll', () => {
   function Particle() {
     this.x  = Math.random() * W;
     this.y  = Math.random() * H;
-    this.vx = (Math.random() - 0.5) * 0.55;
-    this.vy = (Math.random() - 0.5) * 0.55;
-    this.r  = 1.2 + Math.random() * 1.8;
-    // Color varies: left half = cyan, right half = gold
-    this.isCyan = Math.random() > 0.3;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.r  = 1.1 + Math.random() * 1.9;
+    this.phase = Math.random() * Math.PI * 2;  // pulse phase for glow
   }
 
   function init() { resize(); particles = Array.from({ length: COUNT }, () => new Particle()); }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    const t = performance.now() * 0.001;
+
+    // --- Pulses (click shockwaves) ---
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const pu = pulses[i];
+      pu.r  += 5;
+      pu.op -= 0.022;
+      if (pu.op <= 0) { pulses.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(pu.x, pu.y, pu.r, 0, Math.PI * 2);
+      const blend = pu.x / W;
+      const rr = Math.round(blend * 184);
+      const gg = Math.round(blend * 147 + (1-blend) * 212);
+      const bb = Math.round((1-blend) * 255 + blend * 58);
+      ctx.strokeStyle = `rgba(${rr},${gg},${bb},${pu.op * 0.8})`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
 
     particles.forEach(p => {
-      // Mouse repulsion
       const ddx = p.x - mx, ddy = p.y - my;
-      const dd = Math.sqrt(ddx*ddx + ddy*ddy);
-      if (dd < MOUSE_REPEL && dd > 0) {
-        const force = (MOUSE_REPEL - dd) / MOUSE_REPEL * 0.8;
+      const dd  = Math.sqrt(ddx*ddx + ddy*ddy);
+
+      if (dd < REPEL && dd > 0) {
+        // Hard repulsion close to cursor
+        const force = (REPEL - dd) / REPEL * 1.1;
         p.vx += (ddx / dd) * force;
         p.vy += (ddy / dd) * force;
+      } else if (dd < ATTRACT && dd > 0) {
+        // Gentle attraction in outer ring
+        const force = ((dd - REPEL) / (ATTRACT - REPEL)) * 0.04;
+        p.vx -= (ddx / dd) * force;
+        p.vy -= (ddy / dd) * force;
       }
-      // Damping
-      p.vx *= 0.98; p.vy *= 0.98;
-      // Clamp speed
-      const spd = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
-      if (spd > 1.8) { p.vx = (p.vx/spd)*1.8; p.vy = (p.vy/spd)*1.8; }
 
+      // Pulse shockwave forces
+      pulses.forEach(pu => {
+        const pdx = p.x - pu.x, pdy = p.y - pu.y;
+        const pd  = Math.sqrt(pdx*pdx + pdy*pdy);
+        const waveFront = pu.r;
+        if (Math.abs(pd - waveFront) < 30 && pd > 0) {
+          const wf = (1 - Math.abs(pd - waveFront) / 30) * pu.op * 1.4;
+          p.vx += (pdx / pd) * wf;
+          p.vy += (pdy / pd) * wf;
+        }
+      });
+
+      p.vx *= 0.975; p.vy *= 0.975;
+      const spd = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+      if (spd > 2.2) { p.vx = (p.vx/spd)*2.2; p.vy = (p.vy/spd)*2.2; }
       p.x += p.vx; p.y += p.vy;
       if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
       if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
     });
 
-    // Lines between nearby particles
+    // --- Connection lines ---
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const d  = Math.sqrt(dx*dx + dy*dy);
         if (d < MAX_DIST) {
-          const alpha = 0.25 * (1 - d / MAX_DIST);
-          // Blend color based on position in hero (left=cyan, right=gold)
-          const midX = (particles[i].x + particles[j].x) / 2;
+          const alpha = 0.28 * (1 - d / MAX_DIST);
+          const midX  = (particles[i].x + particles[j].x) / 2;
           const blend = midX / W;
           const r = Math.round(blend * 184);
           const g = Math.round(blend * 147 + (1-blend) * 212);
           const b = Math.round((1-blend) * 255 + blend * 58);
           ctx.beginPath();
           ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
-          ctx.lineWidth = 0.7;
+          ctx.lineWidth = 0.8;
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
           ctx.stroke();
@@ -2859,22 +2975,33 @@ window.addEventListener('scroll', () => {
       }
     }
 
-    // Dots
+    // --- Dots with mouse-proximity glow ---
     particles.forEach(p => {
-      const blend = p.x / W;
+      const blend    = p.x / W;
       const r = Math.round(blend * 212);
       const g = Math.round(blend * 168 + (1-blend) * 220);
       const b = Math.round((1-blend) * 255 + blend * 76);
+      const ddx  = p.x - mx, ddy = p.y - my;
+      const dd   = Math.sqrt(ddx*ddx + ddy*ddy);
+      const glow = dd < 90 ? 1 - dd / 90 : 0;
+      const radius  = p.r + glow * 2.5;
+      const opacity = 0.65 + glow * 0.35;
+      // Glow halo for nearby particles
+      if (glow > 0.1) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r},${g},${b},${glow * 0.12})`;
+        ctx.fill();
+      }
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.7)`;
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r},${g},${b},${opacity})`;
       ctx.fill();
     });
 
     requestAnimationFrame(draw);
   }
 
-  // Mouse tracking relative to canvas
   const hero = canvas.parentElement;
   hero.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
@@ -2882,16 +3009,24 @@ window.addEventListener('scroll', () => {
     my = e.clientY - rect.top;
   }, { passive: true });
   hero.addEventListener('mouseleave', () => { mx = -999; my = -999; }, { passive: true });
+  hero.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    pulses.push({ x: e.clientX - rect.left, y: e.clientY - rect.top, r: 10, op: 0.9 });
+  });
 
   window.addEventListener('resize', resize, { passive: true });
   init();
   draw();
 })();
 
-// ── v9.0: 3D CARD HOVER ──
+// ── v12.0: 3D CARD TILT + SPECULAR ──
 (function() {
-  const MAX_TILT = 12;
+  const MAX_TILT = 14;
   document.querySelectorAll('.skill-card, .project-item, .cert-card-full').forEach(card => {
+    // Ensure position:relative for shine overlay
+    const cs = getComputedStyle(card);
+    if (cs.position === 'static') card.style.position = 'relative';
+
     card.addEventListener('mousemove', e => {
       const rect = card.getBoundingClientRect();
       const cx = rect.left + rect.width  / 2;
@@ -2900,12 +3035,26 @@ window.addEventListener('scroll', () => {
       const dy = (e.clientY - cy) / (rect.height / 2);
       const rotX = -dy * MAX_TILT;
       const rotY =  dx * MAX_TILT;
-      card.classList.add('tilting');
-      card.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-3px)`;
+
+      card.style.transform = `perspective(700px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-4px) scale(1.01)`;
+      card.style.boxShadow = `0 ${16 + Math.abs(rotX)}px ${40 + Math.abs(rotY) * 2}px rgba(0,0,0,0.45), 0 0 0 1px rgba(184,147,58,0.12)`;
+      card.style.transition = 'box-shadow 0.1s';
+
+      // Specular highlight follows surface normal
+      const shine = card.querySelector('.card-shine');
+      if (shine) {
+        const sx = ((dx + 1) / 2) * 100; // 0–100%
+        const sy = ((dy + 1) / 2) * 100;
+        shine.style.background = `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.13) 0%, transparent 60%)`;
+      }
     });
+
     card.addEventListener('mouseleave', () => {
-      card.classList.remove('tilting');
       card.style.transform = '';
+      card.style.boxShadow = '';
+      card.style.transition = 'transform 0.5s cubic-bezier(0.23,1,0.32,1), box-shadow 0.5s ease';
+      const shine = card.querySelector('.card-shine');
+      if (shine) shine.style.background = '';
     });
   });
 })();
@@ -2918,35 +3067,197 @@ const staggerObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.observe(el));
 
-// ── v9.1: CUSTOM CURSOR ──
+// ── v12.0: CINEMATIC ENGINE ──
 (function() {
+  'use strict';
   const cursor = document.getElementById('cursor');
-  let mx = -100, my = -100;
-  let trailThrottle = 0;
+  const ring   = document.getElementById('cursor-ring');
+  const clickCv = document.getElementById('clickCanvas');
+  if (!cursor || !ring) return;
 
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
+  // --- State ---
+  let mx = -200, my = -200;      // true mouse position
+  let rx = -200, ry = -200;      // ring lerp position
+  let trailT = 0;
+  let isHover = false;
+  let magTarget = null;           // magnetic button target
+  const ripples = [];             // active click ripples
+
+  // --- Click canvas setup ---
+  const cctx = clickCv ? clickCv.getContext('2d') : null;
+  function resizeCC() {
+    if (!clickCv) return;
+    clickCv.width  = window.innerWidth;
+    clickCv.height = window.innerHeight;
+  }
+  resizeCC();
+  window.addEventListener('resize', resizeCC, { passive: true });
+
+  // --- Lerp ring loop ---
+  function loop() {
+    // Magnetic pull: if near a button, snap cursor toward it
+    let tx = mx, ty = my;
+    if (magTarget) {
+      const r = magTarget.getBoundingClientRect();
+      const bcx = r.left + r.width / 2;
+      const bcy = r.top  + r.height / 2;
+      const dx = bcx - mx, dy = bcy - my;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 72 && dist > 0) {
+        const pull = 0.28 * (1 - dist / 72);
+        tx = mx + dx * pull;
+        ty = my + dy * pull;
+      }
+    }
+
+    // Dot follows exact mouse (no lerp on dot for precision feel)
     cursor.style.left = mx + 'px';
     cursor.style.top  = my + 'px';
-    // Throttle trail particles to every ~40ms
+
+    // Ring lerps behind — elastic drag
+    rx += (tx - rx) * 0.10;
+    ry += (ty - ry) * 0.10;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+
+    // --- Draw ripples on click canvas ---
+    if (cctx && ripples.length) {
+      cctx.clearRect(0, 0, clickCv.width, clickCv.height);
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.r  += 6;
+        rp.op -= 0.028;
+        if (rp.op <= 0) { ripples.splice(i, 1); continue; }
+        // Outer ring
+        cctx.beginPath();
+        cctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+        cctx.strokeStyle = `rgba(${rp.c},${rp.op * 0.7})`;
+        cctx.lineWidth = 1.5;
+        cctx.stroke();
+        // Inner ring (smaller, faster)
+        cctx.beginPath();
+        cctx.arc(rp.x, rp.y, rp.r * 0.55, 0, Math.PI * 2);
+        cctx.strokeStyle = `rgba(255,255,255,${rp.op * 0.25})`;
+        cctx.lineWidth = 0.8;
+        cctx.stroke();
+      }
+    } else if (cctx && !ripples.length) {
+      cctx.clearRect(0, 0, clickCv.width, clickCv.height);
+    }
+
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // --- Mouse move ---
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+
+    // Trail sparks (throttled)
     const now = Date.now();
-    if (now - trailThrottle > 40) {
-      trailThrottle = now;
+    if (now - trailT > 38) {
+      trailT = now;
       const p = document.createElement('div');
       p.className = 'cursor-trail';
-      p.style.left = mx + 'px';
-      p.style.top  = my + 'px';
+      // Color gradient based on x position (left=cyan, right=gold)
+      const blend = mx / window.innerWidth;
+      const r = Math.round(blend * 184 + (1 - blend) * 0);
+      const g = Math.round(blend * 147 + (1 - blend) * 212);
+      const b = Math.round(blend * 58  + (1 - blend) * 255);
+      p.style.cssText = `left:${mx}px;top:${my}px;background:rgb(${r},${g},${b})`;
       document.body.appendChild(p);
-      setTimeout(() => p.remove(), 560);
+      setTimeout(() => p.remove(), 520);
+    }
+  }, { passive: true });
+
+  // --- Click burst ---
+  document.addEventListener('click', e => {
+    // Brief dot shrink
+    document.body.classList.add('cursor-click');
+    setTimeout(() => document.body.classList.remove('cursor-click'), 120);
+
+    // Ripple on canvas
+    const isGold = (e.clientX / window.innerWidth) > 0.5;
+    ripples.push({
+      x: e.clientX, y: e.clientY,
+      r: 4, op: 1,
+      c: isGold ? '184,147,58' : '0,212,255'
+    });
+    // Second ripple (offset timing)
+    setTimeout(() => {
+      ripples.push({ x: e.clientX, y: e.clientY, r: 2, op: 0.6, c: '245,242,236' });
+    }, 80);
+
+    // DOM particle burst (6 sparks)
+    for (let i = 0; i < 6; i++) {
+      const spark = document.createElement('div');
+      const angle = (i / 6) * Math.PI * 2;
+      const dist  = 22 + Math.random() * 18;
+      const ex = e.clientX + Math.cos(angle) * dist;
+      const ey = e.clientY + Math.sin(angle) * dist;
+      spark.style.cssText = `position:fixed;pointer-events:none;z-index:99997;
+        width:3px;height:3px;border-radius:50%;
+        background:${i % 2 === 0 ? 'rgba(184,147,58,0.9)' : 'rgba(0,212,255,0.9)'};
+        left:${e.clientX}px;top:${e.clientY}px;
+        transition:left 0.35s cubic-bezier(0,0.8,0.4,1),top 0.35s cubic-bezier(0,0.8,0.4,1),opacity 0.35s ease`;
+      document.body.appendChild(spark);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        spark.style.left    = ex + 'px';
+        spark.style.top     = ey + 'px';
+        spark.style.opacity = '0';
+      }));
+      setTimeout(() => spark.remove(), 380);
     }
   });
 
-  document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; });
-  document.addEventListener('mouseenter', () => { cursor.style.opacity = '1'; });
-
+  // --- Hover state + magnetic ---
   document.querySelectorAll('a, button, [role="button"]').forEach(el => {
-    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    el.addEventListener('mouseenter', () => {
+      document.body.classList.add('cursor-hover');
+      magTarget = el;
+      isHover = true;
+    });
+    el.addEventListener('mouseleave', () => {
+      document.body.classList.remove('cursor-hover');
+      magTarget = null;
+      isHover = false;
+    });
+  });
+
+  // --- Cursor visibility ---
+  document.addEventListener('mouseleave',  () => { cursor.style.opacity = '0'; ring.style.opacity = '0'; });
+  document.addEventListener('mouseenter',  () => { cursor.style.opacity = '1'; ring.style.opacity = '1'; });
+})();
+
+// ── v12.0: CARD SPECULAR SHINE ──
+(function() {
+  document.querySelectorAll('.skill-card, .project-item, .cert-card-full').forEach(card => {
+    // Inject shine overlay
+    const shine = document.createElement('div');
+    shine.className = 'card-shine';
+    card.appendChild(shine);
+  });
+})();
+
+// ── v12.0: SECTION SCAN REVEAL ──
+(function() {
+  const scanObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !e.target.classList.contains('scanned')) {
+        e.target.classList.add('scanned');
+        scanObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+
+  document.querySelectorAll('.section-heading').forEach(h => {
+    h.classList.add('scan-heading');
+    // Wrap text content in mask > span
+    const text = h.textContent;
+    // Keep any existing child spans (like .neon-text)
+    const inner = h.innerHTML;
+    h.innerHTML = `<span class="scan-mask"><span>${inner}</span></span>`;
+    scanObs.observe(h);
   });
 })();
 
