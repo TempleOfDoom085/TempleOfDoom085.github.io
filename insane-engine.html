@@ -25,9 +25,14 @@
   #vignette{position:fixed;inset:0;pointer-events:none;z-index:10;
     background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.7) 100%)}
 
-  /* Scanlines */
-  #scanlines{position:fixed;inset:0;pointer-events:none;z-index:11;opacity:0.04;
+  /* Scanlines — barely visible */
+  #scanlines{position:fixed;inset:0;pointer-events:none;z-index:11;opacity:0.015;
     background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.4) 2px,rgba(0,0,0,0.4) 4px)}
+  /* Deep space nebula gradient */
+  #nebula{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 120% 100% at 30% 60%,rgba(0,60,120,0.35) 0%,transparent 55%),
+               radial-gradient(ellipse 80% 80% at 75% 30%,rgba(60,0,100,0.30) 0%,transparent 50%),
+               radial-gradient(ellipse 60% 90% at 50% 50%,rgba(0,20,60,0.50) 0%,transparent 70%);}
 </style>
 </head>
 <body>
@@ -36,6 +41,7 @@
   <div class="nt"><span>CINEMATIC ENGINE</span><span>GPU VISUAL DEMO</span></div>
 </nav>
 <canvas id="c"></canvas>
+<div id="nebula"></div>
 <div id="vignette"></div>
 <div id="scanlines"></div>
 <div class="cl tl">ENERGY CORE ACTIVE<br>PARTICLE FIELD: ONLINE</div>
@@ -93,25 +99,25 @@ const fluidMat = new THREE.ShaderMaterial({
       if(active > 0.5){
         // Velocity-based splash: stronger when mouse moves fast
         vec2 vel = mouse - prevMouse;
-        float speed = length(vel) * 12.0;
+        float speed = length(vel) * 14.0;
         float d = distance(uv, mouse);
-        float splash = exp(-d * 14.0) * min(speed, 0.4) * 0.6;
-        // Color shifts with mouse position for variety
+        float splash = exp(-d * 7.0) * min(speed, 0.8) * 1.2;
+        // Color shifts with mouse position for vivid nebula palette
         vec3 inkColor = vec3(
-          0.01 + mouse.x * 0.04,
-          0.06 + (1.0 - mouse.y) * 0.08,
-          0.18 + mouse.y * 0.12
+          0.02 + mouse.x * 0.18,
+          0.12 + (1.0 - mouse.y) * 0.22,
+          0.35 + mouse.y * 0.40
         );
         col += inkColor * splash;
 
         // Directional smear — drags ink along movement
         vec2 smearUV = uv - vel * 0.03;
         vec3 smear = texture2D(prev, smearUV).rgb;
-        col = mix(col, smear, 0.15);
+        col = mix(col, smear, 0.18);
       }
 
-      col *= 0.965;
-      col = min(col, vec3(0.35));
+      col *= 0.972;
+      col = min(col, vec3(0.65));
       gl_FragColor = vec4(col, 1.0);
     }
   `,
@@ -129,7 +135,10 @@ const bgMat = new THREE.ShaderMaterial({
     varying vec2 v;
     void main(){
       vec3 c = texture2D(tex, v).rgb;
-      gl_FragColor = vec4(min(c * 0.7, vec3(0.2)), 1.0);
+      // Boost fluid visibility — soft tonemapping
+      vec3 boosted = c * 2.2;
+      boosted = boosted / (1.0 + boosted); // Reinhard tonemap keeps it from blowing out
+      gl_FragColor = vec4(boosted, 1.0);
     }
   `,
   depthWrite: false,
@@ -203,8 +212,8 @@ scene.add(rimLight);
 // Layer 1: outer shell — dark metallic frame
 const shellGeo = new THREE.IcosahedronGeometry(0.72, 1); // Low-poly = faceted look
 const shellMat = new THREE.MeshStandardMaterial({
-  color: 0x0a1520, emissive: 0x001822, emissiveIntensity: 0.15,
-  roughness: 0.15, metalness: 0.95, wireframe: true, transparent: true, opacity: 0.35,
+  color: 0x0a2535, emissive: 0x003040, emissiveIntensity: 0.4,
+  roughness: 0.15, metalness: 0.95, wireframe: true, transparent: true, opacity: 0.18,
 });
 const shell = new THREE.Mesh(shellGeo, shellMat);
 scene.add(shell);
@@ -237,13 +246,13 @@ const coreMat = new THREE.ShaderMaterial({
       float fresnel = pow(1.0 - abs(dot(vNorm, viewDir)), 3.0);
       float pulse = 0.7 + sin(time*2.5)*0.12 + sin(time*6.0)*0.05;
 
-      // Core color: cyan center, blue-purple fresnel edges
-      vec3 center = vec3(0.0, 0.55, 0.65) * pulse;
-      vec3 edge   = vec3(0.15, 0.1, 0.55) * fresnel * 1.5;
+      // Core color: bright cyan center, vivid blue-purple fresnel edges
+      vec3 center = vec3(0.05, 0.72, 0.90) * pulse;
+      vec3 edge   = vec3(0.25, 0.15, 0.80) * fresnel * 2.2;
       vec3 col = center + edge;
 
-      // Hard cap: maximum output is 0.7 in any channel
-      col = min(col, vec3(0.7));
+      // Slightly higher cap so bloom picks it up
+      col = min(col, vec3(0.95));
 
       gl_FragColor = vec4(col, 0.92);
     }`,
@@ -270,8 +279,8 @@ const glowMat = new THREE.ShaderMaterial({
       vec3 view = normalize(camPos - vWorld);
       float rim = pow(1.0 - abs(dot(vNorm, view)), 4.0);
       float flicker = 0.8 + sin(time*3.0 + vWorld.y*8.0)*0.15;
-      vec3 col = vec3(0.0, 0.25, 0.4) * rim * flicker;
-      col = min(col, vec3(0.25));
+      vec3 col = vec3(0.0, 0.45, 0.75) * rim * flicker;
+      col = min(col, vec3(0.55));
       gl_FragColor = vec4(col, rim * 0.5);
     }`,
   transparent:true, depthWrite:false, side:THREE.BackSide, blending:THREE.AdditiveBlending,
@@ -283,9 +292,9 @@ scene.add(glowShell);
 // ORBIT RINGS — 3 tilted at different angles
 // ═══════════════════════════════════════════════════════════════════════════════
 const rings = [];
-[[1.2, 0x006688, 0.25, 0.6, 0, 0],
- [1.55, 0x553388, 0.18, 0, 0.8, 0.4],
- [1.9, 0x884422, 0.12, -0.5, 0.3, 0.7]].forEach(([r, col, op, rx, ry, rz]) => {
+[[1.2, 0x00aacc, 0.35, 0.6, 0, 0],
+ [1.55, 0x7733cc, 0.28, 0, 0.8, 0.4],
+ [1.9, 0xcc6622, 0.20, -0.5, 0.3, 0.7]].forEach(([r, col, op, rx, ry, rz]) => {
   const ring = makeOrbitRing(r, col, op);
   ring.rotation.set(rx, ry, rz);
   scene.add(ring);
@@ -332,7 +341,7 @@ for(let t=0;t<8;t++){
   }
   const geo = new THREE.BufferGeometry().setFromPoints(pts);
   const mat = new THREE.LineBasicMaterial({
-    color: 0x004466, transparent:true, opacity:0.08, depthWrite:false,
+    color: 0x00ccff, transparent:true, opacity:0.16, depthWrite:false,
   });
   const line = new THREE.Line(geo, mat);
   scene.add(line);
@@ -344,7 +353,7 @@ for(let t=0;t<8;t++){
 // ═══════════════════════════════════════════════════════════════════════════════
 const composer = new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene, camera));
-const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W,H), 0.5, 0.6, 0.55);
+const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W,H), 0.85, 0.7, 0.38);
 composer.addPass(bloom);
 
 // ═══════════════════════════════════════════════════════════════════════════════

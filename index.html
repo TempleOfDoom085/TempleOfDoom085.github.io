@@ -3850,33 +3850,39 @@ document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.obs
   window.addEventListener('resize', resize, { passive: true });
 
   const ribbons = [
-    { freq: 0.0055, amp: 0.22, phase: 0.0, speed: 0.28, c: '0,212,255',  a: 0.055, w: 100 },
-    { freq: 0.0038, amp: 0.18, phase: 1.8, speed: 0.20, c: '184,147,58', a: 0.048, w: 85  },
-    { freq: 0.0072, amp: 0.14, phase: 3.4, speed: 0.36, c: '0,255,136',  a: 0.038, w: 70  },
-    { freq: 0.0048, amp: 0.20, phase: 5.1, speed: 0.24, c: '0,180,255',  a: 0.032, w: 90  },
-    { freq: 0.0060, amp: 0.12, phase: 2.2, speed: 0.32, c: '100,40,220', a: 0.025, w: 65  },
+    { freq: 0.0055, amp: 0.18, phase: 0.0, speed: 0.28, c: '0,212,255',  a: 0.10, w: 140 },
+    { freq: 0.0038, amp: 0.15, phase: 1.8, speed: 0.20, c: '184,147,58', a: 0.08, w: 120 },
+    { freq: 0.0048, amp: 0.16, phase: 5.1, speed: 0.24, c: '0,180,255',  a: 0.07, w: 100 },
   ];
+
+  function waveY(r, x, t) {
+    return Math.sin(x * r.freq + t * r.speed) * H * r.amp * 0.55
+         + Math.sin(x * r.freq * 1.8 + t * r.speed * 1.4) * H * r.amp * 0.28
+         + Math.sin(x * r.freq * 0.5 + t * r.speed * 0.7 + r.phase) * H * r.amp * 0.18;
+  }
 
   function draw(ts) {
     const t = ts * 0.001;
     ctx.clearRect(0, 0, W, H);
     ribbons.forEach((r, i) => {
-      const yBase = H * (0.2 + i * 0.16) + Math.sin(t * r.speed * 0.5 + r.phase) * H * 0.08;
+      const yBase = H * (0.25 + i * 0.25) + Math.sin(t * r.speed * 0.5 + r.phase) * H * 0.06;
+      // Build top edge (wave + halfWidth), then bottom edge reversed (wave - halfWidth)
+      const pts = [];
+      for (let x = 0; x <= W; x += 4) pts.push([x, yBase + waveY(r, x, t)]);
+      ctx.beginPath();
+      // Top edge: wave + w/2
+      pts.forEach(([x, y], idx) => {
+        if (idx === 0) ctx.moveTo(x, y - r.w / 2); else ctx.lineTo(x, y - r.w / 2);
+      });
+      // Bottom edge: wave - w/2 reversed
+      for (let j = pts.length - 1; j >= 0; j--) {
+        ctx.lineTo(pts[j][0], pts[j][1] + r.w / 2);
+      }
+      ctx.closePath();
       const grad = ctx.createLinearGradient(0, yBase - r.w, 0, yBase + r.w);
       grad.addColorStop(0,   `rgba(${r.c},0)`);
       grad.addColorStop(0.5, `rgba(${r.c},${r.a})`);
       grad.addColorStop(1,   `rgba(${r.c},0)`);
-      ctx.beginPath();
-      let first = true;
-      for (let x = 0; x <= W; x += 4) {
-        const y = yBase
-                + Math.sin(x * r.freq + t * r.speed) * H * r.amp * 0.55
-                + Math.sin(x * r.freq * 1.8 + t * r.speed * 1.4) * H * r.amp * 0.28
-                + Math.sin(x * r.freq * 0.5 + t * r.speed * 0.7 + r.phase) * H * r.amp * 0.18;
-        if (first) { ctx.moveTo(x, 0); first = false; }
-        ctx.lineTo(x, y);
-      }
-      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
       ctx.fillStyle = grad;
       ctx.fill();
     });
