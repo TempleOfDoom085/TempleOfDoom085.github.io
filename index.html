@@ -1050,6 +1050,376 @@ section::after {
   pointer-events: none;
 }
 section { position: relative; }
+
+/* ── PARTICLE TEXT CANVAS ── */
+#particleTextCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+#detonateLabel {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: #b8933a;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  white-space: nowrap;
+  text-shadow: 0 0 8px rgba(184,147,58,0.5);
+}
+#detonateLabel.visible { opacity: 1; }
+
+/* ── CYBERPUNK AUDIO WIDGET ── */
+#audioWidget {
+  position: fixed;
+  bottom: 5rem;
+  right: 1.5rem;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.38em 0.85em;
+  background: var(--ink, #0e0e0e);
+  border: 1px solid var(--gold, #b8933a);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  color: var(--gold, #b8933a);
+  user-select: none;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+#audioWidget:hover {
+  box-shadow: 0 0 10px rgba(184,147,58,0.4);
+  background: rgba(184,147,58,0.08);
+}
+#audioWidget.playing {
+  border-color: var(--neon, #00d4ff);
+  color: var(--neon, #00d4ff);
+  box-shadow: 0 0 12px rgba(0,212,255,0.3);
+}
+.audio-eq {
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+}
+#audioWidget.playing .audio-eq { display: flex; }
+.audio-eq span {
+  display: block;
+  width: 2px;
+  background: var(--neon, #00d4ff);
+  border-radius: 1px;
+  animation: eqPulse 0.6s ease-in-out infinite alternate;
+}
+.audio-eq span:nth-child(1) { animation-duration: 0.5s; animation-delay: 0s; }
+.audio-eq span:nth-child(2) { animation-duration: 0.7s; animation-delay: 0.15s; }
+.audio-eq span:nth-child(3) { animation-duration: 0.45s; animation-delay: 0.3s; }
+@keyframes eqPulse {
+  from { height: 2px; }
+  to   { height: 10px; }
+}
+
+/* ── VISITOR RECON WIDGET ─────────────────────────────── */
+#visitorRecon {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 9000;
+  width: 280px;
+  background: rgba(13,17,23,0.97);
+  border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: rgba(245,242,236,0.85);
+  box-shadow: 0 0 24px rgba(0,212,255,0.08), 0 4px 32px rgba(0,0,0,0.7);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+#visitorRecon.vr-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+#visitorRecon.vr-hidden {
+  display: none;
+}
+.vr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 5px;
+  border-bottom: 1px solid rgba(0,212,255,0.15);
+  color: #00d4ff;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.vr-header-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(0,212,255,0.6);
+}
+.vr-close {
+  background: none;
+  border: none;
+  color: rgba(245,242,236,0.35);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.65rem;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.vr-close:hover { color: #00d4ff; }
+.vr-body {
+  padding: 6px 8px 8px;
+}
+.vr-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.vr-status-label {
+  color: rgba(245,242,236,0.4);
+  text-transform: uppercase;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+.vr-status-val {
+  color: #00ff88;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+@keyframes vr-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00ff88; }
+  50% { opacity: 0.35; box-shadow: none; }
+}
+.vr-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff88;
+  animation: vr-pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.vr-divider {
+  border: none;
+  border-top: 1px solid rgba(0,212,255,0.12);
+  margin: 5px 0;
+}
+.vr-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.vr-row {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  line-height: 1.55;
+}
+.vr-row.vr-show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.vr-row-label {
+  color: rgba(245,242,236,0.4);
+  text-transform: uppercase;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+.vr-row-val {
+  color: rgba(245,242,236,0.85);
+  word-break: break-all;
+}
+.vr-row-val.vr-cyan { color: #00d4ff; }
+.vr-boot {
+  color: rgba(0,212,255,0.5);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  padding: 1px 0;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vr-boot.vr-show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.vr-footer {
+  border-top: 1px solid rgba(0,212,255,0.12);
+  margin-top: 5px;
+  padding-top: 5px;
+  color: rgba(245,242,236,0.45);
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vr-footer.vr-show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.vr-warn { color: rgba(255,200,0,0.8); }
+@media (max-width: 600px) {
+  #visitorRecon {
+    width: 240px;
+    bottom: 0;
+    left: 0;
+    border-radius: 0 4px 0 0;
+    font-size: 0.54rem;
+    transform: translateY(100%);
+    transition: opacity 0.4s ease, transform 0.5s ease;
+  }
+  #visitorRecon.vr-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* ── END VISITOR RECON ────────────────────────────────── */
+
+/* ── CODE RAIN OVERLAY ── */
+#rain-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  width: 100%;
+  height: 100%;
+}
+#rain-indicator {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  font-family: var(--mono, 'DM Mono', monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: #00d4ff;
+  background: rgba(14,14,14,0.75);
+  border: 1px solid rgba(0,212,255,0.35);
+  padding: 0.3rem 0.6rem;
+  border-radius: 3px;
+  cursor: pointer;
+  display: none;
+  user-select: none;
+  transition: border-color 0.2s;
+}
+#rain-indicator:hover { border-color: #00d4ff; }
+
+/* ── STEALTH MODE ── */
+html.stealth-mode,
+html.stealth-mode body {
+  background: #fff !important;
+  transition: all 0.3s ease !important;
+}
+html.stealth-mode body,
+html.stealth-mode section,
+html.stealth-mode .section,
+html.stealth-mode main,
+html.stealth-mode footer,
+html.stealth-mode header {
+  background: #fff !important;
+  color: #333 !important;
+}
+html.stealth-mode h1,
+html.stealth-mode h2,
+html.stealth-mode h3,
+html.stealth-mode h4,
+html.stealth-mode h5,
+html.stealth-mode h6,
+html.stealth-mode p,
+html.stealth-mode li,
+html.stealth-mode span,
+html.stealth-mode a,
+html.stealth-mode label,
+html.stealth-mode div {
+  color: #333 !important;
+}
+html.stealth-mode .neon,
+html.stealth-mode .gold,
+html.stealth-mode [class*="neon"],
+html.stealth-mode [class*="gold"] {
+  color: #555 !important;
+}
+html.stealth-mode nav,
+html.stealth-mode #site-nav,
+html.stealth-mode .nav,
+html.stealth-mode .navbar {
+  background: #f5f5f5 !important;
+  border-color: #ddd !important;
+}
+html.stealth-mode #auroraCanvas,
+html.stealth-mode #heroBgCanvas,
+html.stealth-mode #particleTextCanvas {
+  opacity: 0 !important;
+}
+html.stealth-mode .hero,
+html.stealth-mode [class*="hero"] {
+  background: #f0f0f0 !important;
+}
+html.stealth-mode [class*="panel"],
+html.stealth-mode [class*="card"],
+html.stealth-mode [class*="box"] {
+  background: #f0f0f0 !important;
+  border-color: #ccc !important;
+}
+html.stealth-mode #cursor,
+html.stealth-mode #cursor-ring {
+  display: none !important;
+}
+html.stealth-mode body {
+  cursor: auto !important;
+}
+html.stealth-mode #rain-canvas,
+html.stealth-mode #rain-indicator {
+  display: none !important;
+}
+
+#stealth-flash {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  font-family: var(--mono, 'DM Mono', monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: #00d4ff;
+  background: rgba(14,14,14,0.85);
+  border: 1px solid rgba(0,212,255,0.4);
+  padding: 0.35rem 0.9rem;
+  border-radius: 3px;
+  pointer-events: none;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
 </style>
 </head>
 <body>
@@ -1073,6 +1443,8 @@ section { position: relative; }
       <span class="cmd-hint"><kbd>↑↓</kbd> select</span>
       <span class="cmd-hint"><kbd>Esc</kbd> close</span>
       <span class="cmd-hint"><kbd>Ctrl+K</kbd> toggle</span>
+      <span class="cmd-hint"><kbd>R</kbd> rain</span>
+      <span class="cmd-hint"><kbd>Alt+S</kbd> stealth</span>
     </div>
   </div>
 </div>
@@ -1081,6 +1453,13 @@ section { position: relative; }
 <div id="cursor"></div>
 <div id="cursor-ring"></div>
 <canvas id="clickCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:99997;width:100%;height:100%"></canvas>
+
+<!-- CODE RAIN OVERLAY -->
+<canvas id="rain-canvas"></canvas>
+<div id="rain-indicator" onclick="toggleRain()">◈ RAIN</div>
+
+<!-- STEALTH FLASH INDICATOR -->
+<div id="stealth-flash">STEALTH MODE</div>
 
 <!-- YOU DIED OVERLAY -->
 <div id="you-died-overlay">
@@ -1143,6 +1522,8 @@ section { position: relative; }
 <!-- HERO -->
 <div class="hero">
   <canvas id="heroBgCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <canvas id="particleTextCanvas"></canvas>
+  <div id="detonateLabel">&#10022; CLICK TO DETONATE</div>
   <div class="hero-left" style="position:relative;z-index:1">
     <span class="tag tag-cyber">// AI Automation & Cybersecurity</span>
     <h1 class="hero-name">Building<br><em id="hero-cycle-left">intelligent</em><br>systems.</h1>
@@ -1720,6 +2101,18 @@ section { position: relative; }
           <span class="ptag" style="border-color:rgba(255,34,68,0.3);color:rgba(255,68,85,0.7)">Buffer Overflow</span>
         </div>
         <span class="tool-card-cta">Launch Visualizer →</span>
+      </a>
+
+      <a href="pentest-sim.html" class="cyber-tool-card" style="border-color:rgba(0,255,136,0.12)" onmouseenter="this.style.borderColor='rgba(0,255,136,0.35)';this.style.boxShadow='0 0 40px rgba(0,255,136,0.08),inset 0 0 30px rgba(0,255,136,0.03)'" onmouseleave="this.style.borderColor='rgba(0,255,136,0.12)';this.style.boxShadow=''">
+        <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(0,255,136,0.07) 0%,transparent 70%)"></div>
+        <div class="tool-card-icon" style="color:rgba(0,255,136,0.85);text-shadow:0 0 14px rgba(0,255,136,0.6)">🎯</div>
+        <div class="tool-card-label">interactive</div>
+        <div class="tool-card-name">Pentest Simulator</div>
+        <div class="tool-card-desc">Watch a full penetration test unfold in real-time — recon, exploit, root shell, report.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">interactive</span>
+        </div>
+        <span class="tool-card-cta">Launch Simulator →</span>
       </a>
 
     </div>
@@ -2904,6 +3297,10 @@ section { position: relative; }
 </section>
 
 <button class="cmd-palette-trigger" onclick="openCmdPalette()" title="Ctrl+K — Quick navigation" style="position:fixed;bottom:4.5rem;right:2rem;z-index:90;">⌘K</button>
+<button id="audioWidget" aria-label="Toggle ambient audio" title="Toggle cyberpunk ambient audio">
+  <span id="audioWidgetLabel">♫ AUDIO OFF</span>
+  <span class="audio-eq" aria-hidden="true"><span></span><span></span><span></span></span>
+</button>
 <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <footer>&copy; 2026 Brian Temple &nbsp;·&nbsp; Towaco, New Jersey &nbsp;·&nbsp; Deus Vult</footer>
@@ -3777,6 +4174,7 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     { icon: '🏁', name: 'Password Cracker Race', desc: 'Brute force vs dictionary vs rainbow table', tag: 'tool', href: 'tools/cracker.html' },
     { icon: '📡', name: 'Live Hacker Feed',desc: 'Real-time GitHub activity console',    tag: 'live',  href: 'hacker-feed.html' },
     { icon: '⚔',  name: 'Attack Visualizer',desc: 'SQL injection, XSS, buffer overflow', tag: 'edu',  href: 'attack-viz.html' },
+    { icon: '🎯', name: 'Pentest Simulator', desc: 'Watch a full pentest unfold — recon, exploit, root shell, report.', tag: 'interactive', href: 'pentest-sim.html' },
     { icon: '💻', name: 'Open Terminal',   desc: 'Interactive portfolio shell',          tag: 'action', action: 'terminal' },
   ];
   let selected = 0, filtered = [...ITEMS];
@@ -3945,6 +4343,991 @@ if (window.innerWidth <= 768) {
       })(i);
     }
   });
+})();
+</script>
+
+<script>
+/* ── PARTICLE TEXT EXPLOSION ──────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('particleTextCanvas');
+  var ctx    = canvas.getContext('2d');
+  var hero   = document.querySelector('.hero');
+  var label  = document.getElementById('detonateLabel');
+
+  var COLORS = [
+    'rgba(0,212,255,0.9)',
+    'rgba(184,147,58,0.9)',
+    'rgba(255,255,255,0.85)'
+  ];
+
+  var TARGET_COUNT = 2000;
+  var DAMPING      = 0.85;
+  var SPRING       = 0.12;
+
+  var particles = [];
+  var exploded  = false;
+  var settled   = false;
+  var settleTimer = null;
+
+  /* ── size canvas to hero ── */
+  function resize() {
+    var r = hero.getBoundingClientRect();
+    canvas.width  = r.width;
+    canvas.height = r.height;
+    buildParticles();
+  }
+
+  /* ── sample text into pixel positions ── */
+  function sampleText() {
+    var isMobile = window.innerWidth < 768;
+    var offscreen = document.createElement('canvas');
+    offscreen.width  = canvas.width;
+    offscreen.height = canvas.height;
+    var oc = offscreen.getContext('2d');
+
+    var fontSize = isMobile ? 60 : 120;
+    var font = 'bold ' + fontSize + 'px "Cormorant Garamond", serif';
+    oc.font = font;
+    oc.fillStyle = '#ffffff';
+    oc.textAlign = 'center';
+    oc.textBaseline = 'middle';
+
+    if (isMobile) {
+      var lineH = fontSize * 1.15;
+      var cy = offscreen.height / 2;
+      oc.fillText('BRIAN',  offscreen.width / 2, cy - lineH / 2);
+      oc.fillText('TEMPLE', offscreen.width / 2, cy + lineH / 2);
+    } else {
+      oc.fillText('BRIAN TEMPLE', offscreen.width / 2, offscreen.height / 2);
+    }
+
+    var data = oc.getImageData(0, 0, offscreen.width, offscreen.height).data;
+    var pts  = [];
+    var step = Math.max(1, Math.floor(Math.sqrt((offscreen.width * offscreen.height) / (TARGET_COUNT * 4))));
+
+    for (var y = 0; y < offscreen.height; y += step) {
+      for (var x = 0; x < offscreen.width; x += step) {
+        var idx = (y * offscreen.width + x) * 4;
+        if (data[idx + 3] > 128) {
+          pts.push({ x: x, y: y });
+        }
+      }
+    }
+
+    /* shuffle and trim */
+    for (var i = pts.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp;
+    }
+    if (pts.length > TARGET_COUNT) pts.length = TARGET_COUNT;
+    return pts;
+  }
+
+  /* ── build / rebuild particle array ── */
+  function buildParticles() {
+    settled = false;
+    label.classList.remove('visible');
+    if (settleTimer) clearTimeout(settleTimer);
+
+    var targets = sampleText();
+    particles = [];
+
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      particles.push({
+        targetX: t.x,
+        targetY: t.y,
+        x:  Math.random() * canvas.width,
+        y:  Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6,
+        size:  1.5 + Math.random() * 1.5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)]
+      });
+    }
+
+    scheduleSettle();
+  }
+
+  function scheduleSettle() {
+    settleTimer = setTimeout(function () {
+      settled = true;
+      label.classList.add('visible');
+    }, 2200);
+  }
+
+  /* ── explode on hero click ── */
+  function handleHeroClick() {
+    exploded = true;
+    settled  = false;
+    label.classList.remove('visible');
+    if (settleTimer) clearTimeout(settleTimer);
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      var sign = function (v) { return v >= 0 ? 1 : -1; };
+      p.vx = (8 + Math.random() * 12) * (Math.random() < 0.5 ? 1 : -1);
+      p.vy = (8 + Math.random() * 12) * (Math.random() < 0.5 ? 1 : -1);
+    }
+
+    scheduleSettle();
+  }
+
+  /* ── animation loop ── */
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+
+      /* spring toward target */
+      var ax = (p.targetX - p.x) * SPRING;
+      var ay = (p.targetY - p.y) * SPRING;
+
+      p.vx = (p.vx + ax) * DAMPING;
+      p.vy = (p.vy + ay) * DAMPING;
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  /* ── hero click listener (pointer-events:none on canvas, so attach to hero) ── */
+  hero.addEventListener('click', handleHeroClick);
+
+  /* ── init ── */
+  window.addEventListener('resize', resize);
+  resize();
+  tick();
+})();
+
+/* ── CYBERPUNK AMBIENT SOUND ENGINE ── */
+(function () {
+  'use strict';
+
+  var ctx = null;
+  var masterGain = null;
+  var compressor = null;
+  var isPlaying = false;
+
+  /* ── Oscillator handles for cleanup ── */
+  var nodes = [];
+
+  /* ── Pad frequency sets: Am7 and Dm7 ── */
+  var PAD_AM7 = [110, 130.81, 164.81, 196.00];
+  var PAD_DM7 = [146.83, 174.61, 220.00, 261.63];
+  var padOscillators = [];
+  var currentPadFreqs = PAD_AM7.slice();
+  var targetPadFreqs  = PAD_AM7.slice();
+  var padTransitioning = false;
+
+  /* ── Arpeggio notes (Am pentatonic) ── */
+  var ARP_NOTES = [220, 246.94, 261.63, 293.66, 329.63];
+  var arpIndex  = 0;
+  var arpOrder  = [0, 1, 2, 3, 4];
+
+  /* ── Rhythm scheduling ── */
+  var BEAT       = 1.2;           /* seconds per beat */
+  var HAT_TIMES  = [0, 0.18, 0.42, 0.60, 0.78, 1.02]; /* within beat */
+  var schedAhead = 0.12;          /* lookahead window */
+  var schedInt   = 80;            /* ms scheduler interval */
+  var nextBeat   = 0;
+  var schedTimer = null;
+
+  /* ── Widget DOM ── */
+  var widget = document.getElementById('audioWidget');
+  var label  = document.getElementById('audioWidgetLabel');
+
+  /* ────────────────────────────────────────────────
+     REVERB: procedurally generated impulse response
+  ──────────────────────────────────────────────── */
+  function makeReverb(audioCtx) {
+    var sampleRate = audioCtx.sampleRate;
+    var length     = sampleRate * 2.4;   /* 2.4 s tail */
+    var decay      = 2.0;
+    var ir         = audioCtx.createBuffer(2, length, sampleRate);
+
+    for (var ch = 0; ch < 2; ch++) {
+      var data = ir.getChannelData(ch);
+      for (var i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) *
+                  Math.pow(1 - i / length, decay);
+      }
+    }
+
+    var conv = audioCtx.createConvolver();
+    conv.buffer = ir;
+    return conv;
+  }
+
+  /* ────────────────────────────────────────────────
+     BASS DRONE — two detuned sines + LFO
+  ──────────────────────────────────────────────── */
+  function startBassDrone() {
+    var baseFreq = 55;
+    var bassGain = ctx.createGain();
+    bassGain.gain.value = 0.55;
+    bassGain.connect(compressor);
+
+    [0, 0.7].forEach(function (detune) {
+      var osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = baseFreq + detune;
+
+      /* LFO on frequency ±2 Hz at 0.15 Hz */
+      var lfo = ctx.createOscillator();
+      var lfoGain = ctx.createGain();
+      lfo.frequency.value = 0.15;
+      lfoGain.gain.value  = 2;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+
+      osc.connect(bassGain);
+      osc.start();
+      nodes.push(osc, lfo, lfoGain, bassGain);
+    });
+  }
+
+  /* ────────────────────────────────────────────────
+     PAD CHORD — Am7 sawtooth + LP filter + reverb
+  ──────────────────────────────────────────────── */
+  function startPadChord(reverb) {
+    var padMix = ctx.createGain();
+    padMix.gain.value = 0.18;
+
+    var filter = ctx.createBiquadFilter();
+    filter.type            = 'lowpass';
+    filter.frequency.value = 800;
+    filter.Q.value         = 0.8;
+
+    padMix.connect(filter);
+    filter.connect(reverb);
+    reverb.connect(compressor);
+
+    padOscillators = [];
+    currentPadFreqs.forEach(function (freq) {
+      var osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      osc.connect(padMix);
+      osc.start();
+      padOscillators.push(osc);
+      nodes.push(osc);
+    });
+
+    nodes.push(padMix, filter);
+  }
+
+  /* ────────────────────────────────────────────────
+     PAD CHORD TRANSITION (scroll-based)
+  ──────────────────────────────────────────────── */
+  function transitionPad(newFreqs) {
+    if (padTransitioning) return;
+    padTransitioning = true;
+    var rampTime = 2.5;
+    padOscillators.forEach(function (osc, i) {
+      osc.frequency.linearRampToValueAtTime(
+        newFreqs[i], ctx.currentTime + rampTime
+      );
+    });
+    currentPadFreqs = newFreqs.slice();
+    setTimeout(function () { padTransitioning = false; }, rampTime * 1000 + 100);
+  }
+
+  /* ────────────────────────────────────────────────
+     HI-HAT — filtered noise burst
+  ──────────────────────────────────────────────── */
+  function scheduleHat(time) {
+    var bufSize = ctx.sampleRate * 0.05;
+    var buf     = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    var data    = buf.getChannelData(0);
+    for (var i = 0; i < bufSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    var src    = ctx.createBufferSource();
+    src.buffer = buf;
+
+    var hp = ctx.createBiquadFilter();
+    hp.type            = 'highpass';
+    hp.frequency.value = 7000;
+
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0, time);
+    env.gain.linearRampToValueAtTime(0.28, time + 0.005);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+
+    src.connect(hp);
+    hp.connect(env);
+    env.connect(compressor);
+    src.start(time);
+    src.stop(time + 0.06);
+  }
+
+  /* ────────────────────────────────────────────────
+     KICK — sine sweep 80 → 20 Hz over 0.15 s
+  ──────────────────────────────────────────────── */
+  function scheduleKick(time) {
+    var osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, time);
+    osc.frequency.exponentialRampToValueAtTime(20, time + 0.15);
+
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(1.2, time);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
+
+    osc.connect(env);
+    env.connect(compressor);
+    osc.start(time);
+    osc.stop(time + 0.22);
+  }
+
+  /* ────────────────────────────────────────────────
+     ARPEGGIO — triangle, Am pentatonic, random order
+  ──────────────────────────────────────────────── */
+  function scheduleArp(time) {
+    /* advance order index; reshuffle each octave */
+    if (arpIndex >= arpOrder.length) {
+      arpIndex = 0;
+      /* Fisher-Yates shuffle */
+      for (var i = arpOrder.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arpOrder[i]; arpOrder[i] = arpOrder[j]; arpOrder[j] = tmp;
+      }
+    }
+    var noteFreq = ARP_NOTES[arpOrder[arpIndex]];
+    arpIndex++;
+
+    var osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = noteFreq;
+
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0, time);
+    env.gain.linearRampToValueAtTime(0.22, time + 0.025);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.38);
+
+    osc.connect(env);
+    env.connect(compressor);
+    osc.start(time);
+    osc.stop(time + 0.42);
+  }
+
+  /* ────────────────────────────────────────────────
+     SCHEDULER — look-ahead loop
+  ──────────────────────────────────────────────── */
+  function scheduler() {
+    var lookAhead = ctx.currentTime + schedAhead;
+    while (nextBeat < lookAhead) {
+      /* kick on every beat */
+      scheduleKick(nextBeat);
+
+      /* hi-hats */
+      HAT_TIMES.forEach(function (offset) {
+        scheduleHat(nextBeat + offset);
+      });
+
+      /* arpeggio — one note per beat */
+      scheduleArp(nextBeat);
+
+      nextBeat += BEAT;
+    }
+  }
+
+  /* ────────────────────────────────────────────────
+     AUDIO ENGINE — start / stop
+  ──────────────────────────────────────────────── */
+  function startEngine() {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -18;
+    compressor.knee.value      = 8;
+    compressor.ratio.value     = 4;
+    compressor.attack.value    = 0.003;
+    compressor.release.value   = 0.25;
+
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0.18;
+
+    compressor.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    var reverb = makeReverb(ctx);
+
+    startBassDrone();
+    startPadChord(reverb);
+
+    nextBeat = ctx.currentTime + 0.05;
+    scheduler();
+    schedTimer = setInterval(scheduler, schedInt);
+
+    /* ── apply scroll state immediately if needed ── */
+    checkScroll();
+  }
+
+  function stopEngine() {
+    clearInterval(schedTimer);
+    schedTimer = null;
+    nodes.forEach(function (n) {
+      try { n.stop && n.stop(); } catch (e) { /* already stopped */ }
+      try { n.disconnect(); }      catch (e) { /* already disconnected */ }
+    });
+    nodes = [];
+    padOscillators = [];
+    if (ctx) { ctx.close(); ctx = null; }
+    currentPadFreqs = PAD_AM7.slice();
+    targetPadFreqs  = PAD_AM7.slice();
+    padTransitioning = false;
+    arpIndex = 0;
+    arpOrder = [0, 1, 2, 3, 4];
+  }
+
+  /* ────────────────────────────────────────────────
+     WIDGET — toggle
+  ──────────────────────────────────────────────── */
+  function updateWidget(playing) {
+    if (playing) {
+      widget.classList.add('playing');
+      label.textContent = '◼ AUDIO ON';
+    } else {
+      widget.classList.remove('playing');
+      label.textContent = '♫ AUDIO OFF';
+    }
+  }
+
+  widget.addEventListener('click', function () {
+    isPlaying = !isPlaying;
+    if (isPlaying) {
+      startEngine();
+    } else {
+      stopEngine();
+    }
+    updateWidget(isPlaying);
+  });
+
+  /* ────────────────────────────────────────────────
+     SCROLL — transition Am7 ↔ Dm7 past 50% page
+  ──────────────────────────────────────────────── */
+  var lastChord = 'am7';
+
+  function checkScroll() {
+    if (!isPlaying || !padOscillators.length) return;
+    var scrollPct = window.scrollY /
+      (document.documentElement.scrollHeight - window.innerHeight || 1);
+    var chord = scrollPct > 0.5 ? 'dm7' : 'am7';
+    if (chord !== lastChord) {
+      lastChord = chord;
+      transitionPad(chord === 'dm7' ? PAD_DM7 : PAD_AM7);
+    }
+  }
+
+  window.addEventListener('scroll', checkScroll, { passive: true });
+
+})();
+
+// ── CODE RAIN OVERLAY (press R) ──
+(function () {
+  var canvas = document.getElementById('rain-canvas');
+  var indicator = document.getElementById('rain-indicator');
+  var ctx = canvas.getContext('2d');
+  var active = false;
+  var fadeTimer = null;
+
+  var SYMBOLS = [
+    '0x', '//', '&&', '>>', '{}', '||',
+    'ssh', 'fn', '0', '1', '!', '@', '#', '$', '%', '^', '&',
+    '(', ')', '[', ']', '\\', ';', ':', "'", '"', '<', '>', '?', '/',
+    'sudo', 'rm', 'ls', 'cd', 'ps'
+  ];
+
+  var COL_W = 16;
+  var cols = [];
+  var lastFrame = 0;
+  var rafId = null;
+  var running = false;
+
+  function randomSym() {
+    return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+  }
+
+  function initCols() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var count = Math.ceil(canvas.width / COL_W);
+    cols = [];
+    for (var i = 0; i < count; i++) {
+      cols.push({
+        x: i * COL_W,
+        y: Math.random() * canvas.height,
+        speed: 2 + Math.random() * 4,
+        trail: 12 + Math.floor(Math.random() * 9), // 12-20
+        chars: []
+      });
+    }
+  }
+
+  function lerpColor(t) {
+    // t=0 => cyan #00d4ff, t=1 => gold #b8933a
+    var r = Math.round(0   + t * (0xb8 - 0));
+    var g = Math.round(0xd4 + t * (0x93 - 0xd4));
+    var b = Math.round(0xff + t * (0x3a - 0xff));
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  function drawFrame() {
+    var W = canvas.width, H = canvas.height;
+    ctx.fillStyle = 'rgba(14,14,14,0.18)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.font = '14px "Share Tech Mono","DM Mono",monospace';
+    ctx.textBaseline = 'top';
+
+    for (var i = 0; i < cols.length; i++) {
+      var col = cols[i];
+      var t = W > 1 ? col.x / (W - 1) : 0; // 0..1 for color lerp
+      var baseColor = lerpColor(t);
+
+      // push new char at head
+      col.chars.unshift(randomSym());
+      if (col.chars.length > col.trail) col.chars.length = col.trail;
+
+      for (var j = 0; j < col.chars.length; j++) {
+        var alpha = j === 0 ? 1.0 : Math.max(0.05, 1.0 - (j / col.trail) * 0.95);
+        var yPos = col.y - j * COL_W;
+        if (yPos < -COL_W || yPos > H + COL_W) continue;
+
+        if (j === 0) {
+          ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+        } else {
+          // parse baseColor channels for rgba
+          ctx.fillStyle = baseColor.replace('rgb(', 'rgba(').replace(')', ',' + alpha + ')');
+        }
+        ctx.fillText(col.chars[j], col.x, yPos);
+      }
+
+      col.y += col.speed;
+      if (col.y - col.trail * COL_W > H) {
+        col.y = -COL_W;
+        col.chars = [];
+        col.speed = 2 + Math.random() * 4;
+      }
+    }
+  }
+
+  function loop(ts) {
+    if (!running) return;
+    if (ts - lastFrame >= 33) {
+      lastFrame = ts;
+      drawFrame();
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function startRain() {
+    initCols();
+    running = true;
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function stopRainLoop() {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  window.toggleRain = function () {
+    if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+
+    if (!active) {
+      active = true;
+      canvas.style.display = 'block';
+      indicator.style.display = 'block';
+      startRain();
+      // force reflow then fade in
+      requestAnimationFrame(function () {
+        canvas.style.opacity = '1';
+      });
+    } else {
+      active = false;
+      canvas.style.opacity = '0';
+      indicator.style.display = 'none';
+      fadeTimer = setTimeout(function () {
+        canvas.style.display = 'none';
+        stopRainLoop();
+        // clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fadeTimer = null;
+      }, 400);
+    }
+  };
+
+  window.addEventListener('resize', function () {
+    if (active) { initCols(); }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    // Don't fire if typing in input/textarea
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'r' || e.key === 'R') {
+      window.toggleRain();
+    }
+  });
+})();
+
+// ── STEALTH MODE (Alt+S) ──
+(function () {
+  var ORIGINAL_TITLE = 'Brian Temple \u2014 AI & Cybersecurity';
+  var STEALTH_TITLE  = 'LinkedIn - Professional Portfolio';
+  var stealth = false;
+  var flashEl = document.getElementById('stealth-flash');
+  var flashTimer = null;
+
+  function showFlash(msg) {
+    if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
+    flashEl.textContent = msg;
+    flashEl.style.display = 'block';
+    // force reflow
+    void flashEl.offsetWidth;
+    flashEl.style.opacity = '1';
+    flashTimer = setTimeout(function () {
+      flashEl.style.opacity = '0';
+      setTimeout(function () {
+        flashEl.style.display = 'none';
+        flashTimer = null;
+      }, 200);
+    }, 500);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      stealth = !stealth;
+      if (stealth) {
+        document.documentElement.classList.add('stealth-mode');
+        document.title = STEALTH_TITLE;
+        showFlash('STEALTH MODE');
+      } else {
+        document.documentElement.classList.remove('stealth-mode');
+        document.title = ORIGINAL_TITLE;
+        showFlash('STEALTH OFF');
+      }
+    }
+  });
+})();
+</script>
+
+<!-- VISITOR RECON WIDGET -->
+<div id="visitorRecon" role="complementary" aria-label="Visitor Intelligence Panel">
+  <div class="vr-header">
+    <div class="vr-header-left">&#x2500; VISITOR INTEL</div>
+    <button class="vr-close" id="vrClose" aria-label="Close">[&times;]</button>
+  </div>
+  <div class="vr-body">
+    <div class="vr-status-row">
+      <span class="vr-status-label">STATUS</span>
+      <span class="vr-status-val"><span class="vr-dot"></span>AUTHORIZED</span>
+    </div>
+    <div class="vr-divider"></div>
+    <div class="vr-rows" id="vrRows"></div>
+    <div class="vr-footer" id="vrFooter">
+      <span class="vr-warn">&#x26A0;</span>
+      <span>FINGERPRINT CAPTURED</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'vrDismissed';
+  if (sessionStorage.getItem(STORAGE_KEY)) {
+    var _p = document.getElementById('visitorRecon');
+    if (_p) _p.classList.add('vr-hidden');
+    return;
+  }
+
+  /* ── helpers ── */
+  function parseUA(ua) {
+    var browser = 'Unknown', version = '';
+    var bMap = [
+      [/Edg\/([\d.]+)/, 'Edge'],
+      [/OPR\/([\d.]+)/, 'Opera'],
+      [/Chrome\/([\d.]+)/, 'Chrome'],
+      [/Firefox\/([\d.]+)/, 'Firefox'],
+      [/Safari\/([\d.]+)/, 'Safari'],
+      [/Trident.*rv:([\d.]+)/, 'IE']
+    ];
+    for (var i = 0; i < bMap.length; i++) {
+      var m = ua.match(bMap[i][0]);
+      if (m) { browser = bMap[i][1]; version = m[1].split('.')[0]; break; }
+    }
+    return browser + (version ? ' ' + version : '');
+  }
+
+  function parseOS(ua) {
+    if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
+    if (/Android/.test(ua)) return 'Android';
+    if (/Win/.test(ua)) return 'Windows';
+    if (/Mac/.test(ua)) return 'macOS';
+    if (/Linux/.test(ua)) return 'Linux';
+    return 'Unknown';
+  }
+
+  function canvasHash() {
+    try {
+      var c = document.createElement('canvas');
+      c.width = 200; c.height = 40;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, 200, 40);
+      ctx.fillStyle = '#00d4ff';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('TempleRecon\u2620', 4, 26);
+      ctx.strokeStyle = '#b8933a';
+      ctx.beginPath();
+      ctx.arc(170, 20, 14, 0, Math.PI * 2);
+      ctx.stroke();
+      var raw = c.toDataURL();
+      var hash = 0;
+      for (var j = 0; j < raw.length; j++) {
+        hash = ((hash << 5) - hash + raw.charCodeAt(j)) | 0;
+      }
+      return (hash >>> 0).toString(16).slice(0, 8).padStart(8, '0');
+    } catch (e) { return 'n/a'; }
+  }
+
+  /* ── collect local data immediately ── */
+  var ua = navigator.userAgent;
+  var localData = {
+    browser: parseUA(ua) + ' / ' + parseOS(ua),
+    screen: screen.width + '\u00D7' + screen.height + ' @ ' + (window.devicePixelRatio || 1) + 'x DPR',
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    canvas: canvasHash(),
+    lang: navigator.language || 'Unknown',
+    net: (navigator.connection && navigator.connection.effectiveType)
+      ? navigator.connection.effectiveType.toUpperCase()
+      : 'UNKNOWN',
+    plugins: (navigator.plugins ? navigator.plugins.length : 0) + ' detected'
+  };
+
+  /* ── DOM refs ── */
+  var panel    = document.getElementById('visitorRecon');
+  var rowsEl   = document.getElementById('vrRows');
+  var footerEl = document.getElementById('vrFooter');
+
+  function makeBoot(text) {
+    var d = document.createElement('div');
+    d.className = 'vr-boot';
+    d.textContent = '> ' + text;
+    return d;
+  }
+
+  function makeRow(label, val, cyan) {
+    var wrap = document.createElement('div');
+    wrap.className = 'vr-row';
+    var l = document.createElement('span');
+    l.className = 'vr-row-label';
+    l.textContent = label;
+    var v = document.createElement('span');
+    v.className = 'vr-row-val' + (cyan ? ' vr-cyan' : '');
+    v.textContent = val;
+    wrap.appendChild(l);
+    wrap.appendChild(v);
+    return { el: wrap, valEl: v };
+  }
+
+  /* boot lines */
+  var boot1 = makeBoot('INITIALIZING VISITOR ANALYSIS...');
+  var boot2 = makeBoot('SCANNING BROWSER ENVIRONMENT...');
+  rowsEl.appendChild(boot1);
+  rowsEl.appendChild(boot2);
+
+  /* data rows — IP/location filled after fetch */
+  var rowIP    = makeRow('IP',       '\u2014', true);
+  var rowLoc   = makeRow('LOCATION', '\u2014', false);
+  var rowBrows = makeRow('BROWSER',  localData.browser,  false);
+  var rowScr   = makeRow('SCREEN',   localData.screen,   false);
+  var rowTZ    = makeRow('TZ',       localData.tz,       false);
+  var rowCvs   = makeRow('CANVAS',   localData.canvas,   false);
+  var rowNet   = makeRow('NETWORK',  localData.net,      false);
+  var rowLang  = makeRow('LANG',     localData.lang,     false);
+  var rowPlug  = makeRow('PLUGINS',  localData.plugins,  false);
+
+  var dataRows = [rowIP, rowLoc, rowBrows, rowScr, rowTZ, rowCvs, rowNet, rowLang, rowPlug];
+  dataRows.forEach(function (r) { rowsEl.appendChild(r.el); });
+
+  /* ── stagger reveal ── */
+  function revealItem(el, delay) {
+    setTimeout(function () { el.classList.add('vr-show'); }, delay);
+  }
+
+  function runSequence() {
+    var t = 0;
+    revealItem(boot1, t);  t += 400;
+    revealItem(boot2, t);  t += 400;
+    dataRows.forEach(function (r) { revealItem(r.el, t); t += 120; });
+    setTimeout(function () { footerEl.classList.add('vr-show'); }, t);
+  }
+
+  /* ── close button ── */
+  document.getElementById('vrClose').addEventListener('click', function () {
+    panel.classList.remove('vr-visible');
+    panel.addEventListener('transitionend', function handler() {
+      panel.removeEventListener('transitionend', handler);
+      panel.classList.add('vr-hidden');
+    });
+    sessionStorage.setItem(STORAGE_KEY, '1');
+  });
+
+  /* ── fetch IP/location, then show panel 2 s after load ── */
+  setTimeout(function () {
+    fetch('https://ipapi.co/json/')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        rowIP.valEl.textContent  = d.ip || 'Unknown';
+        var city    = d.city || '';
+        var country = d.country_name || '';
+        var loc = [city, country].filter(Boolean).join(', ');
+        if (d.org) loc += ' \u00B7 ' + d.org.replace(/^AS\d+\s*/, '');
+        rowLoc.valEl.textContent = loc || 'Unknown';
+      })
+      .catch(function () {
+        rowIP.valEl.textContent  = 'Unavailable';
+        rowLoc.valEl.textContent = 'Unavailable';
+      })
+      .finally(function () {
+        panel.classList.add('vr-visible');
+        runSequence();
+      });
+  }, 2000);
+
+})();
+
+// ── v13.0: NAVIER-STOKES FLUID SIMULATION ──
+(function() {
+  'use strict';
+  if (window.matchMedia('(max-width:768px)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const hero = document.querySelector('.hero');
+  if (!hero) return;
+  const N = 92;
+  const canvas = document.createElement('canvas');
+  canvas.id = 'fluidCanvas';
+  canvas.width = N; canvas.height = N;
+  canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;mix-blend-mode:screen;opacity:0.82;image-rendering:auto;';
+  const ptc = hero.querySelector('#particleTextCanvas');
+  if (ptc) hero.insertBefore(canvas, ptc); else hero.appendChild(canvas);
+  const ctx2 = canvas.getContext('2d');
+  const img2 = ctx2.createImageData(N, N);
+  const px2  = img2.data;
+  const SZ = (N+2)*(N+2);
+  let vx=new Float32Array(SZ),vy=new Float32Array(SZ);
+  let vx0=new Float32Array(SZ),vy0=new Float32Array(SZ);
+  let fr=new Float32Array(SZ),fg=new Float32Array(SZ),fb=new Float32Array(SZ);
+  let fr0=new Float32Array(SZ),fg0=new Float32Array(SZ),fb0=new Float32Array(SZ);
+  const ITER=6, VISC=1e-6, DIFF=2.5e-5, DT=0.022;
+  function IX(x,y){return x+(N+2)*y;}
+  function bnd(bm,f){
+    for(let i=1;i<=N;i++){
+      f[IX(0,i)]=bm===1?-f[IX(1,i)]:f[IX(1,i)]; f[IX(N+1,i)]=bm===1?-f[IX(N,i)]:f[IX(N,i)];
+      f[IX(i,0)]=bm===2?-f[IX(i,1)]:f[IX(i,1)]; f[IX(i,N+1)]=bm===2?-f[IX(i,N)]:f[IX(i,N)];
+    }
+    f[IX(0,0)]=.5*(f[IX(1,0)]+f[IX(0,1)]); f[IX(0,N+1)]=.5*(f[IX(1,N+1)]+f[IX(0,N)]);
+    f[IX(N+1,0)]=.5*(f[IX(N,0)]+f[IX(N+1,1)]); f[IX(N+1,N+1)]=.5*(f[IX(N,N+1)]+f[IX(N+1,N)]);
+  }
+  function lsolve(bm,x,x0,a,c){
+    const inv=1/c;
+    for(let k=0;k<ITER;k++){
+      for(let j=1;j<=N;j++)for(let i=1;i<=N;i++)
+        x[IX(i,j)]=(x0[IX(i,j)]+a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))*inv;
+      bnd(bm,x);
+    }
+  }
+  function dif(bm,x,x0,d){const a=DT*d*N*N;lsolve(bm,x,x0,a,1+4*a);}
+  function adv(bm,d,d0,u,v){
+    const dt0=DT*N;
+    for(let j=1;j<=N;j++){
+      for(let i=1;i<=N;i++){
+        let x=i-dt0*u[IX(i,j)],y=j-dt0*v[IX(i,j)];
+        x=Math.max(.5,Math.min(N+.5,x)); y=Math.max(.5,Math.min(N+.5,y));
+        const i0=x|0,i1=i0+1,j0=y|0,j1=j0+1,s1=x-i0,s0=1-s1,t1=y-j0,t0=1-t1;
+        d[IX(i,j)]=s0*(t0*d0[IX(i0,j0)]+t1*d0[IX(i0,j1)])+s1*(t0*d0[IX(i1,j0)]+t1*d0[IX(i1,j1)]);
+      }
+    }
+    bnd(bm,d);
+  }
+  function proj(u,v,p,div){
+    const h=1/N;
+    for(let j=1;j<=N;j++)for(let i=1;i<=N;i++){div[IX(i,j)]=-.5*h*(u[IX(i+1,j)]-u[IX(i-1,j)]+v[IX(i,j+1)]-v[IX(i,j-1)]);p[IX(i,j)]=0;}
+    bnd(0,div);bnd(0,p);lsolve(0,p,div,1,4);
+    for(let j=1;j<=N;j++)for(let i=1;i<=N;i++){u[IX(i,j)]-=.5*N*(p[IX(i+1,j)]-p[IX(i-1,j)]);v[IX(i,j)]-=.5*N*(p[IX(i,j+1)]-p[IX(i,j-1)]);}
+    bnd(1,u);bnd(2,v);
+  }
+  function vstep(){dif(1,vx0,vx,VISC);dif(2,vy0,vy,VISC);proj(vx0,vy0,vx,vy);adv(1,vx,vx0,vx0,vy0);adv(2,vy,vy0,vx0,vy0);proj(vx,vy,vx0,vy0);}
+  function dstep(ch,ch0){dif(0,ch0,ch,DIFF);adv(0,ch,ch0,vx,vy);}
+  function addF(xi,yi,fvx,fvy,r,g,b,rad){
+    for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){
+      const x=(xi+dx)|0,y=(yi+dy)|0;
+      if(x<1||x>N||y<1||y>N)continue;
+      const w=Math.exp(-(dx*dx+dy*dy)/(rad*rad));
+      vx[IX(x,y)]+=fvx*w;vy[IX(x,y)]+=fvy*w;fr[IX(x,y)]+=r*w;fg[IX(x,y)]+=g*w;fb[IX(x,y)]+=b*w;
+    }
+  }
+  function fcol(nx){const bl=Math.min(1,nx/N);return[bl*.72,(1-bl)*.83+bl*.58,(1-bl)*1.0+bl*.23];}
+  function render2(){
+    for(let j=1;j<=N;j++)for(let i=1;i<=N;i++){
+      const p=((j-1)*N+(i-1))*4;
+      px2[p]=Math.min(255,fr[IX(i,j)]*900);px2[p+1]=Math.min(255,fg[IX(i,j)]*900);
+      px2[p+2]=Math.min(255,fb[IX(i,j)]*900);px2[p+3]=Math.min(255,(fr[IX(i,j)]+fg[IX(i,j)]+fb[IX(i,j)])*500);
+    }
+    ctx2.putImageData(img2,0,0);
+  }
+  let pmx=-1,pmy=-1;
+  const hr2={x:0,y:0,w:1,h:1};
+  function uhr(){const r=hero.getBoundingClientRect();hr2.x=r.left;hr2.y=r.top;hr2.w=r.width;hr2.h=r.height;}
+  uhr(); window.addEventListener('resize',uhr,{passive:true});
+  hero.addEventListener('mousemove',e=>{
+    uhr();const mx=((e.clientX-hr2.x)/hr2.w)*N,my=((e.clientY-hr2.y)/hr2.h)*N;
+    const dvx=(mx-pmx)*2.5,dvy=(my-pmy)*2.5;
+    const xi=mx|0,yi=my|0;
+    if(xi>=1&&xi<=N&&yi>=1&&yi<=N){const[cr,cg,cb]=fcol(mx);addF(xi,yi,dvx,dvy,cr*.28,cg*.28,cb*.28,3);}
+    pmx=mx;pmy=my;
+  },{passive:true});
+  hero.addEventListener('click',e=>{
+    uhr();const mx=((e.clientX-hr2.x)/hr2.w)*N,my=((e.clientY-hr2.y)/hr2.h)*N;
+    const xi=mx|0,yi=my|0;const[cr,cg,cb]=fcol(mx);
+    for(let a=0;a<24;a++){const ang=(a/24)*Math.PI*2,spd=3+Math.random()*5;addF(xi,yi,Math.cos(ang)*spd,Math.sin(ang)*spd,cr*.9,cg*.9,cb*.9,4);}
+  });
+  let splT=0;
+  function autoSplash(t){
+    if(t-splT>1800){splT=t;const xi=(6+Math.random()*(N-12))|0,yi=(6+Math.random()*(N-12))|0;
+      const[cr,cg,cb]=fcol(xi);const ang=Math.random()*Math.PI*2,spd=1.5+Math.random()*2.5;
+      addF(xi,yi,Math.cos(ang)*spd,Math.sin(ang)*spd,cr*.4,cg*.4,cb*.4,6);}
+  }
+  setTimeout(()=>{
+    addF((N*.28)|0,(N*.5)|0,2.5,-1.5,0,.83,1,10);
+    addF((N*.72)|0,(N*.5)|0,-2.5,1.5,.72,.58,.23,10);
+    addF((N*.5)|0,(N*.3)|0,0,2,.36,.7,.6,8);
+  },400);
+  function floop(ts){
+    autoSplash(ts);vstep();dstep(fr,fr0);dstep(fg,fg0);dstep(fb,fb0);
+    for(let i=0;i<SZ;i++){fr[i]*=.998;fg[i]*=.998;fb[i]*=.998;vx[i]*=.996;vy[i]*=.996;}
+    render2();requestAnimationFrame(floop);
+  }
+  requestAnimationFrame(floop);
 })();
 </script>
 </body>
