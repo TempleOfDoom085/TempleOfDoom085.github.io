@@ -1059,7 +1059,10 @@ section { position: relative; }
   height: 100%;
   z-index: 3;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
+#particleTextCanvas.ptc-active { opacity: 1; }
 #detonateLabel {
   position: absolute;
   bottom: 18%;
@@ -1156,6 +1159,26 @@ section { position: relative; }
 #visitorRecon.vr-hidden {
   display: none;
 }
+#vrToggle {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 8999;
+  background: rgba(13,17,23,0.85);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 3px;
+  color: rgba(0,212,255,0.55);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, opacity 0.2s;
+  backdrop-filter: blur(6px);
+  opacity: 0.6;
+}
+#vrToggle:hover { color: rgba(0,212,255,0.9); border-color: rgba(0,212,255,0.6); opacity: 1; }
+#vrToggle.vr-toggle-hidden { display: none; }
 .vr-header {
   display: flex;
   align-items: center;
@@ -4453,27 +4476,26 @@ if (window.innerWidth <= 768) {
         color: COLORS[Math.floor(Math.random() * COLORS.length)]
       });
     }
-
-    scheduleSettle();
+    // particles form in text positions invisibly — no auto-reveal
   }
 
   function scheduleSettle() {
     settleTimer = setTimeout(function () {
       settled = true;
-      label.classList.add('visible');
-    }, 2200);
+      // fade canvas back out after explosion settles
+      canvas.classList.remove('ptc-active');
+    }, 2400);
   }
 
   /* ── explode on hero click ── */
   function handleHeroClick() {
     exploded = true;
     settled  = false;
-    label.classList.remove('visible');
+    canvas.classList.add('ptc-active'); // flash visible for explosion
     if (settleTimer) clearTimeout(settleTimer);
 
     for (var i = 0; i < particles.length; i++) {
       var p = particles[i];
-      var sign = function (v) { return v >= 0 ? 1 : -1; };
       p.vx = (8 + Math.random() * 12) * (Math.random() < 0.5 ? 1 : -1);
       p.vy = (8 + Math.random() * 12) * (Math.random() < 0.5 ? 1 : -1);
     }
@@ -5035,6 +5057,7 @@ if (window.innerWidth <= 768) {
 </script>
 
 <!-- VISITOR RECON WIDGET -->
+<button id="vrToggle" title="Visitor Intelligence">◈ INTEL</button>
 <div id="visitorRecon" role="complementary" aria-label="Visitor Intelligence Panel">
   <div class="vr-header">
     <div class="vr-header-left">&#x2500; VISITOR INTEL</div>
@@ -5058,12 +5081,7 @@ if (window.innerWidth <= 768) {
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'vrDismissed';
-  if (sessionStorage.getItem(STORAGE_KEY)) {
-    var _p = document.getElementById('visitorRecon');
-    if (_p) _p.classList.add('vr-hidden');
-    return;
-  }
+  var loaded = false;
 
   /* ── helpers ── */
   function parseUA(ua) {
@@ -5195,30 +5213,36 @@ if (window.innerWidth <= 768) {
       panel.removeEventListener('transitionend', handler);
       panel.classList.add('vr-hidden');
     });
-    sessionStorage.setItem(STORAGE_KEY, '1');
+    document.getElementById('vrToggle').classList.remove('vr-toggle-hidden');
   });
 
-  /* ── fetch IP/location, then show panel 2 s after load ── */
-  setTimeout(function () {
-    fetch('https://ipapi.co/json/')
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        rowIP.valEl.textContent  = d.ip || 'Unknown';
-        var city    = d.city || '';
-        var country = d.country_name || '';
-        var loc = [city, country].filter(Boolean).join(', ');
-        if (d.org) loc += ' \u00B7 ' + d.org.replace(/^AS\d+\s*/, '');
-        rowLoc.valEl.textContent = loc || 'Unknown';
-      })
-      .catch(function () {
-        rowIP.valEl.textContent  = 'Unavailable';
-        rowLoc.valEl.textContent = 'Unavailable';
-      })
-      .finally(function () {
-        panel.classList.add('vr-visible');
-        runSequence();
-      });
-  }, 2000);
+  /* ── toggle button ── */
+  document.getElementById('vrToggle').addEventListener('click', function () {
+    this.classList.add('vr-toggle-hidden');
+    panel.classList.remove('vr-hidden');
+    // Small delay so display:none clears before transition
+    setTimeout(function () { panel.classList.add('vr-visible'); }, 20);
+    if (!loaded) {
+      loaded = true;
+      fetch('https://ipapi.co/json/')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          rowIP.valEl.textContent  = d.ip || 'Unknown';
+          var city    = d.city || '';
+          var country = d.country_name || '';
+          var loc = [city, country].filter(Boolean).join(', ');
+          if (d.org) loc += ' \u00B7 ' + d.org.replace(/^AS\d+\s*/, '');
+          rowLoc.valEl.textContent = loc || 'Unknown';
+        })
+        .catch(function () {
+          rowIP.valEl.textContent  = 'Unavailable';
+          rowLoc.valEl.textContent = 'Unavailable';
+        })
+        .finally(function () { runSequence(); });
+    } else {
+      runSequence();
+    }
+  });
 
 })();
 
