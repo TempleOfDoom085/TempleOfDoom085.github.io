@@ -2105,16 +2105,14 @@ html.stealth-mode #rain-indicator {
 
       <a href="pentest-sim.html" class="cyber-tool-card" style="border-color:rgba(0,255,136,0.12)" onmouseenter="this.style.borderColor='rgba(0,255,136,0.35)';this.style.boxShadow='0 0 40px rgba(0,255,136,0.08),inset 0 0 30px rgba(0,255,136,0.03)'" onmouseleave="this.style.borderColor='rgba(0,255,136,0.12)';this.style.boxShadow=''">
         <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(0,255,136,0.07) 0%,transparent 70%)"></div>
-        <div class="tool-card-icon" style="color:rgba(0,255,136,0.85);text-shadow:0 0 14px rgba(0,255,136,0.6)">▶</div>
-        <div class="tool-card-label">SIM</div>
+        <div class="tool-card-icon" style="color:rgba(0,255,136,0.85);text-shadow:0 0 14px rgba(0,255,136,0.6)">🎯</div>
+        <div class="tool-card-label">interactive</div>
         <div class="tool-card-name">Pentest Simulator</div>
-        <div class="tool-card-desc">A realistic terminal simulation of a full penetration test against acme-corp.com — recon, scanning, exploitation, privilege escalation, and a full findings report, live in your browser.</div>
+        <div class="tool-card-desc">Watch a full penetration test unfold in real-time — recon, exploit, root shell, report.</div>
         <div class="tool-card-tags">
-          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">Exploitation</span>
-          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">Recon</span>
-          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">Priv Esc</span>
+          <span class="ptag" style="border-color:rgba(0,255,136,0.3);color:rgba(0,255,136,0.7)">interactive</span>
         </div>
-        <span class="tool-card-cta">Run Simulation →</span>
+        <span class="tool-card-cta">Launch Simulator →</span>
       </a>
 
     </div>
@@ -4176,7 +4174,7 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     { icon: '🏁', name: 'Password Cracker Race', desc: 'Brute force vs dictionary vs rainbow table', tag: 'tool', href: 'tools/cracker.html' },
     { icon: '📡', name: 'Live Hacker Feed',desc: 'Real-time GitHub activity console',    tag: 'live',  href: 'hacker-feed.html' },
     { icon: '⚔',  name: 'Attack Visualizer',desc: 'SQL injection, XSS, buffer overflow', tag: 'edu',  href: 'attack-viz.html' },
-    { icon: '▶',  name: 'Pentest Simulator', desc: 'Live terminal pentest simulation',    tag: 'sim',  href: 'pentest-sim.html' },
+    { icon: '🎯', name: 'Pentest Simulator', desc: 'Watch a full pentest unfold — recon, exploit, root shell, report.', tag: 'interactive', href: 'pentest-sim.html' },
     { icon: '💻', name: 'Open Terminal',   desc: 'Interactive portfolio shell',          tag: 'action', action: 'terminal' },
   ];
   let selected = 0, filtered = [...ITEMS];
