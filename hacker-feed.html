@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Hacker Feed — Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0e0e0e;--panel:#0d1117;--gold:#b8933a;--gold2:#d4a84b;
+  --neon:#00d4ff;--green:#00ff88;--red:#ff2244;--orange:#ff8c00;--purple:#b96eff;
+  --paper:#f5f2ec;--dim:rgba(245,242,236,0.35);--faint:rgba(245,242,236,0.12);
+  --mono:'DM Mono',monospace;--serif:'Cormorant Garamond',Georgia,serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--mono);background:var(--ink);color:var(--paper);overflow-x:hidden;cursor:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:var(--gold)}
+
+/* CURSOR */
+#cursor{position:fixed;pointer-events:none;z-index:99999;width:8px;height:8px;
+  border-radius:50%;background:rgba(184,147,58,0.9);box-shadow:0 0 8px rgba(184,147,58,0.5);
+  transform:translate(-50%,-50%);transition:width .1s,height .1s}
+body.ch #cursor{width:13px;height:13px}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;
+  justify-content:space-between;padding:.75rem 2rem;
+  background:rgba(14,14,14,0.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(184,147,58,0.18)}
+.nav-back{font-size:.65rem;letter-spacing:.16em;color:rgba(0,212,255,.7);text-decoration:none;transition:color .2s}
+.nav-back:hover{color:var(--neon)}
+.nav-center{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
+.nav-title{display:block;font-size:.78rem;font-weight:400;letter-spacing:.35em;color:rgba(245,242,236,.9);text-transform:uppercase}
+.nav-sub{display:block;font-size:.5rem;letter-spacing:.28em;color:rgba(0,212,255,.4);text-transform:uppercase}
+.nav-refresh{font-size:.6rem;letter-spacing:.14em;padding:.35rem .9rem;border:1px solid rgba(0,212,255,.25);
+  color:rgba(0,212,255,.65);background:transparent;cursor:none;transition:all .2s}
+.nav-refresh:hover{border-color:var(--neon);color:var(--neon);background:rgba(0,212,255,.05)}
+
+/* STATS BAR */
+.stats-bar{margin-top:3.5rem;padding:1rem 2rem;
+  background:rgba(0,212,255,.03);border-bottom:1px solid rgba(0,212,255,.08);
+  display:flex;gap:2.5rem;flex-wrap:wrap;align-items:center}
+.stat-item{display:flex;flex-direction:column;gap:.15rem}
+.stat-val{font-size:.95rem;color:var(--neon);letter-spacing:.05em}
+.stat-lbl{font-size:.52rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.status-live{display:flex;align-items:center;gap:.45rem;font-size:.6rem;letter-spacing:.2em;color:var(--green);margin-left:auto}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 6px rgba(0,255,136,.6);animation:pdot 2s ease-in-out infinite}
+@keyframes pdot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.6}}
+
+/* FILTERS */
+.filters{padding:.8rem 2rem;display:flex;gap:.5rem;flex-wrap:wrap;
+  border-bottom:1px solid rgba(255,255,255,.04)}
+.filter-btn{font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;padding:.3rem .75rem;
+  border:1px solid rgba(255,255,255,.1);color:var(--dim);background:transparent;cursor:none;transition:all .2s}
+.filter-btn.active,.filter-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(184,147,58,.06)}
+
+/* BOOT SEQUENCE */
+#boot{padding:2rem;font-size:.72rem;color:var(--green);line-height:2}
+.boot-line{opacity:0;animation:bootIn .3s forwards}
+@keyframes bootIn{to{opacity:1}}
+
+/* FEED */
+#feed-wrap{position:relative;min-height:60vh;overflow:hidden}
+#feed{padding:1rem 2rem 4rem;display:flex;flex-direction:column;gap:0}
+.feed-line{display:flex;align-items:flex-start;gap:1rem;padding:.55rem .75rem;
+  border-left:2px solid transparent;font-size:.68rem;line-height:1.5;
+  animation:lineIn .4s ease forwards;opacity:0;transition:border-color .6s}
+.feed-line.glow{border-left-color:var(--green)}
+@keyframes lineIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.feed-time{color:var(--dim);min-width:5rem;flex-shrink:0;font-size:.6rem}
+.feed-badge{font-size:.55rem;letter-spacing:.12em;padding:.15rem .5rem;
+  border:1px solid;min-width:5.5rem;text-align:center;flex-shrink:0}
+.badge-push{color:var(--green);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05)}
+.badge-create{color:var(--neon);border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.05)}
+.badge-star{color:var(--gold2);border-color:rgba(212,168,75,.3);background:rgba(212,168,75,.05)}
+.badge-pr{color:var(--purple);border-color:rgba(185,110,255,.3);background:rgba(185,110,255,.05)}
+.badge-issue{color:var(--red);border-color:rgba(255,34,68,.3);background:rgba(255,34,68,.05)}
+.badge-fork{color:var(--orange);border-color:rgba(255,140,0,.3);background:rgba(255,140,0,.05)}
+.badge-delete{color:var(--dim);border-color:rgba(255,255,255,.1)}
+.badge-other{color:var(--dim);border-color:rgba(255,255,255,.08)}
+.feed-repo{color:var(--gold);margin-right:.3rem}
+.feed-desc{color:rgba(245,242,236,.65)}
+.feed-commit{color:rgba(245,242,236,.4);font-size:.62rem;margin-top:.15rem;padding-left:.3rem;
+  border-left:1px solid rgba(255,255,255,.08)}
+
+/* SCANLINES */
+#scanlines{position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.025;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.5) 2px,rgba(0,0,0,.5) 4px)}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.55) 100%)}
+
+/* EMPTY / ERROR */
+.feed-empty{padding:3rem 2rem;text-align:center;color:var(--dim);font-size:.72rem;line-height:2}
+.feed-empty span{display:block;font-size:1.5rem;margin-bottom:.75rem;opacity:.3}
+
+footer{padding:1.5rem 2rem;border-top:1px solid rgba(184,147,58,.08);
+  font-size:.58rem;letter-spacing:.12em;color:rgba(245,242,236,.18);text-align:center}
+
+@media(max-width:600px){
+  .stats-bar{gap:1.5rem}.status-live{margin-left:0;width:100%}
+  .feed-line{flex-wrap:wrap}.feed-time,.feed-badge{min-width:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<nav>
+  <a href="/" class="nav-back">← PORTFOLIO</a>
+  <div class="nav-center">
+    <span class="nav-title">Live Hacker Feed</span>
+    <span class="nav-sub">GitHub Activity Stream</span>
+  </div>
+  <button class="nav-refresh" onclick="loadFeed(true)">↻ REFRESH</button>
+</nav>
+
+<div class="stats-bar" id="statsBar">
+  <div class="stat-item"><div class="stat-val" id="st-events">—</div><div class="stat-lbl">Events Loaded</div></div>
+  <div class="stat-item"><div class="stat-val" id="st-repos">—</div><div class="stat-lbl">Repos Active</div></div>
+  <div class="stat-item"><div class="stat-val" id="st-last">—</div><div class="stat-lbl">Last Push</div></div>
+  <div class="stat-item"><div class="stat-val" id="st-commits">—</div><div class="stat-lbl">Commits Tracked</div></div>
+  <div class="status-live"><span class="pulse-dot"></span>SIGNAL LIVE</div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-filter="ALL" onclick="setFilter('ALL',this)">ALL</button>
+  <button class="filter-btn" data-filter="PUSH" onclick="setFilter('PUSH',this)">⬆ PUSH</button>
+  <button class="filter-btn" data-filter="CREATE" onclick="setFilter('CREATE',this)">✦ CREATE</button>
+  <button class="filter-btn" data-filter="STAR" onclick="setFilter('STAR',this)">★ STAR</button>
+  <button class="filter-btn" data-filter="PR" onclick="setFilter('PR',this)">⑂ PULL REQUEST</button>
+  <button class="filter-btn" data-filter="ISSUE" onclick="setFilter('ISSUE',this)">◉ ISSUE</button>
+  <button class="filter-btn" data-filter="FORK" onclick="setFilter('FORK',this)">⑂ FORK</button>
+</div>
+
+<div id="feed-wrap">
+  <div id="boot"></div>
+  <div id="feed"></div>
+</div>
+
+<footer>© 2026 Brian Temple &nbsp;·&nbsp; Powered by GitHub Events API &nbsp;·&nbsp; Auto-refreshes every 5 min &nbsp;·&nbsp; templeofDoom085.github.io</footer>
+
+<script>
+// ── CURSOR ──
+const cur = document.getElementById('cursor');
+document.addEventListener('mousemove', e => { cur.style.left=e.clientX+'px'; cur.style.top=e.clientY+'px'; });
+document.querySelectorAll('a,button').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('ch'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('ch'));
+});
+
+// ── STATE ──
+let allEvents = [];
+let activeFilter = 'ALL';
+let hovered = false;
+const feedEl = document.getElementById('feed');
+const bootEl = document.getElementById('boot');
+document.getElementById('feed-wrap').addEventListener('mouseenter', () => hovered = true);
+document.getElementById('feed-wrap').addEventListener('mouseleave', () => hovered = false);
+
+// ── BOOT SEQUENCE ──
+const BOOT_LINES = [
+  '> Initializing signal acquisition...',
+  '> Connecting to api.github.com...',
+  '> Authenticating endpoint: /users/TempleOfDoom085/events',
+  '> Stream established. Parsing activity log...',
+];
+function runBoot(cb) {
+  bootEl.innerHTML = '';
+  BOOT_LINES.forEach((line, i) => {
+    const d = document.createElement('div');
+    d.className = 'boot-line';
+    d.textContent = line;
+    d.style.animationDelay = (i * 0.32) + 's';
+    bootEl.appendChild(d);
+  });
+  setTimeout(cb, BOOT_LINES.length * 320 + 400);
+}
+
+// ── TIME HELPERS ──
+function relTime(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60) return Math.round(diff) + 's ago';
+  if (diff < 3600) return Math.round(diff/60) + 'm ago';
+  if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+  return Math.round(diff/86400) + 'd ago';
+}
+
+// ── EVENT PARSER ──
+function parseEvent(ev) {
+  const repo = ev.repo.name.replace('TempleOfDoom085/','');
+  const time = relTime(ev.created_at);
+  let badge = 'OTHER', badgeClass = 'badge-other', desc = '', commits = [];
+
+  switch(ev.type) {
+    case 'PushEvent':
+      badge = 'PUSH'; badgeClass = 'badge-push';
+      const branch = (ev.payload.ref||'').replace('refs/heads/','');
+      const n = ev.payload.commits ? ev.payload.commits.length : 0;
+      desc = `${n} commit${n!==1?'s':''} → <span style="color:rgba(0,212,255,.6)">${branch}</span>`;
+      if (ev.payload.commits) {
+        commits = ev.payload.commits.slice(0,2).map(c =>
+          c.message.split('\n')[0].slice(0,72)
+        );
+      }
+      break;
+    case 'CreateEvent':
+      badge = 'CREATE'; badgeClass = 'badge-create';
+      desc = `Created ${ev.payload.ref_type} <span style="color:rgba(0,212,255,.6)">${ev.payload.ref||repo}</span>`;
+      break;
+    case 'WatchEvent':
+      badge = 'STAR'; badgeClass = 'badge-star';
+      desc = 'Starred repository';
+      break;
+    case 'ForkEvent':
+      badge = 'FORK'; badgeClass = 'badge-fork';
+      desc = `Forked to <span style="color:var(--gold)">${(ev.payload.forkee||{}).full_name||'...'}</span>`;
+      break;
+    case 'DeleteEvent':
+      badge = 'DELETE'; badgeClass = 'badge-delete';
+      desc = `Deleted ${ev.payload.ref_type} <span style="opacity:.5">${ev.payload.ref}</span>`;
+      break;
+    case 'PullRequestEvent':
+      badge = 'PR'; badgeClass = 'badge-pr';
+      const pr = ev.payload.pull_request||{};
+      desc = `${(ev.payload.action||'').toUpperCase()} — ${(pr.title||'').slice(0,60)}`;
+      break;
+    case 'IssuesEvent':
+      badge = 'ISSUE'; badgeClass = 'badge-issue';
+      const iss = ev.payload.issue||{};
+      desc = `${(ev.payload.action||'').toUpperCase()} — ${(iss.title||'').slice(0,60)}`;
+      break;
+    default:
+      badge = ev.type.replace('Event','').toUpperCase().slice(0,8);
+      desc = ev.type.replace('Event','');
+  }
+  return { time, badge, badgeClass, repo, desc, commits, type: badge, raw: ev };
+}
+
+// ── RENDER ──
+function renderFeed(events) {
+  feedEl.innerHTML = '';
+  const filtered = activeFilter === 'ALL' ? events : events.filter(e => e.type === activeFilter);
+  if (!filtered.length) {
+    feedEl.innerHTML = '<div class="feed-empty"><span>◈</span>No events match this filter.</div>';
+    return;
+  }
+  filtered.forEach((ev, i) => {
+    const row = document.createElement('div');
+    row.className = 'feed-line';
+    row.style.animationDelay = (i * 0.045) + 's';
+    row.innerHTML = `
+      <span class="feed-time">${ev.time}</span>
+      <span class="feed-badge ${ev.badgeClass}">${ev.badge}</span>
+      <div>
+        <span class="feed-repo">${ev.repo}</span>
+        <span class="feed-desc">${ev.desc}</span>
+        ${ev.commits.map(c=>`<div class="feed-commit">${c}</div>`).join('')}
+      </div>`;
+    feedEl.appendChild(row);
+    // green glow fade
+    setTimeout(() => {
+      row.classList.add('glow');
+      setTimeout(() => row.classList.remove('glow'), 800);
+    }, i * 45 + 100);
+  });
+}
+
+// ── STATS ──
+function updateStats(events) {
+  document.getElementById('st-events').textContent = events.length;
+  const repos = new Set(events.map(e => e.repo)).size;
+  document.getElementById('st-repos').textContent = repos;
+  const pushes = events.filter(e => e.type === 'PUSH');
+  document.getElementById('st-last').textContent = pushes.length ? pushes[0].time : '—';
+  const commits = events.filter(e => e.type === 'PUSH').reduce((s,e) => {
+    const n = e.raw.payload && e.raw.payload.commits ? e.raw.payload.commits.length : 0;
+    return s + n;
+  }, 0);
+  document.getElementById('st-commits').textContent = commits || '—';
+}
+
+// ── FALLBACK DATA ──
+const FALLBACK = [
+  {type:'PushEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-1800000).toISOString(),payload:{ref:'refs/heads/claude/security-code-review-GIoag',commits:[{message:'feat: add password cracker race tool and cyber attack visualizer'},{message:'fix: expand command palette with all 20 tools'}]}},
+  {type:'PushEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-7200000).toISOString(),payload:{ref:'refs/heads/claude/security-code-review-GIoag',commits:[{message:'feat: rebuild contact section with status badge and two-column layout'}]}},
+  {type:'PushEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-14400000).toISOString(),payload:{ref:'refs/heads/main',commits:[{message:'feat: add 3 Anthropic certs — Claude Code in Action, Claude Cowork, Claude 101'},{message:'fix: remove false CompTIA Security+ claim'}]}},
+  {type:'CreateEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-86400000).toISOString(),payload:{ref_type:'branch',ref:'claude/security-code-review-GIoag'}},
+  {type:'PushEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-172800000).toISOString(),payload:{ref:'refs/heads/main',commits:[{message:'feat: cinematic engine complete overhaul — jaw-dropping visual showcase'},{message:'fix: hero canvas broken — fix particle network initialization'}]}},
+  {type:'PushEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-259200000).toISOString(),payload:{ref:'refs/heads/main',commits:[{message:'feat: add 20 cybersecurity tools to tools hub'},{message:'feat: OSINT dashboard with cert transparency and threat scoring'}]}},
+  {type:'WatchEvent',repo:{name:'anthropics/claude-code'},created_at:new Date(Date.now()-345600000).toISOString(),payload:{}},
+  {type:'PushEvent',repo:{name:'TempleOfDoom085/TempleOfDoom085.github.io'},created_at:new Date(Date.now()-432000000).toISOString(),payload:{ref:'refs/heads/main',commits:[{message:'feat: v10.0 site overhaul — achievement system, terminal, skill tree'}]}},
+];
+
+// ── LOAD ──
+async function loadFeed(manual = false) {
+  if (!manual) {
+    runBoot(() => doFetch());
+  } else {
+    feedEl.innerHTML = '<div class="feed-empty" style="padding:1.5rem 2rem"><span style="font-size:.7rem;opacity:1">↻ Refreshing...</span></div>';
+    doFetch();
+  }
+}
+
+async function doFetch() {
+  try {
+    const res = await fetch('https://api.github.com/users/TempleOfDoom085/events?per_page=30');
+    if (!res.ok) throw new Error('rate limited');
+    const data = await res.json();
+    bootEl.style.display = 'none';
+    allEvents = data.map(parseEvent);
+    updateStats(allEvents);
+    renderFeed(allEvents);
+  } catch(e) {
+    bootEl.style.display = 'none';
+    // use fallback
+    allEvents = FALLBACK.map(parseEvent);
+    updateStats(allEvents);
+    renderFeed(allEvents);
+    // subtle indicator
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:.55rem;color:rgba(245,242,236,.2);letter-spacing:.1em;padding:.5rem 2rem';
+    note.textContent = '// cached feed — API rate limit reached';
+    feedEl.prepend(note);
+  }
+}
+
+// ── FILTER ──
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFeed(allEvents);
+}
+
+// ── AUTO REFRESH ──
+setInterval(() => { if (!hovered) loadFeed(true); }, 5 * 60 * 1000);
+
+// ── INIT ──
+loadFeed();
+</script>
+</body>
+</html>
