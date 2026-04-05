@@ -105,9 +105,14 @@ nav {
   border-left: 1px solid rgba(184,147,58,0.15);
 }
 .hero-right::before {
-  content: ''; position: absolute; top: -80px; right: -80px;
-  width: 360px; height: 360px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(184,147,58,0.07) 0%, transparent 70%);
+  content: ''; position: absolute; top: -100px; right: -100px;
+  width: 480px; height: 480px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(184,147,58,0.12) 0%, rgba(184,147,58,0.04) 40%, transparent 70%);
+  animation: orbPulse 6s ease-in-out infinite;
+}
+@keyframes orbPulse {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50%     { transform: scale(1.12); opacity: 0.7; }
 }
 .tag { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 1.5rem; display: block; }
 .tag-cyber { color: var(--neon); }
@@ -938,11 +943,119 @@ nav.scrolled {
 }
 
 /* ── HERO CANVAS PANELS: let canvas bleed through slightly ── */
-.hero-left { background: rgba(15,22,35,0.88); }
-.hero-right { background: rgba(20,16,8,0.88); }
+.hero-left { background: rgba(15,22,35,0.80); }
+.hero-right { background: rgba(20,16,8,0.82); }
+
+/* ── AURORA BACKGROUND ── */
+#auroraCanvas {
+  position: fixed; inset: 0; z-index: -2;
+  width: 100%; height: 100%; pointer-events: none;
+}
+
+/* ── HOLOGRAPHIC FOIL ── */
+.holo-foil {
+  position: absolute; inset: 0; z-index: 5;
+  pointer-events: none; border-radius: inherit;
+  opacity: 0; transition: opacity 0.45s;
+  background:
+    repeating-linear-gradient(
+      calc(var(--holo-angle, 105deg)),
+      rgba(255,0,128,0)    0%,
+      rgba(255,0,128,0.065) 5%,
+      rgba(255,100,0,0.06) 9%,
+      rgba(255,220,0,0.055) 13%,
+      rgba(0,255,120,0.055) 17%,
+      rgba(0,180,255,0.065) 22%,
+      rgba(120,0,255,0.055) 26%,
+      rgba(255,0,128,0.04) 30%,
+      rgba(255,0,128,0)    35%
+    ),
+    radial-gradient(
+      circle at var(--holo-x,50%) var(--holo-y,50%),
+      rgba(255,255,255,0.14) 0%,
+      rgba(255,255,255,0.04) 40%,
+      transparent 68%
+    );
+  mix-blend-mode: color-dodge;
+}
+.skill-card:hover .holo-foil,
+.cert-card-full:hover .holo-foil { opacity: 1; }
+
+/* ── ANIMATED HERO NAME SHIMMER ── */
+@keyframes shimmerSlide {
+  0%   { background-position: -300% center; }
+  100% { background-position: 300% center; }
+}
+.hero-name em {
+  background: linear-gradient(90deg,
+    currentColor 0%, currentColor 30%,
+    #fff 45%, rgba(255,255,255,0.9) 50%, #fff 55%,
+    currentColor 70%, currentColor 100%
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerSlide 3.5s linear infinite;
+}
+/* Preserve correct colors per side */
+.hero-left  .hero-name em { color: var(--neon); }
+.hero-right .hero-name em { color: var(--gold-light); }
+
+/* ── FLOATING SECTION LABELS ── */
+@keyframes labelPulse {
+  0%,100% { opacity: 1; letter-spacing: 0.25em; }
+  50%     { opacity: 0.65; letter-spacing: 0.3em; }
+}
+.section-label { animation: labelPulse 4s ease-in-out infinite; }
+
+/* ── NEON BORDER SWEEP ON CARDS ── */
+.skill-card::before,
+.cert-card-full::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(0,212,255,0.7) 50%, transparent 100%) top / 100% 1px no-repeat,
+    linear-gradient(0deg,  transparent 0%, rgba(0,212,255,0.7) 50%, transparent 100%) right / 1px 100% no-repeat,
+    linear-gradient(90deg, transparent 0%, rgba(0,212,255,0.7) 50%, transparent 100%) bottom / 100% 1px no-repeat,
+    linear-gradient(0deg,  transparent 0%, rgba(0,212,255,0.7) 50%, transparent 100%) left / 1px 100% no-repeat;
+  background-color: transparent;
+  opacity: 0;
+  transition: opacity 0.35s;
+  z-index: 3; pointer-events: none;
+  animation: none;
+}
+.skill-card:hover::before,
+.cert-card-full:hover::before {
+  opacity: 1;
+  animation: borderPulse 1.8s ease-in-out infinite;
+}
+@keyframes borderPulse {
+  0%,100% { opacity: 0.5; }
+  50%     { opacity: 1; }
+}
+.skill-card.gold-card::before {
+  background:
+    linear-gradient(90deg, transparent, rgba(184,147,58,0.8), transparent) top / 100% 1px no-repeat,
+    linear-gradient(0deg,  transparent, rgba(184,147,58,0.8), transparent) right / 1px 100% no-repeat,
+    linear-gradient(90deg, transparent, rgba(184,147,58,0.8), transparent) bottom / 100% 1px no-repeat,
+    linear-gradient(0deg,  transparent, rgba(184,147,58,0.8), transparent) left / 1px 100% no-repeat;
+}
+
+/* ── SECTION DEPTH FOG ── */
+section::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
+  background: linear-gradient(to top, rgba(14,14,14,0.4), transparent);
+  pointer-events: none;
+}
+section { position: relative; }
 </style>
 </head>
 <body>
+
+<!-- AURORA BACKGROUND -->
+<canvas id="auroraCanvas"></canvas>
 
 <!-- SCROLL PROGRESS -->
 <div id="scroll-progress"></div>
@@ -3043,9 +3156,19 @@ window.addEventListener('scroll', () => {
       // Specular highlight follows surface normal
       const shine = card.querySelector('.card-shine');
       if (shine) {
-        const sx = ((dx + 1) / 2) * 100; // 0–100%
+        const sx = ((dx + 1) / 2) * 100;
         const sy = ((dy + 1) / 2) * 100;
-        shine.style.background = `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.13) 0%, transparent 60%)`;
+        shine.style.background = `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.16) 0%, transparent 58%)`;
+      }
+      // Holographic foil shifts with mouse angle
+      const foil = card.querySelector('.holo-foil');
+      if (foil) {
+        const px = (e.clientX - rect.left) / rect.width;
+        const py = (e.clientY - rect.top)  / rect.height;
+        const angle = Math.atan2(py - 0.5, px - 0.5) * (180 / Math.PI) + 105;
+        card.style.setProperty('--holo-x', `${px * 100}%`);
+        card.style.setProperty('--holo-y', `${py * 100}%`);
+        card.style.setProperty('--holo-angle', `${angle}deg`);
       }
     });
 
@@ -3229,13 +3352,19 @@ document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.obs
   document.addEventListener('mouseenter',  () => { cursor.style.opacity = '1'; ring.style.opacity = '1'; });
 })();
 
-// ── v12.0: CARD SPECULAR SHINE ──
+// ── v12.0: CARD SPECULAR + HOLOGRAPHIC FOIL INJECTION ──
 (function() {
   document.querySelectorAll('.skill-card, .project-item, .cert-card-full').forEach(card => {
-    // Inject shine overlay
+    const cs = getComputedStyle(card);
+    if (cs.position === 'static') card.style.position = 'relative';
+    // Specular
     const shine = document.createElement('div');
     shine.className = 'card-shine';
     card.appendChild(shine);
+    // Holographic foil
+    const foil = document.createElement('div');
+    foil.className = 'holo-foil';
+    card.appendChild(foil);
   });
 })();
 
@@ -3252,13 +3381,111 @@ document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.obs
 
   document.querySelectorAll('.section-heading').forEach(h => {
     h.classList.add('scan-heading');
-    // Wrap text content in mask > span
-    const text = h.textContent;
-    // Keep any existing child spans (like .neon-text)
     const inner = h.innerHTML;
     h.innerHTML = `<span class="scan-mask"><span>${inner}</span></span>`;
     scanObs.observe(h);
   });
+})();
+
+// ── v12.0: AURORA BACKGROUND CANVAS ──
+(function() {
+  const canvas = document.getElementById('auroraCanvas');
+  if (!canvas) return;
+  // Skip on reduced-motion or mobile for perf
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = canvas.getContext('2d');
+  let W = canvas.width  = window.innerWidth;
+  let H = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }, { passive: true });
+
+  // Each orb: position, velocity, size, color
+  const orbs = [
+    { px: 0.15, py: 0.25, vx: 0.00030, vy: 0.00022, r: 0.55, c: '0,212,255',  a: 0.038 },
+    { px: 0.82, py: 0.62, vx:-0.00025, vy: 0.00028, r: 0.50, c: '184,147,58', a: 0.032 },
+    { px: 0.48, py: 0.78, vx: 0.00028, vy:-0.00020, r: 0.42, c: '0,255,136',  a: 0.025 },
+    { px: 0.72, py: 0.18, vx:-0.00032, vy: 0.00030, r: 0.38, c: '80,40,220',  a: 0.020 },
+    { px: 0.22, py: 0.68, vx: 0.00020, vy:-0.00034, r: 0.44, c: '255,50,100', a: 0.018 },
+    { px: 0.60, py: 0.40, vx:-0.00018, vy:-0.00022, r: 0.35, c: '0,200,255',  a: 0.022 },
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    orbs.forEach(o => {
+      o.px += o.vx; o.py += o.vy;
+      if (o.px < -0.1 || o.px > 1.1) o.vx *= -1;
+      if (o.py < -0.1 || o.py > 1.1) o.vy *= -1;
+      const gx = o.px * W, gy = o.py * H, gr = o.r * Math.min(W, H);
+      const grad = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+      grad.addColorStop(0,   `rgba(${o.c},${o.a})`);
+      grad.addColorStop(0.45,`rgba(${o.c},${o.a * 0.35})`);
+      grad.addColorStop(1,   `rgba(${o.c},0)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── v12.0: HERO PLASMA RIBBONS ──
+// Upgrades the existing heroBgCanvas: paints sine-wave light ribbons first, then particles draw on top
+// We hook into the existing draw function by patching it — actually we just add a pre-pass layer
+// The existing canvas draw() starts each frame with clearRect, so we intercept by overwriting
+// the draw loop. Since the existing IIFE already runs, we use a second overlay canvas layered under.
+(function() {
+  const heroEl = document.querySelector('.hero');
+  if (!heroEl) return;
+  // Create a second canvas layered between background and the particle canvas
+  const plasma = document.createElement('canvas');
+  plasma.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;';
+  heroEl.insertBefore(plasma, heroEl.firstChild);
+  const ctx = plasma.getContext('2d');
+  let W, H;
+  function resize() {
+    W = plasma.width  = heroEl.offsetWidth;
+    H = plasma.height = heroEl.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  const ribbons = [
+    { freq: 0.0055, amp: 0.22, phase: 0.0, speed: 0.28, c: '0,212,255',  a: 0.055, w: 100 },
+    { freq: 0.0038, amp: 0.18, phase: 1.8, speed: 0.20, c: '184,147,58', a: 0.048, w: 85  },
+    { freq: 0.0072, amp: 0.14, phase: 3.4, speed: 0.36, c: '0,255,136',  a: 0.038, w: 70  },
+    { freq: 0.0048, amp: 0.20, phase: 5.1, speed: 0.24, c: '0,180,255',  a: 0.032, w: 90  },
+    { freq: 0.0060, amp: 0.12, phase: 2.2, speed: 0.32, c: '100,40,220', a: 0.025, w: 65  },
+  ];
+
+  function draw(ts) {
+    const t = ts * 0.001;
+    ctx.clearRect(0, 0, W, H);
+    ribbons.forEach((r, i) => {
+      const yBase = H * (0.2 + i * 0.16) + Math.sin(t * r.speed * 0.5 + r.phase) * H * 0.08;
+      const grad = ctx.createLinearGradient(0, yBase - r.w, 0, yBase + r.w);
+      grad.addColorStop(0,   `rgba(${r.c},0)`);
+      grad.addColorStop(0.5, `rgba(${r.c},${r.a})`);
+      grad.addColorStop(1,   `rgba(${r.c},0)`);
+      ctx.beginPath();
+      let first = true;
+      for (let x = 0; x <= W; x += 4) {
+        const y = yBase
+                + Math.sin(x * r.freq + t * r.speed) * H * r.amp * 0.55
+                + Math.sin(x * r.freq * 1.8 + t * r.speed * 1.4) * H * r.amp * 0.28
+                + Math.sin(x * r.freq * 0.5 + t * r.speed * 0.7 + r.phase) * H * r.amp * 0.18;
+        if (first) { ctx.moveTo(x, 0); first = false; }
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
 })();
 
 // YOU DIED overlay — triggered only from game code, not on exit-intent
