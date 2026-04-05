@@ -17,6 +17,7 @@
 }
 html{scroll-behavior:smooth}
 body{font-family:var(--head);background:var(--bg);color:var(--text);overflow-x:hidden;cursor:none;min-height:100vh}
+@media(pointer:coarse){body{cursor:auto}#cursor{display:none!important}}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--gold)}
 #cursor{position:fixed;pointer-events:none;z-index:99999;width:8px;height:8px;border-radius:50%;background:rgba(200,169,110,.9);box-shadow:0 0 8px rgba(200,169,110,.5);transform:translate(-50%,-50%);transition:width .1s,height .1s}
 body.ch #cursor{width:13px;height:13px}
@@ -125,6 +126,24 @@ main{padding-top:4rem;max-width:1000px;margin:0 auto;padding-left:1.5rem;padding
 .reset-btn:hover{background:rgba(200,169,110,.1);border-color:var(--gold)}
 
 footer{text-align:center;padding:2rem;border-top:1px solid rgba(200,169,110,.08);font-family:var(--mono);font-size:.58rem;color:rgba(245,242,236,.18);letter-spacing:.1em}
+
+@media(max-width:600px){
+  nav{padding:.6rem 1rem}
+  .nav-center{position:static;transform:none;flex:1;margin:0 .5rem}
+  .nav-title{font-size:.72rem;letter-spacing:.18em}
+  .nav-sub{display:none}
+  main{padding-left:1rem;padding-right:1rem}
+  .page-title{font-size:1.8rem}
+  .input-section{padding:1.25rem 1rem}
+  .input-row{flex-direction:column;align-items:stretch}
+  #pwInput{font-size:.9rem;min-width:0;width:100%}
+  .start-btn{width:100%;padding:.6rem 1rem}
+  .lane{padding:1rem}
+  .candidate-box{font-size:.72rem}
+  .lane-stat{font-size:.55rem}
+  #results{padding:1.25rem 1rem}
+  footer{padding:1.25rem 1rem}
+}
 </style>
 </head>
 <body>
