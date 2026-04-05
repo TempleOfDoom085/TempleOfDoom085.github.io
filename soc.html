@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Dashboard — Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0a0a0c;--panel:#0d1117;--gold:#b8933a;--neon:#00d4ff;
+  --green:#00ff88;--red:#ff2244;--orange:#ff8c00;--yellow:#ffcc00;
+  --purple:#b96eff;--paper:#f5f2ec;--dim:rgba(245,242,236,.45);
+  --mono:'Share Tech Mono','DM Mono',monospace;
+}
+html,body{height:100%;background:var(--ink);color:var(--paper);font-family:var(--mono);overflow:hidden}
+a{color:var(--neon);text-decoration:none}
+button{font-family:var(--mono);cursor:pointer;border:none;background:none}
+
+/* ── HEADER ── */
+#hdr{
+  position:sticky;top:0;height:42px;display:flex;align-items:center;
+  padding:0 1rem;gap:1rem;
+  background:rgba(10,10,12,0.98);border-bottom:1px solid var(--gold);
+  z-index:100;justify-content:space-between;
+}
+.hdr-left{font-size:.6rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
+.hdr-center{display:flex;align-items:center;gap:.5rem;font-size:.55rem;letter-spacing:.18em}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:pulse-dot 1.2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:.4;box-shadow:none}}
+.hdr-right{display:flex;align-items:center;gap:1rem;font-size:.55rem;letter-spacing:.12em}
+.alert-badge{background:var(--red);color:#fff;padding:2px 7px;border-radius:2px;font-size:.52rem;letter-spacing:.1em}
+#clock{color:var(--neon);font-variant-numeric:tabular-nums}
+.back-link{color:rgba(245,242,236,.35);font-size:.5rem;letter-spacing:.18em;
+  text-transform:uppercase;transition:color .2s}
+.back-link:hover{color:var(--neon)}
+
+/* ── GRID ── */
+.soc-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 320px;
+  grid-template-rows:1fr 1fr;
+  gap:1px;
+  background:rgba(255,255,255,.04);
+  height:calc(100vh - 42px);
+}
+.panel{background:var(--ink);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.panel-globe  {grid-column:1;grid-row:1}
+.panel-cve    {grid-column:2;grid-row:1}
+.panel-alerts {grid-column:3;grid-row:1/3;overflow-y:auto}
+.panel-network{grid-column:1;grid-row:2}
+.panel-siem   {grid-column:2;grid-row:2}
+
+/* ── PANEL HEADERS ── */
+.ph{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.45rem 1rem;
+  background:rgba(255,255,255,.03);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;
+  flex-shrink:0;
+}
+.ph-title{color:var(--paper)}
+.ph-status{font-size:.48rem;letter-spacing:.15em}
+.ph-status.active{color:var(--green)}
+.ph-status.live{color:var(--neon)}
+.ph-count{background:rgba(0,212,255,.15);color:var(--neon);
+  padding:1px 6px;border-radius:2px;font-size:.48rem}
+
+/* ── GLOBE PANEL ── */
+#globeCanvas{width:100%;flex:1;display:block;min-height:0}
+.globe-counter{
+  position:absolute;bottom:.75rem;left:1rem;
+  font-size:.52rem;letter-spacing:.15em;color:rgba(255,34,68,.8);
+  text-shadow:0 0 8px rgba(255,34,68,.4);
+}
+
+/* ── CVE PANEL ── */
+.cve-list{flex:1;overflow-y:auto;padding:.5rem 0}
+.cve-list::-webkit-scrollbar{width:3px}
+.cve-list::-webkit-scrollbar-track{background:transparent}
+.cve-list::-webkit-scrollbar-thumb{background:rgba(0,212,255,.2);border-radius:2px}
+.cve-row{
+  display:grid;grid-template-columns:40px 1fr auto;gap:.5rem;
+  padding:.35rem 1rem;align-items:center;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  transition:background .15s;font-size:.55rem;
+}
+.cve-row:hover{background:rgba(255,255,255,.03)}
+.cve-row.flash{animation:cve-flash .6s ease}
+@keyframes cve-flash{0%{background:rgba(0,212,255,.2)}100%{background:transparent}}
+.cvss-badge{
+  display:inline-block;text-align:center;
+  padding:2px 5px;border-radius:2px;font-size:.52rem;font-weight:700;
+  letter-spacing:.05em;color:#fff;
+}
+.cve-info{min-width:0}
+.cve-id{color:var(--gold);letter-spacing:.08em;font-size:.52rem}
+.cve-desc{color:var(--dim);font-size:.5rem;letter-spacing:.05em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cve-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.cve-sev{font-size:.44rem;letter-spacing:.12em;padding:1px 5px;border-radius:2px}
+.cve-age{font-size:.44rem;color:var(--dim);letter-spacing:.06em}
+
+/* ── ALERTS PANEL ── */
+.alerts-list{padding:.5rem}
+.alert-card{
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:3px;margin-bottom:.5rem;
+  overflow:hidden;font-size:.53rem;
+}
+.alert-card[data-p="P1"]{border-left:3px solid var(--red)}
+.alert-card[data-p="P2"]{border-left:3px solid var(--orange)}
+.alert-card[data-p="P3"]{border-left:3px solid var(--yellow)}
+.alert-card[data-p="P4"]{border-left:3px solid var(--green)}
+.ac-head{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.4rem .6rem;background:rgba(255,255,255,.03);
+}
+.ac-priority{
+  font-size:.48rem;letter-spacing:.1em;padding:2px 5px;
+  border-radius:2px;font-weight:700;
+}
+.p1-badge{background:rgba(255,34,68,.25);color:var(--red)}
+.p2-badge{background:rgba(255,140,0,.25);color:var(--orange)}
+.p3-badge{background:rgba(255,204,0,.25);color:var(--yellow)}
+.p4-badge{background:rgba(0,255,136,.25);color:var(--green)}
+.ac-status{display:flex;align-items:center;gap:.3rem;font-size:.48rem;margin-left:auto}
+.ac-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.ac-dot.active{background:var(--red);animation:pulse-dot 1s infinite}
+.ac-dot.investigating{background:var(--yellow)}
+.ac-dot.closed{background:rgba(255,255,255,.2)}
+.ac-timer{color:var(--dim);font-size:.48rem;margin-left:.4rem;font-variant-numeric:tabular-nums}
+.ac-body{padding:.4rem .6rem}
+.ac-title{letter-spacing:.08em;color:var(--paper);margin-bottom:.25rem}
+.ac-meta{color:var(--dim);font-size:.48rem;letter-spacing:.05em;margin-bottom:.4rem}
+.ac-actions{display:flex;gap:.35rem}
+.ac-btn{
+  font-family:var(--mono);font-size:.44rem;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 7px;border-radius:2px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.15);color:var(--paper);
+  background:rgba(255,255,255,.04);transition:all .15s;
+}
+.ac-btn:hover{background:rgba(0,212,255,.12);border-color:var(--neon);color:var(--neon)}
+.ac-btn.btn-close:hover{background:rgba(255,34,68,.12);border-color:var(--red);color:var(--red)}
+.sparkline-wrap{padding:.5rem 1rem 1rem;flex-shrink:0}
+.sparkline-label{font-size:.48rem;letter-spacing:.18em;color:var(--dim);margin-bottom:.4rem}
+#sparkCanvas{width:100%;height:40px;display:block}
+
+/* ── NETWORK PANEL ── */
+#netCanvas{width:100%;flex:1;display:block;min-height:0}
+
+/* ── SIEM PANEL ── */
+.siem-feed{
+  flex:1;overflow-y:auto;padding:.3rem 0;
+  font-size:.5rem;letter-spacing:.06em;
+}
+.siem-feed::-webkit-scrollbar{width:3px}
+.siem-feed::-webkit-scrollbar-thumb{background:rgba(0,212,255,.2)}
+.siem-row{
+  display:grid;grid-template-columns:80px 110px 1fr;gap:.5rem;
+  padding:.22rem 1rem;border-bottom:1px solid rgba(255,255,255,.025);
+}
+.siem-time{color:var(--dim)}
+.siem-type{font-size:.46rem;letter-spacing:.1em;padding:1px 5px;border-radius:2px}
+.siem-detail{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.siem-AUTH_FAIL .siem-type{background:rgba(255,204,0,.2);color:var(--yellow)}
+.siem-PORT_SCAN .siem-type{background:rgba(255,140,0,.2);color:var(--orange)}
+.siem-MALWARE   .siem-type{background:rgba(255,34,68,.2);color:var(--red)}
+.siem-LOGIN_OK  .siem-type{background:rgba(0,255,136,.15);color:var(--green)}
+.siem-FIREWALL  .siem-type{background:rgba(0,212,255,.15);color:var(--neon)}
+.siem-LATERAL   .siem-type{background:rgba(185,110,255,.2);color:var(--purple)}
+.siem-PRIV_ESC  .siem-type{background:rgba(255,34,68,.25);color:var(--red)}
+.siem-DNS       .siem-type{background:rgba(245,242,236,.1);color:var(--dim)}
+
+/* ── MOBILE ── */
+@media(max-width:900px){
+  html,body{overflow:auto}
+  .soc-grid{display:flex;flex-direction:column;height:auto}
+  .panel{height:55vw;min-height:300px}
+  .panel-alerts{height:auto;min-height:400px}
+  .panel-globe{height:55vw}
+}
+@media(max-width:480px){
+  .panel-globe{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="hdr-left">◈ Brian Temple // Security Ops Center</div>
+  <div class="hdr-center">
+    <span class="live-dot"></span>
+    <span style="color:var(--green);letter-spacing:.18em">LIVE</span>
+  </div>
+  <div class="hdr-right">
+    <span class="alert-badge" id="alertBadge">ALERTS: 3</span>
+    <span id="clock">00:00:00</span>
+    <a href="index.html" class="back-link">← PORTFOLIO</a>
+  </div>
+</header>
+
+<!-- GRID -->
+<div class="soc-grid">
+
+  <!-- PANEL 1: Threat Globe -->
+  <div class="panel panel-globe">
+    <div class="ph">
+      <span class="ph-title">THREAT INTELLIGENCE</span>
+      <span class="ph-status active">● ACTIVE</span>
+    </div>
+    <canvas id="globeCanvas"></canvas>
+    <div class="globe-counter" id="globeCounter">ATTACKS: 1,247</div>
+  </div>
+
+  <!-- PANEL 2: CVE Feed -->
+  <div class="panel panel-cve">
+    <div class="ph">
+      <span class="ph-title">LIVE CVE FEED</span>
+      <span class="ph-status live" id="cveStatus">● LOADING</span>
+    </div>
+    <div class="cve-list" id="cveList"></div>
+  </div>
+
+  <!-- PANEL 3: Active Alerts (right, spans both rows) -->
+  <div class="panel panel-alerts">
+    <div class="ph">
+      <span class="ph-title">ACTIVE ALERTS</span>
+      <span class="ph-count" id="alertCount">8</span>
+    </div>
+    <div class="alerts-list" id="alertsList"></div>
+    <div class="sparkline-wrap">
+      <div class="sparkline-label">ALERT VOLUME · 24H</div>
+      <canvas id="sparkCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- PANEL 4: Network Topology -->
+  <div class="panel panel-network">
+    <div class="ph">
+      <span class="ph-title">NETWORK TOPOLOGY</span>
+      <span class="ph-status active">● MONITORING</span>
+    </div>
+    <canvas id="netCanvas"></canvas>
+  </div>
+
+  <!-- PANEL 5: SIEM Events -->
+  <div class="panel panel-siem">
+    <div class="ph">
+      <span class="ph-title">SIEM EVENTS</span>
+      <span class="ph-status live">● STREAMING</span>
+    </div>
+    <div class="siem-feed" id="siemFeed"></div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ── CLOCK ──
+(function(){
+  function tick(){
+    var n=new Date();
+    document.getElementById('clock').textContent=
+      String(n.getHours()).padStart(2,'0')+':'+
+      String(n.getMinutes()).padStart(2,'0')+':'+
+      String(n.getSeconds()).padStart(2,'0');
+  }
+  tick(); setInterval(tick,1000);
+})();
+
+// ── THREAT GLOBE ──
+(function(){
+  var canvas=document.getElementById('globeCanvas');
+  var panel=canvas.parentElement;
+  if(!window.THREE){canvas.style.background='#0a0a0c';return;}
+
+  var W=panel.clientWidth, H=panel.clientHeight-32;
+  var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false});
+  renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setClearColor(0x000000,1);
+
+  var scene=new THREE.Scene();
+  var camera=new THREE.PerspectiveCamera(45,W/H,0.1,100);
+  camera.position.z=2.8;
+
+  // Ocean sphere
+  var sphere=new THREE.Mesh(
+    new THREE.SphereGeometry(1,64,64),
+    new THREE.MeshPhongMaterial({color:0x0a1628,emissive:0x001830,specular:0x003355,shininess:40})
+  );
+  scene.add(sphere);
+
+  // Wireframe overlay
+  var wire=new THREE.Mesh(
+    new THREE.SphereGeometry(1.015,32,32),
+    new THREE.MeshBasicMaterial({color:0x00d4ff,wireframe:true,transparent:true,opacity:0.06})
+  );
+  scene.add(wire);
+
+  // Atmosphere glow
+  var atmo=new THREE.Mesh(
+    new THREE.SphereGeometry(1.12,32,32),
+    new THREE.ShaderMaterial({
+      uniforms:{},
+      vertexShader:'varying vec3 vNorm;void main(){vNorm=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader:'varying vec3 vNorm;void main(){float r=pow(1.-abs(dot(vNorm,vec3(0.,0.,1.))),3.);gl_FragColor=vec4(0.,0.55,0.8,r*0.35);}',
+      transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending
+    })
+  );
+  scene.add(atmo);
+
+  scene.add(new THREE.AmbientLight(0x112233,1.2));
+  var sun=new THREE.DirectionalLight(0x88ccff,0.8);sun.position.set(3,2,5);scene.add(sun);
+
+  // City coords [lat, lon]
+  var cities=[
+    [40.7,-74],[51.5,-0.1],[55.7,37.6],[39.9,116.4],[35.7,139.7],
+    [37.6,127],[52.5,13.4],[48.9,2.3],[19.1,72.9],[-23.5,-46.6],
+    [6.5,3.4],[30.0,31.2],[-33.9,151.2],[43.7,-79.4],[1.3,103.8],
+    [25.2,55.3],[19.4,-99.1],[41.9,-87.6],[34.1,-118.2],[38.9,-77.0]
+  ];
+
+  function latLonToVec3(lat,lon,r){
+    var phi=(90-lat)*Math.PI/180, theta=(lon+180)*Math.PI/180;
+    return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));
+  }
+
+  var arcs=[]; var attackCount=1247;
+  var counterEl=document.getElementById('globeCounter');
+
+  function addArc(){
+    var si=Math.floor(Math.random()*cities.length);
+    var ti=Math.floor(Math.random()*cities.length);
+    if(si===ti)ti=(ti+1)%cities.length;
+    var src=latLonToVec3(cities[si][0],cities[si][1],1.0);
+    var tgt=latLonToVec3(cities[ti][0],cities[ti][1],1.0);
+    var mid=new THREE.Vector3().addVectors(src,tgt).multiplyScalar(0.5);
+    mid.normalize().multiplyScalar(1.5+Math.random()*0.4);
+    var curve=new THREE.CatmullRomCurve3([src,mid,tgt]);
+    var pts=curve.getPoints(60);
+    var geo=new THREE.BufferGeometry().setFromPoints(pts);
+    var mat=new THREE.LineBasicMaterial({color:0xff2244,transparent:true,opacity:0.5,depthWrite:false});
+    var line=new THREE.Line(geo,mat);
+    scene.add(line);
+    attackCount+=Math.floor(Math.random()*3)+1;
+    counterEl.textContent='ATTACKS: '+attackCount.toLocaleString();
+    // Animated dot
+    var dotGeo=new THREE.SphereGeometry(0.016,8,8);
+    var dotMat=new THREE.MeshBasicMaterial({color:0xff8800});
+    var dot=new THREE.Mesh(dotGeo,dotMat);
+    scene.add(dot);
+    arcs.push({line:line,dot:dot,curve:curve,t:0,speed:0.008+Math.random()*0.006,life:0});
+  }
+
+  var lastArc=0;
+  function animateGlobe(){
+    requestAnimationFrame(animateGlobe);
+    var now=Date.now();
+    if(now-lastArc>2500){lastArc=now;addArc();}
+    sphere.rotation.y+=0.003; wire.rotation.y+=0.002;
+    arcs=arcs.filter(function(a){
+      a.t+=a.speed; a.life++;
+      if(a.t>=1||a.life>300){scene.remove(a.line);scene.remove(a.dot);return false;}
+      var pos=a.curve.getPoint(a.t);a.dot.position.copy(pos);
+      a.line.material.opacity=Math.max(0,0.5-a.t*0.5);
+      return true;
+    });
+    renderer.render(scene,camera);
+  }
+  animateGlobe();
+
+  new ResizeObserver(function(){
+    W=panel.clientWidth;H=panel.clientHeight-32;
+    if(H<1)return;
+    renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();
+  }).observe(panel);
+})();
+
+// ── CVE FEED ──
+(function(){
+  var el=document.getElementById('cveList');
+  var status=document.getElementById('cveStatus');
+
+  var FALLBACK=[
+    {id:'CVE-2024-21762',score:9.8,sev:'CRITICAL',desc:'Fortinet FortiOS auth bypass via crafted HTTP request',age:'1h ago'},
+    {id:'CVE-2024-3400', score:10.0,sev:'CRITICAL',desc:'PAN-OS GlobalProtect command injection RCE',age:'3h ago'},
+    {id:'CVE-2024-4577', score:9.8,sev:'CRITICAL',desc:'PHP CGI argument injection on Windows systems',age:'5h ago'},
+    {id:'CVE-2024-27198',score:9.8,sev:'CRITICAL',desc:'JetBrains TeamCity auth bypass unauthenticated access',age:'8h ago'},
+    {id:'CVE-2024-23897',score:9.8,sev:'CRITICAL',desc:'Jenkins arbitrary file read via CLI leading to RCE',age:'12h ago'},
+    {id:'CVE-2024-1709', score:10.0,sev:'CRITICAL',desc:'ConnectWise ScreenConnect auth bypass all versions',age:'14h ago'},
+    {id:'CVE-2024-22252',score:9.3,sev:'CRITICAL',desc:'VMware ESXi use-after-free in XHCI USB controller',age:'18h ago'},
+    {id:'CVE-2024-20353',score:8.6,sev:'HIGH',   desc:'Cisco ASA denial of service via malformed HTTPS',age:'1d ago'},
+    {id:'CVE-2024-28987',score:9.1,sev:'CRITICAL',desc:'SolarWinds Web Help Desk hardcoded credentials',age:'2d ago'},
+    {id:'CVE-2024-38112',score:7.5,sev:'HIGH',   desc:'Windows MSHTML spoofing via retired IE HTML engine',age:'2d ago'},
+    {id:'CVE-2024-30051',score:7.8,sev:'HIGH',   desc:'Windows DWM Core Library privilege escalation',age:'3d ago'},
+    {id:'CVE-2024-26169',score:7.8,sev:'HIGH',   desc:'Windows Error Reporting Service local privilege esc',age:'3d ago'},
+  ];
+
+  function sevColor(s){
+    if(s==='CRITICAL'||s>=9)return{bg:'rgba(255,34,68,.25)',c:'#ff2244'};
+    if(s==='HIGH'||s>=7)return{bg:'rgba(255,140,0,.25)',c:'#ff8c00'};
+    if(s==='MEDIUM'||s>=4)return{bg:'rgba(255,204,0,.2)',c:'#ffcc00'};
+    return{bg:'rgba(0,255,136,.15)',c:'#00ff88'};
+  }
+
+  function renderCVEs(list){
+    el.innerHTML='';
+    list.forEach(function(c){
+      var sc=typeof c.score==='number'?c.score:0;
+      var sev=c.sev||(sc>=9?'CRITICAL':sc>=7?'HIGH':sc>=4?'MEDIUM':'LOW');
+      var scol=sevColor(sc||sev);
+      var row=document.createElement('div');
+      row.className='cve-row flash';
+      row.innerHTML=
+        '<span class="cvss-badge" style="background:'+scol.bg+';color:'+scol.c+'">'+
+          (sc?sc.toFixed(1):'N/A')+'</span>'+
+        '<div class="cve-info">'+
+          '<div class="cve-id">'+c.id+'</div>'+
+          '<div class="cve-desc">'+(c.desc||'').substring(0,70)+'</div>'+
+        '</div>'+
+        '<div class="cve-meta">'+
+          '<span class="cve-sev" style="background:'+scol.bg+';color:'+scol.c+'">'+sev+'</span>'+
+          '<span class="cve-age">'+(c.age||'—')+'</span>'+
+        '</div>';
+      el.appendChild(row);
+    });
+  }
+
+  function timeAgo(published){
+    try{
+      var diff=(Date.now()-new Date(published).getTime())/1000;
+      if(diff<3600)return Math.floor(diff/60)+'m ago';
+      if(diff<86400)return Math.floor(diff/3600)+'h ago';
+      return Math.floor(diff/86400)+'d ago';
+    }catch(e){return '—';}
+  }
+
+  function fetchCVEs(){
+    fetch('https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=15')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        var items=(data.vulnerabilities||[]).map(function(v){
+          var cve=v.cve;
+          var metrics=cve.metrics||{};
+          var cvssv31=(metrics.cvssMetricV31||[])[0];
+          var cvssv30=(metrics.cvssMetricV30||[])[0];
+          var cvssv2=(metrics.cvssMetricV2||[])[0];
+          var score=0,sev='LOW';
+          if(cvssv31){score=cvssv31.cvssData.baseScore;sev=cvssv31.cvssData.baseSeverity;}
+          else if(cvssv30){score=cvssv30.cvssData.baseScore;sev=cvssv30.cvssData.baseSeverity;}
+          else if(cvssv2){score=cvssv2.cvssData.baseScore;sev=cvssv2.baseSeverity||'LOW';}
+          var descs=((cve.descriptions||[]).find(function(d){return d.lang==='en';})||{}).value||'';
+          return{id:cve.id,score:score,sev:sev,desc:descs,age:timeAgo(cve.published)};
+        });
+        renderCVEs(items.length?items:FALLBACK);
+        status.textContent='● LIVE';status.style.color='var(--green)';
+      })
+      .catch(function(){renderCVEs(FALLBACK);status.textContent='● CACHED';status.style.color='var(--yellow)';});
+  }
+
+  renderCVEs(FALLBACK);
+  setTimeout(fetchCVEs,800);
+  setInterval(fetchCVEs,300000);
+})();
+
+// ── ALERTS ──
+(function(){
+  var INCIDENTS=[
+    {p:'P1',title:'Ransomware Detected',host:'10.0.0.42',analyst:'unassigned',status:'ACTIVE',offset:212},
+    {p:'P1',title:'Credential Stuffing Attack',host:'auth.internal',analyst:'J.Torres',status:'INVESTIGATING',offset:847},
+    {p:'P2',title:'Lateral Movement Detected',host:'10.0.12.88',analyst:'unassigned',status:'ACTIVE',offset:134},
+    {p:'P2',title:'Data Exfiltration Alert',host:'db.prod.01',analyst:'M.Chen',status:'INVESTIGATING',offset:3210},
+    {p:'P3',title:'Brute Force SSH',host:'10.0.5.15',analyst:'unassigned',status:'ACTIVE',offset:67},
+    {p:'P3',title:'Malware C2 Beacon',host:'WKSTN-047',analyst:'unassigned',status:'ACTIVE',offset:441},
+    {p:'P4',title:'Port Scan Detected',host:'10.0.0.1',analyst:'Auto-IDS',status:'INVESTIGATING',offset:9876},
+    {p:'P4',title:'Failed Login Threshold',host:'vpn.gateway',analyst:'unassigned',status:'ACTIVE',offset:523},
+  ];
+
+  var list=document.getElementById('alertsList');
+  var timers=[];
+
+  function fmtTime(s){
+    var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+    return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+  }
+
+  INCIDENTS.forEach(function(inc,idx){
+    var card=document.createElement('div');
+    card.className='alert-card';card.dataset.p=inc.p;card.dataset.idx=idx;
+
+    var pBadge=inc.p.toLowerCase()+'-badge';
+    var dotClass=inc.status==='ACTIVE'?'active':inc.status==='INVESTIGATING'?'investigating':'closed';
+    var statusLabel=inc.status;
+    var seconds=inc.offset;
+
+    card.innerHTML=
+      '<div class="ac-head">'+
+        '<span class="ac-priority '+pBadge+'">'+inc.p+'</span>'+
+        '<span class="ac-priority" style="font-size:.42rem;letter-spacing:.08em;color:var(--dim)">'+inc.title+'</span>'+
+        '<div class="ac-status" style="margin-left:auto">'+
+          '<span class="ac-dot '+dotClass+'" data-dot="'+idx+'"></span>'+
+          '<span style="font-size:.44rem;letter-spacing:.08em" data-status="'+idx+'">'+statusLabel+'</span>'+
+          '<span class="ac-timer" data-timer="'+idx+'">'+fmtTime(seconds)+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="ac-body">'+
+        '<div class="ac-meta">Host: '+inc.host+' · Analyst: '+inc.analyst+'</div>'+
+        '<div class="ac-actions">'+
+          '<button class="ac-btn" onclick="socAlert('+idx+',\'INVESTIGATING\')">INVESTIGATE</button>'+
+          '<button class="ac-btn" onclick="socAlert('+idx+',\'CONTAINED\')">CONTAIN</button>'+
+          '<button class="ac-btn btn-close" onclick="socAlert('+idx+',\'CLOSED\')">CLOSE</button>'+
+        '</div>'+
+      '</div>';
+    list.appendChild(card);
+    timers.push(seconds);
+  });
+
+  // Update timers
+  setInterval(function(){
+    timers.forEach(function(s,i){
+      var el=document.querySelector('[data-timer="'+i+'"]');
+      if(el){timers[i]++;el.textContent=fmtTime(timers[i]);}
+    });
+  },1000);
+
+  window.socAlert=function(idx,newStatus){
+    var statusEl=document.querySelector('[data-status="'+idx+'"]');
+    var dotEl=document.querySelector('[data-dot="'+idx+'"]');
+    if(statusEl)statusEl.textContent=newStatus;
+    if(dotEl){
+      dotEl.className='ac-dot';
+      if(newStatus==='INVESTIGATING')dotEl.classList.add('investigating');
+      else if(newStatus==='CLOSED'){dotEl.classList.add('closed');}
+      // update badge count
+      var active=document.querySelectorAll('.ac-dot.active').length;
+      var badge=document.getElementById('alertBadge');
+      if(badge)badge.textContent='ALERTS: '+active;
+      var cnt=document.getElementById('alertCount');
+      if(cnt)cnt.textContent=document.querySelectorAll('.alert-card').length;
+    }
+  };
+
+  // Sparkline
+  var spark=document.getElementById('sparkCanvas');
+  var sctx=spark.getContext('2d');
+  var data=Array.from({length:24},function(_,i){
+    return 2+Math.floor(Math.sin(i/3)*3+Math.random()*8);
+  });
+  function drawSpark(){
+    spark.width=spark.clientWidth||280;spark.height=40;
+    var W=spark.width,H=spark.height,max=Math.max.apply(null,data);
+    sctx.clearRect(0,0,W,H);
+    var bw=W/data.length;
+    data.forEach(function(v,i){
+      var h=Math.max(2,(v/max)*(H-4));
+      var isLast=(i===data.length-1);
+      sctx.fillStyle=isLast?'rgba(255,34,68,.8)':'rgba(0,212,255,.35)';
+      sctx.fillRect(i*bw+1,H-h,bw-2,h);
+    });
+  }
+  drawSpark();
+  window.addEventListener('resize',drawSpark);
+})();
+
+// ── NETWORK TOPOLOGY ──
+(function(){
+  var canvas=document.getElementById('netCanvas');
+  var panel=canvas.parentElement;
+  var ctx=canvas.getContext('2d');
+
+  var NODES=[
+    {id:'Router',  type:'router',   x:0.5,y:0.15},
+    {id:'Firewall',type:'firewall', x:0.5,y:0.35},
+    {id:'Srv-01',  type:'server',   x:0.2,y:0.55, comp:true},
+    {id:'Srv-02',  type:'server',   x:0.5,y:0.55},
+    {id:'Srv-03',  type:'server',   x:0.8,y:0.55},
+    {id:'DB',      type:'db',       x:0.15,y:0.78,comp:true},
+    {id:'DNS',     type:'dns',      x:0.5,y:0.82},
+    {id:'IDS',     type:'ids',      x:0.85,y:0.78},
+    {id:'WS-01',   type:'ws',       x:0.1,y:0.42},
+    {id:'WS-02',   type:'ws',       x:0.25,y:0.42},
+    {id:'WS-03',   type:'ws',       x:0.65,y:0.42},
+    {id:'WS-04',   type:'ws',       x:0.75,y:0.42},
+    {id:'WS-05',   type:'ws',       x:0.88,y:0.42},
+  ];
+
+  var EDGES=[
+    [0,1],[1,2],[1,3],[1,4],[2,5],[3,6],[4,7],[1,8],[1,9],[1,10],[1,11],[1,12]
+  ];
+
+  var TYPE_COLOR={
+    router:'#b8933a',firewall:'#ff2244',server:'#00d4ff',
+    db:'#b96eff',dns:'#00ff88',ids:'#ff8c00',ws:'rgba(245,242,236,.4)'
+  };
+
+  // Initialize with spread positions
+  var nodes=NODES.map(function(n){
+    return Object.assign({},n,{vx:0,vy:0,px:n.x,py:n.y});
+  });
+
+  function resize(){
+    var pw=panel.clientWidth, ph=panel.clientHeight-32;
+    canvas.width=pw; canvas.height=ph;
+    nodes.forEach(function(n){n.px=n.x*pw;n.py=n.y*ph;});
+  }
+  resize();
+  new ResizeObserver(resize).observe(panel);
+
+  var t=0;
+  function drawNet(){
+    requestAnimationFrame(drawNet);
+    t+=0.01;
+    var W=canvas.width,H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // Spring forces
+    nodes.forEach(function(a,ai){
+      nodes.forEach(function(b,bi){
+        if(ai>=bi)return;
+        var dx=b.px-a.px,dy=b.py-a.py,d=Math.sqrt(dx*dx+dy*dy)||1;
+        var rep=800/(d*d);
+        a.vx-=rep*dx/d; a.vy-=rep*dy/d;
+        b.vx+=rep*dx/d; b.vy+=rep*dy/d;
+      });
+    });
+    EDGES.forEach(function(e){
+      var a=nodes[e[0]],b=nodes[e[1]];
+      var dx=b.px-a.px,dy=b.py-a.py,d=Math.sqrt(dx*dx+dy*dy)||1;
+      var rest=W*0.18,force=(d-rest)*0.015;
+      a.vx+=force*dx/d; a.vy+=force*dy/d;
+      b.vx-=force*dx/d; b.vy-=force*dy/d;
+    });
+    // Center pull
+    var cx=W/2,cy=H/2;
+    nodes.forEach(function(n){
+      n.vx+=(cx-n.px)*0.0004; n.vy+=(cy-n.py)*0.0004;
+    });
+
+    nodes.forEach(function(n){
+      n.vx*=0.88; n.vy*=0.88;
+      n.px+=n.vx; n.py+=n.vy;
+      n.px=Math.max(20,Math.min(W-20,n.px));
+      n.py=Math.max(20,Math.min(H-20,n.py));
+    });
+
+    // Draw edges
+    EDGES.forEach(function(e){
+      var a=nodes[e[0]],b=nodes[e[1]];
+      ctx.beginPath();
+      ctx.moveTo(a.px,a.py);ctx.lineTo(b.px,b.py);
+      ctx.strokeStyle='rgba(0,212,255,0.12)';ctx.lineWidth=1;ctx.stroke();
+    });
+
+    // Draw nodes
+    nodes.forEach(function(n){
+      var r=n.type==='router'||n.type==='firewall'?8:5;
+      var col=TYPE_COLOR[n.type]||'#888';
+
+      if(n.comp){
+        // Compromised pulsing glow
+        var gp=0.4+Math.sin(t*3)*0.35;
+        ctx.beginPath();ctx.arc(n.px,n.py,r+6,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,34,68,'+gp*0.15+')';ctx.fill();
+      }
+
+      // Node circle
+      ctx.beginPath();ctx.arc(n.px,n.py,r,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.fill();
+      if(n.comp){ctx.strokeStyle='rgba(255,34,68,.8)';ctx.lineWidth=1.5;ctx.stroke();}
+
+      // Label
+      ctx.fillStyle=n.comp?'rgba(255,34,68,.9)':'rgba(245,242,236,.45)';
+      ctx.font='8px "Share Tech Mono",monospace';
+      ctx.textAlign='center';
+      ctx.fillText(n.id,n.px,n.py+r+9);
+    });
+  }
+  drawNet();
+})();
+
+// ── SIEM STREAM ──
+(function(){
+  var feed=document.getElementById('siemFeed');
+  var paused=false;
+  feed.addEventListener('mouseenter',function(){paused=true;});
+  feed.addEventListener('mouseleave',function(){paused=false;});
+
+  var EVENTS=[
+    {type:'AUTH_FAIL', cls:'siem-AUTH_FAIL',
+     details:['user=admin src=192.168.1.45','user=root src=10.4.2.11','user=svc_db src=172.16.0.88']},
+    {type:'PORT_SCAN', cls:'siem-PORT_SCAN',
+     details:['src=203.45.67.89 ports=22,80,443','src=185.12.44.201 ports=3389,445','src=91.234.12.5 ports=21,22,23']},
+    {type:'MALWARE',   cls:'siem-MALWARE',
+     details:['hash=a3f4b2c1 proc=svchost.exe','hash=d9e2f1a0 proc=powershell.exe','hash=7c8b3e4f proc=wscript.exe']},
+    {type:'LOGIN_OK',  cls:'siem-LOGIN_OK',
+     details:['user=b.temple src=10.0.0.15','user=j.torres src=10.0.1.22','user=m.chen src=VPN']},
+    {type:'FIREWALL',  cls:'siem-FIREWALL',
+     details:['blocked=203.0.113.45 rule=GEO-BLK','blocked=198.51.100.9 rule=TOR-EXIT','blocked=2.56.188.0 rule=THREAT-IP']},
+    {type:'LATERAL',   cls:'siem-LATERAL',
+     details:['src=10.0.0.42 dst=10.0.0.5 proto=SMB','src=WKSTN-047 dst=Srv-01 proc=psexec.exe']},
+    {type:'PRIV_ESC',  cls:'siem-PRIV_ESC',
+     details:['proc=cmd.exe parent=explorer.exe user=SYSTEM','proc=net.exe args=localgroup+Administrators']},
+    {type:'DNS',       cls:'siem-DNS',
+     details:['query=update.microsoft.com type=A','query=analytics.google.com type=CNAME','query=unknown-domain.xyz type=TXT']},
+  ];
+
+  var MAX_ROWS=80;
+
+  function addRow(){
+    if(paused)return;
+    var ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+    var det=ev.details[Math.floor(Math.random()*ev.details.length)];
+    var now=new Date();
+    var ts=String(now.getHours()).padStart(2,'0')+':'+
+           String(now.getMinutes()).padStart(2,'0')+':'+
+           String(now.getSeconds()).padStart(2,'0')+'.'+
+           String(now.getMilliseconds()).padStart(3,'0').substring(0,3);
+    var row=document.createElement('div');
+    row.className='siem-row '+ev.cls;
+    row.innerHTML='<span class="siem-time">'+ts+'</span>'+
+                  '<span class="siem-type">'+ev.type+'</span>'+
+                  '<span class="siem-detail">'+det+'</span>';
+    feed.appendChild(row);
+    // Trim
+    while(feed.children.length>MAX_ROWS)feed.removeChild(feed.firstChild);
+    feed.scrollTop=feed.scrollHeight;
+  }
+
+  setInterval(addRow,750+Math.random()*400);
+  // Prime with some rows
+  for(var i=0;i<12;i++)addRow();
+})();
+
+</script>
+</body>
+</html>
