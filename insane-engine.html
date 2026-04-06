@@ -3,50 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CINEMATIC ENGINE</title>
+<title>CINEMATIC ENGINE — Brian Temple</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace}
-  #c{position:fixed;top:0;left:0;width:100%;height:100%;display:block}
+  #c{position:fixed;top:0;left:0;width:100%;height:100%;display:block;z-index:1}
   nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;
-    padding:0.65rem 1.8rem;background:rgba(0,0,0,0.7);backdrop-filter:blur(14px);
-    border-bottom:1px solid rgba(0,204,255,0.1)}
-  .nb{font-size:0.68rem;letter-spacing:0.14em;color:rgba(0,204,255,0.75);text-decoration:none;transition:color 0.2s}
+    padding:0.65rem 1.8rem;background:rgba(0,0,0,0.55);backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(0,204,255,0.12)}
+  .nb{font-size:0.68rem;letter-spacing:0.14em;color:rgba(0,204,255,0.7);text-decoration:none;transition:color 0.2s}
   .nb:hover{color:#00ccff}
   .nt{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
   .nt span:first-child{display:block;font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.38em;color:rgba(255,255,255,0.9);text-transform:uppercase}
-  .nt span:last-child{display:block;font-size:0.55rem;letter-spacing:0.28em;color:rgba(0,204,255,0.45);text-transform:uppercase}
-  .cl{position:fixed;font-size:0.5rem;letter-spacing:0.2em;color:rgba(0,204,255,0.18);text-transform:uppercase;pointer-events:none}
-  .cl.tl{top:3.5rem;left:1.2rem} .cl.br{bottom:1.2rem;right:1.2rem;text-align:right}
-  .cl.bl{bottom:1.2rem;left:1.2rem}
-
-  /* Vignette overlay */
-  #vignette{position:fixed;inset:0;pointer-events:none;z-index:10;
-    background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.7) 100%)}
-
-  /* Scanlines — barely visible */
-  #scanlines{position:fixed;inset:0;pointer-events:none;z-index:11;opacity:0.015;
-    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.4) 2px,rgba(0,0,0,0.4) 4px)}
-  /* Deep space nebula gradient */
-  #nebula{position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(ellipse 120% 100% at 30% 60%,rgba(0,60,120,0.35) 0%,transparent 55%),
-               radial-gradient(ellipse 80% 80% at 75% 30%,rgba(60,0,100,0.30) 0%,transparent 50%),
-               radial-gradient(ellipse 60% 90% at 50% 50%,rgba(0,20,60,0.50) 0%,transparent 70%);}
+  .nt span:last-child{display:block;font-size:0.55rem;letter-spacing:0.28em;color:rgba(0,204,255,0.4);text-transform:uppercase}
+  .cl{position:fixed;font-size:0.48rem;letter-spacing:0.2em;color:rgba(0,204,255,0.15);text-transform:uppercase;pointer-events:none;z-index:50}
+  .cl.tl{top:3.5rem;left:1.2rem}.cl.br{bottom:1.2rem;right:1.2rem;text-align:right}.cl.bl{bottom:1.2rem;left:1.2rem}
 </style>
 </head>
 <body>
 <nav>
   <a href="/" class="nb">← PORTFOLIO</a>
-  <div class="nt"><span>CINEMATIC ENGINE</span><span>GPU VISUAL DEMO</span></div>
+  <div class="nt"><span>CINEMATIC ENGINE</span><span>GPU PARTICLE DEMO · v2.0</span></div>
 </nav>
 <canvas id="c"></canvas>
-<div id="nebula"></div>
-<div id="vignette"></div>
-<div id="scanlines"></div>
-<div class="cl tl">ENERGY CORE ACTIVE<br>PARTICLE FIELD: ONLINE</div>
+<div class="cl tl">ENERGY CORE ACTIVE<br>PARTICLE FIELD: 30K</div>
 <div class="cl bl">MOVE MOUSE TO INTERACT</div>
-<div class="cl br">WEBGL 2.0<br>60FPS TARGET</div>
+<div class="cl br">WEBGL · POST-FX<br>BLOOM + CHROMA + GRAIN</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
@@ -57,413 +40,434 @@
 <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script>
 'use strict';
+let W=innerWidth,H=innerHeight;
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000,1);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
 
-let W = innerWidth, H = innerHeight;
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: false});
-renderer.setSize(W, H);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 1);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(55,W/H,0.1,200);
+camera.position.z=4.5;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
-// Fog pushes distant particles to black — natural depth
-scene.fog = new THREE.FogExp2(0x000000, 0.18);
-
-const camera = new THREE.PerspectiveCamera(55, W/H, 0.1, 80);
-camera.position.z = 4.5;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FLUID SIM — ping-pong GPU render-to-texture
-// ═══════════════════════════════════════════════════════════════════════════════
-let rt1 = makeRT(W, H), rt2 = makeRT(W, H);
-clearRT(rt1); clearRT(rt2);
-
-let mxActive = false, mx = -9, my = -9, mxPrev = -9, myPrev = -9;
-
-const fluidMat = new THREE.ShaderMaterial({
-  uniforms: {
-    prev: {value:null}, mouse: {value:new THREE.Vector2(-9,-9)},
-    prevMouse: {value:new THREE.Vector2(-9,-9)},
-    res: {value:new THREE.Vector2(W,H)}, active: {value:0.0}
-  },
-  vertexShader: 'void main(){gl_Position=vec4(position,1.0);}',
-  fragmentShader: `
-    uniform sampler2D prev;
-    uniform vec2 mouse, prevMouse, res;
-    uniform float active;
+// ══════════════════════════════════════════════════
+// NEBULA BACKGROUND — animated FBM shader plane
+// ══════════════════════════════════════════════════
+const nebulaGeo=new THREE.PlaneGeometry(40,40);
+const nebulaMat=new THREE.ShaderMaterial({
+  uniforms:{time:{value:0}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`
+    precision highp float;
+    uniform float time;varying vec2 vUv;
+    float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+      return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1)),f.x),f.y);}
+    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p*=2.1;a*=.5;}return v;}
     void main(){
-      vec2 uv = gl_FragCoord.xy / res;
-      vec3 col = texture2D(prev, uv).rgb;
-
-      if(active > 0.5){
-        // Velocity-based splash: stronger when mouse moves fast
-        vec2 vel = mouse - prevMouse;
-        float speed = length(vel) * 14.0;
-        float d = distance(uv, mouse);
-        float splash = exp(-d * 7.0) * min(speed, 0.8) * 1.2;
-        // Color shifts with mouse position for vivid nebula palette
-        vec3 inkColor = vec3(
-          0.02 + mouse.x * 0.18,
-          0.12 + (1.0 - mouse.y) * 0.22,
-          0.35 + mouse.y * 0.40
-        );
-        col += inkColor * splash;
-
-        // Directional smear — drags ink along movement
-        vec2 smearUV = uv - vel * 0.03;
-        vec3 smear = texture2D(prev, smearUV).rgb;
-        col = mix(col, smear, 0.18);
-      }
-
-      col *= 0.972;
-      col = min(col, vec3(0.65));
-      gl_FragColor = vec4(col, 1.0);
-    }
-  `,
+      vec2 uv=(vUv-.5)*5.;
+      float t=time*.04;
+      vec2 q=vec2(fbm(uv+t),fbm(uv+vec2(1.7,9.2)+t*.8));
+      vec2 r=vec2(fbm(uv+2.*q+vec2(.15,.12)+t*.6),fbm(uv+2.*q+vec2(8.3,2.8)+t*.5));
+      float f=fbm(uv+2.8*r);
+      // three nebula color layers
+      vec3 c1=mix(vec3(.03,.005,.08),vec3(.0,.04,.14),clamp(f*2.,0.,1.));
+      vec3 c2=mix(c1,vec3(.0,.08,.18),clamp(f*f*4.,0.,1.));
+      vec3 c3=mix(c2,vec3(.06,.0,.12),clamp(pow(f,3.)*8.,0.,1.));
+      gl_FragColor=vec4(c3*.9,1.);
+    }`,
+  depthWrite:false,side:THREE.BackSide
 });
-const fluidScene = new THREE.Scene();
-const fluidCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-fluidScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), fluidMat));
+const nebulaPlane=new THREE.Mesh(nebulaGeo,nebulaMat);
+nebulaPlane.position.z=-8;
+scene.add(nebulaPlane);
 
-// Background plane — shows fluid, hard capped
-const bgMat = new THREE.ShaderMaterial({
-  uniforms: {tex:{value:null}},
-  vertexShader: 'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader: `
-    uniform sampler2D tex;
-    varying vec2 v;
-    void main(){
-      vec3 c = texture2D(tex, v).rgb;
-      // Boost fluid visibility — soft tonemapping
-      vec3 boosted = c * 2.2;
-      boosted = boosted / (1.0 + boosted); // Reinhard tonemap keeps it from blowing out
-      gl_FragColor = vec4(boosted, 1.0);
-    }
-  `,
-  depthWrite: false,
-});
-const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(18,18), bgMat);
-bgPlane.position.z = -5;
-scene.add(bgPlane);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// NEBULA / SPACE DUST — volumetric-looking background particles
-// ═══════════════════════════════════════════════════════════════════════════════
-const DUST = 4000;
-const dPos = new Float32Array(DUST*3), dCol = new Float32Array(DUST*3), dSz = new Float32Array(DUST);
-for(let i=0;i<DUST;i++){
-  const r = 3 + Math.random()*20;
-  const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
-  dPos[i*3]   = r*Math.sin(ph)*Math.cos(th);
-  dPos[i*3+1] = r*Math.sin(ph)*Math.sin(th);
-  dPos[i*3+2] = r*Math.cos(ph);
-  // Deep space colors: dark blue, purple, teal
-  const palette = Math.random();
-  if(palette < 0.33){ dCol[i*3]=0.04; dCol[i*3+1]=0.02; dCol[i*3+2]=0.08; }
-  else if(palette < 0.66){ dCol[i*3]=0.01; dCol[i*3+1]=0.04; dCol[i*3+2]=0.06; }
-  else { dCol[i*3]=0.06; dCol[i*3+1]=0.01; dCol[i*3+2]=0.05; }
-  dSz[i] = 0.8 + Math.random()*2.5;
+// ══════════════════════════════════════════════════
+// GALAXY PARTICLE FIELD — 30,000 particles
+// ══════════════════════════════════════════════════
+const TOTAL=30000;
+const gPos=new Float32Array(TOTAL*3),gCol=new Float32Array(TOTAL*3),gSz=new Float32Array(TOTAL),gOff=new Float32Array(TOTAL);
+for(let i=0;i<TOTAL;i++){
+  const layer=i/TOTAL;
+  let x,y,z;
+  if(layer<0.6){
+    // Disk / spiral arms
+    const arm=Math.floor(Math.random()*3),armAngle=(arm/3)*Math.PI*2;
+    const r=0.8+Math.random()*18;
+    const spread=0.4+r*0.08;
+    const theta=armAngle+r*0.28+Math.random()*0.6-0.3;
+    x=Math.cos(theta)*r+(Math.random()-.5)*spread;
+    y=(Math.random()-.5)*spread*0.35;
+    z=Math.sin(theta)*r+(Math.random()-.5)*spread;
+  } else {
+    // Halo sphere
+    const r=4+Math.random()*16;
+    const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+    x=r*Math.sin(ph)*Math.cos(th);y=r*Math.sin(ph)*Math.sin(th);z=r*Math.cos(ph);
+  }
+  gPos[i*3]=x;gPos[i*3+1]=y;gPos[i*3+2]=z;
+  // Color: hot stars (blue-white), cool stars (amber), nebula wisps (cyan/purple)
+  const c=Math.random();
+  if(c<0.15){gCol[i*3]=0.7;gCol[i*3+1]=0.85;gCol[i*3+2]=1.0;}      // blue-white hot
+  else if(c<0.35){gCol[i*3]=1.0;gCol[i*3+1]=0.9;gCol[i*3+2]=0.6;}  // yellow warm
+  else if(c<0.55){gCol[i*3]=0.6;gCol[i*3+1]=0.7;gCol[i*3+2]=1.0;}  // blue
+  else if(c<0.7){gCol[i*3]=0.0;gCol[i*3+1]=0.55;gCol[i*3+2]=0.9;}  // cyan
+  else if(c<0.85){gCol[i*3]=0.5;gCol[i*3+1]=0.1;gCol[i*3+2]=0.8;}  // purple
+  else{gCol[i*3]=0.9;gCol[i*3+1]=0.6;gCol[i*3+2]=0.2;}             // amber
+  gSz[i]=0.5+Math.random()*2.5;
+  gOff[i]=Math.random()*Math.PI*2;
 }
-const dGeo = new THREE.BufferGeometry();
-dGeo.setAttribute('position', new THREE.BufferAttribute(dPos,3));
-dGeo.setAttribute('aCol', new THREE.BufferAttribute(dCol,3));
-dGeo.setAttribute('aSize', new THREE.BufferAttribute(dSz,1));
-const dustMat = new THREE.ShaderMaterial({
+const galGeo=new THREE.BufferGeometry();
+galGeo.setAttribute('position',new THREE.BufferAttribute(gPos,3));
+galGeo.setAttribute('aCol',new THREE.BufferAttribute(gCol,3));
+galGeo.setAttribute('aSize',new THREE.BufferAttribute(gSz,1));
+galGeo.setAttribute('aOff',new THREE.BufferAttribute(gOff,1));
+const galMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`
-    attribute vec3 aCol; attribute float aSize;
-    uniform float time; varying vec3 vC; varying float vDist;
+    attribute vec3 aCol;attribute float aSize,aOff;
+    uniform float time;varying vec3 vC;varying float vA;
     void main(){
-      vC = aCol;
-      vec4 mv = modelViewMatrix * vec4(position,1.0);
-      vDist = -mv.z;
-      gl_PointSize = aSize * (300.0 / vDist);
-      gl_Position = projectionMatrix * mv;
+      vC=aCol;
+      float twinkle=0.4+0.6*sin(time*1.8+aOff);
+      vA=twinkle;
+      vec4 mv=modelViewMatrix*vec4(position,1.);
+      gl_PointSize=aSize*twinkle*(280./-mv.z);
+      gl_Position=projectionMatrix*mv;
     }`,
   fragmentShader:`
-    varying vec3 vC; varying float vDist;
+    varying vec3 vC;varying float vA;
     void main(){
-      float d = length(gl_PointCoord - 0.5)*2.0;
-      if(d>1.0) discard;
-      float fade = exp(-vDist * 0.06);
-      float a = pow(1.0-d, 2.5) * 0.4 * fade;
-      gl_FragColor = vec4(vC, a);
+      float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
+      float a=pow(1.-d,2.5)*vA*0.65;
+      gl_FragColor=vec4(vC,a);
     }`,
-  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
 });
-const dustField = new THREE.Points(dGeo, dustMat);
-scene.add(dustField);
+const galaxy=new THREE.Points(galGeo,galMat);
+scene.add(galaxy);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // LIGHTING
-// ═══════════════════════════════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x040610, 1.0));
-const coreLight = new THREE.PointLight(0x0099bb, 1.5, 8);
-scene.add(coreLight);
-const rimLight = new THREE.PointLight(0x220044, 0.6, 6);
-rimLight.position.set(2, -2, -1);
-scene.add(rimLight);
+// ══════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0x040610,1.2));
+const coreLight=new THREE.PointLight(0x0099ee,2.5,10);scene.add(coreLight);
+const rimLight=new THREE.PointLight(0x440088,0.8,8);rimLight.position.set(2,-2,-1);scene.add(rimLight);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ENERGY CORE — multi-layer for depth
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// ENERGY CORE — multi-layer
+// ══════════════════════════════════════════════════
 
-// Layer 1: outer shell — dark metallic frame
-const shellGeo = new THREE.IcosahedronGeometry(0.72, 1); // Low-poly = faceted look
-const shellMat = new THREE.MeshStandardMaterial({
-  color: 0x0a2535, emissive: 0x003040, emissiveIntensity: 0.4,
-  roughness: 0.15, metalness: 0.95, wireframe: true, transparent: true, opacity: 0.18,
+// Outer metallic cage
+const shellGeo=new THREE.IcosahedronGeometry(0.72,1);
+const shellMat=new THREE.MeshStandardMaterial({
+  color:0x0a2535,emissive:0x003040,emissiveIntensity:0.6,
+  roughness:0.1,metalness:0.95,wireframe:true,transparent:true,opacity:0.18
 });
-const shell = new THREE.Mesh(shellGeo, shellMat);
-scene.add(shell);
+const shell=new THREE.Mesh(shellGeo,shellMat);scene.add(shell);
 
-// Layer 2: mid cage — icosahedron wireframe, brighter
-const cageGeo = new THREE.IcosahedronGeometry(0.55, 2);
-const cageMat = new THREE.MeshBasicMaterial({
-  color: 0x005577, wireframe: true, transparent: true, opacity: 0.2,
-});
-const cage = new THREE.Mesh(cageGeo, cageMat);
-scene.add(cage);
+// Mid cage
+const cageGeo=new THREE.IcosahedronGeometry(0.55,2);
+const cageMat=new THREE.MeshBasicMaterial({color:0x00aacc,wireframe:true,transparent:true,opacity:0.15});
+const cage=new THREE.Mesh(cageGeo,cageMat);scene.add(cage);
 
-// Layer 3: inner energy sphere — the bright glowing heart
-// Custom shader so we control EXACTLY the output brightness
-const coreGeo = new THREE.IcosahedronGeometry(0.36, 4);
-const coreMat = new THREE.ShaderMaterial({
-  uniforms: {time:{value:0}, camPos:{value:camera.position}},
+// Inner plasma core — animated noise surface
+const coreGeo=new THREE.IcosahedronGeometry(0.38,5);
+const coreMat=new THREE.ShaderMaterial({
+  uniforms:{time:{value:0},camPos:{value:camera.position}},
   vertexShader:`
-    varying vec3 vNorm; varying vec3 vWorldPos;
+    varying vec3 vNorm;varying vec3 vWorld;varying vec2 vUv;
     void main(){
-      vNorm = normalize(normalMatrix * normal);
-      vWorldPos = (modelMatrix * vec4(position,1.0)).xyz;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      vNorm=normalize(normalMatrix*normal);
+      vWorld=(modelMatrix*vec4(position,1.)).xyz;
+      vUv=uv;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
     }`,
   fragmentShader:`
-    uniform float time; uniform vec3 camPos;
-    varying vec3 vNorm; varying vec3 vWorldPos;
+    precision highp float;
+    uniform float time;uniform vec3 camPos;
+    varying vec3 vNorm;varying vec3 vWorld;varying vec2 vUv;
+    float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+      return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1)),f.x),f.y);}
+    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p*=2.;a*=.5;}return v;}
     void main(){
-      vec3 viewDir = normalize(camPos - vWorldPos);
-      float fresnel = pow(1.0 - abs(dot(vNorm, viewDir)), 3.0);
-      float pulse = 0.7 + sin(time*2.5)*0.12 + sin(time*6.0)*0.05;
-
-      // Core color: bright cyan center, vivid blue-purple fresnel edges
-      vec3 center = vec3(0.05, 0.72, 0.90) * pulse;
-      vec3 edge   = vec3(0.25, 0.15, 0.80) * fresnel * 2.2;
-      vec3 col = center + edge;
-
-      // Slightly higher cap so bloom picks it up
-      col = min(col, vec3(0.95));
-
-      gl_FragColor = vec4(col, 0.92);
+      vec3 viewDir=normalize(camPos-vWorld);
+      float fresnel=pow(1.-abs(dot(vNorm,viewDir)),2.5);
+      float pulse=0.75+sin(time*2.8)*0.14+sin(time*7.1)*0.05;
+      // Animated plasma swirls on surface
+      vec2 swirl=vUv*6.+vec2(time*.4,time*.3);
+      float plasma=fbm(swirl)*0.5+fbm(swirl*2.+time*.2)*0.35+fbm(swirl*.5-time*.15)*0.15;
+      float plasma2=fbm(vUv*8.-time*.5)*0.6+fbm(vUv*4.+time*.3)*0.4;
+      // Core: electric cyan center with gold plasma veins
+      vec3 center=mix(vec3(0.,0.75,1.0),vec3(0.9,0.65,0.1),plasma*plasma2)*pulse*1.3;
+      vec3 edge=vec3(0.3,0.15,0.9)*fresnel*2.8;
+      vec3 col=center+edge+vec3(0.,0.3,0.5)*plasma*0.4;
+      col=min(col,vec3(1.1)); // allow slight HDR for bloom
+      gl_FragColor=vec4(col,0.96);
     }`,
-  transparent: true, side: THREE.DoubleSide,
+  transparent:true,side:THREE.DoubleSide
 });
-const coreObj = new THREE.Mesh(coreGeo, coreMat);
-scene.add(coreObj);
+const coreObj=new THREE.Mesh(coreGeo,coreMat);scene.add(coreObj);
 
-// Layer 4: volumetric glow shell — fresnel edge glow
-const glowGeo = new THREE.SphereGeometry(0.85, 32, 32);
-const glowMat = new THREE.ShaderMaterial({
-  uniforms: {camPos:{value:camera.position}, time:{value:0}},
-  vertexShader:`
-    varying vec3 vNorm; varying vec3 vWorld;
-    void main(){
-      vNorm = normalize(normalMatrix * normal);
-      vWorld = (modelMatrix * vec4(position,1.0)).xyz;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-    }`,
+// Glow shell (large fresnel halo)
+const glowGeo=new THREE.SphereGeometry(1.0,32,32);
+const glowMat=new THREE.ShaderMaterial({
+  uniforms:{camPos:{value:camera.position},time:{value:0}},
+  vertexShader:`varying vec3 vNorm;varying vec3 vWorld;void main(){vNorm=normalize(normalMatrix*normal);vWorld=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`
-    uniform vec3 camPos; uniform float time;
-    varying vec3 vNorm; varying vec3 vWorld;
+    uniform vec3 camPos;uniform float time;
+    varying vec3 vNorm;varying vec3 vWorld;
     void main(){
-      vec3 view = normalize(camPos - vWorld);
-      float rim = pow(1.0 - abs(dot(vNorm, view)), 4.0);
-      float flicker = 0.8 + sin(time*3.0 + vWorld.y*8.0)*0.15;
-      vec3 col = vec3(0.0, 0.45, 0.75) * rim * flicker;
-      col = min(col, vec3(0.55));
-      gl_FragColor = vec4(col, rim * 0.5);
+      vec3 view=normalize(camPos-vWorld);
+      float rim=pow(1.-abs(dot(vNorm,view)),3.5);
+      float flicker=0.75+sin(time*3.2+vWorld.y*10.)*0.18;
+      vec3 col=mix(vec3(0.,0.5,0.9),vec3(0.4,0.1,1.0),rim)*rim*flicker*1.2;
+      gl_FragColor=vec4(col,rim*0.55);
     }`,
-  transparent:true, depthWrite:false, side:THREE.BackSide, blending:THREE.AdditiveBlending,
+  transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending
 });
-const glowShell = new THREE.Mesh(glowGeo, glowMat);
-scene.add(glowShell);
+const glowShell=new THREE.Mesh(glowGeo,glowMat);scene.add(glowShell);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ORBIT RINGS — 3 tilted at different angles
-// ═══════════════════════════════════════════════════════════════════════════════
-const rings = [];
-[[1.2, 0x00aacc, 0.35, 0.6, 0, 0],
- [1.55, 0x7733cc, 0.28, 0, 0.8, 0.4],
- [1.9, 0xcc6622, 0.20, -0.5, 0.3, 0.7]].forEach(([r, col, op, rx, ry, rz]) => {
-  const ring = makeOrbitRing(r, col, op);
-  ring.rotation.set(rx, ry, rz);
-  scene.add(ring);
-  rings.push(ring);
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ORBITING PARTICLES — small glowing dots on ring paths
-// ═══════════════════════════════════════════════════════════════════════════════
-const orbiters = [];
-for(let i=0;i<24;i++){
-  const r = 1.1 + Math.random()*1.0;
-  const speed = 0.3 + Math.random()*0.5;
-  const tilt = (Math.random()-0.5)*1.2;
-  const phase = Math.random()*Math.PI*2;
-  const geo = new THREE.SphereGeometry(0.02 + Math.random()*0.02, 8, 8);
-  const brightness = 0.15 + Math.random()*0.2;
-  const mat = new THREE.MeshBasicMaterial({
-    color: new THREE.Color(brightness*0.2, brightness*0.6, brightness),
-    transparent: true, opacity: 0.7,
-  });
-  const dot = new THREE.Mesh(geo, mat);
-  scene.add(dot);
-  orbiters.push({dot, r, speed, tilt, phase});
+// ══════════════════════════════════════════════════
+// CORONA SPIKES — 20 energy spikes radiating from core
+// ══════════════════════════════════════════════════
+const coronaSpikes=[];
+for(let i=0;i<20;i++){
+  const th=(i/20)*Math.PI*2,ph=(Math.random()-.5)*Math.PI;
+  const dir=new THREE.Vector3(Math.cos(th)*Math.cos(ph),Math.sin(ph),Math.sin(th)*Math.cos(ph));
+  const baseLen=0.5+Math.random()*0.5;
+  const pts=[new THREE.Vector3().copy(dir).multiplyScalar(0.38),new THREE.Vector3().copy(dir).multiplyScalar(0.38+baseLen)];
+  const geo=new THREE.BufferGeometry().setFromPoints(pts);
+  const mat=new THREE.LineBasicMaterial({color:new THREE.Color().setHSL(0.54+Math.random()*0.12,1.0,0.65),transparent:true,opacity:0.0,depthWrite:false});
+  const spike=new THREE.Line(geo,mat);
+  scene.add(spike);
+  coronaSpikes.push({spike,dir,baseLen,phase:Math.random()*Math.PI*2});
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ENERGY TENDRILS — curved lines from core outward
-// ═══════════════════════════════════════════════════════════════════════════════
-const tendrils = [];
-for(let t=0;t<8;t++){
-  const pts = [];
-  const baseAngle = (t/8)*Math.PI*2;
-  const elevation = (Math.random()-0.5)*0.8;
-  for(let s=0;s<=20;s++){
-    const frac = s/20;
-    const r = 0.4 + frac * 1.8;
-    const wobble = Math.sin(frac*Math.PI*3 + baseAngle)*0.3*frac;
-    pts.push(new THREE.Vector3(
-      Math.cos(baseAngle + wobble)*r,
-      elevation*r + Math.sin(frac*Math.PI*2)*0.15,
-      Math.sin(baseAngle + wobble)*r
-    ));
-  }
-  const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  const mat = new THREE.LineBasicMaterial({
-    color: 0x00ccff, transparent:true, opacity:0.16, depthWrite:false,
-  });
-  const line = new THREE.Line(geo, mat);
-  scene.add(line);
-  tendrils.push({line, baseAngle, elevation});
+// ══════════════════════════════════════════════════
+// ORBIT RINGS — 3 tilted glowing rings
+// ══════════════════════════════════════════════════
+const rings=[];
+[[1.25,0x00aacc,0.38,0.6,0,0],[1.6,0x7733cc,0.30,0,0.8,0.4],[2.0,0xcc6622,0.22,-0.5,0.3,0.7]].forEach(([r,col,op,rx,ry,rz])=>{
+  const pts=[];for(let i=0;i<=256;i++){const a=(i/256)*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
+  const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}));
+  ring.rotation.set(rx,ry,rz);scene.add(ring);rings.push(ring);
+});
+
+// ══════════════════════════════════════════════════
+// ORBITING PARTICLES — 60 glowing dots
+// ══════════════════════════════════════════════════
+const orbiters=[];
+for(let i=0;i<60;i++){
+  const r=1.0+Math.random()*1.2,speed=0.25+Math.random()*0.6,tilt=(Math.random()-.5)*1.8,phase=Math.random()*Math.PI*2;
+  const size=0.015+Math.random()*0.025,br=0.3+Math.random()*0.5;
+  const hue=Math.random()<0.5?0.55+Math.random()*0.1:0.08+Math.random()*0.06;
+  const geo=new THREE.SphereGeometry(size,8,8);
+  const mat=new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(hue,1,br),transparent:true,opacity:0.85});
+  const dot=new THREE.Mesh(geo,mat);scene.add(dot);
+  orbiters.push({dot,r,speed,tilt,phase});
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// BLOOM — targeted, only hits the core's 0.5+ output
-// ═══════════════════════════════════════════════════════════════════════════════
-const composer = new THREE.EffectComposer(renderer);
-composer.addPass(new THREE.RenderPass(scene, camera));
-const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W,H), 0.85, 0.7, 0.38);
+// ══════════════════════════════════════════════════
+// SHOCKWAVE RINGS — expand from core every 3s
+// ══════════════════════════════════════════════════
+const shockwaves=[];
+function spawnShockwave(){
+  const geo=new THREE.RingGeometry(0.01,0.04,64);
+  const mat=new THREE.MeshBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.8,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const wave=new THREE.Mesh(geo,mat);
+  // Random tilt
+  wave.rotation.x=Math.random()*Math.PI;wave.rotation.y=Math.random()*Math.PI;
+  scene.add(wave);shockwaves.push({wave,t:0});
+}
+setInterval(spawnShockwave,3000);setTimeout(spawnShockwave,400);
+
+// ══════════════════════════════════════════════════
+// FLUID SIM (render-to-texture ping-pong)
+// ══════════════════════════════════════════════════
+let rt1=makeRT(W,H),rt2=makeRT(W,H);clearRT(rt1);clearRT(rt2);
+let mxActive=false,mx=-9,my=-9,mxPrev=-9,myPrev=-9;
+const fluidMat=new THREE.ShaderMaterial({
+  uniforms:{prev:{value:null},mouse:{value:new THREE.Vector2(-9,-9)},prevMouse:{value:new THREE.Vector2(-9,-9)},res:{value:new THREE.Vector2(W,H)},active:{value:0.0}},
+  vertexShader:'void main(){gl_Position=vec4(position,1.);}',
+  fragmentShader:`
+    uniform sampler2D prev;uniform vec2 mouse,prevMouse,res;uniform float active;
+    void main(){
+      vec2 uv=gl_FragCoord.xy/res;vec3 col=texture2D(prev,uv).rgb;
+      if(active>.5){
+        vec2 vel=mouse-prevMouse;float speed=length(vel)*16.;
+        float d=distance(uv,mouse);
+        float splash=exp(-d*6.5)*min(speed,.9)*1.4;
+        vec3 ink=vec3(.02+mouse.x*.22,.14+(1.-mouse.y)*.28,.38+mouse.y*.45);
+        col+=ink*splash;
+        vec2 smearUV=uv-vel*.035;col=mix(col,texture2D(prev,smearUV).rgb,.2);
+      }
+      col*=.974;col=min(col,vec3(.75));gl_FragColor=vec4(col,1.);
+    }`
+});
+const fluidScene=new THREE.Scene(),fluidCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+fluidScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),fluidMat));
+const bgMat=new THREE.ShaderMaterial({
+  uniforms:{tex:{value:null}},
+  vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`
+    uniform sampler2D tex;varying vec2 v;
+    void main(){
+      vec3 c=texture2D(tex,v).rgb;
+      // Reinhard tonemap + slight saturation boost
+      c*=2.5;c=c/(1.+c);
+      float lum=dot(c,vec3(.299,.587,.114));
+      c=mix(vec3(lum),c,1.3);
+      gl_FragColor=vec4(c,1.);
+    }`,
+  depthWrite:false
+});
+const bgPlane=new THREE.Mesh(new THREE.PlaneGeometry(22,22),bgMat);bgPlane.position.z=-5.5;scene.add(bgPlane);
+
+// ══════════════════════════════════════════════════
+// POST-PROCESSING PIPELINE
+// bloom → chromatic aberration → film grain + vignette
+// ══════════════════════════════════════════════════
+const composer=new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene,camera));
+
+// Bloom
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),1.1,0.75,0.32);
 composer.addPass(bloom);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// Chromatic Aberration
+const chromaPass=new THREE.ShaderPass({
+  uniforms:{tDiffuse:{value:null},amount:{value:0.004}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`
+    uniform sampler2D tDiffuse;uniform float amount;varying vec2 vUv;
+    void main(){
+      vec2 dir=vUv-.5;float dist=length(dir);
+      vec2 off=normalize(dir)*amount*dist*dist*2.5;
+      float r=texture2D(tDiffuse,vUv+off).r;
+      float g=texture2D(tDiffuse,vUv).g;
+      float b=texture2D(tDiffuse,vUv-off).b;
+      gl_FragColor=vec4(r,g,b,1.);
+    }`
+});
+composer.addPass(chromaPass);
+
+// Film grain + vignette (final pass)
+const grainPass=new THREE.ShaderPass({
+  uniforms:{tDiffuse:{value:null},time:{value:0},grainAmt:{value:0.032}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`
+    uniform sampler2D tDiffuse;uniform float time,grainAmt;varying vec2 vUv;
+    float rnd(vec2 p){return fract(sin(dot(p+time,vec2(127.1,311.7)))*43758.5453);}
+    void main(){
+      vec4 col=texture2D(tDiffuse,vUv);
+      col.rgb+=rnd(vUv)*grainAmt-grainAmt*.5;
+      // Vignette
+      float vig=smoothstep(1.0,0.35,length(vUv-.5)*1.6);
+      col.rgb*=vig;
+      gl_FragColor=vec4(clamp(col.rgb,0.,1.),1.);
+    }`,
+  renderToScreen:true
+});
+composer.addPass(grainPass);
+
+// ══════════════════════════════════════════════════
 // INPUT
-// ═══════════════════════════════════════════════════════════════════════════════
-window.addEventListener('mousemove', e => {
-  mxActive = true;
-  mxPrev = mx; myPrev = my;
-  mx = e.clientX / W;
-  my = 1 - e.clientY / H;
+// ══════════════════════════════════════════════════
+window.addEventListener('mousemove',e=>{
+  mxActive=true;mxPrev=mx;myPrev=my;
+  mx=e.clientX/W;my=1-e.clientY/H;
 });
 
-window.addEventListener('resize', () => {
-  W = innerWidth; H = innerHeight;
-  renderer.setSize(W,H); composer.setSize(W,H);
-  camera.aspect = W/H; camera.updateProjectionMatrix();
-  rt1.dispose(); rt2.dispose();
-  rt1 = makeRT(W,H); rt2 = makeRT(W,H);
-  clearRT(rt1); clearRT(rt2);
+window.addEventListener('resize',()=>{
+  W=innerWidth;H=innerHeight;
+  renderer.setSize(W,H);composer.setSize(W,H);
+  camera.aspect=W/H;camera.updateProjectionMatrix();
+  rt1.dispose();rt2.dispose();rt1=makeRT(W,H);rt2=makeRT(W,H);clearRT(rt1);clearRT(rt2);
   fluidMat.uniforms.res.value.set(W,H);
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // HELPERS
-// ═══════════════════════════════════════════════════════════════════════════════
-function makeRT(w,h){
-  return new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});
-}
-function clearRT(rt){
-  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000,1);
-  renderer.clear(true,true,true); renderer.setRenderTarget(null);
-}
-function makeOrbitRing(radius, color, opacity){
-  const pts = [];
-  for(let i=0;i<=256;i++){
-    const a = (i/256)*Math.PI*2;
-    pts.push(new THREE.Vector3(Math.cos(a)*radius, Math.sin(a)*radius, 0));
-  }
-  return new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({color, transparent:true, opacity, depthWrite:false})
-  );
-}
+// ══════════════════════════════════════════════════
+function makeRT(w,h){return new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});}
+function clearRT(rt){renderer.setRenderTarget(rt);renderer.setClearColor(0x000000,1);renderer.clear(true,true,true);renderer.setRenderTarget(null);}
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // ANIMATE
-// ═══════════════════════════════════════════════════════════════════════════════
-let time = 0;
+// ══════════════════════════════════════════════════
+let time=0;
 (function animate(){
   requestAnimationFrame(animate);
-  time += 0.006;
+  time+=0.006;
 
-  // ── Fluid sim step ──
-  fluidMat.uniforms.prev.value = rt1.texture;
-  fluidMat.uniforms.mouse.value.set(mx, my);
-  fluidMat.uniforms.prevMouse.value.set(mxPrev, myPrev);
-  fluidMat.uniforms.active.value = mxActive ? 1.0 : 0.0;
-  renderer.setRenderTarget(rt2);
-  renderer.render(fluidScene, fluidCam);
+  // Fluid sim step
+  fluidMat.uniforms.prev.value=rt1.texture;
+  fluidMat.uniforms.mouse.value.set(mx,my);
+  fluidMat.uniforms.prevMouse.value.set(mxPrev,myPrev);
+  fluidMat.uniforms.active.value=mxActive?1.0:0.0;
+  renderer.setRenderTarget(rt2);renderer.render(fluidScene,fluidCam);
   renderer.setRenderTarget(null);
-  const tmp = rt1; rt1 = rt2; rt2 = tmp;
-  bgMat.uniforms.tex.value = rt1.texture;
+  const tmp=rt1;rt1=rt2;rt2=tmp;bgMat.uniforms.tex.value=rt1.texture;
 
-  // ── Core layers rotation — each at different speed/axis ──
-  shell.rotation.x += 0.003; shell.rotation.y += 0.005;
-  cage.rotation.x -= 0.007;  cage.rotation.y += 0.009; cage.rotation.z += 0.002;
-  coreObj.rotation.x += 0.004; coreObj.rotation.y -= 0.006;
-  glowShell.rotation.y += 0.002;
+  // Nebula drift
+  nebulaMat.uniforms.time.value=time;
 
-  // Update core shader uniforms
-  coreMat.uniforms.time.value = time;
-  coreMat.uniforms.camPos.value.copy(camera.position);
-  glowMat.uniforms.time.value = time;
-  glowMat.uniforms.camPos.value.copy(camera.position);
+  // Galaxy slow drift
+  galaxy.rotation.y+=0.00008;
+  galMat.uniforms.time.value=time;
 
-  // ── Orbit rings slow spin ──
-  rings[0].rotation.z += 0.003;
-  rings[1].rotation.x += 0.002;
-  rings[2].rotation.y += 0.004;
+  // Core layers
+  shell.rotation.x+=0.003;shell.rotation.y+=0.005;
+  cage.rotation.x-=0.007;cage.rotation.y+=0.009;cage.rotation.z+=0.002;
+  coreObj.rotation.x+=0.005;coreObj.rotation.y-=0.007;
+  coreMat.uniforms.time.value=time;coreMat.uniforms.camPos.value.copy(camera.position);
+  glowMat.uniforms.time.value=time;glowMat.uniforms.camPos.value.copy(camera.position);
 
-  // ── Orbiter dots ──
-  orbiters.forEach(o => {
-    const angle = time * o.speed + o.phase;
-    o.dot.position.set(
-      Math.cos(angle) * o.r,
-      Math.sin(o.tilt) * Math.sin(angle) * o.r * 0.6,
-      Math.sin(angle) * o.r * Math.cos(o.tilt)
-    );
+  // Core light pulse
+  coreLight.intensity=2.2+Math.sin(time*2.8)*0.6+Math.sin(time*7.1)*0.2;
+
+  // Corona spikes pulse
+  coronaSpikes.forEach((c,i)=>{
+    const pulse=0.3+Math.sin(time*2.5+c.phase)*0.5+Math.sin(time*5.+c.phase*1.7)*0.2;
+    c.spike.material.opacity=Math.max(0,pulse*0.7);
+    // Scale spike length
+    const len=c.baseLen*(0.6+pulse*0.8);
+    const pos=c.spike.geometry.attributes.position;
+    pos.setXYZ(1,c.dir.x*(0.38+len),c.dir.y*(0.38+len),c.dir.z*(0.38+len));
+    pos.needsUpdate=true;
   });
 
-  // ── Tendrils pulse ──
-  tendrils.forEach((t, i) => {
-    t.line.material.opacity = 0.04 + Math.sin(time*1.5 + i*0.8)*0.04;
-    t.line.rotation.y += 0.001;
+  // Orbit rings
+  rings[0].rotation.z+=0.004;rings[1].rotation.x+=0.003;rings[2].rotation.y+=0.005;
+
+  // Orbiters
+  orbiters.forEach(o=>{
+    const a=time*o.speed+o.phase;
+    o.dot.position.set(Math.cos(a)*o.r,Math.sin(o.tilt)*Math.sin(a)*o.r*.6,Math.sin(a)*o.r*Math.cos(o.tilt));
   });
 
-  // ── Dust field slow drift ──
-  dustField.rotation.y += 0.00015;
-  dustField.rotation.x += 0.00005;
-  dustMat.uniforms.time.value = time;
+  // Shockwaves expand
+  for(let i=shockwaves.length-1;i>=0;i--){
+    const sw=shockwaves[i];sw.t+=0.022;
+    const scale=sw.t*4.0;
+    sw.wave.scale.setScalar(scale);
+    sw.wave.material.opacity=Math.max(0,0.7*(1-sw.t));
+    if(sw.t>=1){scene.remove(sw.wave);sw.wave.geometry.dispose();sw.wave.material.dispose();shockwaves.splice(i,1);}
+  }
 
-  // ── Background particles ──
+  // Post-process uniforms
+  grainPass.uniforms.time.value=time*0.8;
 
-  // ── Cinematic camera — slow orbit + breathing ──
-  const camR = 4.5 + Math.sin(time*0.3)*0.4;
-  const camAngle = time * 0.08;
-  camera.position.x = Math.sin(camAngle) * camR * 0.35;
-  camera.position.y = Math.sin(time*0.11) * 0.6;
-  camera.position.z = Math.cos(camAngle) * camR * 0.85;
-  camera.lookAt(0, 0, 0);
+  // Cinematic camera drift
+  const camR=4.5+Math.sin(time*.28)*.5;
+  const camA=time*.09;
+  camera.position.x=Math.sin(camA)*camR*.38;
+  camera.position.y=Math.sin(time*.12)*.7;
+  camera.position.z=Math.cos(camA)*camR*.88;
+  camera.lookAt(0,0,0);
 
   composer.render();
 })();
