@@ -115,7 +115,7 @@ for(let i=0;i<TOTAL;i++){
   else if(c<.65){gCol[i*3]=.0;gCol[i*3+1]=.6;gCol[i*3+2]=.95;}
   else if(c<.8){gCol[i*3]=.55;gCol[i*3+1]=.08;gCol[i*3+2]=.85;}
   else{gCol[i*3]=.95;gCol[i*3+1]=.55;gCol[i*3+2]=.15;}
-  gSz[i]=.4+Math.random()*2.8;gOff[i]=Math.random()*Math.PI*2;
+  gSz[i]=.3+Math.random()*1.2;gOff[i]=Math.random()*Math.PI*2;
 }
 const galGeo=new THREE.BufferGeometry();
 galGeo.setAttribute('position',new THREE.BufferAttribute(gPos,3));
@@ -125,11 +125,11 @@ galGeo.setAttribute('aOff',new THREE.BufferAttribute(gOff,1));
 const galMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`attribute vec3 aCol;attribute float aSize,aOff;uniform float time;varying vec3 vC;varying float vA;
-    void main(){vC=aCol;float tw=.35+.65*sin(time*1.6+aOff);vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=aSize*tw*(260./-mv.z);gl_Position=projectionMatrix*mv;}`,
+    void main(){vC=aCol;float tw=.06+.16*abs(sin(time*1.6+aOff));vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
+    gl_PointSize=aSize*(200./-mv.z);gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`varying vec3 vC;varying float vA;
     void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
-    float a=pow(1.-d,3.)*vA*.7;gl_FragColor=vec4(vC,a);}`,
+    float a=pow(1.-d,2.)*vA;gl_FragColor=vec4(vC,a);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
 });
 scene.add(new THREE.Points(galGeo,galMat));
@@ -143,7 +143,7 @@ for(let i=0;i<MOTES;i++){
   mPos[i*3]=(Math.random()-.5)*6;mPos[i*3+1]=(Math.random()-.5)*4;mPos[i*3+2]=1.5+Math.random()*2.5;
   const h=Math.random()<.5?.55:.08;const c=new THREE.Color().setHSL(h,1.,.7);
   mCol[i*3]=c.r;mCol[i*3+1]=c.g;mCol[i*3+2]=c.b;
-  mSz[i]=1.5+Math.random()*3.5;mOff2[i]=Math.random()*Math.PI*2;
+  mSz[i]=1.0+Math.random()*1.8;mOff2[i]=Math.random()*Math.PI*2;
 }
 const mGeo=new THREE.BufferGeometry();
 mGeo.setAttribute('position',new THREE.BufferAttribute(mPos,3));
@@ -385,12 +385,12 @@ const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 // Bloom — lowered strength to fix brightness
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),.75,.65,.42);
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),.65,.55,.58);
 composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
 const godRaysPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.28},decay:{value:.97},weight:{value:.018},samples:{value:80}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.18},decay:{value:.96},weight:{value:.014},samples:{value:80}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float exposure,decay,weight;
