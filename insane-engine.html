@@ -44,7 +44,18 @@ const canvas=document.getElementById('c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setClearColor(0x000000,1);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.75; // toned down
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.45; // low base — surges hit hard
+
+// ── AUTO-EXPOSURE ──
+let targetExposure=0.45,cameraShake=0,surge=0;
+function updateExposure(t){
+  targetExposure=0.38+Math.sin(t*1.2)*0.07;
+  if(Math.random()<0.01) targetExposure+=0.22;
+  renderer.toneMappingExposure+=(targetExposure-renderer.toneMappingExposure)*0.05;
+}
+
+// ── POWER SURGE every 6s ──
+setInterval(()=>{ surge=1; },6000);
 
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(55,W/H,0.1,200);
@@ -340,6 +351,7 @@ setInterval(spawnShock,2800);setTimeout(spawnShock,300);setTimeout(spawnShock,14
 // ══════════════════════════════════════════════════════
 const burstParticles=[];
 function spawnEruption(){
+  cameraShake=0.35; surge=Math.max(surge,0.6);
   const N=400;
   for(let i=0;i<N;i++){
     const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
@@ -385,7 +397,7 @@ const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 // Bloom — lowered strength to fix brightness
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),.65,.55,.58);
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),1.2,0.9,0.85);
 composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
@@ -438,6 +450,15 @@ const chromaPass=new THREE.ShaderPass({
     gl_FragColor=vec4(r,g,b,1.);}`,
 });
 composer.addPass(chromaPass);
+
+// SCREEN FLASH (before grain)
+const flashPass=new THREE.ShaderPass({
+  uniforms:{tDiffuse:{value:null},flash:{value:0}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float flash;varying vec2 vUv;
+    void main(){vec4 col=texture2D(tDiffuse,vUv);col.rgb+=flash;gl_FragColor=col;}`
+});
+composer.addPass(flashPass);
 
 // FILM GRAIN + VIGNETTE (final)
 const grainPass=new THREE.ShaderPass({
@@ -603,11 +624,31 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   streakPass.uniforms.time.value=time;
   grainPass.uniforms.time.value=time*.9;
 
-  // Camera drift
+  // Auto-exposure
+  updateExposure(time);
+
+  // Power surge
+  if(surge>0.01){
+    surge*=0.92;
+    bloom.strength=1.2+surge*2.5;
+    coreLight.intensity=2+surge*4;
+    flashPass.uniforms.flash.value=surge*0.35;
+  } else {
+    surge=0;
+    bloom.strength=1.2;
+    flashPass.uniforms.flash.value=0;
+  }
+
+  // Camera drift + shake
   const camR=4.5+Math.sin(time*.27)*.55;const camA=time*.085;
   camera.position.x=Math.sin(camA)*camR*.36;
   camera.position.y=Math.sin(time*.11)*.75;
   camera.position.z=Math.cos(camA)*camR*.88;
+  if(cameraShake>0.005){
+    camera.position.x+=(Math.random()-.5)*cameraShake;
+    camera.position.y+=(Math.random()-.5)*cameraShake;
+    cameraShake*=0.88;
+  }
   camera.lookAt(0,0,0);
 
   composer.render();
