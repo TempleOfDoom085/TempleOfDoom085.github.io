@@ -44,7 +44,7 @@ const canvas=document.getElementById('c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setClearColor(0x000000,1);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.32; // toned down
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.24;
 
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(55,W/H,0.1,200);
@@ -79,8 +79,8 @@ const nebulaFS=`
   }`;
 
 const nebulaLayers=[
-  {z:-9.0,sz:50,seed:0.0, bright:0.35,op:1.0},
-  {z:-6.5,sz:36,seed:2.3, bright:0.18,op:0.5},
+  {z:-9.0,sz:50,seed:0.0, bright:0.26,op:1.0},
+  {z:-6.5,sz:36,seed:2.3, bright:0.14,op:0.5},
   {z:-4.5,sz:26,seed:5.7, bright:0.10,op:0.28},
   {z:-2.5,sz:18,seed:9.1, bright:0.05,op:0.12},
 ];
@@ -423,7 +423,7 @@ const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 // Bloom — lowered strength to fix brightness
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),1.4,0.6,0.78);
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),1.1,0.55,0.82);
 composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
