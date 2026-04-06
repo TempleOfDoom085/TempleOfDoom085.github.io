@@ -44,13 +44,13 @@ const canvas=document.getElementById('c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setClearColor(0x000000,1);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.45; // low base — surges hit hard
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.28; // low base — surges hit hard
 
 // ── AUTO-EXPOSURE ──
-let targetExposure=0.45,cameraShake=0,surge=0;
+let targetExposure=0.22,cameraShake=0,surge=0;
 function updateExposure(t){
-  targetExposure=0.38+Math.sin(t*1.2)*0.07;
-  if(Math.random()<0.01) targetExposure+=0.22;
+  targetExposure=0.20+Math.sin(t*1.2)*0.04;
+  if(Math.random()<0.01) targetExposure+=0.12;
   renderer.toneMappingExposure+=(targetExposure-renderer.toneMappingExposure)*0.05;
 }
 
@@ -179,7 +179,7 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 // LIGHTING
 // ══════════════════════════════════════════════════════
 scene.add(new THREE.AmbientLight(0x040610,1.0));
-const coreLight=new THREE.PointLight(0x0099ee,1.8,10);scene.add(coreLight);  // reduced
+const coreLight=new THREE.PointLight(0x0099ee,1.0,10);scene.add(coreLight);  // reduced
 const rimLight=new THREE.PointLight(0x440088,0.6,8);rimLight.position.set(2,-2,-1);scene.add(rimLight);
 
 // ══════════════════════════════════════════════════════
@@ -211,10 +211,10 @@ const coreMat=new THREE.ShaderMaterial({
       float pulse=.7+sin(time*2.6)*.1+sin(time*6.8)*.04;
       vec2 sw=vUv*5.+vec2(time*.35,time*.25);
       float plasma=fbm(sw)*.5+fbm(sw*2.+time*.18)*.35+fbm(sw*.5-time*.12)*.15;
-      vec3 center=mix(vec3(0.,.6,.85),vec3(.75,.5,.05),plasma*plasma)*pulse;
-      vec3 edge=vec3(.25,.1,.8)*fr*1.8;
+      vec3 center=mix(vec3(0.,.45,.65),vec3(.55,.38,.04),plasma*plasma)*pulse;
+      vec3 edge=vec3(.18,.07,.6)*fr*1.2;
       vec3 col=center+edge;
-      col=min(col,vec3(.75)); // hard cap — prevents blowout
+      col=min(col,vec3(.55)); // hard cap — prevents blowout
       gl_FragColor=vec4(col,.95);}`,
   transparent:true,side:THREE.DoubleSide});
 scene.add(new THREE.Mesh(new THREE.IcosahedronGeometry(.38,5),coreMat));
@@ -227,7 +227,7 @@ const glowMat=new THREE.ShaderMaterial({
     void main(){vec3 view=normalize(camPos-vWorld);float rim=pow(1.-abs(dot(vNorm,view)),4.);
     float fl=.7+sin(time*3.+vWorld.y*8.)*.2;
     vec3 col=mix(vec3(0.,.45,.8),vec3(.35,.08,.85),rim)*rim*fl;
-    gl_FragColor=vec4(col,rim*.35);}`, // opacity reduced to 0.35
+    gl_FragColor=vec4(col,rim*.18);}`, // dim glow
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.,32,32),glowMat));
 
@@ -270,7 +270,7 @@ for(let i=0;i<24;i++){
 // ORBIT RINGS
 // ══════════════════════════════════════════════════════
 const rings=[];
-[[1.25,0x00aacc,.35,.6,0,0],[1.65,0x7722bb,.28,0,.8,.4],[2.05,0xcc5511,.2,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
+[[1.25,0x00aacc,.18,.6,0,0],[1.65,0x7722bb,.14,0,.8,.4],[2.05,0xcc5511,.10,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
   const pts=[];for(let i=0;i<=300;i++){const a=(i/300)*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
   const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
     new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}));
@@ -397,12 +397,12 @@ const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 // Bloom — lowered strength to fix brightness
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),1.2,0.9,0.85);
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),0.7,0.8,0.92);
 composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
 const godRaysPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.18},decay:{value:.96},weight:{value:.014},samples:{value:80}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.10},decay:{value:.96},weight:{value:.009},samples:{value:80}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float exposure,decay,weight;
@@ -421,7 +421,7 @@ composer.addPass(godRaysPass);
 
 // ANAMORPHIC LENS STREAK — horizontal streak across frame from core
 const streakPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.55},time:{value:0}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.25},time:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float intensity,time;
@@ -482,7 +482,7 @@ const flareMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform float time;varying vec2 vUv;
-    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(1.-d*2.,4.5)*.65;
+    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(1.-d*2.,4.5)*.35;
     if(a<.001)discard;float fl=.85+sin(time*5.5)*.15;
     vec3 col=mix(vec3(.6,.9,1.),vec3(1.,1.,1.),pow(1.-d*2.,8.));
     gl_FragColor=vec4(col*fl,a*fl);}`,
@@ -553,12 +553,12 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   cage.rotation.x-=.007;cage.rotation.y+=.009;cage.rotation.z+=.002;
   coreMat.uniforms.time.value=time;coreMat.uniforms.camPos.value.copy(camera.position);
   glowMat.uniforms.time.value=time;glowMat.uniforms.camPos.value.copy(camera.position);
-  coreLight.intensity=1.6+Math.sin(time*2.6)*.4+Math.sin(time*7.)*.15;
+  coreLight.intensity=0.9+Math.sin(time*2.6)*.2+Math.sin(time*7.)*.08;
 
   // Corona
   coronaSpikes.forEach(c=>{
     const p=.25+Math.sin(time*2.2+c.phase)*.45+Math.sin(time*5.5+c.phase*1.9)*.18;
-    c.spike.material.opacity=Math.max(0,p*.6);
+    c.spike.material.opacity=Math.max(0,p*.28);
     const len=c.baseLen*(.5+p*.9);
     const pos=c.spike.geometry.attributes.position;
     pos.setXYZ(1,c.dir.x*(.38+len),c.dir.y*(.38+len),c.dir.z*(.38+len));pos.needsUpdate=true;
@@ -574,7 +574,7 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   for(let i=shockwaves.length-1;i>=0;i--){
     const sw=shockwaves[i];sw.t+=.024;
     sw.wave.scale.setScalar(sw.t*4.5);
-    sw.wave.material.opacity=Math.max(0,.75*(1-sw.t));
+    sw.wave.material.opacity=Math.max(0,.45*(1-sw.t));
     if(sw.t>=1){scene.remove(sw.wave);shockwaves.splice(i,1);}
   }
 
@@ -630,12 +630,12 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   // Power surge
   if(surge>0.01){
     surge*=0.92;
-    bloom.strength=1.2+surge*2.5;
-    coreLight.intensity=2+surge*4;
-    flashPass.uniforms.flash.value=surge*0.35;
+    bloom.strength=0.7+surge*1.8;
+    coreLight.intensity=1.2+surge*2.5;
+    flashPass.uniforms.flash.value=surge*0.18;
   } else {
     surge=0;
-    bloom.strength=1.2;
+    bloom.strength=0.7;
     flashPass.uniforms.flash.value=0;
   }
 
