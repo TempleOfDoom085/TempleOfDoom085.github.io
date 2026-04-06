@@ -44,7 +44,7 @@ const canvas=document.getElementById('c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setClearColor(0x000000,1);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.75; // toned down
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.32; // toned down
 
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(55,W/H,0.1,200);
@@ -74,10 +74,10 @@ const nebulaFS=`
   }`;
 
 const nebulaLayers=[
-  {z:-9.0,sz:50,seed:0.0, bright:1.0,op:1.0},
-  {z:-6.5,sz:36,seed:2.3, bright:0.7,op:0.55},
-  {z:-4.5,sz:26,seed:5.7, bright:0.5,op:0.35},
-  {z:-2.5,sz:18,seed:9.1, bright:0.3,op:0.18},
+  {z:-9.0,sz:50,seed:0.0, bright:0.35,op:1.0},
+  {z:-6.5,sz:36,seed:2.3, bright:0.18,op:0.5},
+  {z:-4.5,sz:26,seed:5.7, bright:0.10,op:0.28},
+  {z:-2.5,sz:18,seed:9.1, bright:0.05,op:0.12},
 ];
 const nebulaMeshes=nebulaLayers.map(l=>{
   const m=new THREE.Mesh(new THREE.PlaneGeometry(l.sz,l.sz),
@@ -168,7 +168,7 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 // LIGHTING
 // ══════════════════════════════════════════════════════
 scene.add(new THREE.AmbientLight(0x040610,1.0));
-const coreLight=new THREE.PointLight(0x0099ee,1.8,10);scene.add(coreLight);  // reduced
+const coreLight=new THREE.PointLight(0x0099ee,1.1,10);scene.add(coreLight);  // reduced
 const rimLight=new THREE.PointLight(0x440088,0.6,8);rimLight.position.set(2,-2,-1);scene.add(rimLight);
 
 // ══════════════════════════════════════════════════════
@@ -216,7 +216,7 @@ const glowMat=new THREE.ShaderMaterial({
     void main(){vec3 view=normalize(camPos-vWorld);float rim=pow(1.-abs(dot(vNorm,view)),4.);
     float fl=.7+sin(time*3.+vWorld.y*8.)*.2;
     vec3 col=mix(vec3(0.,.45,.8),vec3(.35,.08,.85),rim)*rim*fl;
-    gl_FragColor=vec4(col,rim*.35);}`, // opacity reduced to 0.35
+    gl_FragColor=vec4(col,rim*.15);}`, // subtle halo
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.,32,32),glowMat));
 
@@ -385,12 +385,12 @@ const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 // Bloom — lowered strength to fix brightness
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),.75,.65,.42);
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),1.4,0.6,0.78);
 composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
 const godRaysPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.28},decay:{value:.97},weight:{value:.018},samples:{value:80}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.12},decay:{value:.97},weight:{value:.010},samples:{value:80}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float exposure,decay,weight;
@@ -409,7 +409,7 @@ composer.addPass(godRaysPass);
 
 // ANAMORPHIC LENS STREAK — horizontal streak across frame from core
 const streakPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.55},time:{value:0}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.18},time:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float intensity,time;
@@ -532,7 +532,7 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   cage.rotation.x-=.007;cage.rotation.y+=.009;cage.rotation.z+=.002;
   coreMat.uniforms.time.value=time;coreMat.uniforms.camPos.value.copy(camera.position);
   glowMat.uniforms.time.value=time;glowMat.uniforms.camPos.value.copy(camera.position);
-  coreLight.intensity=1.6+Math.sin(time*2.6)*.4+Math.sin(time*7.)*.15;
+  coreLight.intensity=0.8+Math.sin(time*2.6)*.18+Math.sin(time*7.)*.06;
 
   // Corona
   coronaSpikes.forEach(c=>{
