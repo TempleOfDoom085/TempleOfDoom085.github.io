@@ -67,9 +67,14 @@ const nebulaFS=`
     vec2 q=vec2(fbm(uv+t),fbm(uv+vec2(1.7,9.2+seed)+t*.8));
     vec2 r=vec2(fbm(uv+2.*q+t*.6+seed),fbm(uv+2.*q+vec2(8.3,2.8)+t*.5));
     float f=fbm(uv+2.2*r);
-    vec3 c1=mix(vec3(.02+seed*.01,.0,.07),vec3(.0,.04,.15),clamp(f*2.,0.,1.));
-    vec3 c2=mix(c1,vec3(.04,.0,.10),clamp(f*f*4.,0.,1.));
-    vec3 c3=mix(c2,vec3(.0,.06,.12),clamp(pow(f,3.)*6.,0.,1.));
+    // Hubble-style: warm amber/brown center, dusty lanes, pink/blue outer
+    vec3 dust=vec3(.025+seed*.005,.012,.005);   // dark dust brown
+    vec3 warmCore=vec3(.22,.10,.02);             // amber glow
+    vec3 pinkCluster=vec3(.18,.03,.08);          // HII pink
+    vec3 blueArm=vec3(.01,.04,.16);              // blue star arm
+    vec3 c1=mix(dust,warmCore,clamp(f*2.2,0.,1.));
+    vec3 c2=mix(c1,pinkCluster,clamp((f-.35)*3.,0.,1.)*step(.4,seed));
+    vec3 c3=mix(c2,blueArm,clamp(pow(f,4.)*4.,0.,1.)*(1.-step(.4,seed)));
     gl_FragColor=vec4(c3*bright,1.);
   }`;
 
@@ -109,12 +114,14 @@ for(let i=0;i<TOTAL;i++){
   }
   gPos[i*3]=x;gPos[i*3+1]=y;gPos[i*3+2]=z;
   const c=Math.random();
-  if(c<.12){gCol[i*3]=.8;gCol[i*3+1]=.9;gCol[i*3+2]=1.;}
-  else if(c<.28){gCol[i*3]=1.;gCol[i*3+1]=.85;gCol[i*3+2]=.5;}
-  else if(c<.48){gCol[i*3]=.5;gCol[i*3+1]=.65;gCol[i*3+2]=1.;}
-  else if(c<.65){gCol[i*3]=.0;gCol[i*3+1]=.6;gCol[i*3+2]=.95;}
-  else if(c<.8){gCol[i*3]=.55;gCol[i*3+1]=.08;gCol[i*3+2]=.85;}
-  else{gCol[i*3]=.95;gCol[i*3+1]=.55;gCol[i*3+2]=.15;}
+  if(c<.10){gCol[i*3]=.85;gCol[i*3+1]=.92;gCol[i*3+2]=1.;}        // blue-white hot star
+  else if(c<.22){gCol[i*3]=1.;gCol[i*3+1]=.82;gCol[i*3+2]=.42;}   // warm yellow
+  else if(c<.38){gCol[i*3]=1.;gCol[i*3+1]=.52;gCol[i*3+2]=.18;}   // orange star
+  else if(c<.52){gCol[i*3]=.95;gCol[i*3+1]=.28;gCol[i*3+2]=.38;}  // HII pink/red
+  else if(c<.64){gCol[i*3]=.9;gCol[i*3+1]=.68;gCol[i*3+2]=.22;}   // amber
+  else if(c<.76){gCol[i*3]=.42;gCol[i*3+1]=.55;gCol[i*3+2]=.95;}  // blue cluster
+  else if(c<.88){gCol[i*3]=.75;gCol[i*3+1]=.38;gCol[i*3+2]=.12;}  // rust brown
+  else{gCol[i*3]=1.;gCol[i*3+1]=.95;gCol[i*3+2]=.85;}             // cream core star
   gSz[i]=.25+Math.random()*1.2;gOff[i]=Math.random()*Math.PI*2;
 }
 const galGeo=new THREE.BufferGeometry();
@@ -141,7 +148,7 @@ const MOTES=300;
 const mPos=new Float32Array(MOTES*3),mCol=new Float32Array(MOTES*3),mSz=new Float32Array(MOTES),mOff2=new Float32Array(MOTES);
 for(let i=0;i<MOTES;i++){
   mPos[i*3]=(Math.random()-.5)*6;mPos[i*3+1]=(Math.random()-.5)*4;mPos[i*3+2]=1.5+Math.random()*2.5;
-  const h=Math.random()<.5?.55:.08;const c=new THREE.Color().setHSL(h,1.,.7);
+  const h=Math.random()<.5?.08:.12;const c=new THREE.Color().setHSL(h,1.,.75);
   mCol[i*3]=c.r;mCol[i*3+1]=c.g;mCol[i*3+2]=c.b;
   mSz[i]=1.5+Math.random()*3.5;mOff2[i]=Math.random()*Math.PI*2;
 }
@@ -165,60 +172,91 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 })));
 
 // ══════════════════════════════════════════════════════
-// LIGHTING
+// LIGHTING — soft, even, no harsh spots
 // ══════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x040610,1.0));
-const coreLight=new THREE.PointLight(0x0099ee,1.1,10);scene.add(coreLight);  // reduced
-const rimLight=new THREE.PointLight(0x440088,0.6,8);rimLight.position.set(2,-2,-1);scene.add(rimLight);
+scene.add(new THREE.AmbientLight(0x0a0604,1.5));
+const coreLight=new THREE.PointLight(0xff8822,0.8,10);scene.add(coreLight);
 
 // ══════════════════════════════════════════════════════
-// ENERGY CORE — dimmed and controlled
+// ENERGY CORE — smooth morphing sphere, no wireframes
 // ══════════════════════════════════════════════════════
-const shell=new THREE.Mesh(new THREE.IcosahedronGeometry(.72,1),
-  new THREE.MeshStandardMaterial({color:0x0a2535,emissive:0x002535,emissiveIntensity:.5,roughness:.1,metalness:.95,wireframe:true,transparent:true,opacity:.15}));
-scene.add(shell);
-const cage=new THREE.Mesh(new THREE.IcosahedronGeometry(.55,2),
-  new THREE.MeshBasicMaterial({color:0x0088bb,wireframe:true,transparent:true,opacity:.12}));
-scene.add(cage);
 
-// Plasma surface — brightness capped at 0.75 to avoid blowout
+// Morphing plasma sphere — vertex displacement + plasma surface
 const coreMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0},camPos:{value:camera.position}},
-  vertexShader:`varying vec3 vNorm;varying vec3 vWorld;varying vec2 vUv;
-    void main(){vNorm=normalize(normalMatrix*normal);vWorld=(modelMatrix*vec4(position,1.)).xyz;vUv=uv;
-    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`precision highp float;
-    uniform float time;uniform vec3 camPos;
-    varying vec3 vNorm;varying vec3 vWorld;varying vec2 vUv;
+  vertexShader:`
+    precision highp float;
+    uniform float time; uniform vec3 camPos;
+    varying vec3 vNorm; varying vec3 vWorld; varying float vDisp;
+    float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+    float n3(vec3 p){
+      vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+      return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+                 mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
+    float fbm3(vec3 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n3(p);p*=2.1;a*=.5;}return v;}
+    void main(){
+      // Organic morphing displacement along normal
+      float d1=fbm3(position*2.2+time*.28)*.16;
+      float d2=fbm3(position*4.5-time*.18)*.07;
+      float d3=fbm3(position*1.1+time*.12)*.09;
+      float disp=d1+d2+d3;
+      vDisp=disp;
+      vec3 displaced=position+normal*disp;
+      vWorld=(modelMatrix*vec4(displaced,1.)).xyz;
+      vNorm=normalize(normalMatrix*(normal+displaced*.3));
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(displaced,1.);
+    }`,
+  fragmentShader:`
+    precision highp float;
+    uniform float time; uniform vec3 camPos;
+    varying vec3 vNorm; varying vec3 vWorld; varying float vDisp;
     float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-    float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+    float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
       return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1)),f.x),f.y);}
-    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p*=2.;a*=.5;}return v;}
+    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n2(p);p*=2.;a*=.5;}return v;}
     void main(){
       vec3 viewDir=normalize(camPos-vWorld);
-      float fr=pow(1.-abs(dot(vNorm,viewDir)),2.5);
-      float pulse=.7+sin(time*2.6)*.1+sin(time*6.8)*.04;
-      vec2 sw=vUv*5.+vec2(time*.35,time*.25);
-      float plasma=fbm(sw)*.5+fbm(sw*2.+time*.18)*.35+fbm(sw*.5-time*.12)*.15;
-      vec3 center=mix(vec3(0.,.6,.85),vec3(.75,.5,.05),plasma*plasma)*pulse;
-      vec3 edge=vec3(.25,.1,.8)*fr*1.8;
-      vec3 col=center+edge;
-      col=min(col,vec3(.75)); // hard cap — prevents blowout
-      gl_FragColor=vec4(col,.95);}`,
-  transparent:true,side:THREE.DoubleSide});
-scene.add(new THREE.Mesh(new THREE.IcosahedronGeometry(.38,5),coreMat));
+      float fr=pow(1.-abs(dot(normalize(vNorm),viewDir)),2.2);
+      float pulse=.72+sin(time*2.4)*.09+sin(time*6.5)*.03;
+      // Surface plasma using spherical coords of world pos
+      float theta=atan(vWorld.z,vWorld.x);float phi=acos(vWorld.y/length(vWorld));
+      vec2 sw=vec2(theta,phi)*2.5+vec2(time*.3,time*.22);
+      float plasma=fbm(sw)*.5+fbm(sw*1.8+time*.16)*.3+fbm(sw*.6-time*.1)*.2;
+      // Use displacement for color variation — peaks are brighter/hotter
+      float heat=smoothstep(.1,.4,vDisp*4.);
+      vec3 cool=vec3(.32,.12,.02);   // deep amber-brown
+      vec3 mid =vec3(.82,.52,.08);   // golden orange
+      vec3 hot =vec3(1.,.92,.65);    // near-white cream core
+      vec3 col=mix(cool,mid,plasma)*pulse;
+      col=mix(col,hot,heat*plasma*.65);
+      col+=vec3(.55,.15,.02)*fr*.9;  // warm orange fresnel rim
+      col=min(col,vec3(.95,.78,.45));
+      // Soft self-illumination — no harsh light patches
+      float selfLit=.35+plasma*.25+vDisp*1.2;
+      gl_FragColor=vec4(col*selfLit,0.97);
+    }`,
+  transparent:true,side:THREE.FrontSide});
+const coreObj=new THREE.Mesh(new THREE.SphereGeometry(.42,128,128),coreMat);
+scene.add(coreObj);
 
-// Glow shell — reduced opacity
+// Outer glow — smooth atmospheric halo, even all around
 const glowMat=new THREE.ShaderMaterial({
   uniforms:{camPos:{value:camera.position},time:{value:0}},
   vertexShader:`varying vec3 vNorm;varying vec3 vWorld;void main(){vNorm=normalize(normalMatrix*normal);vWorld=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform vec3 camPos;uniform float time;varying vec3 vNorm;varying vec3 vWorld;
-    void main(){vec3 view=normalize(camPos-vWorld);float rim=pow(1.-abs(dot(vNorm,view)),4.);
-    float fl=.7+sin(time*3.+vWorld.y*8.)*.2;
-    vec3 col=mix(vec3(0.,.45,.8),vec3(.35,.08,.85),rim)*rim*fl;
-    gl_FragColor=vec4(col,rim*.15);}`, // subtle halo
+  fragmentShader:`
+    uniform vec3 camPos;uniform float time;
+    varying vec3 vNorm;varying vec3 vWorld;
+    void main(){
+      vec3 view=normalize(camPos-vWorld);
+      float rim=pow(1.-abs(dot(vNorm,view)),3.5);
+      // Even warm halo — amber-orange like galactic core glow
+      float breathe=.8+sin(time*2.1)*.12;
+      vec3 col=vec3(.55,.22,.04)*rim*breathe;
+      gl_FragColor=vec4(col,rim*.22);
+    }`,
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.,32,32),glowMat));
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.88,64,64),glowMat));
+
 
 // ══════════════════════════════════════════════════════
 // MAGNETIC FIELD LINES — dipole arcs
@@ -236,8 +274,8 @@ for(let i=0;i<14;i++){
     pts.push(new THREE.Vector3(x,y,z));
   }
   const mat=new THREE.LineBasicMaterial({
-    color:new THREE.Color().setHSL(.55+Math.random()*.12,1.,.5),
-    transparent:true,opacity:.07+Math.random()*.06,depthWrite:false});
+    color:new THREE.Color().setHSL(.08+Math.random()*.06,1.,.45),
+    transparent:true,opacity:.06+Math.random()*.05,depthWrite:false});
   scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat));
 }
 
@@ -250,7 +288,7 @@ for(let i=0;i<24;i++){
   const dir=new THREE.Vector3(Math.cos(th)*Math.cos(ph),Math.sin(ph),Math.sin(th)*Math.cos(ph));
   const baseLen=.45+Math.random()*.55;
   const pts=[new THREE.Vector3().copy(dir).multiplyScalar(.38),new THREE.Vector3().copy(dir).multiplyScalar(.38+baseLen)];
-  const mat=new THREE.LineBasicMaterial({color:new THREE.Color().setHSL(.54+Math.random()*.1,1.,.65),transparent:true,opacity:0,depthWrite:false});
+  const mat=new THREE.LineBasicMaterial({color:new THREE.Color().setHSL(.07+Math.random()*.08,1.,.72),transparent:true,opacity:0,depthWrite:false});
   const spike=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);
   scene.add(spike);coronaSpikes.push({spike,dir,baseLen,phase:Math.random()*Math.PI*2});
 }
@@ -259,7 +297,7 @@ for(let i=0;i<24;i++){
 // ORBIT RINGS
 // ══════════════════════════════════════════════════════
 const rings=[];
-[[1.25,0x00aacc,.35,.6,0,0],[1.65,0x7722bb,.28,0,.8,.4],[2.05,0xcc5511,.2,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
+[[1.25,0xcc6610,.30,.6,0,0],[1.65,0x8b4422,.22,0,.8,.4],[2.05,0xdd8833,.15,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
   const pts=[];for(let i=0;i<=300;i++){const a=(i/300)*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
   const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
     new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}));
@@ -272,7 +310,7 @@ const rings=[];
 const orbiters=[];
 for(let i=0;i<70;i++){
   const r=1.0+Math.random()*1.3,sp=.22+Math.random()*.65,tilt=(Math.random()-.5)*2.,ph=Math.random()*Math.PI*2;
-  const hue=Math.random()<.5?.55+Math.random()*.1:.07+Math.random()*.06;
+  const hue=Math.random()<.6?.07+Math.random()*.08:.12+Math.random()*.05;
   const sz=.012+Math.random()*.022,br=.3+Math.random()*.5;
   const dot=new THREE.Mesh(new THREE.SphereGeometry(sz,8,8),
     new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(hue,1.,br),transparent:true,opacity:.8}));
@@ -293,7 +331,7 @@ function makeArc(){
   const curve=new THREE.CatmullRomCurve3([src,mid,tgt]);
   const pts=curve.getPoints(30);
   const mat=new THREE.LineBasicMaterial({
-    color:new THREE.Color().setHSL(Math.random()<.6?.55:.08,1.,.75),
+    color:new THREE.Color().setHSL(Math.random()<.6?.08:.05,1.,.75),
     transparent:true,opacity:.0,depthWrite:false});
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);
   scene.add(line);
@@ -312,7 +350,7 @@ for(let i=0;i<WIND;i++){
   const sp=.012+Math.random()*.025;
   wVel[i*3]=Math.sin(ph)*Math.cos(th)*sp;wVel[i*3+1]=Math.sin(ph)*Math.sin(th)*sp;wVel[i*3+2]=Math.cos(ph)*sp;
   wPos[i*3]=wVel[i*3]*.4;wPos[i*3+1]=wVel[i*3+1]*.4;wPos[i*3+2]=wVel[i*3+2]*.4;
-  const hue=Math.random()<.6?.55:.08;const c=new THREE.Color().setHSL(hue,1.,.7);
+  const hue=Math.random()<.6?.07:.12;const c=new THREE.Color().setHSL(hue,1.,.75);
   wCol[i*3]=c.r;wCol[i*3+1]=c.g;wCol[i*3+2]=c.b;
   wAge[i]=Math.random()*150;
 }
@@ -328,7 +366,7 @@ const windPoints=new THREE.Points(windGeo,windMat);scene.add(windPoints);
 const shockwaves=[];
 function spawnShock(){
   const geo=new THREE.RingGeometry(.01,.045,64);
-  const mat=new THREE.MeshBasicMaterial({color:0x00d4ff,transparent:true,opacity:.85,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const mat=new THREE.MeshBasicMaterial({color:0xff8822,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
   const wave=new THREE.Mesh(geo,mat);
   wave.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,0);
   scene.add(wave);shockwaves.push({wave,t:0});
@@ -345,7 +383,7 @@ function spawnEruption(){
     const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
     const speed=.05+Math.random()*.12;
     const vx=Math.sin(ph)*Math.cos(th)*speed,vy=Math.sin(ph)*Math.sin(th)*speed,vz=Math.cos(ph)*speed;
-    const hue=Math.random()<.5?.54:.08;const c=new THREE.Color().setHSL(hue,1.,.8);
+    const hue=Math.random()<.5?.07:.1;const c=new THREE.Color().setHSL(hue,1.,.85);
     const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0)]);
     const mat=new THREE.PointsMaterial({color:c,size:.04,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending});
     const p=new THREE.Points(geo,mat);scene.add(p);
@@ -419,9 +457,9 @@ const streakPass=new THREE.ShaderPass({
       // Horizontal streak
       float dy=abs(vUv.y-coreUV.y);
       float streak=exp(-dy*dy*180.)*intensity;
-      // Streak color — cyan blue anamorphic
+      // Streak color — warm gold anamorphic
       float dx=abs(vUv.x-.5);float falloff=1.-smoothstep(.0,.5,dx);
-      vec3 streakCol=vec3(.1,.7,1.)*streak*falloff*.8;
+      vec3 streakCol=vec3(1.,.72,.18)*streak*falloff*.7;
       // Flicker
       float fl=.85+sin(time*8.7)*.15;
       gl_FragColor=vec4(orig+streakCol*fl,1.);}`,
@@ -461,9 +499,9 @@ const flareMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform float time;varying vec2 vUv;
-    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(1.-d*2.,4.5)*.65;
+    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(1.-d*2.,4.5)*.52;
     if(a<.001)discard;float fl=.85+sin(time*5.5)*.15;
-    vec3 col=mix(vec3(.6,.9,1.),vec3(1.,1.,1.),pow(1.-d*2.,8.));
+    vec3 col=mix(vec3(1.,.55,.12),vec3(1.,.95,.72),pow(1.-d*2.,8.));
     gl_FragColor=vec4(col*fl,a*fl);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
 flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(.7,.7),flareMat));
@@ -477,7 +515,7 @@ const hexMat=new THREE.ShaderMaterial({
     float ang=atan(c.y,c.x);float hex=cos(floor(ang/1.047)*1.047-ang)*length(c)/.5;
     float ring=exp(-pow(hex-.42,2.)*90.)*.3+exp(-pow(d-.28,2.)*120.)*.2;
     float fl=.7+sin(time*3.2)*.3;
-    gl_FragColor=vec4(vec3(.2,.6,1.)*ring*fl,ring*fl*.8);}`,
+    gl_FragColor=vec4(vec3(1.,.58,.18)*ring*fl,ring*fl*.7);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
 flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4),hexMat));
 
@@ -527,9 +565,8 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   scene.children.filter(c=>c.isPoints&&c.geometry===mGeo)[0]?.material&&
     (scene.children.find(c=>c.isPoints&&c.geometry===mGeo).material.uniforms.time.value=time);
 
-  // Core rotation
-  shell.rotation.x+=.003;shell.rotation.y+=.005;
-  cage.rotation.x-=.007;cage.rotation.y+=.009;cage.rotation.z+=.002;
+  // Core
+  coreObj.rotation.y+=.0015;
   coreMat.uniforms.time.value=time;coreMat.uniforms.camPos.value.copy(camera.position);
   glowMat.uniforms.time.value=time;glowMat.uniforms.camPos.value.copy(camera.position);
   coreLight.intensity=0.8+Math.sin(time*2.6)*.18+Math.sin(time*7.)*.06;
