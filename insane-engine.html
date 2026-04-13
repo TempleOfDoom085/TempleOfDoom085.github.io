@@ -174,8 +174,8 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 // ══════════════════════════════════════════════════════
 // LIGHTING
 // ══════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x0a0604,1.2));
-const coreLight=new THREE.PointLight(0xff8822,0.8,10);scene.add(coreLight);
+scene.add(new THREE.AmbientLight(0x04020e,1.2));
+const coreLight=new THREE.PointLight(0x9966ff,0.9,12);scene.add(coreLight);
 
 // ══════════════════════════════════════════════════════
 // NEBULA CLOUD CORE — 3 volumetric gas layers, no hard sphere
@@ -224,14 +224,11 @@ const outerNebMat=new THREE.ShaderMaterial({
       // Fresnel: more transparent where view is face-on, opaque at grazing
       vec3 viewDir=normalize(camPos-vWorld);
       float fr=1.-abs(dot(normalize(vNorm),viewDir));
-      float alpha=density*(fr*.6+.25)*.38;
+      float alpha=density*(fr*.6+.25)*.42;
       if(alpha<.005)discard;
-      // Dusty interstellar medium — dark amber-brown, no saturated hues
-      vec3 dustDark=vec3(.08,.04,.01);
-      vec3 dustWarm=vec3(.22,.10,.03);
-      vec3 dustBright=vec3(.38,.18,.06);
-      vec3 col=mix(dustDark,dustWarm,cloud);
-      col=mix(col,dustBright,smoothstep(.55,.8,cloud));
+      // Dark indigo dust — the outer cold shell of the nebula
+      vec3 col=mix(vec3(.04,.01,.12),vec3(.12,.03,.30),cloud);
+      col=mix(col,vec3(.22,.06,.52),smoothstep(.55,.8,cloud));
       col*=.85+sin(time*1.1)*.08;
       gl_FragColor=vec4(col,alpha);
     }`,
@@ -253,16 +250,16 @@ const midNebMat=new THREE.ShaderMaterial({
       float density=smoothstep(.28,.65,cloud)*.7+smoothstep(.35,.7,cloud2)*.3;
       vec3 viewDir=normalize(camPos-vWorld);
       float fr=1.-abs(dot(normalize(vNorm),viewDir));
-      float alpha=density*(fr*.5+.35)*.55;
+      float alpha=density*(fr*.5+.35)*.65;
       if(alpha<.005)discard;
-      // Solar corona palette — deep amber to hot orange, no foreign hues
-      vec3 deepAmber=vec3(.32,.10,.02);
-      vec3 midOrange=vec3(.72,.32,.05);
-      vec3 brightOrange=vec3(.92,.52,.10);
+      // Rich violet-purple body — the dominant emission layer
+      vec3 deepViolet=vec3(.18,.02,.45);
+      vec3 midViolet=vec3(.42,.08,.88);
+      vec3 brightPurple=vec3(.62,.18,.98);
       float t1=smoothstep(.3,.65,cloud);
       float t2=smoothstep(.5,.85,cloud2);
-      vec3 col=mix(deepAmber,midOrange,t1);
-      col=mix(col,brightOrange,t2*.5);
+      vec3 col=mix(deepViolet,midViolet,t1);
+      col=mix(col,brightPurple,t2*.6);
       col*=1.0+sin(time*1.8+cloud*6.)*.10;
       gl_FragColor=vec4(col,alpha);
     }`,
@@ -283,15 +280,16 @@ const hotCoreMat=new THREE.ShaderMaterial({
       float pulse=.8+sin(time*2.8)*.1+sin(time*7.3)*.05;
       // Distance from center: bright emitting hot spot
       float cGlow=smoothstep(.32,0.,length(p));
-      float alpha=(density*.55+cGlow*.45)*pulse;
+      float alpha=(density*.60+cGlow*.50)*pulse;
       if(alpha<.005)discard;
-      // Stellar core — gold to near-white cream, no pink contamination
-      vec3 gold=vec3(.92,.62,.12);
-      vec3 cream=vec3(.98,.90,.72);
-      vec3 white=vec3(1.,.96,.88);
-      vec3 col=mix(gold,cream,smoothstep(.45,.75,cloud));
-      col=mix(col,white,cGlow*.6);
-      col*=1.1+density*.3; // gentle over-expose to drive bloom
+      // Temperature gradient: hottest=blue-white, cooling outward to violet
+      // Real plasma physics — hot plasma emits blue, cooler emits longer wavelengths
+      vec3 hotBlueWhite=vec3(.82,.88,1.0);  // very hot, blue-white
+      vec3 violet=vec3(.55,.22,.95);         // cooling, violet
+      vec3 deepPurple=vec3(.32,.06,.72);     // coolest visible layer
+      vec3 col=mix(deepPurple,violet,smoothstep(.38,.68,cloud));
+      col=mix(col,hotBlueWhite,cGlow*.75);   // only the very centre is hot
+      col*=1.15+density*.25;
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
@@ -308,9 +306,9 @@ const glowMat=new THREE.ShaderMaterial({
       vec3 view=normalize(camPos-vWorld);
       float rim=pow(1.-abs(dot(vNorm,view)),2.8);
       float breathe=.75+sin(time*1.6)*.15+sin(time*3.4)*.06;
-      // Warm amber outer halo — consistent with rings, orbiters, stars
-      vec3 col=mix(vec3(.18,.06,.01),vec3(.52,.20,.04),rim)*breathe;
-      gl_FragColor=vec4(col,rim*.18);
+      // Deep violet rim — large diffuse halo ties the whole cloud together
+      vec3 col=mix(vec3(.06,.01,.18),vec3(.28,.06,.58),rim)*breathe;
+      gl_FragColor=vec4(col,rim*.22);
     }`,
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.1,64,64),glowMat));
@@ -358,7 +356,7 @@ for(let i=0;i<24;i++){
 // ORBIT RINGS
 // ══════════════════════════════════════════════════════
 const rings=[];
-[[1.25,0xcc6610,.30,.6,0,0],[1.65,0x8b4422,.22,0,.8,.4],[2.05,0xdd8833,.15,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
+[[1.25,0x5511cc,.28,.6,0,0],[1.65,0x3308aa,.20,0,.8,.4],[2.05,0xaa6622,.14,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
   const pts=[];for(let i=0;i<=300;i++){const a=(i/300)*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
   const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
     new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}));
