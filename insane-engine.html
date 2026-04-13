@@ -179,74 +179,132 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 })));
 
 // ══════════════════════════════════════════════════════
-// LIGHTING — soft, even, no harsh spots
+// LIGHTING
 // ══════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x0a0604,1.5));
-const coreLight=new THREE.PointLight(0xff8822,0.8,10);scene.add(coreLight);
+scene.add(new THREE.AmbientLight(0x06030a,1.0));
+const coreLight=new THREE.PointLight(0xcc66ff,0.6,8);scene.add(coreLight);
 
 // ══════════════════════════════════════════════════════
-// ENERGY CORE — smooth morphing sphere, no wireframes
+// NEBULA CLOUD CORE — 3 volumetric gas layers, no hard sphere
 // ══════════════════════════════════════════════════════
+const NEBULA_VS=`
+  precision highp float;
+  uniform float time;
+  varying vec3 vWorld; varying vec3 vNorm;
+  float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+  float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+    return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
+  float fbm3(vec3 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n3(p);p*=2.1;a*=.48;}return v;}
+  void main(){
+    // Organically warp the sphere into a cloud shape
+    float warp=fbm3(position*1.8+time*.06)*.28+fbm3(position*3.5-time*.09)*.12;
+    vec3 displaced=position+normal*warp;
+    vWorld=(modelMatrix*vec4(displaced,1.)).xyz;
+    vNorm=normalize(normalMatrix*normal);
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(displaced,1.);
+  }`;
 
-// Morphing plasma sphere — vertex displacement + plasma surface
-const coreMat=new THREE.ShaderMaterial({
+// Shared noise for fragment shaders
+const NOISE_FS=`
+  precision highp float;
+  float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+  float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+    return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
+  float fbm3(vec3 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n3(p);p*=2.1;a*=.48;}return v;}`;
+
+// LAYER 1 — outer wispy veil (largest, most transparent)
+const outerNebMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0},camPos:{value:camera.position}},
-  vertexShader:`
-    precision highp float;
+  vertexShader:NEBULA_VS,
+  fragmentShader:NOISE_FS+`
     uniform float time; uniform vec3 camPos;
-    varying vec3 vNorm; varying vec3 vWorld; varying float vDisp;
-    float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
-    float n3(vec3 p){
-      vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
-      return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
-                 mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
-    float fbm3(vec3 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n3(p);p*=2.1;a*=.5;}return v;}
+    varying vec3 vWorld; varying vec3 vNorm;
     void main(){
-      // Organic morphing displacement along normal
-      float d1=fbm3(position*2.2+time*.28)*.16;
-      float d2=fbm3(position*4.5-time*.18)*.07;
-      float d3=fbm3(position*1.1+time*.12)*.09;
-      float disp=d1+d2+d3;
-      vDisp=disp;
-      vec3 displaced=position+normal*disp;
-      vWorld=(modelMatrix*vec4(displaced,1.)).xyz;
-      vNorm=normalize(normalMatrix*(normal+displaced*.3));
-      gl_Position=projectionMatrix*modelViewMatrix*vec4(displaced,1.);
-    }`,
-  fragmentShader:`
-    precision highp float;
-    uniform float time; uniform vec3 camPos;
-    varying vec3 vNorm; varying vec3 vWorld; varying float vDisp;
-    float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-    float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
-      return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1)),f.x),f.y);}
-    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n2(p);p*=2.;a*=.5;}return v;}
-    void main(){
+      vec3 p=vWorld;
+      // Domain warped cloud density — slow drift
+      vec3 q=vec3(fbm3(p*2.2+time*.04),fbm3(p*2.2+vec3(5.2,1.3,2.8)+time*.035),fbm3(p*2.2+vec3(1.7,9.2,4.1)+time*.03));
+      float cloud=fbm3(p*1.8+q*1.2+time*.025);
+      // Threshold into wisps — gaps where it's dark (like dust lanes)
+      float density=smoothstep(.32,.68,cloud);
+      // Fresnel: more transparent where view is face-on, opaque at grazing
       vec3 viewDir=normalize(camPos-vWorld);
-      float fr=pow(1.-abs(dot(normalize(vNorm),viewDir)),2.2);
-      float pulse=.72+sin(time*2.4)*.09+sin(time*6.5)*.03;
-      // Surface plasma using spherical coords of world pos
-      float theta=atan(vWorld.z,vWorld.x);float phi=acos(vWorld.y/length(vWorld));
-      vec2 sw=vec2(theta,phi)*2.5+vec2(time*.3,time*.22);
-      float plasma=fbm(sw)*.5+fbm(sw*1.8+time*.16)*.3+fbm(sw*.6-time*.1)*.2;
-      // Use displacement for color variation — peaks are brighter/hotter
-      float heat=smoothstep(.1,.4,vDisp*4.);
-      vec3 cool=vec3(.32,.12,.02);   // deep amber-brown
-      vec3 mid =vec3(.82,.52,.08);   // golden orange
-      vec3 hot =vec3(1.,.92,.65);    // near-white cream core
-      vec3 col=mix(cool,mid,plasma)*pulse;
-      col=mix(col,hot,heat*plasma*.65);
-      col+=vec3(.55,.15,.02)*fr*.9;  // warm orange fresnel rim
-      col=min(col,vec3(.95,.78,.45));
-      // Soft self-illumination — no harsh light patches
-      float selfLit=.35+plasma*.25+vDisp*1.2;
-      gl_FragColor=vec4(col*selfLit,0.97);
+      float fr=1.-abs(dot(normalize(vNorm),viewDir));
+      float alpha=density*(fr*.6+.25)*.52;
+      if(alpha<.005)discard;
+      // Color: deep purple + electric blue wisps
+      vec3 deepPurple=vec3(.08,.01,.22);
+      vec3 electricBlue=vec3(.04,.18,.72);
+      vec3 dusty=vec3(.12,.06,.18);
+      vec3 col=mix(dusty,deepPurple,cloud);
+      col=mix(col,electricBlue,smoothstep(.55,.8,cloud));
+      col*=.9+sin(time*1.1)*.1;
+      gl_FragColor=vec4(col,alpha);
     }`,
-  transparent:true,side:THREE.FrontSide});
-const coreObj=new THREE.Mesh(new THREE.SphereGeometry(.42,128,128),coreMat);
-scene.add(coreObj);
+  transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(.72,80,80),outerNebMat));
 
-// Outer glow — smooth atmospheric halo, even all around
+// LAYER 2 — mid cloud body, emission pink + cyan
+const midNebMat=new THREE.ShaderMaterial({
+  uniforms:{time:{value:0},camPos:{value:camera.position}},
+  vertexShader:NEBULA_VS,
+  fragmentShader:NOISE_FS+`
+    uniform float time; uniform vec3 camPos;
+    varying vec3 vWorld; varying vec3 vNorm;
+    void main(){
+      vec3 p=vWorld;
+      vec3 q=vec3(fbm3(p*3.+time*.07+vec3(0)),fbm3(p*3.+vec3(3.2,1.7,2.1)+time*.06),fbm3(p*2.5+time*.05));
+      float cloud=fbm3(p*2.5+q*1.4-time*.04);
+      float cloud2=fbm3(p*5.2-q*.8+time*.055);
+      float density=smoothstep(.28,.65,cloud)*.7+smoothstep(.35,.7,cloud2)*.3;
+      vec3 viewDir=normalize(camPos-vWorld);
+      float fr=1.-abs(dot(normalize(vNorm),viewDir));
+      float alpha=density*(fr*.5+.35)*.72;
+      if(alpha<.005)discard;
+      // HII pink emission + cyan + violet
+      vec3 emission=vec3(.72,.08,.45);   // H-alpha pink
+      vec3 cyan=vec3(.06,.65,.88);       // ionized oxygen blue
+      vec3 violet=vec3(.38,.06,.72);     // deep nebula violet
+      float t1=smoothstep(.3,.65,cloud);
+      float t2=smoothstep(.5,.85,cloud2);
+      vec3 col=mix(violet,emission,t1);
+      col=mix(col,cyan,t2*.6);
+      col*=1.1+sin(time*1.8+cloud*6.)*.12;
+      gl_FragColor=vec4(col,alpha);
+    }`,
+  transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(.50,80,80),midNebMat));
+
+// LAYER 3 — hot bright core (triggers bloom, drives the glow)
+const hotCoreMat=new THREE.ShaderMaterial({
+  uniforms:{time:{value:0},camPos:{value:camera.position}},
+  vertexShader:NEBULA_VS,
+  fragmentShader:NOISE_FS+`
+    uniform float time; uniform vec3 camPos;
+    varying vec3 vWorld; varying vec3 vNorm;
+    void main(){
+      vec3 p=vWorld;
+      float cloud=fbm3(p*4.5+time*.12)*.55+fbm3(p*8.-time*.09)*.28+fbm3(p*2.2+time*.06)*.17;
+      float density=smoothstep(.38,.72,cloud);
+      float pulse=.8+sin(time*2.8)*.1+sin(time*7.3)*.05;
+      // Distance from center: bright emitting hot spot
+      float cGlow=smoothstep(.32,0.,length(p));
+      float alpha=(density*.65+cGlow*.55)*pulse;
+      if(alpha<.005)discard;
+      // Hot: cream-white → gold → bright pink
+      vec3 cream=vec3(.95,.88,.72);
+      vec3 gold=vec3(.92,.62,.12);
+      vec3 hotPink=vec3(.95,.28,.55);
+      vec3 col=mix(gold,cream,smoothstep(.45,.75,cloud));
+      col=mix(col,hotPink,cGlow*.45);
+      col*=1.4+density*.5; // over-expose slightly to drive bloom
+      gl_FragColor=vec4(col,alpha);
+    }`,
+  transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(.30,64,64),hotCoreMat));
+
+// Outer nebula halo — large diffuse glow around the whole cloud
 const glowMat=new THREE.ShaderMaterial({
   uniforms:{camPos:{value:camera.position},time:{value:0}},
   vertexShader:`varying vec3 vNorm;varying vec3 vWorld;void main(){vNorm=normalize(normalMatrix*normal);vWorld=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
@@ -255,14 +313,17 @@ const glowMat=new THREE.ShaderMaterial({
     varying vec3 vNorm;varying vec3 vWorld;
     void main(){
       vec3 view=normalize(camPos-vWorld);
-      float rim=pow(1.-abs(dot(vNorm,view)),3.5);
-      // Even warm halo — amber-orange like galactic core glow
-      float breathe=.8+sin(time*2.1)*.12;
-      vec3 col=vec3(.55,.22,.04)*rim*breathe;
-      gl_FragColor=vec4(col,rim*.22);
+      float rim=pow(1.-abs(dot(vNorm,view)),2.8);
+      float breathe=.75+sin(time*1.6)*.15+sin(time*3.4)*.06;
+      // Purple-pink nebula outer halo
+      vec3 col=mix(vec3(.22,.02,.45),vec3(.55,.08,.38),rim)*breathe;
+      gl_FragColor=vec4(col,rim*.20);
     }`,
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.88,64,64),glowMat));
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.1,64,64),glowMat));
+
+// Alias for animate loop
+const nebMats=[outerNebMat,midNebMat,hotCoreMat,glowMat];
 
 
 // ══════════════════════════════════════════════════════
@@ -579,6 +640,9 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   scene.children.filter(c=>c.isPoints&&c.geometry===mGeo)[0]?.material&&
     (scene.children.find(c=>c.isPoints&&c.geometry===mGeo).material.uniforms.time.value=time);
 
+  // Nebula cloud core — update all layer uniforms
+  nebMats.forEach(m=>{if(m.uniforms.time)m.uniforms.time.value=time;if(m.uniforms.camPos)m.uniforms.camPos.value.copy(camera.position);});
+  coreLight.intensity=0.6+Math.sin(time*2.6)*.18+Math.sin(time*7.)*.06;
   // Core
   // Variable rotation: noise-modulated speed mimics differential rotation —
   // the equatorial bulge accelerates and decelerates, never constant
