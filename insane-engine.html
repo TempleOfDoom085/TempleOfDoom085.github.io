@@ -174,8 +174,8 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 // ══════════════════════════════════════════════════════
 // LIGHTING
 // ══════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x06030a,1.0));
-const coreLight=new THREE.PointLight(0xcc66ff,0.6,8);scene.add(coreLight);
+scene.add(new THREE.AmbientLight(0x0a0604,1.2));
+const coreLight=new THREE.PointLight(0xff8822,0.8,10);scene.add(coreLight);
 
 // ══════════════════════════════════════════════════════
 // NEBULA CLOUD CORE — 3 volumetric gas layers, no hard sphere
@@ -224,15 +224,15 @@ const outerNebMat=new THREE.ShaderMaterial({
       // Fresnel: more transparent where view is face-on, opaque at grazing
       vec3 viewDir=normalize(camPos-vWorld);
       float fr=1.-abs(dot(normalize(vNorm),viewDir));
-      float alpha=density*(fr*.6+.25)*.52;
+      float alpha=density*(fr*.6+.25)*.38;
       if(alpha<.005)discard;
-      // Color: deep purple + electric blue wisps
-      vec3 deepPurple=vec3(.08,.01,.22);
-      vec3 electricBlue=vec3(.04,.18,.72);
-      vec3 dusty=vec3(.12,.06,.18);
-      vec3 col=mix(dusty,deepPurple,cloud);
-      col=mix(col,electricBlue,smoothstep(.55,.8,cloud));
-      col*=.9+sin(time*1.1)*.1;
+      // Dusty interstellar medium — dark amber-brown, no saturated hues
+      vec3 dustDark=vec3(.08,.04,.01);
+      vec3 dustWarm=vec3(.22,.10,.03);
+      vec3 dustBright=vec3(.38,.18,.06);
+      vec3 col=mix(dustDark,dustWarm,cloud);
+      col=mix(col,dustBright,smoothstep(.55,.8,cloud));
+      col*=.85+sin(time*1.1)*.08;
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
@@ -253,17 +253,17 @@ const midNebMat=new THREE.ShaderMaterial({
       float density=smoothstep(.28,.65,cloud)*.7+smoothstep(.35,.7,cloud2)*.3;
       vec3 viewDir=normalize(camPos-vWorld);
       float fr=1.-abs(dot(normalize(vNorm),viewDir));
-      float alpha=density*(fr*.5+.35)*.72;
+      float alpha=density*(fr*.5+.35)*.55;
       if(alpha<.005)discard;
-      // HII pink emission + cyan + violet
-      vec3 emission=vec3(.72,.08,.45);   // H-alpha pink
-      vec3 cyan=vec3(.06,.65,.88);       // ionized oxygen blue
-      vec3 violet=vec3(.38,.06,.72);     // deep nebula violet
+      // Solar corona palette — deep amber to hot orange, no foreign hues
+      vec3 deepAmber=vec3(.32,.10,.02);
+      vec3 midOrange=vec3(.72,.32,.05);
+      vec3 brightOrange=vec3(.92,.52,.10);
       float t1=smoothstep(.3,.65,cloud);
       float t2=smoothstep(.5,.85,cloud2);
-      vec3 col=mix(violet,emission,t1);
-      col=mix(col,cyan,t2*.6);
-      col*=1.1+sin(time*1.8+cloud*6.)*.12;
+      vec3 col=mix(deepAmber,midOrange,t1);
+      col=mix(col,brightOrange,t2*.5);
+      col*=1.0+sin(time*1.8+cloud*6.)*.10;
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
@@ -283,15 +283,15 @@ const hotCoreMat=new THREE.ShaderMaterial({
       float pulse=.8+sin(time*2.8)*.1+sin(time*7.3)*.05;
       // Distance from center: bright emitting hot spot
       float cGlow=smoothstep(.32,0.,length(p));
-      float alpha=(density*.65+cGlow*.55)*pulse;
+      float alpha=(density*.55+cGlow*.45)*pulse;
       if(alpha<.005)discard;
-      // Hot: cream-white → gold → bright pink
-      vec3 cream=vec3(.95,.88,.72);
+      // Stellar core — gold to near-white cream, no pink contamination
       vec3 gold=vec3(.92,.62,.12);
-      vec3 hotPink=vec3(.95,.28,.55);
+      vec3 cream=vec3(.98,.90,.72);
+      vec3 white=vec3(1.,.96,.88);
       vec3 col=mix(gold,cream,smoothstep(.45,.75,cloud));
-      col=mix(col,hotPink,cGlow*.45);
-      col*=1.4+density*.5; // over-expose slightly to drive bloom
+      col=mix(col,white,cGlow*.6);
+      col*=1.1+density*.3; // gentle over-expose to drive bloom
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
@@ -308,9 +308,9 @@ const glowMat=new THREE.ShaderMaterial({
       vec3 view=normalize(camPos-vWorld);
       float rim=pow(1.-abs(dot(vNorm,view)),2.8);
       float breathe=.75+sin(time*1.6)*.15+sin(time*3.4)*.06;
-      // Purple-pink nebula outer halo
-      vec3 col=mix(vec3(.22,.02,.45),vec3(.55,.08,.38),rim)*breathe;
-      gl_FragColor=vec4(col,rim*.20);
+      // Warm amber outer halo — consistent with rings, orbiters, stars
+      vec3 col=mix(vec3(.18,.06,.01),vec3(.52,.20,.04),rim)*breathe;
+      gl_FragColor=vec4(col,rim*.18);
     }`,
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.1,64,64),glowMat));
