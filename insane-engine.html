@@ -132,10 +132,7 @@ galGeo.setAttribute('aOff',new THREE.BufferAttribute(gOff,1));
 const galMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`attribute vec3 aCol;attribute float aSize,aOff;uniform float time;varying vec3 vC;varying float vA;
-    void main(){vC=aCol;
-    float freq=0.8+fract(aOff*47.3)*2.4;
-    float tw=.04+.11*abs(sin(time*freq+aOff))+.04*abs(sin(time*freq*1.618+aOff*2.1));
-    vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
+    void main(){vC=aCol;float tw=.05+.15*abs(sin(time*1.6+aOff));vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
     gl_PointSize=aSize*(180./-mv.z);gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`varying vec3 vC;varying float vA;
     void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
