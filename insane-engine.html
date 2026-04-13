@@ -637,10 +637,6 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   // Nebula cloud core — update all layer uniforms
   nebMats.forEach(m=>{if(m.uniforms.time)m.uniforms.time.value=time;if(m.uniforms.camPos)m.uniforms.camPos.value.copy(camera.position);});
   coreLight.intensity=0.6+Math.sin(time*2.6)*.18+Math.sin(time*7.)*.06;
-  // Core
-  coreObj.rotation.y+=.0015;
-  coreMat.uniforms.time.value=time;coreMat.uniforms.camPos.value.copy(camera.position);
-  glowMat.uniforms.time.value=time;glowMat.uniforms.camPos.value.copy(camera.position);
   // Noise-layered pulse: scene breathes to ~72% periodically instead of
   // staying at constant peak — prevents the "always on maximum" synthetic feel.
   coreLight.intensity=(0.72+jfbm(time*.11)*.28)*(0.78+jn(time*3.8)*.14+jn(time*9.2)*.05);
