@@ -174,8 +174,8 @@ scene.add(new THREE.Points(mGeo,new THREE.ShaderMaterial({
 // ══════════════════════════════════════════════════════
 // LIGHTING
 // ══════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x04020e,1.2));
-const coreLight=new THREE.PointLight(0x9966ff,0.9,12);scene.add(coreLight);
+scene.add(new THREE.AmbientLight(0x06020f,1.4));
+const coreLight=new THREE.PointLight(0x7722ff,2.2,20);scene.add(coreLight);
 
 // ══════════════════════════════════════════════════════
 // NEBULA CLOUD CORE — 3 volumetric gas layers, no hard sphere
@@ -262,17 +262,17 @@ const midNebMat=new THREE.ShaderMaterial({
       float alpha=density*(fr*.55+.32)*.72;
       if(alpha<.005)discard;
       // Rich violet-purple body — the dominant emission layer
-      vec3 deepViolet=vec3(.10,.01,.28);
-      vec3 midViolet=vec3(.38,.06,.82);
-      vec3 brightPurple=vec3(.65,.20,1.0);
-      float t1=smoothstep(.30,.65,cloud);
-      float t2=smoothstep(.50,.85,cloud2);
+      vec3 deepViolet=vec3(.08,.01,.22);
+      vec3 midViolet=vec3(.45,.08,.92);
+      vec3 brightPurple=vec3(.92,.28,1.8);  // overbright — clips into bloom
+      float t1=smoothstep(.28,.62,cloud);
+      float t2=smoothstep(.48,.82,cloud2);
       vec3 col=mix(deepViolet,midViolet,t1);
-      col=mix(col,brightPurple,t2*.7);
-      // Thin bright emission rim at ionization front edge
-      float rimGlow=smoothstep(.62,.72,cloud)*(1.-smoothstep(.72,.84,cloud));
-      col+=vec3(.12,.04,.28)*rimGlow*2.2;
-      col*=1.0+sin(time*1.8+cloud*6.)*.10;
+      col=mix(col,brightPurple,t2*.75);
+      // Sharp ionization-front rim — electric edge glow
+      float rimGlow=smoothstep(.60,.70,cloud)*(1.-smoothstep(.70,.82,cloud));
+      col+=vec3(.30,.06,.65)*rimGlow*3.5;
+      col*=1.0+sin(time*1.8+cloud*6.)*.12;
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
@@ -294,14 +294,13 @@ const hotCoreMat=new THREE.ShaderMaterial({
       float cGlow=smoothstep(.32,0.,length(p));
       float alpha=(density*.65+cGlow*.55)*pulse;
       if(alpha<.005)discard;
-      // Temperature gradient: hottest=blue-white, cooling outward to violet
-      // Real plasma physics — hot plasma emits blue, cooler emits longer wavelengths
-      vec3 hotBlueWhite=vec3(.82,.88,1.0);  // very hot, blue-white
-      vec3 violet=vec3(.55,.22,.95);         // cooling, violet
-      vec3 deepPurple=vec3(.32,.06,.72);     // coolest visible layer
-      vec3 col=mix(deepPurple,violet,smoothstep(.38,.68,cloud));
-      col=mix(col,hotBlueWhite,cGlow*.75);   // only the very centre is hot
-      col*=1.15+density*.25;
+      // Temperature gradient: hottest=blue-white, cooling outward to electric violet
+      vec3 hotBlueWhite=vec3(1.0,0.96,1.4);  // overbright white core — triggers bloom
+      vec3 violet=vec3(.68,.24,1.2);           // electric violet — overbright
+      vec3 deepPurple=vec3(.28,.04,.65);       // coolest visible layer
+      vec3 col=mix(deepPurple,violet,smoothstep(.36,.66,cloud));
+      col=mix(col,hotBlueWhite,cGlow*.85);
+      col*=1.5+density*.55;  // much brighter peaks to feed bloom
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
@@ -316,11 +315,14 @@ const glowMat=new THREE.ShaderMaterial({
     varying vec3 vNorm;varying vec3 vWorld;
     void main(){
       vec3 view=normalize(camPos-vWorld);
-      float rim=pow(1.-abs(dot(vNorm,view)),2.8);
-      float breathe=.75+sin(time*1.6)*.15+sin(time*3.4)*.06;
-      // Deep violet rim — large diffuse halo ties the whole cloud together
-      vec3 col=mix(vec3(.06,.01,.18),vec3(.28,.06,.58),rim)*breathe;
-      gl_FragColor=vec4(col,rim*.22);
+      float rim=pow(1.-abs(dot(vNorm,view)),2.2);
+      float breathe=.75+sin(time*1.6)*.18+sin(time*3.4)*.07;
+      // Rich purple halo — deep corona around the whole cloud
+      vec3 col=mix(vec3(.04,.00,.14),vec3(.42,.08,.82),rim)*breathe;
+      // Add a brighter inner halo ring
+      float innerRim=pow(1.-abs(dot(vNorm,view)),6.0);
+      col+=vec3(.55,.14,1.0)*innerRim*.8;
+      gl_FragColor=vec4(col,rim*.32);
     }`,
   transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.1,64,64),glowMat));
@@ -494,7 +496,7 @@ const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 // Bloom — lowered strength to fix brightness
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),0.65,0.4,0.88);
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),0.85,0.45,0.86);
 composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
@@ -516,23 +518,22 @@ const godRaysPass=new THREE.ShaderPass({
 });
 composer.addPass(godRaysPass);
 
-// ANAMORPHIC LENS STREAK — horizontal streak across frame from core
+// ANAMORPHIC LENS STREAK — very subtle violet diffraction, not a gold band
 const streakPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.18},time:{value:0}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.04},time:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float intensity,time;
     varying vec2 vUv;
     void main(){
       vec3 orig=texture2D(tDiffuse,vUv).rgb;
-      // Horizontal streak
       float dy=abs(vUv.y-coreUV.y);
-      float streak=exp(-dy*dy*180.)*intensity;
-      // Streak color — warm gold anamorphic
-      float dx=abs(vUv.x-.5);float falloff=1.-smoothstep(.0,.5,dx);
-      vec3 streakCol=vec3(1.,.72,.18)*streak*falloff*.7;
-      // Flicker
-      float fl=.85+sin(time*8.7)*.15;
+      // Very tight vertical falloff so it doesn't span full screen height
+      float streak=exp(-dy*dy*520.)*intensity;
+      // Violet tint — matches nebula palette, not a gold cinema stripe
+      float dx=abs(vUv.x-coreUV.x);float falloff=exp(-dx*dx*2.8);
+      vec3 streakCol=vec3(.45,.18,.95)*streak*falloff;
+      float fl=.88+sin(time*11.3)*.12;
       gl_FragColor=vec4(orig+streakCol*fl,1.);}`,
 });
 composer.addPass(streakPass);
