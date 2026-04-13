@@ -132,7 +132,14 @@ galGeo.setAttribute('aOff',new THREE.BufferAttribute(gOff,1));
 const galMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`attribute vec3 aCol;attribute float aSize,aOff;uniform float time;varying vec3 vC;varying float vA;
-    void main(){vC=aCol;float tw=.05+.15*abs(sin(time*1.6+aOff));vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
+    void main(){vC=aCol;
+    // Per-star unique frequency derived from its phase offset — no two stars
+    // pulse identically. Golden-ratio harmonic (1.618) ensures the overtone
+    // never aligns with the fundamental, producing irregular scintillation
+    // that matches real atmospheric seeing / deep-space photography.
+    float freq=0.8+fract(aOff*47.3)*2.4;
+    float tw=.04+.11*abs(sin(time*freq+aOff))+.04*abs(sin(time*freq*1.618+aOff*2.1));
+    vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
     gl_PointSize=aSize*(180./-mv.z);gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`varying vec3 vC;varying float vA;
     void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
@@ -594,6 +601,13 @@ function clearRT(rt){renderer.setRenderTarget(rt);renderer.setClearColor(0,1);re
 // ══════════════════════════════════════════════════════
 // ANIMATE
 // ══════════════════════════════════════════════════════
+// Layered JS value noise — gives camera and core genuinely aperiodic motion.
+// Pure sine waves create the "screensaver" look; FBM noise breaks that pattern.
+function jfract(x){return x-Math.floor(x);}
+function jnoise(x){const i=Math.floor(x),f=jfract(x),u=f*f*(3-2*f);
+  return jfract(Math.sin(i*127.1)*43758.5453)*(1-u)+jfract(Math.sin((i+1)*127.1)*43758.5453)*u;}
+function jfbm(x){return jnoise(x)*.5+jnoise(x*2.1)*.25+jnoise(x*4.3)*.125;}
+
 let time=0,coreRef={rotation:{x:0,y:0,z:0}};
 
 // Project core to screen UV for god rays
@@ -629,6 +643,17 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   // Nebula cloud core — update all layer uniforms
   nebMats.forEach(m=>{if(m.uniforms.time)m.uniforms.time.value=time;if(m.uniforms.camPos)m.uniforms.camPos.value.copy(camera.position);});
   coreLight.intensity=0.6+Math.sin(time*2.6)*.18+Math.sin(time*7.)*.06;
+  // Core
+  // Variable rotation: noise-modulated speed mimics differential rotation —
+  // the equatorial bulge accelerates and decelerates, never constant
+  coreObj.rotation.y+=0.0012+jnoise(time*.3)*.0008;
+  coreMat.uniforms.time.value=time;coreMat.uniforms.camPos.value.copy(camera.position);
+  glowMat.uniforms.time.value=time;glowMat.uniforms.camPos.value.copy(camera.position);
+  // Three-layer pulse: slow breathe (cinematic pacing) + mid flicker + fast micro
+  // Scene dips to ~72% intensity periodically — prevents constant brightness peak.
+  // Real stellar surfaces are NEVER two-frequency: this is the key realism upgrade.
+  const breathe=0.72+jfbm(time*.11)*.28;
+  coreLight.intensity=breathe*(0.78+jnoise(time*3.8)*.14+jnoise(time*9.2)*.05);
 
   // Corona
   coronaSpikes.forEach(c=>{
@@ -674,7 +699,14 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
       wVel[i*3]=Math.sin(ph)*Math.cos(th)*sp;wVel[i*3+1]=Math.sin(ph)*Math.sin(th)*sp;wVel[i*3+2]=Math.cos(ph)*sp;
       wp.setXYZ(i,wVel[i*3]*.4,wVel[i*3+1]*.4,wVel[i*3+2]*.4);
     } else {
-      wp.setXYZ(i,wp.getX(i)+wVel[i*3],wp.getY(i)+wVel[i*3+1],wp.getZ(i)+wVel[i*3+2]);
+      // Irrational-ratio turbulence: phi (1.618) and pi (3.141) ensure the
+      // per-particle beat pattern never becomes periodic — cheap but aperiodic.
+      // Solar wind has Parker spiral turbulence; this approximates it.
+      const tb=.00035;const ii=i*.017;
+      wp.setXYZ(i,
+        wp.getX(i)+wVel[i*3]  +Math.sin(time*2.393+ii)*tb,
+        wp.getY(i)+wVel[i*3+1]+Math.sin(time*1.618+ii*1.83)*tb,
+        wp.getZ(i)+wVel[i*3+2]+Math.sin(time*3.141+ii*2.71)*tb);
     }
   }
   wp.needsUpdate=true;
@@ -699,12 +731,22 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   streakPass.uniforms.time.value=time;
   grainPass.uniforms.time.value=time*.9;
 
-  // Camera drift
-  const camR=4.5+Math.sin(time*.27)*.55;const camA=time*.085;
-  camera.position.x=Math.sin(camA)*camR*.36;
-  camera.position.y=Math.sin(time*.11)*.75;
-  camera.position.z=Math.cos(camA)*camR*.88;
-  camera.lookAt(0,0,0);
+  // Cinematic floating camera — layered noise replaces locked sine orbit.
+  // Feels like a weightless observatory drifting, not a math function executing.
+  // Slow base frequency (.038) keeps motion imperceptible frame-to-frame but
+  // clearly non-repeating over seconds — the Interstellar/Hubble hallmark.
+  const cT=time*.038;
+  const camOrbitR=4.5+jfbm(cT*.6)*.7-.35;           // 4.15–4.76 range
+  const camOrbitA=time*.072+jfbm(cT*1.2)*.15;        // orbit + slow angular wander
+  const camDriftY=(jfbm(cT*.8+5.)-.5)*1.5;           // asymmetric vertical drift
+  camera.position.x=Math.sin(camOrbitA)*camOrbitR*.38;
+  camera.position.y=camDriftY;
+  camera.position.z=Math.cos(camOrbitA)*camOrbitR*.9;
+  // Micro-jitter: offsetting the lookAt target ~0.01 units gives handheld
+  // imperfection without visible shakiness — camera "breathes" rather than locks
+  const lx=(jfbm(time*2.9+1.7)-.5)*.012;
+  const ly=(jfbm(time*2.3+4.1)-.5)*.008;
+  camera.lookAt(lx,ly,0);
 
   composer.render();
 })();
