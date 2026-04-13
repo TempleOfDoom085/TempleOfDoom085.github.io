@@ -133,10 +133,6 @@ const galMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`attribute vec3 aCol;attribute float aSize,aOff;uniform float time;varying vec3 vC;varying float vA;
     void main(){vC=aCol;
-    // Per-star unique frequency derived from its phase offset — no two stars
-    // pulse identically. Golden-ratio harmonic (1.618) ensures the overtone
-    // never aligns with the fundamental, producing irregular scintillation
-    // that matches real atmospheric seeing / deep-space photography.
     float freq=0.8+fract(aOff*47.3)*2.4;
     float tw=.04+.11*abs(sin(time*freq+aOff))+.04*abs(sin(time*freq*1.618+aOff*2.1));
     vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
