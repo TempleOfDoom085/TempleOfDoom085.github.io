@@ -239,7 +239,7 @@ const outerNebMat=new THREE.ShaderMaterial({
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(.72,80,80),outerNebMat));
+// outerNebMat sphere removed — replaced by volumetric raymarcher below
 
 // LAYER 2 — mid cloud body, emission pink + cyan
 const midNebMat=new THREE.ShaderMaterial({
@@ -276,7 +276,7 @@ const midNebMat=new THREE.ShaderMaterial({
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(.50,80,80),midNebMat));
+// midNebMat sphere removed — replaced by volumetric raymarcher
 
 // LAYER 3 — hot bright core (triggers bloom, drives the glow)
 const hotCoreMat=new THREE.ShaderMaterial({
@@ -304,7 +304,7 @@ const hotCoreMat=new THREE.ShaderMaterial({
       gl_FragColor=vec4(col,alpha);
     }`,
   transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(.30,64,64),hotCoreMat));
+// hotCoreMat sphere removed — replaced by volumetric raymarcher
 
 // Outer nebula halo — large diffuse glow around the whole cloud
 const glowMat=new THREE.ShaderMaterial({
@@ -381,10 +381,11 @@ const rings=[];
 // ORBITERS — 70 dots
 // ══════════════════════════════════════════════════════
 const orbiters=[];
-for(let i=0;i<70;i++){
-  const r=1.0+Math.random()*1.3,sp=.22+Math.random()*.65,tilt=(Math.random()-.5)*2.,ph=Math.random()*Math.PI*2;
-  const hue=Math.random()<.6?.07+Math.random()*.08:.12+Math.random()*.05;
-  const sz=.012+Math.random()*.022,br=.3+Math.random()*.5;
+for(let i=0;i<42;i++){
+  const r=1.0+Math.random()*1.3,sp=.12+Math.random()*.38,tilt=(Math.random()-.5)*2.,ph=Math.random()*Math.PI*2;
+  // Violet (~70%) or amber (~30%) — strict 2-hue palette
+  const hue=Math.random()<.7?.72+Math.random()*.06:.07+Math.random()*.04;
+  const sz=.010+Math.random()*.018,br=.25+Math.random()*.45;
   const dot=new THREE.Mesh(new THREE.SphereGeometry(sz,8,8),
     new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(hue,1.,br),transparent:true,opacity:.8}));
   scene.add(dot);orbiters.push({dot,r,sp,tilt,ph});
@@ -404,14 +405,14 @@ function makeArc(){
   const curve=new THREE.CatmullRomCurve3([src,mid,tgt]);
   const pts=curve.getPoints(30);
   const mat=new THREE.LineBasicMaterial({
-    color:new THREE.Color().setHSL(Math.random()<.6?.08:.05,1.,.75),
+    color:new THREE.Color().setHSL(Math.random()<.65?.74:.08,1.,.72),
     transparent:true,opacity:.0,depthWrite:false});
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);
   scene.add(line);
-  arcs.push({line,life:0,maxLife:40+Math.random()*30,peak:8+Math.random()*8});
+  arcs.push({line,life:0,maxLife:55+Math.random()*40,peak:8+Math.random()*8});
 }
-for(let i=0;i<6;i++)makeArc();
-setInterval(()=>{if(arcs.length<8)makeArc();},600);
+makeArc();makeArc(); // start with 2, not 6
+setInterval(()=>{if(arcs.length<3&&Math.random()<.4)makeArc();},6000);
 
 // ══════════════════════════════════════════════════════
 // SOLAR WIND PARTICLE EMITTER
@@ -423,14 +424,14 @@ for(let i=0;i<WIND;i++){
   const sp=.012+Math.random()*.025;
   wVel[i*3]=Math.sin(ph)*Math.cos(th)*sp;wVel[i*3+1]=Math.sin(ph)*Math.sin(th)*sp;wVel[i*3+2]=Math.cos(ph)*sp;
   wPos[i*3]=wVel[i*3]*.4;wPos[i*3+1]=wVel[i*3+1]*.4;wPos[i*3+2]=wVel[i*3+2]*.4;
-  const hue=Math.random()<.6?.07:.12;const c=new THREE.Color().setHSL(hue,1.,.75);
+  const hue=Math.random()<.55?.73:.07;const c=new THREE.Color().setHSL(hue,1.,.60);
   wCol[i*3]=c.r;wCol[i*3+1]=c.g;wCol[i*3+2]=c.b;
   wAge[i]=Math.random()*150;
 }
 const windGeo=new THREE.BufferGeometry();
 windGeo.setAttribute('position',new THREE.BufferAttribute(wPos,3));
 windGeo.setAttribute('aCol',new THREE.BufferAttribute(wCol,3));
-const windMat=new THREE.PointsMaterial({vertexColors:true,size:.025,transparent:true,opacity:.5,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+const windMat=new THREE.PointsMaterial({vertexColors:true,size:.020,transparent:true,opacity:.22,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
 const windPoints=new THREE.Points(windGeo,windMat);scene.add(windPoints);
 
 // ══════════════════════════════════════════════════════
@@ -439,12 +440,12 @@ const windPoints=new THREE.Points(windGeo,windMat);scene.add(windPoints);
 const shockwaves=[];
 function spawnShock(){
   const geo=new THREE.RingGeometry(.01,.045,64);
-  const mat=new THREE.MeshBasicMaterial({color:0xff8822,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const mat=new THREE.MeshBasicMaterial({color:0xcc5500,transparent:true,opacity:.40,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
   const wave=new THREE.Mesh(geo,mat);
   wave.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,0);
   scene.add(wave);shockwaves.push({wave,t:0});
 }
-setInterval(spawnShock,2800);setTimeout(spawnShock,300);setTimeout(spawnShock,1400);
+setInterval(()=>{if(Math.random()<.3)spawnShock();},14000);
 
 // ══════════════════════════════════════════════════════
 // CORE ERUPTION BURST (every 5s, 400 particles)
@@ -463,7 +464,8 @@ function spawnEruption(){
     burstParticles.push({p,vx,vy,vz,life:0,maxLife:50+Math.random()*30});
   }
 }
-setInterval(spawnEruption,5000);setTimeout(spawnEruption,800);
+setInterval(()=>{if(Math.random()<.5)spawnEruption();},38000);
+setTimeout(spawnEruption,5000); // first eruption after 5s
 
 // ══════════════════════════════════════════════════════
 // FLUID SIM + BACKGROUND PLANE
@@ -495,7 +497,52 @@ const bgPlane=new THREE.Mesh(new THREE.PlaneGeometry(24,24),bgMat);bgPlane.posit
 const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
-// Bloom — lowered strength to fix brightness
+// VOLUMETRIC NEBULA RAYMARCHER — true 3D cloud, no sphere silhouette
+// Runs before bloom so bright cloud peaks trigger correct glow
+const nebulaVolPass=new THREE.ShaderPass({
+  uniforms:{tDiffuse:{value:null},camPos:{value:new THREE.Vector3()},invProjView:{value:new THREE.Matrix4()},time:{value:0}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`
+    precision highp float;
+    uniform sampler2D tDiffuse;uniform vec3 camPos;uniform mat4 invProjView;uniform float time;
+    varying vec2 vUv;
+    float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+    float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+      return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+                 mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
+    float fbm(vec3 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n3(p);p*=2.1;a*=.48;}return v;}
+    float cloud(vec3 p){
+      vec3 q=vec3(fbm(p+time*.020),fbm(p+vec3(5.2,1.3,2.8)+time*.016),fbm(p+vec3(2.9,7.4,3.1)+time*.013));
+      float d=fbm(p*1.5+q*1.5-time*.019);
+      float env=1.-smoothstep(.25,2.2,length(p+vec3(q.x*.22,q.y*.18,q.z*.12)));
+      return d*env;
+    }
+    void main(){
+      vec4 bg=texture2D(tDiffuse,vUv);
+      vec4 wN=invProjView*vec4(vUv*2.-1.,-1.,1.);
+      vec4 wF=invProjView*vec4(vUv*2.-1., 1.,1.);
+      wN.xyz/=wN.w;wF.xyz/=wF.w;
+      vec3 ro=camPos,rd=normalize(wF.xyz-wN.xyz);
+      vec3 col=vec3(0.);float alpha=0.;float t=.08;
+      for(int i=0;i<48;i++){
+        if(alpha>.97||t>7.)break;
+        vec3 p=ro+rd*t;
+        float d=cloud(p);
+        float dens=pow(max(0.,(d-.30)/0.70),2.2)*.22;
+        if(dens>.001){
+          float core=1.-smoothstep(0.,1.3,length(p));
+          vec3 c=mix(vec3(.005,.001,.016),vec3(.28,.04,.65),smoothstep(.26,.54,d));
+          c=mix(c,vec3(.68,.18,1.45),smoothstep(.50,.78,d));
+          c=mix(c,vec3(.96,.90,1.35),core*.88);
+          float tr=1.-alpha;col+=c*dens*tr;alpha+=dens*tr;
+        }
+        t+=.14;
+      }
+      gl_FragColor=vec4(bg.rgb*(1.-alpha)+col,1.);
+    }`
+});
+composer.addPass(nebulaVolPass);
+
 const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),0.85,0.45,0.86);
 composer.addPass(bloom);
 
@@ -540,7 +587,7 @@ composer.addPass(streakPass);
 
 // CHROMATIC ABERRATION
 const chromaPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},amount:{value:.0035}},
+  uniforms:{tDiffuse:{value:null},amount:{value:.0015}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`uniform sampler2D tDiffuse;uniform float amount;varying vec2 vUv;
     void main(){vec2 d=vUv-.5;float dist=length(d);vec2 off=normalize(d)*amount*dist*dist*3.;
@@ -571,9 +618,9 @@ const flareMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform float time;varying vec2 vUv;
-    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(1.-d*2.,4.5)*.52;
-    if(a<.001)discard;float fl=.85+sin(time*5.5)*.15;
-    vec3 col=mix(vec3(1.,.55,.12),vec3(1.,.95,.72),pow(1.-d*2.,8.));
+    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(1.-d*2.,4.5)*.24;
+    if(a<.001)discard;float fl=.82+sin(time*4.8)*.12;
+    vec3 col=mix(vec3(.38,.06,.82),vec3(.72,.35,1.),pow(1.-d*2.,8.));
     gl_FragColor=vec4(col*fl,a*fl);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
 flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(.7,.7),flareMat));
@@ -587,7 +634,7 @@ const hexMat=new THREE.ShaderMaterial({
     float ang=atan(c.y,c.x);float hex=cos(floor(ang/1.047)*1.047-ang)*length(c)/.5;
     float ring=exp(-pow(hex-.42,2.)*90.)*.3+exp(-pow(d-.28,2.)*120.)*.2;
     float fl=.7+sin(time*3.2)*.3;
-    gl_FragColor=vec4(vec3(1.,.58,.18)*ring*fl,ring*fl*.7);}`,
+    gl_FragColor=vec4(vec3(.52,.14,.92)*ring*fl,ring*fl*.4);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
 flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4),hexMat));
 
@@ -618,6 +665,7 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
     a=(Math.sin(i*127.1)*43758.5453)%1,b=(Math.sin((i+1)*127.1)*43758.5453)%1;
     a=a<0?a+1:a;b=b<0?b+1:b;return a*(1-u)+b*u;}
   function jfbm(x){return jn(x)*.5+jn(x*2.1)*.25+jn(x*4.3)*.125;}
+  var _invPV=new THREE.Matrix4();
 
   (function animate(){
   requestAnimationFrame(animate);
@@ -664,8 +712,8 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   // Rings
   rings[0].rotation.z+=.004;rings[1].rotation.x+=.003;rings[2].rotation.y+=.005;
 
-  // Orbiters
-  orbiters.forEach(o=>{const a=time*o.sp+o.ph;o.dot.position.set(Math.cos(a)*o.r,Math.sin(o.tilt)*Math.sin(a)*o.r*.55,Math.sin(a)*o.r*Math.cos(o.tilt));});
+  // Orbiters — elliptical orbits with slow eccentricity wobble
+  orbiters.forEach(o=>{const a=time*o.sp+o.ph;var er=o.r*(1.+.14*Math.sin(a*.5+o.ph));o.dot.position.set(Math.cos(a)*er,Math.sin(o.tilt)*Math.sin(a)*er*.52,Math.sin(a)*er*Math.cos(o.tilt));});
 
   // Shockwaves
   for(let i=shockwaves.length-1;i>=0;i--){
@@ -678,9 +726,9 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   // Energy arcs
   arcs.forEach((a,i)=>{
     a.life++;const phase=a.life/a.maxLife;
-    if(phase<.15)a.line.material.opacity=phase/.15*.7;
-    else if(phase<.5)a.line.material.opacity=.7;
-    else a.line.material.opacity=Math.max(0,.7*(1-phase)/.5);
+    if(phase<.15)a.line.material.opacity=phase/.15*.45;
+    else if(phase<.5)a.line.material.opacity=.45;
+    else a.line.material.opacity=Math.max(0,.45*(1-phase)/.5);
     if(a.life>=a.maxLife){
       scene.remove(a.line);arcs.splice(i,1);makeArc();
     }
@@ -732,6 +780,12 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   camera.position.z=Math.cos(camOrbitA)*camOrbitR*.9;
   // Micro-jitter lookAt: imperceptible frame-to-frame but never locked
   camera.lookAt((jfbm(time*2.9+1.7)-.5)*.012,(jfbm(time*2.3+4.1)-.5)*.008,0);
+  // Force matrix update so raymarcher gets correct clip→world transform this frame
+  camera.updateMatrixWorld();
+  nebulaVolPass.uniforms.time.value=time;
+  nebulaVolPass.uniforms.camPos.value.copy(camera.position);
+  _invPV.copy(camera.projectionMatrix).multiply(camera.matrixWorldInverse).invert();
+  nebulaVolPass.uniforms.invProjView.value.copy(_invPV);
 
   composer.render();
   })();
