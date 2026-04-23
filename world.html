@@ -52,16 +52,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
   opacity:0;transition:opacity .6s;z-index:10;pointer-events:none;
   background:rgba(0,0,0,.45);padding:.5rem 1rem;border:1px solid rgba(174,247,200,.12)"></div>
 <div id="controls">
-  WASD · SPACE<br>
-  SHIFT SPRINT<br>
-  MOUSE LOOK
+  WASD · SPACE JUMP<br>
+  SHIFT SPRINT · E COLLECT<br>
+  P CINEMATIC · N N64 MODE
+</div>
+<div id="cin-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:20;opacity:0;transition:opacity .8s;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:2.5rem 3rem">
+  <div style="font-size:.55rem;letter-spacing:.32em;color:rgba(174,247,200,.5)">CINEMATIC ENGINE</div>
+  <div style="font-size:1.1rem;letter-spacing:.22em;color:#aef7c8;text-shadow:0 0 24px #00ff88;margin-top:.2rem">REALM — BRIAN TEMPLE</div>
 </div>
 
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"}}
 </script>
+
 <script type="module">
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass }     from 'three/addons/postprocessing/ShaderPass.js';
 
 // ═══════════════════════════════════════════════════════
 // CONFIG
@@ -747,6 +757,8 @@ function setupInput() {
       player.onGround = false;
     }
     if (e.key === 'e' || e.key === 'E') collectArtifact();
+    if (e.key === 'p' || e.key === 'P') toggleCinematic();
+    if (e.key === 'n' || e.key === 'N') { n64Mode = !n64Mode; }
     e.key === ' ' && e.preventDefault();
   });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -777,7 +789,71 @@ function setupInput() {
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
+    if (composer) composer.setSize(innerWidth, innerHeight);
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// POST-PROCESSING (bloom + dreamy color grade)
+// ═══════════════════════════════════════════════════════
+let composer, n64RT, n64QuadScene, n64QuadCam;
+let n64Mode = false;
+
+function buildPostProcessing() {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+
+  // Bloom — makes artifacts + fireflies + sky glow
+  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.1, 0.55, 0.40);
+  composer.addPass(bloom);
+
+  // Dreamy color grade + vignette (final pass)
+  const gradePass = new ShaderPass({
+    uniforms: {tDiffuse:{value:null}},
+    vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`
+      uniform sampler2D tDiffuse;varying vec2 vUv;
+      void main(){
+        vec3 c=texture2D(tDiffuse,vUv).rgb;
+        // Lift shadows, warm highlights slightly
+        c=c/(c+vec3(0.12));  // soft rolloff
+        c.r*=1.04;c.g*=1.01; // warm push
+        float sat=dot(c,vec3(.299,.587,.114));c=mix(vec3(sat),c,1.15);// sat boost
+        // Vignette
+        float v=smoothstep(1.1,.28,length(vUv-.5)*1.62);
+        gl_FragColor=vec4(clamp(c*v,0.,1.),1.);}`,
+    renderToScreen:true,
+  });
+  composer.addPass(gradePass);
+
+  // N64 low-res render target (320×240, nearest filter)
+  n64RT = new THREE.WebGLRenderTarget(320, 240, {
+    minFilter:THREE.NearestFilter, magFilter:THREE.NearestFilter,
+  });
+  n64QuadScene = new THREE.Scene();
+  n64QuadCam   = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  n64QuadScene.add(new THREE.Mesh(
+    new THREE.PlaneGeometry(2,2),
+    new THREE.MeshBasicMaterial({map:n64RT.texture})
+  ));
+}
+
+// ═══════════════════════════════════════════════════════
+// CINEMATIC MODE
+// ═══════════════════════════════════════════════════════
+let cinematicMode = false, cinematicAngle = 0;
+function toggleCinematic() {
+  cinematicMode = !cinematicMode;
+  const el = document.getElementById('cin-overlay');
+  if (el) el.style.opacity = cinematicMode ? '1' : '0';
+}
+function updateCinematic(dt) {
+  if (!cinematicMode) return;
+  cinematicAngle += dt * 0.038;
+  const r  = 72 + Math.sin(cinematicAngle*0.31)*18;
+  const hy = 28 + Math.sin(cinematicAngle*0.19)*10;
+  camera.position.set(Math.cos(cinematicAngle)*r, hy, Math.sin(cinematicAngle)*r);
+  camera.lookAt(0, 6, 0);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -804,16 +880,24 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
 
   updateDayNight(dt);
-  updatePlayer(dt);
+  if (!cinematicMode) updatePlayer(dt);
+  updateCinematic(dt);
   updateCamera(dt);
   updateHUD(dt);
   updateArtifacts(dt);
-  checkInteraction();
+  if (!cinematicMode) checkInteraction();
   updateLore(dt);
   updateFireflies(dt, clock.elapsedTime, skyUniforms.dayFrac.value);
   if (waterMat) waterMat.uniforms.time.value += dt;
 
-  renderer.render(scene, camera);
+  if (n64Mode) {
+    renderer.setRenderTarget(n64RT);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    renderer.render(n64QuadScene, n64QuadCam);
+  } else {
+    composer.render();
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -830,6 +914,7 @@ function init() {
   buildArtifacts();
   fireflyObj = buildFireflies(70);
   buildPlayer();
+  buildPostProcessing();
   setupInput();
   animate();
 }
