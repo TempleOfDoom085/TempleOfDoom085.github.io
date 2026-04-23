@@ -368,6 +368,179 @@ function updateDayNight(dt) {
 }
 
 // ═══════════════════════════════════════════════════════
+// WATER
+// ═══════════════════════════════════════════════════════
+let waterMat;
+function buildWater() {
+  waterMat = new THREE.ShaderMaterial({
+    uniforms: {time:{value:0}},
+    vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`
+      uniform float time;varying vec2 vUv;
+      void main(){
+        vec2 uv=vUv*10.;
+        float wave=sin(uv.x*1.8+time*1.4)*.06+sin(uv.y*2.2+time*1.1)*.06
+                  +sin((uv.x+uv.y)*1.2+time*0.9)*.04;
+        vec3 deep=vec3(0.04,0.22,0.62);
+        vec3 shallow=vec3(0.08,0.52,0.96);
+        vec3 foam=vec3(0.55,0.82,1.0);
+        float t=clamp(wave+0.5,0.,1.);
+        vec3 col=mix(deep,shallow,t);
+        col=mix(col,foam,max(0.,wave*3.));
+        // Specular glint
+        float spec=pow(max(0.,sin(uv.x*0.7+time)*sin(uv.y*0.6+time*1.2)),.5)*.22;
+        gl_FragColor=vec4(col+spec,0.86);}`,
+    transparent:true, depthWrite:false, side:THREE.DoubleSide,
+  });
+  const waterGeo = new THREE.PlaneGeometry(300, 300, 2, 2);
+  waterGeo.rotateX(-Math.PI/2);
+  const water = new THREE.Mesh(waterGeo, waterMat);
+  water.position.y = CFG.waterLevel;
+  scene.add(water);
+}
+
+// ═══════════════════════════════════════════════════════
+// TREES
+// ═══════════════════════════════════════════════════════
+const TREE_GREENS = [0x2A8A16,0x38AB20,0x4CBB17,0x56C425,0x1C6B12,0x68D42A];
+function buildTrees(count=280) {
+  const half = 108;
+  for (let i=0; i<count; i++) {
+    const x = (Math.random()-.5)*half*2;
+    const z = (Math.random()-.5)*half*2;
+    const h = getHeight(x, z);
+    if (h < CFG.waterLevel+0.8 || h > CFG.waterLevel+13) continue;
+
+    const s = 0.55 + Math.random() * 0.95;
+    const g = new THREE.Group();
+
+    // Trunk
+    g.add(Object.assign(
+      new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11*s, 0.20*s, 1.6*s, 5),
+        new THREE.MeshLambertMaterial({color:0x4A2C14})
+      ), {position:new THREE.Vector3(0, 0.8*s, 0)}
+    ));
+
+    // 3 foliage cone layers — each slightly smaller and higher
+    for (let j=0; j<3; j++) {
+      const r = (1.15-j*0.27)*s, hh = (1.35-j*0.18)*s;
+      const col = TREE_GREENS[Math.floor(Math.random()*TREE_GREENS.length)];
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(r, hh, 5+j),
+        new THREE.MeshLambertMaterial({color:col})
+      );
+      cone.position.y = 1.6*s + j*0.68*s;
+      g.add(cone);
+    }
+
+    g.position.set(x, h, z);
+    g.rotation.y = Math.random()*Math.PI*2;
+    g.castShadow = true;
+    scene.add(g);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ROCKS
+// ═══════════════════════════════════════════════════════
+function buildRocks(count=130) {
+  const half = 112;
+  for (let i=0; i<count; i++) {
+    const x = (Math.random()-.5)*half*2;
+    const z = (Math.random()-.5)*half*2;
+    const h = getHeight(x, z);
+    if (h < CFG.waterLevel+0.5) continue;
+
+    const s = 0.28 + Math.random()*1.1;
+    const geo = new THREE.DodecahedronGeometry(s, 0);
+    // Squish + stretch for variety
+    const pos = geo.attributes.position;
+    for (let k=0; k<pos.count; k++) {
+      pos.setXYZ(k,
+        pos.getX(k)*(0.72+Math.random()*0.56),
+        pos.getY(k)*(0.50+Math.random()*0.62),
+        pos.getZ(k)*(0.72+Math.random()*0.56)
+      );
+    }
+    geo.computeVertexNormals();
+    const l = 0.30 + Math.random()*0.22;
+    const rock = new THREE.Mesh(geo,
+      new THREE.MeshLambertMaterial({
+        color:new THREE.Color().setHSL(0.06+Math.random()*0.06, 0.10+Math.random()*0.08, l)
+      })
+    );
+    rock.position.set(x, h + s*0.22, z);
+    rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    rock.castShadow = true;
+    scene.add(rock);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RUINS
+// ═══════════════════════════════════════════════════════
+function buildRuins() {
+  const stoneMat  = new THREE.MeshLambertMaterial({color:0x8A7E6C});
+  const mossyMat  = new THREE.MeshLambertMaterial({color:0x4E6234});
+
+  function addRuin(cx, cz) {
+    const h = getHeight(cx, cz);
+    if (h < CFG.waterLevel + 1.5) return;
+    const g = new THREE.Group();
+    g.position.set(cx, h, cz);
+
+    // Columns (2–5 per cluster, some fallen)
+    const nc = 2 + Math.floor(Math.random()*4);
+    for (let i=0; i<nc; i++) {
+      const ch = 1.4 + Math.random()*2.8;
+      const mat = Math.random()<0.3 ? mossyMat : stoneMat;
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, ch, 7), mat);
+      const ox = (Math.random()-.5)*7, oz = (Math.random()-.5)*7;
+      col.position.set(ox, ch/2, oz);
+      // Some columns are fallen
+      if (Math.random()<0.28) {
+        col.rotation.z = Math.PI/2 + (Math.random()-.5)*0.3;
+        col.position.y = 0.22;
+      } else {
+        col.rotation.z = (Math.random()-.5)*0.1;
+      }
+      g.add(col);
+    }
+
+    // Broken wall section (60% chance)
+    if (Math.random()<0.6) {
+      const ww = 3+Math.random()*3, wh = 1.2+Math.random()*1.5;
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(ww, wh, 0.45), stoneMat);
+      wall.position.set((Math.random()-.5)*4, wh/2, (Math.random()-.5)*4);
+      wall.rotation.y = Math.random()*Math.PI;
+      g.add(wall);
+    }
+
+    // Standing arch (30% chance)
+    if (Math.random()<0.30) {
+      const pMat = Math.random()<0.4 ? mossyMat : stoneMat;
+      const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3.2, 0.4), pMat);
+      const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3.2, 0.4), pMat);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.42, 0.4), pMat);
+      p1.position.set(-1.3, 1.6, 0); p2.position.set(1.3, 1.6, 0);
+      top.position.set(0, 3.2, 0);
+      g.add(p1, p2, top);
+    }
+
+    g.castShadow = true;
+    scene.add(g);
+  }
+
+  // 10 ruin clusters at curated spots
+  [
+    [22,28],[-32,14],[47,-18],[-22,-42],
+    [56,10],[-48,22],[14,-52],[-36,36],
+    [0,-32],[38,-34]
+  ].forEach(([x,z]) => addRuin(x, z));
+}
+
+// ═══════════════════════════════════════════════════════
 // INPUT
 // ═══════════════════════════════════════════════════════
 const keys = {};
@@ -440,6 +613,7 @@ function animate() {
   updatePlayer(dt);
   updateCamera(dt);
   updateHUD(dt);
+  if (waterMat) waterMat.uniforms.time.value += dt;
 
   renderer.render(scene, camera);
 }
@@ -449,8 +623,12 @@ function animate() {
 // ═══════════════════════════════════════════════════════
 function init() {
   buildTerrain();
+  buildWater();
   buildSky();
   buildLighting();
+  buildTrees();
+  buildRocks();
+  buildRuins();
   buildPlayer();
   setupInput();
   animate();
