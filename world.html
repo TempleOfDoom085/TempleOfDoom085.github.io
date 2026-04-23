@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REALM — Brian Temple</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Courier New',monospace}
+#c{display:block;width:100%;height:100%}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);z-index:50;transition:opacity .5s}
+#overlay h1{color:#aef7c8;font-size:1.4rem;letter-spacing:.2em;text-align:center;
+  text-shadow:0 0 20px #00ff88}
+#overlay p{color:rgba(174,247,200,.6);font-size:.7rem;letter-spacing:.15em;margin-top:.6rem;text-align:center}
+#hud{position:fixed;bottom:1.2rem;left:1.2rem;z-index:10;pointer-events:none}
+#biome{font-size:.58rem;letter-spacing:.22em;color:rgba(174,247,200,.6);text-transform:uppercase}
+#coords{font-size:.48rem;letter-spacing:.15em;color:rgba(174,247,200,.3);margin-top:.2rem}
+#controls{position:fixed;top:1rem;right:1rem;font-size:.5rem;letter-spacing:.12em;
+  color:rgba(174,247,200,.28);text-align:right;z-index:10;pointer-events:none;line-height:1.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;
+  padding:.55rem 1.4rem;background:rgba(0,0,0,.35);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(174,247,200,.08)}
+.nb{font-size:.6rem;letter-spacing:.14em;color:rgba(174,247,200,.6);text-decoration:none;transition:color .2s}
+.nb:hover{color:#aef7c8}
+.nt{position:absolute;left:50%;transform:translateX(-50%);font-size:.65rem;letter-spacing:.3em;
+  color:rgba(174,247,200,.5);text-transform:uppercase}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nb">← PORTFOLIO</a>
+  <span class="nt">REALM · OPEN WORLD</span>
+</nav>
+<canvas id="c"></canvas>
+<div id="overlay">
+  <div>
+    <h1>REALM</h1>
+    <p>CLICK TO ENTER · WASD MOVE · MOUSE LOOK · SPACE JUMP</p>
+  </div>
+</div>
+<div id="hud">
+  <div id="biome">LOWLANDS</div>
+  <div id="coords">0, 0, 0</div>
+</div>
+<div id="controls">
+  WASD · SPACE<br>
+  SHIFT SPRINT<br>
+  MOUSE LOOK
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const CFG = {
+  mapSize: 240,
+  segments: 120,
+  heightScale: 22,
+  waterLevel: 1.4,
+  playerSpeed: 10,
+  sprintMult: 1.8,
+  jumpForce: 9,
+  gravity: 24,
+  playerHeight: 1.2,
+  camDist: 9,
+  camSmooth: 9,
+  camMinPitch: -0.05,
+  camMaxPitch: 0.95,
+};
+
+// ═══════════════════════════════════════════════════════
+// NOISE / TERRAIN HEIGHT
+// ═══════════════════════════════════════════════════════
+function hash(x, z) {
+  const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+function noise2d(x, z) {
+  const ix = Math.floor(x), iz = Math.floor(z);
+  const fx = x - ix, fz = z - iz;
+  const ux = fx*fx*(3-2*fx), uz = fz*fz*(3-2*fz);
+  const a = hash(ix,iz), b = hash(ix+1,iz), c = hash(ix,iz+1), d = hash(ix+1,iz+1);
+  return a + (b-a)*ux + (c-a)*uz + (a-b-c+d)*ux*uz;
+}
+function fbm(x, z, oct=6) {
+  let v=0, a=0.5, f=1;
+  for(let i=0;i<oct;i++){v+=a*noise2d(x*f,z*f);a*=0.5;f*=2.07;}
+  return v;
+}
+function getHeight(wx, wz) {
+  const s = 0.013;
+  const n = fbm(wx*s, wz*s);
+  // Island shape: fade to sea at edges
+  const edge = Math.max(0, 1 - Math.sqrt(wx*wx+wz*wz)/115);
+  return (n * 1.35 + edge * 0.3 - 0.42) * CFG.heightScale;
+}
+function getBiome(h) {
+  const w = CFG.waterLevel;
+  if (h < w+0.6) return 'SHORELINE';
+  if (h < w+4)   return 'LOWLANDS';
+  if (h < w+9)   return 'HIGHLANDS';
+  if (h < w+14)  return 'FOREST';
+  if (h < w+18)  return 'MOUNTAINS';
+  return 'PEAKS';
+}
+function getBiomeColor(h) {
+  const w = CFG.waterLevel;
+  if (h < w+0.6) return new THREE.Color(0.90, 0.84, 0.56); // sand
+  const t = Math.min((h-w)/(CFG.heightScale*0.9), 1);
+  if (t < 0.18)  return new THREE.Color(0.32, 0.82, 0.20); // bright green
+  if (t < 0.40)  return new THREE.Color(0.20, 0.68, 0.14); // mid green
+  if (t < 0.58)  return new THREE.Color(0.13, 0.50, 0.09); // dark forest
+  if (t < 0.74)  return new THREE.Color(0.48, 0.44, 0.36); // rock gray
+  if (t < 0.87)  return new THREE.Color(0.60, 0.56, 0.50); // light rock
+  return new THREE.Color(0.94, 0.94, 0.98);                // snow
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDERER + SCENE + CAMERA
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.8));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xaed4f7, 80, 210);
+
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 400);
+
+const clock = new THREE.Clock();
+
+// ═══════════════════════════════════════════════════════
+// BUILD TERRAIN
+// ═══════════════════════════════════════════════════════
+function buildTerrain() {
+  const geo = new THREE.PlaneGeometry(CFG.mapSize, CFG.mapSize, CFG.segments, CFG.segments);
+  geo.rotateX(-Math.PI / 2);
+
+  const pos = geo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i);
+    const h = getHeight(x, z);
+    pos.setY(i, h);
+    const col = getBiomeColor(h);
+    colors[i*3] = col.r; colors[i*3+1] = col.g; colors[i*3+2] = col.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+
+  const mat = new THREE.MeshLambertMaterial({vertexColors: true});
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+}
+
+// ═══════════════════════════════════════════════════════
+// BUILD SKY
+// ═══════════════════════════════════════════════════════
+const skyUniforms = {
+  sunDir:    {value: new THREE.Vector3(0.6, 0.6, 0.4).normalize()},
+  dayFrac:   {value: 0.7},
+};
+function buildSky() {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: skyUniforms,
+    vertexShader: `
+      varying vec3 vDir;
+      void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `
+      uniform vec3 sunDir;uniform float dayFrac;
+      varying vec3 vDir;
+      void main(){
+        vec3 d=normalize(vDir);
+        float up=clamp(d.y*0.5+0.5,0.,1.);
+        // Day colours
+        vec3 dZen=vec3(0.08,0.20,0.55);
+        vec3 dHor=vec3(0.55,0.78,0.98);
+        // Night colours
+        vec3 nZen=vec3(0.01,0.02,0.09);
+        vec3 nHor=vec3(0.04,0.06,0.16);
+        // Sunset
+        vec3 sunCol=vec3(0.96,0.42,0.08);
+        float sunset=(1.-abs(sunDir.y))*max(0.,sunDir.y+0.18)*(1.-up)*0.9;
+        vec3 daySky=mix(dHor,dZen,pow(up,.55));
+        daySky=mix(daySky,sunCol,sunset);
+        vec3 nightSky=mix(nHor,nZen,up);
+        vec3 sky=mix(nightSky,daySky,dayFrac);
+        // Sun disk
+        float sd=dot(d,normalize(sunDir));
+        sky+=vec3(1.,.92,.72)*smoothstep(.9990,1.,sd)*dayFrac;
+        sky+=vec3(.9,.45,.1)*smoothstep(.992,.9990,sd)*.35*dayFrac;
+        // Stars
+        float sr=fract(sin(dot(floor(d.xz*80.),vec2(127.1,311.7)))*43758.5);
+        sky+=step(.992,sr)*(1.-dayFrac)*.85;
+        gl_FragColor=vec4(sky,1.);}`,
+    side: THREE.BackSide,
+    depthWrite: false,
+  });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(350, 32, 16), mat));
+}
+
+// ═══════════════════════════════════════════════════════
+// LIGHTING
+// ═══════════════════════════════════════════════════════
+let sun, ambient, hemi;
+function buildLighting() {
+  sun = new THREE.DirectionalLight(0xFFF5DD, 2.0);
+  sun.position.set(60, 80, 30);
+  sun.castShadow = true;
+  sun.shadow.mapSize.setScalar(1024);
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 250;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -90;
+  sun.shadow.camera.right = sun.shadow.camera.top = 90;
+  scene.add(sun);
+
+  ambient = new THREE.AmbientLight(0x8AAAC8, 0.55);
+  scene.add(ambient);
+
+  hemi = new THREE.HemisphereLight(0x88C8FF, 0x3A7A2A, 0.75);
+  scene.add(hemi);
+}
+
+// ═══════════════════════════════════════════════════════
+// PLAYER
+// ═══════════════════════════════════════════════════════
+const player = {
+  mesh: null,
+  vel: new THREE.Vector3(),
+  onGround: false,
+};
+function buildPlayer() {
+  const g = new THREE.Group();
+
+  // Body
+  g.add(Object.assign(new THREE.Mesh(
+    new THREE.BoxGeometry(0.56, 0.68, 0.32),
+    new THREE.MeshLambertMaterial({color:0x1A5FBF})
+  ), {position: new THREE.Vector3(0, 0.34, 0)}));
+
+  // Head
+  g.add(Object.assign(new THREE.Mesh(
+    new THREE.BoxGeometry(0.46, 0.44, 0.44),
+    new THREE.MeshLambertMaterial({color:0xF0C090})
+  ), {position: new THREE.Vector3(0, 1.0, 0)}));
+
+  // Cape
+  const cape = new THREE.Mesh(
+    new THREE.ConeGeometry(0.28, 0.75, 4),
+    new THREE.MeshLambertMaterial({color:0x8B0000})
+  );
+  cape.rotation.x = Math.PI;
+  cape.position.set(0, 0.68, -0.1);
+  g.add(cape);
+
+  // Glowing eyes
+  const eyeMat = new THREE.MeshStandardMaterial({color:0x00FFCC, emissive:0x00FFCC, emissiveIntensity:5});
+  [-0.11, 0.11].forEach(ox => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06,5,5), eyeMat);
+    eye.position.set(ox, 1.0, 0.22);
+    g.add(eye);
+  });
+
+  g.castShadow = true;
+  player.mesh = g;
+  player.vel.set(0,0,0);
+
+  const sh = getHeight(0, 8);
+  g.position.set(0, sh + CFG.playerHeight, 8);
+  scene.add(g);
+}
+
+function updatePlayer(dt) {
+  const p = player.mesh.position;
+  const speed = (keys['shift'] ? CFG.playerSpeed * CFG.sprintMult : CFG.playerSpeed) * dt;
+
+  // Camera-relative move direction
+  const mx = (keys['d']?1:0)-(keys['a']?1:0);
+  const mz = (keys['s']?1:0)-(keys['w']?1:0);
+
+  if (mx !== 0 || mz !== 0) {
+    const dir = new THREE.Vector3(mx, 0, mz).normalize();
+    dir.applyEuler(new THREE.Euler(0, cam.yaw, 0));
+    p.x += dir.x * speed;
+    p.z += dir.z * speed;
+    player.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+  }
+
+  // Gravity + terrain collision
+  player.vel.y -= CFG.gravity * dt;
+  p.y += player.vel.y * dt;
+  const floor = getHeight(p.x, p.z) + CFG.playerHeight;
+  if (p.y <= floor) {
+    p.y = floor;
+    player.vel.y = 0;
+    player.onGround = true;
+  } else {
+    player.onGround = false;
+  }
+
+  // World bounds
+  const lim = CFG.mapSize * 0.47;
+  p.x = Math.max(-lim, Math.min(lim, p.x));
+  p.z = Math.max(-lim, Math.min(lim, p.z));
+}
+
+// ═══════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════
+const cam = {yaw:0, pitch:0.38, dist:CFG.camDist, target:new THREE.Vector3()};
+let idleTimer = 0;
+const _lastPos = new THREE.Vector3();
+
+function updateCamera(dt) {
+  const p = player.mesh.position;
+  const moved = p.distanceTo(_lastPos) > 0.01;
+  _lastPos.copy(p);
+  if (moved) idleTimer = 0; else idleTimer += dt;
+  if (idleTimer > 4) cam.yaw += dt * 0.055; // slow idle spin
+
+  const cy = Math.cos(cam.pitch), sy = Math.sin(cam.pitch);
+  const cx = Math.cos(cam.yaw),   sx = Math.sin(cam.yaw);
+  cam.target.set(
+    p.x + sx * cy * cam.dist,
+    p.y + sy * cam.dist + 1.5,
+    p.z + cx * cy * cam.dist
+  );
+  camera.position.lerp(cam.target, Math.min(1, dt * CFG.camSmooth));
+  camera.lookAt(p.x, p.y + 1.5, p.z);
+}
+
+// ═══════════════════════════════════════════════════════
+// DAY / NIGHT
+// ═══════════════════════════════════════════════════════
+let dayTime = 0.28; // 0–1, 0.25=dawn 0.5=noon 0.75=dusk
+function updateDayNight(dt) {
+  dayTime = (dayTime + dt / 140) % 1;
+  const angle = (dayTime - 0.25) * Math.PI * 2;
+  const sx = Math.cos(angle), sy = Math.sin(angle);
+  sun.position.set(sx * 90, sy * 90, 25);
+
+  const day = Math.max(0, Math.min(1, sy * 2.2));
+  const dusk = (1 - Math.abs(sy)) * Math.max(0, sx) * 0.9;
+  const dawn = (1 - Math.abs(sy)) * Math.max(0, -sx) * (sy > -0.25 ? 0.8 : 0);
+  const warm = Math.max(dusk, dawn);
+
+  sun.color.setRGB(1, 0.92 - warm * 0.25, 0.80 - warm * 0.5);
+  sun.intensity = day * 2.0 + warm * 0.7 + 0.05;
+  ambient.intensity = 0.2 + day * 0.55;
+  hemi.intensity = 0.15 + day * 0.75;
+  scene.fog.color.setRGB(0.55 + day*0.3, 0.68 + day*0.2 - warm*0.1, 0.82 + day*0.12);
+
+  skyUniforms.sunDir.value.set(sx, sy, 0.25).normalize();
+  skyUniforms.dayFrac.value = day;
+}
+
+// ═══════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════
+const keys = {};
+let pointerLocked = false, isDragging = false, lastMX = 0, lastMY = 0;
+
+function setupInput() {
+  window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if ((e.key === ' ') && player.onGround) {
+      player.vel.y = CFG.jumpForce;
+      player.onGround = false;
+    }
+    e.key === ' ' && e.preventDefault();
+  });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  canvas.addEventListener('click', () => {
+    canvas.requestPointerLock();
+    document.getElementById('overlay').style.opacity = '0';
+    setTimeout(() => document.getElementById('overlay').style.display = 'none', 500);
+  });
+  document.addEventListener('pointerlockchange', () => {
+    pointerLocked = !!document.pointerLockElement;
+  });
+  document.addEventListener('mousemove', e => {
+    const dx = pointerLocked ? e.movementX : (isDragging ? e.clientX - lastMX : 0);
+    const dy = pointerLocked ? e.movementY : (isDragging ? e.clientY - lastMY : 0);
+    cam.yaw   -= dx * 0.0022;
+    cam.pitch -= dy * 0.0022;
+    cam.pitch  = Math.max(CFG.camMinPitch, Math.min(CFG.camMaxPitch, cam.pitch));
+    lastMX = e.clientX; lastMY = e.clientY;
+  });
+  canvas.addEventListener('mousedown', e => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+  document.addEventListener('mouseup',  () => { isDragging = false; });
+  canvas.addEventListener('wheel', e => {
+    cam.dist = Math.max(3, Math.min(20, cam.dist + e.deltaY * 0.012));
+  }, {passive:true});
+
+  window.addEventListener('resize', () => {
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// HUD
+// ═══════════════════════════════════════════════════════
+const biomeEl  = document.getElementById('biome');
+const coordsEl = document.getElementById('coords');
+let hudTick = 0;
+function updateHUD(dt) {
+  hudTick += dt;
+  if (hudTick < 0.25) return;
+  hudTick = 0;
+  const p = player.mesh.position;
+  const h = getHeight(p.x, p.z);
+  biomeEl.textContent  = getBiome(h);
+  coordsEl.textContent = `${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// GAME LOOP
+// ═══════════════════════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  updateDayNight(dt);
+  updatePlayer(dt);
+  updateCamera(dt);
+  updateHUD(dt);
+
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function init() {
+  buildTerrain();
+  buildSky();
+  buildLighting();
+  buildPlayer();
+  setupInput();
+  animate();
+}
+init();
+</script>
+</body>
+</html>
