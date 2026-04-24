@@ -310,33 +310,79 @@ function buildPlayer() {
   scene.add(g);
 }
 
+// Animation state
+const anim = {
+  bobT: 0,         // walk cycle timer
+  squash: 1,       // Y scale on landing
+  squashVel: 0,    // spring velocity for squash
+  lean: 0,         // forward lean angle
+  wasOnGround: false,
+};
+
 function updatePlayer(dt) {
   const p = player.mesh.position;
-  const speed = (keys['shift'] ? CFG.playerSpeed * CFG.sprintMult : CFG.playerSpeed) * dt;
+  const sprint = keys['shift'];
+  const speed  = (sprint ? CFG.playerSpeed * CFG.sprintMult : CFG.playerSpeed) * dt;
 
   // Camera-relative move direction
   const mx = (keys['d']?1:0)-(keys['a']?1:0);
   const mz = (keys['s']?1:0)-(keys['w']?1:0);
+  const moving = mx !== 0 || mz !== 0;
 
-  if (mx !== 0 || mz !== 0) {
+  if (moving) {
     const dir = new THREE.Vector3(mx, 0, mz).normalize();
     dir.applyEuler(new THREE.Euler(0, cam.yaw, 0));
     p.x += dir.x * speed;
     p.z += dir.z * speed;
-    player.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+    // Smooth turn: slerp rotation toward movement direction
+    const targetY = Math.atan2(dir.x, dir.z);
+    let dy = targetY - player.mesh.rotation.y;
+    // Wrap to [-π, π]
+    while (dy >  Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    player.mesh.rotation.y += dy * Math.min(1, dt * 12);
   }
 
   // Gravity + terrain collision
   player.vel.y -= CFG.gravity * dt;
   p.y += player.vel.y * dt;
   const floor = getHeight(p.x, p.z) + CFG.playerHeight;
+  const wasAir = !player.onGround;
   if (p.y <= floor) {
+    // Landing squash: proportional to fall velocity
+    if (wasAir && player.vel.y < -3) {
+      anim.squash    = 1 + player.vel.y * 0.028; // compress
+      anim.squashVel = -player.vel.y * 0.06;      // bounce back
+    }
     p.y = floor;
     player.vel.y = 0;
     player.onGround = true;
   } else {
     player.onGround = false;
   }
+
+  // ── Walk bob (vertical + rotational sway) ──
+  if (moving && player.onGround) {
+    const rate = sprint ? 10 : 6.5;
+    anim.bobT += dt * rate;
+  }
+  const bob   = moving && player.onGround ? Math.sin(anim.bobT) * 0.055 : 0;
+  const sway  = moving && player.onGround ? Math.sin(anim.bobT * 0.5) * 0.018 : 0;
+  player.mesh.position.y = p.y + bob;
+  player.mesh.rotation.z = sway;
+
+  // ── Landing squash spring ──
+  const stiffness = 28, damping = 7;
+  anim.squashVel += (1 - anim.squash) * stiffness * dt;
+  anim.squashVel *= Math.max(0, 1 - damping * dt);
+  anim.squash    += anim.squashVel * dt;
+  anim.squash     = Math.max(0.55, Math.min(1.25, anim.squash));
+  player.mesh.scale.set(1 / Math.sqrt(anim.squash), anim.squash, 1 / Math.sqrt(anim.squash));
+
+  // ── Sprint forward lean ──
+  const targetLean = moving && sprint ? 0.18 : 0;
+  anim.lean += (targetLean - anim.lean) * Math.min(1, dt * 7);
+  player.mesh.rotation.x = anim.lean;
 
   // World bounds
   const lim = CFG.mapSize * 0.47;
