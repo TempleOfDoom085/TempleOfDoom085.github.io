@@ -51,8 +51,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
         text-shadow:0 0 14px rgba(0,255,136,.55)">CLICK TO BEGIN</div>
       <div style="font-size:.38rem;letter-spacing:.13em;color:rgba(174,247,200,.3);line-height:2.4">
         WASD · MOVE &nbsp;·&nbsp; MOUSE · LOOK &nbsp;·&nbsp; SPACE · JUMP<br>
-        SHIFT · SPRINT &nbsp;·&nbsp; E · COLLECT RELIC &nbsp;·&nbsp; F · RELIC CODEX<br>
-        P · CINEMATIC &nbsp;·&nbsp; N · N64 MODE &nbsp;·&nbsp; M · MAP
+        SHIFT · SPRINT &nbsp;·&nbsp; E · COLLECT &nbsp;·&nbsp; Z · MAGIC SHOT<br>
+        R · WEATHER &nbsp;·&nbsp; F · CODEX &nbsp;·&nbsp; P · CIN &nbsp;·&nbsp; M · MAP
       </div>
     </div>
   </div>
@@ -62,6 +62,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
   <div id="coords">0, 0, 0</div>
   <div id="artifacts" style="font-size:.48rem;letter-spacing:.18em;color:rgba(174,247,200,.45);margin-top:.3rem">0 / 6  RELICS</div>
   <div id="fragments" style="font-size:.44rem;letter-spacing:.16em;color:rgba(255,220,80,.35);margin-top:.18rem">0 / 18  FRAGMENTS</div>
+  <div id="weather" style="font-size:.42rem;letter-spacing:.18em;color:rgba(174,247,200,.22);margin-top:.16rem">CLEAR</div>
 </div>
 <div id="prompt" style="position:fixed;bottom:3.2rem;left:50%;transform:translateX(-50%);
   font-size:.58rem;letter-spacing:.2em;color:#aef7c8;opacity:0;transition:opacity .3s;
@@ -71,10 +72,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
   opacity:0;transition:opacity .6s;z-index:10;pointer-events:none;
   background:rgba(0,0,0,.45);padding:.5rem 1rem;border:1px solid rgba(174,247,200,.12)"></div>
 <div id="controls">
-  WASD · SPACE JUMP<br>
+  WASD · SPACE JUMP ×2<br>
   SHIFT SPRINT · E COLLECT<br>
-  P CINEMATIC · N N64 MODE<br>
-  M MAP · F CODEX
+  Z HOLD MAGIC · R WEATHER<br>
+  P CIN · N N64 · M MAP · F LOG
 </div>
 <div id="cin-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:20;opacity:0;transition:opacity .8s;
   display:flex;flex-direction:column;justify-content:flex-end;padding:2.5rem 3rem">
@@ -88,6 +89,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
            background:#000;image-rendering:pixelated"></canvas>
   <div style="font-size:.38rem;letter-spacing:.2em;color:rgba(174,247,200,.28);
               margin-top:.2rem;text-align:right">WORLD MAP</div>
+</div>
+
+<!-- CHARGE BAR -->
+<div id="charge-bar" style="position:fixed;bottom:2.0rem;left:50%;transform:translateX(-50%);
+  width:120px;height:5px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(68,170,255,.22);overflow:hidden;opacity:0;transition:opacity .15s;z-index:10">
+  <div id="charge-fill" style="height:100%;width:0;background:linear-gradient(90deg,#22aaff,#aa44ff);
+    box-shadow:0 0 8px #44aaff;transition:width .05s linear"></div>
 </div>
 
 <!-- QUEST LOG / RELIC CODEX -->
@@ -304,6 +313,7 @@ const player = {
   mesh: null,
   vel: new THREE.Vector3(),
   onGround: false,
+  jumpsLeft: 2,
 };
 function buildPlayer() {
   const g = new THREE.Group();
@@ -340,6 +350,7 @@ function buildPlayer() {
   g.castShadow = true;
   player.mesh = g;
   player.vel.set(0,0,0);
+  player.jumpsLeft = 2;
 
   const sh = getHeight(0, 8);
   g.position.set(0, sh + CFG.playerHeight, 8);
@@ -394,6 +405,7 @@ function updatePlayer(dt) {
     p.y = floor;
     player.vel.y = 0;
     player.onGround = true;
+    player.jumpsLeft = 2;
   } else {
     player.onGround = false;
   }
@@ -1031,10 +1043,20 @@ let pointerLocked = false, isDragging = false, lastMX = 0, lastMY = 0;
 function setupInput() {
   window.addEventListener('keydown', e => {
     keys[e.key.toLowerCase()] = true;
-    if ((e.key === ' ') && player.onGround) {
-      player.vel.y = CFG.jumpForce;
+    if (e.key === ' ' && player.jumpsLeft > 0) {
+      const isDouble = !player.onGround;
+      player.vel.y = CFG.jumpForce * (isDouble ? 0.88 : 1);
       player.onGround = false;
+      player.jumpsLeft--;
+      if (isDouble) spawnDoubleJumpBurst();
       playJumpSound();
+    }
+    if (e.key === 'r' || e.key === 'R') cycleWeather();
+    if (e.key === 'z' || e.key === 'Z') {
+      charging = true; chargeT = 0;
+      const wrap = document.getElementById('charge-bar');
+      if (wrap) wrap.style.opacity = '1';
+      playChargeSound();
     }
     if (e.key === 'e' || e.key === 'E') collectArtifact();
     if (e.key === 'p' || e.key === 'P') toggleCinematic();
@@ -1048,7 +1070,15 @@ function setupInput() {
     if (e.key === 'Escape' && questLogOpen) { toggleQuestLog(); }
     e.key === ' ' && e.preventDefault();
   });
-  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+  window.addEventListener('keyup', e => {
+    keys[e.key.toLowerCase()] = false;
+    if ((e.key === 'z' || e.key === 'Z') && charging) {
+      charging = false;
+      fireProjectile();
+      const wrap = document.getElementById('charge-bar');
+      if (wrap) wrap.style.opacity = '0';
+    }
+  });
 
   canvas.addEventListener('click', () => {
     initAudio(); // must be triggered by user gesture
@@ -1373,6 +1403,418 @@ function updateHUD(dt) {
 }
 
 // ═══════════════════════════════════════════════════════
+// CAMERA SHAKE
+// ═══════════════════════════════════════════════════════
+let _shakeMag = 0, _shakeTimer = 0;
+function updateCameraShake(dt) {
+  if (_shakeTimer <= 0) return;
+  _shakeTimer -= dt;
+  _shakeMag *= Math.max(0, 1 - dt * 7);
+  camera.position.x += (Math.random() - 0.5) * _shakeMag;
+  camera.position.y += (Math.random() - 0.5) * _shakeMag * 0.5;
+  camera.position.z += (Math.random() - 0.5) * _shakeMag;
+}
+
+// ═══════════════════════════════════════════════════════
+// WEATHER — rain + lightning
+// ═══════════════════════════════════════════════════════
+let rainGeo, rainVelBuf, rainPoints;
+let weatherMode = 0, rainActive = false, stormActive = false;
+let lightningTimer = 3, lightningFlash = 0;
+
+function buildRain() {
+  const N = 2200;
+  const pos = new Float32Array(N * 3);
+  rainVelBuf = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 200;
+    pos[i*3+1] = Math.random() * 80 + 8;
+    pos[i*3+2] = (Math.random() - 0.5) * 200;
+    rainVelBuf[i] = 28 + Math.random() * 22;
+  }
+  rainGeo = new THREE.BufferGeometry();
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    color:0xaaccff, size:0.09, transparent:true, opacity:0.55,
+    depthWrite:false, blending:THREE.AdditiveBlending,
+  });
+  rainPoints = new THREE.Points(rainGeo, mat);
+  rainPoints.visible = false;
+  scene.add(rainPoints);
+}
+
+function updateRain(dt) {
+  if (!rainActive && !stormActive) return;
+  const pos = rainGeo.attributes.position;
+  const cx = camera.position.x, cz = camera.position.z;
+  const N = rainVelBuf.length;
+  for (let i = 0; i < N; i++) {
+    const ny = pos.getY(i) - rainVelBuf[i] * dt;
+    if (ny < getHeight(pos.getX(i), pos.getZ(i)) - 0.5) {
+      pos.setXYZ(i,
+        cx + (Math.random() - 0.5) * 130,
+        50 + Math.random() * 40,
+        cz + (Math.random() - 0.5) * 130
+      );
+    } else {
+      pos.setY(i, ny);
+    }
+  }
+  pos.needsUpdate = true;
+
+  if (stormActive) {
+    lightningTimer -= dt;
+    if (lightningFlash > 0) {
+      lightningFlash = Math.max(0, lightningFlash - dt * 7);
+      ambient.intensity = 0.55 + lightningFlash * 4.5;
+      hemi.intensity    = 0.15 + lightningFlash * 3.5;
+    }
+    if (lightningTimer <= 0) {
+      lightningTimer = 3 + Math.random() * 6;
+      lightningFlash = 1.0;
+      _shakeMag = 0.22; _shakeTimer = 0.55;
+      playThunder();
+    }
+  }
+}
+
+const WEATHER_NAMES = ['CLEAR', 'RAIN', 'STORM'];
+function cycleWeather() {
+  weatherMode = (weatherMode + 1) % 3;
+  rainActive  = weatherMode >= 1;
+  stormActive = weatherMode === 2;
+  if (rainPoints) rainPoints.visible = rainActive;
+  lightningTimer = 2 + Math.random() * 2;
+  lightningFlash = 0;
+  const el = document.getElementById('weather');
+  if (el) el.textContent = WEATHER_NAMES[weatherMode];
+  if (windGain && audioReady)
+    windGain.gain.setTargetAtTime(rainActive ? 0.10 : 0, audioCtx.currentTime, 0.5);
+}
+
+function playThunder() {
+  if (!audioReady) return;
+  const len = audioCtx.sampleRate * 2;
+  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const d   = buf.getChannelData(0);
+  for (let i = 0; i < len; i++)
+    d[i] = (Math.random()*2-1) * Math.pow(Math.max(0, 1-i/len), 0.45);
+  const src  = audioCtx.createBufferSource();
+  const lp   = audioCtx.createBiquadFilter();
+  const gain = audioCtx.createGain();
+  src.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 180; gain.gain.value = 0.65;
+  src.connect(lp); lp.connect(gain); gain.connect(audioCtx.destination);
+  src.start(audioCtx.currentTime + 0.4 + Math.random() * 0.6);
+}
+
+// ═══════════════════════════════════════════════════════
+// AURORA BOREALIS
+// ═══════════════════════════════════════════════════════
+let auroraUniforms;
+function buildAurora() {
+  auroraUniforms = {time:{value:0}, night:{value:0}};
+  const mat = new THREE.ShaderMaterial({
+    uniforms: auroraUniforms,
+    vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`
+      uniform float time;uniform float night;varying vec2 vUv;
+      void main(){
+        if(night<.05){gl_FragColor=vec4(0.);return;}
+        float w=sin(vUv.x*5.+time*.35)*.5+.5;
+        w*=sin(vUv.x*9.-time*.22)*.4+.6;
+        w*=sin(vUv.x*2.3+time*.18)*.3+.7;
+        float curtain=smoothstep(0.,.18,vUv.y)*smoothstep(1.,.62,vUv.y)*w;
+        vec3 c=mix(vec3(0.,.85,.35),vec3(.5,0.,.95),vUv.x);
+        c=mix(c,vec3(0.,.9,.9),sin(vUv.x*4.+time*.25)*.5+.5);
+        c=mix(c,vec3(.2,.7,1.),sin(vUv.y*3.-time*.2)*.5+.5);
+        gl_FragColor=vec4(c*curtain,curtain*night*.62);}`,
+    transparent:true, depthWrite:false, side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(380, 75), mat);
+  mesh.position.set(0, 162, -185);
+  mesh.rotation.x = -0.15;
+  scene.add(mesh);
+}
+function updateAurora(dt) {
+  if (!auroraUniforms) return;
+  auroraUniforms.time.value += dt;
+  auroraUniforms.night.value = Math.max(0, 1 - skyUniforms.dayFrac.value * 1.5);
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTICLE BURSTS
+// ═══════════════════════════════════════════════════════
+const activeEffects = [];
+
+function spawnBurst(pos, colorHex, count=24, speed=10) {
+  const color = new THREE.Color(colorHex);
+  const geo   = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const vel       = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = pos.x; positions[i*3+1] = pos.y; positions[i*3+2] = pos.z;
+    const theta = Math.random() * Math.PI * 2;
+    const phi   = Math.acos(2*Math.random()-1);
+    vel[i*3]   = Math.sin(phi)*Math.cos(theta)*speed*(0.5+Math.random()*0.9);
+    vel[i*3+1] = Math.abs(Math.cos(phi))*speed*(0.6+Math.random());
+    vel[i*3+2] = Math.sin(phi)*Math.sin(theta)*speed*(0.5+Math.random()*0.9);
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({
+    color, size:0.28, transparent:true, opacity:1,
+    blending:THREE.AdditiveBlending, depthWrite:false,
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  activeEffects.push({pts, geo, mat, vel, life:1.4, count});
+}
+
+function updateActiveEffects(dt) {
+  for (let i = activeEffects.length - 1; i >= 0; i--) {
+    const e = activeEffects[i];
+    e.life -= dt;
+    if (e.life <= 0) { scene.remove(e.pts); activeEffects.splice(i,1); continue; }
+    const p = e.geo.attributes.position;
+    for (let j = 0; j < e.count; j++) {
+      e.vel[j*3+1] -= 16 * dt;
+      p.setXYZ(j,
+        p.getX(j)+e.vel[j*3]*dt,
+        p.getY(j)+e.vel[j*3+1]*dt,
+        p.getZ(j)+e.vel[j*3+2]*dt
+      );
+    }
+    p.needsUpdate = true;
+    e.mat.opacity = Math.max(0, e.life * 0.75);
+  }
+}
+
+function spawnDoubleJumpBurst() {
+  const p = player.mesh.position.clone();
+  p.y -= 0.3;
+  spawnBurst(p, 0x44ffcc, 22, 8);
+  anim.squash = 0.72; anim.squashVel = 0.45;
+}
+
+// ═══════════════════════════════════════════════════════
+// SPRINT TRAIL
+// ═══════════════════════════════════════════════════════
+let trailGeo;
+const TRAIL_LEN = 28;
+const _trailPos = new Float32Array(TRAIL_LEN * 3);
+const _trailCol = new Float32Array(TRAIL_LEN * 3);
+let _trailHead = 0, _trailTick = 0;
+
+function buildTrail() {
+  trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(_trailPos, 3));
+  trailGeo.setAttribute('color',    new THREE.BufferAttribute(_trailCol, 3));
+  const mat = new THREE.PointsMaterial({
+    size:0.22, vertexColors:true, transparent:true, opacity:0.85,
+    depthWrite:false, blending:THREE.AdditiveBlending,
+  });
+  scene.add(new THREE.Points(trailGeo, mat));
+}
+
+function updateTrail(dt) {
+  const sprinting = keys['shift'] && player.onGround
+    && (keys['w']||keys['a']||keys['s']||keys['d']);
+  for (let i = 0; i < TRAIL_LEN; i++)
+    _trailCol[i*3+2] = Math.max(0, _trailCol[i*3+2] - dt * 3.8);
+  if (sprinting) {
+    _trailTick++;
+    if (_trailTick % 2 === 0) {
+      const p = player.mesh.position;
+      const h = _trailHead * 3;
+      _trailPos[h]   = p.x + (Math.random()-.5)*.38;
+      _trailPos[h+1] = p.y - 0.22;
+      _trailPos[h+2] = p.z + (Math.random()-.5)*.38;
+      _trailCol[h]   = 0.06; _trailCol[h+1] = 0.62; _trailCol[h+2] = 1.0;
+      _trailHead = (_trailHead + 1) % TRAIL_LEN;
+    }
+  }
+  trailGeo.attributes.position.needsUpdate = true;
+  trailGeo.attributes.color.needsUpdate    = true;
+}
+
+// ═══════════════════════════════════════════════════════
+// SHADOW ENEMIES
+// ═══════════════════════════════════════════════════════
+const enemies = [];
+
+function buildEnemies() {
+  const SPOTS = [[28,-26],[-36,20],[34,46],[-16,-50],[50,18],[-52,-22]];
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color:0x1a0033, emissive:0x660099, emissiveIntensity:3.2, transparent:true, opacity:0.88,
+  });
+  const ringMat = new THREE.MeshStandardMaterial({
+    color:0xaa00ee, emissive:0xaa00ee, emissiveIntensity:4.5,
+  });
+  const spikeMat = new THREE.MeshStandardMaterial({
+    color:0xdd00ff, emissive:0xdd00ff, emissiveIntensity:3.5,
+  });
+
+  SPOTS.forEach(([ex, ez]) => {
+    const h = getHeight(ex, ez);
+    if (h < CFG.waterLevel + 1.5) return;
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.52, 8, 8), bodyMat.clone());
+    g.add(body);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.80, 0.07, 7, 18), ringMat.clone());
+    g.add(ring);
+    for (let i = 0; i < 5; i++) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.40, 4), spikeMat.clone());
+      spike.userData.phase = (i/5)*Math.PI*2;
+      g.add(spike);
+    }
+    const light = new THREE.PointLight(0x9900cc, 4.5, 13);
+    g.add(light);
+    g.position.set(ex, h + 1.6, ez);
+    scene.add(g);
+    enemies.push({
+      group:g, body, ring,
+      spikes:Array.from(g.children).slice(2, 7),
+      light, x:ex, z:ez, tx:ex, tz:ez,
+      speed:3.5, t:0, wanderT:0, alive:true,
+    });
+  });
+}
+
+function updateEnemies(dt) {
+  const pp = player.mesh.position;
+  enemies.forEach(e => {
+    if (!e.alive) return;
+    e.t += dt; e.wanderT += dt;
+    if (e.wanderT > 6 + Math.sin(e.t*.3)*3) {
+      e.wanderT = 0;
+      e.tx = e.x + (Math.random()-.5)*38;
+      e.tz = e.z + (Math.random()-.5)*38;
+    }
+    const dxP = pp.x - e.x, dzP = pp.z - e.z;
+    const distP = Math.sqrt(dxP*dxP + dzP*dzP);
+    if (distP < 16) {
+      e.tx = pp.x; e.tz = pp.z;
+      e.speed = Math.min(11, e.speed + 6*dt);
+    } else {
+      e.speed = Math.max(3.5, e.speed - 3*dt);
+    }
+    if (distP < 2.5) { _shakeMag = Math.max(_shakeMag, 0.28); _shakeTimer = Math.max(_shakeTimer, 0.4); }
+    const dx = e.tx - e.x, dz = e.tz - e.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    if (dist > 1) { e.x += (dx/dist)*e.speed*dt; e.z += (dz/dist)*e.speed*dt; }
+    e.x = Math.max(-108, Math.min(108, e.x));
+    e.z = Math.max(-108, Math.min(108, e.z));
+    const fh = getHeight(e.x, e.z);
+    e.group.position.set(e.x, Math.max(fh+1.4, CFG.waterLevel+2)+Math.sin(e.t*1.3)*.5, e.z);
+    e.ring.rotation.x = e.t*1.1; e.ring.rotation.z = e.t*0.75;
+    e.body.scale.setScalar(0.88 + Math.sin(e.t*2.2)*.12);
+    e.spikes.forEach(s => {
+      const ph = s.userData.phase + e.t*2.0;
+      s.position.set(Math.cos(ph)*.9, Math.sin(ph*.8)*.45, Math.sin(ph)*.9);
+      s.rotation.z = ph + Math.PI/2;
+    });
+    e.light.intensity = 3.5 + Math.sin(e.t*2.8)*1.5;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MAGIC PROJECTILE (Z key — hold to charge, release to fire)
+// ═══════════════════════════════════════════════════════
+const projectiles = [];
+let charging = false, chargeT = 0, _chargeOsc = null;
+
+function fireProjectile() {
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  dir.y = Math.max(dir.y, -0.25); dir.normalize();
+  const pp = player.mesh.position;
+  const origin = new THREE.Vector3(pp.x, pp.y+1.1, pp.z).addScaledVector(dir, 1.6);
+
+  const power = Math.min(chargeT / 1.2, 1);
+  const radius = 0.16 + power * 0.30;
+  const col = new THREE.Color().setHSL(0.55 + power * 0.22, 1, 0.65);
+
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 7, 7),
+    new THREE.MeshStandardMaterial({color:col, emissive:col, emissiveIntensity:5.5})
+  );
+  mesh.position.copy(origin);
+  scene.add(mesh);
+
+  const light = new THREE.PointLight(col, 11, 20);
+  light.position.copy(origin);
+  scene.add(light);
+
+  projectiles.push({mesh, light, vel:dir.clone().multiplyScalar(24+power*14), power, t:0});
+  playShootSound(power);
+  spawnBurst(origin, col.getHex(), 14, 5);
+}
+
+function updateProjectiles(dt) {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.t += dt;
+    p.vel.y -= 7 * dt;
+    p.mesh.position.addScaledVector(p.vel, dt);
+    p.light.position.copy(p.mesh.position);
+    p.mesh.rotation.y = p.t * 5;
+
+    const floor = getHeight(p.mesh.position.x, p.mesh.position.z);
+    const enemy = enemies.find(e => e.alive && e.group.position.distanceTo(p.mesh.position) < 3.8);
+    const hit   = p.mesh.position.y <= floor || p.t > 4.5;
+
+    if (hit || enemy) {
+      spawnBurst(p.mesh.position, p.mesh.material.color.getHex(), 32+Math.round(p.power*16), 10+p.power*8);
+      _shakeMag = 0.20 + p.power*0.22; _shakeTimer = 0.45;
+      if (enemy) {
+        enemy.alive = false;
+        scene.remove(enemy.group);
+        spawnBurst(enemy.group.position.clone(), 0xcc00ff, 45, 14);
+        playEnemyDeathSound();
+      }
+      scene.remove(p.mesh); scene.remove(p.light);
+      projectiles.splice(i, 1);
+    }
+  }
+}
+
+function playChargeSound() {
+  if (!audioReady) return;
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(660, audioCtx.currentTime + 2.0);
+  gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.14, audioCtx.currentTime + 2.0);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); _chargeOsc = osc;
+}
+function playShootSound(power) {
+  if (_chargeOsc) { try{_chargeOsc.stop();}catch(e){} _chargeOsc = null; }
+  if (!audioReady) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(660+power*440, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.22);
+  gain.gain.setValueAtTime(0.28, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.32);
+}
+function playEnemyDeathSound() {
+  if (!audioReady) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(55, audioCtx.currentTime + 0.45);
+  gain.gain.setValueAtTime(0.22, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.52);
+}
+
+// ═══════════════════════════════════════════════════════
 // QUEST LOG / RELIC CODEX
 // ═══════════════════════════════════════════════════════
 let questLogOpen = false;
@@ -1434,6 +1876,19 @@ function animate() {
   updateFireflies(dt, clock.elapsedTime, skyUniforms.dayFrac.value);
   updateSpirit(dt);
   updateFragments(dt);
+  updateRain(dt);
+  updateAurora(dt);
+  updateEnemies(dt);
+  updateProjectiles(dt);
+  updateActiveEffects(dt);
+  updateTrail(dt);
+  updateCameraShake(dt);
+  // Charge bar fill
+  if (charging) {
+    chargeT = Math.min(chargeT + dt, 1.5);
+    const cf = document.getElementById('charge-fill');
+    if (cf) cf.style.width = (chargeT / 1.5 * 100) + '%';
+  }
   updateMinimap();
   updateAudio(dt);
   if (waterMat) waterMat.uniforms.time.value += dt;
@@ -1465,6 +1920,10 @@ function init() {
   buildPlayer();
   buildSpirit();
   buildFragments();
+  buildRain();
+  buildAurora();
+  buildEnemies();
+  buildTrail();
   buildPostProcessing();
   setupInput();
   animate();
