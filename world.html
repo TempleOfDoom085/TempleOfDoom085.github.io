@@ -720,6 +720,7 @@ function collectArtifact() {
   nearArtifact.light.intensity = 0;
   artifactsFound++;
   showLore(nearArtifact.lore);
+  playCollectChime();
   const el = document.getElementById('artifacts');
   if (el) el.textContent = `${artifactsFound} / ${artifacts.length}  RELICS`;
 }
@@ -810,6 +811,7 @@ function setupInput() {
     if ((e.key === ' ') && player.onGround) {
       player.vel.y = CFG.jumpForce;
       player.onGround = false;
+      playJumpSound();
     }
     if (e.key === 'e' || e.key === 'E') collectArtifact();
     if (e.key === 'p' || e.key === 'P') toggleCinematic();
@@ -824,6 +826,7 @@ function setupInput() {
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
   canvas.addEventListener('click', () => {
+    initAudio(); // must be triggered by user gesture
     canvas.requestPointerLock();
     document.getElementById('overlay').style.opacity = '0';
     setTimeout(() => document.getElementById('overlay').style.display = 'none', 500);
@@ -851,6 +854,104 @@ function setupInput() {
     camera.updateProjectionMatrix();
     if (composer) composer.setSize(innerWidth, innerHeight);
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// WEB AUDIO — procedural, zero external files
+// ═══════════════════════════════════════════════════════
+let audioCtx, windGain, waterGain, ambiGain, audioReady = false;
+
+function initAudio() {
+  if (audioReady) return;
+  audioReady = true;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // ── Master limiter ──
+  const limiter = audioCtx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.ratio.value = 20;
+  limiter.connect(audioCtx.destination);
+
+  // ── Ambient drone (low rumble — always on, very quiet) ──
+  const droneOsc = audioCtx.createOscillator();
+  const droneOsc2 = audioCtx.createOscillator();
+  droneOsc.type = 'sine'; droneOsc.frequency.value = 48;
+  droneOsc2.type = 'sine'; droneOsc2.frequency.value = 72.5;
+  ambiGain = audioCtx.createGain(); ambiGain.gain.value = 0.04;
+  const ambiFilter = audioCtx.createBiquadFilter();
+  ambiFilter.type = 'lowpass'; ambiFilter.frequency.value = 220;
+  droneOsc.connect(ambiFilter); droneOsc2.connect(ambiFilter);
+  ambiFilter.connect(ambiGain); ambiGain.connect(limiter);
+  droneOsc.start(); droneOsc2.start();
+
+  // ── Wind (filtered noise, volume by altitude) ──
+  const bufSize = audioCtx.sampleRate * 3;
+  const noiseBuf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) nd[i] = Math.random() * 2 - 1;
+  const windSrc = audioCtx.createBufferSource();
+  windSrc.buffer = noiseBuf; windSrc.loop = true;
+  const windBP = audioCtx.createBiquadFilter();
+  windBP.type = 'bandpass'; windBP.frequency.value = 600; windBP.Q.value = 0.6;
+  windGain = audioCtx.createGain(); windGain.gain.value = 0;
+  windSrc.connect(windBP); windBP.connect(windGain); windGain.connect(limiter);
+  windSrc.start();
+
+  // ── Water (low rumble noise, volume by proximity to water) ──
+  const waterSrc = audioCtx.createBufferSource();
+  waterSrc.buffer = noiseBuf; waterSrc.loop = true; waterSrc.loopStart = 1;
+  const waterLP = audioCtx.createBiquadFilter();
+  waterLP.type = 'lowpass'; waterLP.frequency.value = 280;
+  waterGain = audioCtx.createGain(); waterGain.gain.value = 0;
+  waterSrc.connect(waterLP); waterLP.connect(waterGain); waterGain.connect(limiter);
+  waterSrc.start();
+}
+
+function updateAudio(dt) {
+  if (!audioReady || !audioCtx) return;
+  const p  = player.mesh.position;
+  const h  = getHeight(p.x, p.z);
+
+  // Wind scales with altitude above terrain
+  const altitude   = Math.max(0, p.y - h);
+  const windTarget = Math.min(0.12, altitude * 0.008 + (h > 12 ? 0.06 : 0));
+  const wg = windGain.gain;
+  wg.setTargetAtTime(windTarget, audioCtx.currentTime, 0.8);
+
+  // Water: louder near shore (water level ± 2)
+  const nearWater  = Math.max(0, 1 - Math.abs(h - CFG.waterLevel) / 2.5);
+  waterGain.gain.setTargetAtTime(nearWater * 0.10, audioCtx.currentTime, 1.2);
+}
+
+// One-shot collect chime (pentatonic arpeggio upward)
+function playCollectChime() {
+  if (!audioReady) return;
+  const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
+  notes.forEach((freq, i) => {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    const t = audioCtx.currentTime + i * 0.11;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.22, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.56);
+  });
+}
+
+// Jump whoosh
+function playJumpSound() {
+  if (!audioReady) return;
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.12);
+  gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.23);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1044,6 +1145,7 @@ function animate() {
   updateLore(dt);
   updateFireflies(dt, clock.elapsedTime, skyUniforms.dayFrac.value);
   updateMinimap();
+  updateAudio(dt);
   if (waterMat) waterMat.uniforms.time.value += dt;
 
   if (n64Mode) {
