@@ -9,10 +9,14 @@
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Courier New',monospace}
 #c{display:block;width:100%;height:100%}
 #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.72);z-index:50;transition:opacity .5s}
-#overlay h1{color:#aef7c8;font-size:1.4rem;letter-spacing:.2em;text-align:center;
-  text-shadow:0 0 20px #00ff88}
-#overlay p{color:rgba(174,247,200,.6);font-size:.7rem;letter-spacing:.15em;margin-top:.6rem;text-align:center}
+  background:rgba(0,0,0,.82);z-index:50;transition:opacity .6s}
+#overlay h1{color:#aef7c8;font-size:4rem;letter-spacing:.45em;text-align:center}
+@keyframes titlePulse{
+  0%,100%{text-shadow:0 0 24px #00ff88,0 0 70px rgba(0,255,136,.28)}
+  50%{text-shadow:0 0 48px #00ff88,0 0 120px rgba(0,255,136,.5),0 0 200px rgba(0,255,136,.15)}}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(14px)}
+  to{opacity:1;transform:translateY(0)}}
 #hud{position:fixed;bottom:1.2rem;left:1.2rem;z-index:10;pointer-events:none}
 #biome{font-size:.58rem;letter-spacing:.22em;color:rgba(174,247,200,.6);text-transform:uppercase}
 #coords{font-size:.48rem;letter-spacing:.15em;color:rgba(174,247,200,.3);margin-top:.2rem}
@@ -34,15 +38,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 </nav>
 <canvas id="c"></canvas>
 <div id="overlay">
-  <div>
-    <h1>REALM</h1>
-    <p>CLICK TO ENTER · WASD MOVE · MOUSE LOOK · SPACE JUMP</p>
+  <div style="text-align:center;padding:2rem">
+    <div style="font-size:.42rem;letter-spacing:.55em;color:rgba(174,247,200,.3);
+      margin-bottom:.8rem;animation:fadeUp 1.2s ease both">BRIAN TEMPLE</div>
+    <h1 style="animation:titlePulse 3s ease-in-out infinite,fadeUp 1s ease .15s both">REALM</h1>
+    <div style="font-size:.48rem;letter-spacing:.32em;color:rgba(174,247,200,.4);
+      margin-top:.5rem;animation:fadeUp 1s ease .45s both">AN OPEN WORLD</div>
+    <div style="width:44px;height:1px;background:rgba(174,247,200,.16);
+      margin:1.6rem auto;animation:fadeUp 1s ease .7s both"></div>
+    <div style="animation:fadeUp 1s ease .95s both">
+      <div style="font-size:.56rem;letter-spacing:.28em;color:#aef7c8;margin-bottom:.9rem;
+        text-shadow:0 0 14px rgba(0,255,136,.55)">CLICK TO BEGIN</div>
+      <div style="font-size:.38rem;letter-spacing:.13em;color:rgba(174,247,200,.3);line-height:2.4">
+        WASD · MOVE &nbsp;·&nbsp; MOUSE · LOOK &nbsp;·&nbsp; SPACE · JUMP<br>
+        SHIFT · SPRINT &nbsp;·&nbsp; E · COLLECT RELIC &nbsp;·&nbsp; F · RELIC CODEX<br>
+        P · CINEMATIC &nbsp;·&nbsp; N · N64 MODE &nbsp;·&nbsp; M · MAP
+      </div>
+    </div>
   </div>
 </div>
 <div id="hud">
   <div id="biome">LOWLANDS</div>
   <div id="coords">0, 0, 0</div>
   <div id="artifacts" style="font-size:.48rem;letter-spacing:.18em;color:rgba(174,247,200,.45);margin-top:.3rem">0 / 6  RELICS</div>
+  <div id="fragments" style="font-size:.44rem;letter-spacing:.16em;color:rgba(255,220,80,.35);margin-top:.18rem">0 / 18  FRAGMENTS</div>
 </div>
 <div id="prompt" style="position:fixed;bottom:3.2rem;left:50%;transform:translateX(-50%);
   font-size:.58rem;letter-spacing:.2em;color:#aef7c8;opacity:0;transition:opacity .3s;
@@ -842,6 +861,168 @@ function updateFireflies(dt, time, dayFrac) {
 }
 
 // ═══════════════════════════════════════════════════════
+// SPIRIT CREATURE
+// ═══════════════════════════════════════════════════════
+let spirit = null;
+const spiritState = {x:35, z:-25, tx:35, tz:-25, speed:4, wanderT:0};
+let spiritSoundCooldown = 0;
+
+function buildSpirit() {
+  const g = new THREE.Group();
+  const coreMat = new THREE.MeshStandardMaterial({
+    color:0xAAEEFF, emissive:0x55CCFF, emissiveIntensity:3.8,
+    transparent:true, opacity:0.82,
+  });
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.30, 8, 8), coreMat));
+  const wispMat = new THREE.MeshStandardMaterial({
+    color:0xDDFFFF, emissive:0x99EEFF, emissiveIntensity:2.4,
+    transparent:true, opacity:0.55,
+  });
+  for (let i = 0; i < 4; i++) {
+    const w = new THREE.Mesh(new THREE.SphereGeometry(0.11, 5, 5), wispMat);
+    w.userData.phase = (i / 4) * Math.PI * 2;
+    g.add(w);
+  }
+  const light = new THREE.PointLight(0x88CCFF, 5.0, 15);
+  g.add(light);
+  const h = getHeight(spiritState.x, spiritState.z);
+  g.position.set(spiritState.x, Math.max(h + 3, CFG.waterLevel + 3.5), spiritState.z);
+  scene.add(g);
+  spirit = {group:g, wisps:Array.from(g.children).slice(1, 5), light, t:0};
+}
+
+function updateSpirit(dt) {
+  if (!spirit) return;
+  spirit.t += dt;
+  spiritState.wanderT += dt;
+  spiritSoundCooldown = Math.max(0, spiritSoundCooldown - dt);
+
+  if (spiritState.wanderT > 9 + Math.sin(spirit.t * 0.4) * 3) {
+    spiritState.wanderT = 0;
+    spiritState.tx = (Math.random() - 0.5) * 180;
+    spiritState.tz = (Math.random() - 0.5) * 180;
+  }
+
+  const pp = player.mesh.position;
+  const dxP = spiritState.x - pp.x, dzP = spiritState.z - pp.z;
+  const distP = Math.sqrt(dxP*dxP + dzP*dzP);
+  if (distP < 9) {
+    const len = distP || 1;
+    spiritState.tx = spiritState.x + (dxP/len) * 40;
+    spiritState.tz = spiritState.z + (dzP/len) * 40;
+    spiritState.speed = Math.min(15, spiritState.speed + 8*dt);
+  } else {
+    spiritState.speed = Math.max(4, spiritState.speed - 4*dt);
+  }
+
+  const dx = spiritState.tx - spiritState.x;
+  const dz = spiritState.tz - spiritState.z;
+  const dist = Math.sqrt(dx*dx + dz*dz);
+  if (dist > 1.5) {
+    spiritState.x += (dx/dist) * spiritState.speed * dt;
+    spiritState.z += (dz/dist) * spiritState.speed * dt;
+  }
+  const lim = 105;
+  spiritState.x = Math.max(-lim, Math.min(lim, spiritState.x));
+  spiritState.z = Math.max(-lim, Math.min(lim, spiritState.z));
+
+  const floorH = getHeight(spiritState.x, spiritState.z);
+  const targetY = Math.max(floorH + 2.8, CFG.waterLevel + 3.5) + Math.sin(spirit.t * 0.85) * 0.7;
+  spirit.group.position.set(spiritState.x, targetY, spiritState.z);
+
+  spirit.wisps.forEach(w => {
+    const ph = w.userData.phase + spirit.t * 1.9;
+    w.position.set(Math.cos(ph) * 0.58, Math.sin(ph * 0.7) * 0.30, Math.sin(ph) * 0.58);
+  });
+  spirit.light.intensity = 4.0 + Math.sin(spirit.t * 2.2) * 1.5;
+
+  if (distP < 5 && spiritSoundCooldown <= 0) {
+    spiritSoundCooldown = 4.0;
+    playSpiritSound();
+  }
+}
+
+function playSpiritSound() {
+  if (!audioReady) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(740 + Math.random()*220, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(560, audioCtx.currentTime + 0.8);
+  const t = audioCtx.currentTime;
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.07, t + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t + 1.05);
+}
+
+// ═══════════════════════════════════════════════════════
+// ANCIENT FRAGMENTS (auto-collect on proximity)
+// ═══════════════════════════════════════════════════════
+const fragments = [];
+let fragmentsFound = 0;
+const FRAG_COLORS = [0xFFDD44, 0xFF9922, 0x44FFAA, 0xFFBBFF, 0x88FFFF];
+
+function buildFragments(count=18) {
+  let placed = 0, tries = 0;
+  while (placed < count && tries < count * 10) {
+    tries++;
+    const x = (Math.random() - 0.5) * 200;
+    const z = (Math.random() - 0.5) * 200;
+    const h = getHeight(x, z);
+    if (h < CFG.waterLevel + 0.8) continue;
+    const color = new THREE.Color(FRAG_COLORS[placed % FRAG_COLORS.length]);
+    const mesh = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.21, 0),
+      new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:2.2, roughness:0.15})
+    );
+    mesh.position.set(x, h + 0.5, z);
+    mesh.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(mesh);
+    fragments.push({mesh, x, z, h, t:Math.random()*Math.PI*2, collected:false});
+    placed++;
+  }
+  const el = document.getElementById('fragments');
+  if (el) el.textContent = `0 / ${fragments.length}  FRAGMENTS`;
+}
+
+function updateFragments(dt) {
+  if (!fragments.length) return;
+  const pp = player.mesh.position;
+  let changed = false;
+  fragments.forEach(f => {
+    if (f.collected) return;
+    f.t += dt;
+    f.mesh.rotation.y = f.t * 2.4;
+    f.mesh.position.y = f.h + 0.5 + Math.sin(f.t * 2.1) * 0.14;
+    const dx = pp.x - f.x, dz = pp.z - f.z;
+    if (dx*dx + dz*dz < 2.0*2.0) {
+      f.collected = true; f.mesh.visible = false;
+      fragmentsFound++; changed = true;
+      playFragmentSound();
+    }
+  });
+  if (changed) {
+    const el = document.getElementById('fragments');
+    if (el) el.textContent = `${fragmentsFound} / ${fragments.length}  FRAGMENTS`;
+  }
+}
+
+function playFragmentSound() {
+  if (!audioReady) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = 880 + Math.random() * 440;
+  const t = audioCtx.currentTime;
+  gain.gain.setValueAtTime(0.10, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t + 0.30);
+}
+
+// ═══════════════════════════════════════════════════════
 // INPUT
 // ═══════════════════════════════════════════════════════
 const keys = {};
@@ -1150,6 +1331,25 @@ function updateMinimap() {
   ctx.lineTo(px + Math.sin(ang) * 9, pz - Math.cos(ang) * 9);
   ctx.stroke();
 
+  // Fragment dots (tiny gold)
+  fragments.forEach(f => {
+    if (f.collected) return;
+    const [fx, fz] = worldToMM(f.x, f.z);
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#ffdd44';
+    ctx.beginPath(); ctx.arc(fx, fz, 1.8, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Spirit dot (cyan)
+  if (spirit) {
+    const [sx, sz] = worldToMM(spiritState.x, spiritState.z);
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = '#88ddff';
+    ctx.beginPath(); ctx.arc(sx, sz, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
   // Border
   ctx.strokeStyle = 'rgba(174,247,200,0.18)';
   ctx.lineWidth = 1;
@@ -1232,6 +1432,8 @@ function animate() {
   if (!cinematicMode && !questLogOpen) checkInteraction();
   updateLore(dt);
   updateFireflies(dt, clock.elapsedTime, skyUniforms.dayFrac.value);
+  updateSpirit(dt);
+  updateFragments(dt);
   updateMinimap();
   updateAudio(dt);
   if (waterMat) waterMat.uniforms.time.value += dt;
@@ -1261,6 +1463,8 @@ function init() {
   buildMinimap();
   fireflyObj = buildFireflies(70);
   buildPlayer();
+  buildSpirit();
+  buildFragments();
   buildPostProcessing();
   setupInput();
   animate();
