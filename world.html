@@ -54,12 +54,21 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 <div id="controls">
   WASD · SPACE JUMP<br>
   SHIFT SPRINT · E COLLECT<br>
-  P CINEMATIC · N N64 MODE
+  P CINEMATIC · N N64 MODE<br>
+  M TOGGLE MAP
 </div>
 <div id="cin-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:20;opacity:0;transition:opacity .8s;
   display:flex;flex-direction:column;justify-content:flex-end;padding:2.5rem 3rem">
   <div style="font-size:.55rem;letter-spacing:.32em;color:rgba(174,247,200,.5)">CINEMATIC ENGINE</div>
   <div style="font-size:1.1rem;letter-spacing:.22em;color:#aef7c8;text-shadow:0 0 24px #00ff88;margin-top:.2rem">REALM — BRIAN TEMPLE</div>
+</div>
+<!-- MINIMAP -->
+<div id="minimap-wrap" style="position:fixed;top:3.4rem;right:1.2rem;z-index:10;transition:opacity .3s">
+  <canvas id="minimap" width="160" height="160"
+    style="display:block;border:1px solid rgba(174,247,200,.18);border-radius:2px;
+           background:#000;image-rendering:pixelated"></canvas>
+  <div style="font-size:.38rem;letter-spacing:.2em;color:rgba(174,247,200,.28);
+              margin-top:.2rem;text-align:right">WORLD MAP</div>
 </div>
 
 <script type="importmap">
@@ -759,6 +768,11 @@ function setupInput() {
     if (e.key === 'e' || e.key === 'E') collectArtifact();
     if (e.key === 'p' || e.key === 'P') toggleCinematic();
     if (e.key === 'n' || e.key === 'N') { n64Mode = !n64Mode; }
+    if (e.key === 'm' || e.key === 'M') {
+      mmVisible = !mmVisible;
+      const w = document.getElementById('minimap-wrap');
+      if (w) w.style.opacity = mmVisible ? '1' : '0';
+    }
     e.key === ' ' && e.preventDefault();
   });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -857,6 +871,101 @@ function updateCinematic(dt) {
 }
 
 // ═══════════════════════════════════════════════════════
+// MINIMAP
+// ═══════════════════════════════════════════════════════
+let mmTerrainCanvas, mmLiveCtx, mmVisible = true;
+const MM_RES = 128, MM_WORLD = 230; // world units covered
+
+function buildMinimap() {
+  // Pre-render terrain once into an offscreen canvas
+  mmTerrainCanvas = document.createElement('canvas');
+  mmTerrainCanvas.width = mmTerrainCanvas.height = MM_RES;
+  const ctx = mmTerrainCanvas.getContext('2d');
+  const img = ctx.createImageData(MM_RES, MM_RES);
+
+  for (let py = 0; py < MM_RES; py++) {
+    for (let px = 0; px < MM_RES; px++) {
+      const wx = (px / MM_RES - 0.5) * MM_WORLD;
+      const wz = (py / MM_RES - 0.5) * MM_WORLD;
+      const h  = getHeight(wx, wz);
+      let r, g, b;
+      if (h < CFG.waterLevel) {
+        // Water — bright blue
+        r = 0.08; g = 0.38; b = 0.82;
+      } else {
+        const col = getBiomeColor(h);
+        r = col.r; g = col.g; b = col.b;
+      }
+      const i = (py * MM_RES + px) * 4;
+      img.data[i]   = r * 255 | 0;
+      img.data[i+1] = g * 255 | 0;
+      img.data[i+2] = b * 255 | 0;
+      img.data[i+3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // Live display canvas (already in HTML)
+  const liveCanvas = document.getElementById('minimap');
+  mmLiveCtx = liveCanvas.getContext('2d');
+}
+
+let mmFrameSkip = 0;
+function updateMinimap() {
+  if (!mmLiveCtx || !mmVisible) return;
+  if (++mmFrameSkip < 3) return; // update every 3 frames
+  mmFrameSkip = 0;
+
+  const ctx = mmLiveCtx;
+  const D = 160; // display size in px
+
+  // Draw pre-rendered terrain base
+  ctx.drawImage(mmTerrainCanvas, 0, 0, D, D);
+
+  // Semi-transparent overlay for UI feel
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.fillRect(0, 0, D, D);
+
+  function worldToMM(wx, wz) {
+    return [(wx / MM_WORLD + 0.5) * D, (wz / MM_WORLD + 0.5) * D];
+  }
+
+  // Artifact dots
+  artifacts.forEach(a => {
+    const [x, y] = worldToMM(a.worldPos.x, a.worldPos.z);
+    if (a.collected) {
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#fff';
+    } else {
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#' + a.color.getHexString();
+    }
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Player dot + direction arrow
+  const pp = player.mesh.position;
+  const [px, pz] = worldToMM(pp.x, pp.z);
+  const ang = -player.mesh.rotation.y; // negate: Three.js Y is CCW, canvas is CW
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(px, pz, 4.5, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = '#aef7c8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px, pz);
+  ctx.lineTo(px + Math.sin(ang) * 9, pz - Math.cos(ang) * 9);
+  ctx.stroke();
+
+  // Border
+  ctx.strokeStyle = 'rgba(174,247,200,0.18)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, D - 1, D - 1);
+}
+
+// ═══════════════════════════════════════════════════════
 // HUD
 // ═══════════════════════════════════════════════════════
 const biomeEl  = document.getElementById('biome');
@@ -888,6 +997,7 @@ function animate() {
   if (!cinematicMode) checkInteraction();
   updateLore(dt);
   updateFireflies(dt, clock.elapsedTime, skyUniforms.dayFrac.value);
+  updateMinimap();
   if (waterMat) waterMat.uniforms.time.value += dt;
 
   if (n64Mode) {
@@ -912,6 +1022,7 @@ function init() {
   buildRocks();
   buildRuins();
   buildArtifacts();
+  buildMinimap();
   fireflyObj = buildFireflies(70);
   buildPlayer();
   buildPostProcessing();
