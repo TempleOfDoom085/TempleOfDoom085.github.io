@@ -64,6 +64,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
   <div id="artifacts" style="font-size:.48rem;letter-spacing:.18em;color:rgba(174,247,200,.45);margin-top:.3rem">0 / 6  RELICS</div>
   <div id="fragments" style="font-size:.44rem;letter-spacing:.16em;color:rgba(255,220,80,.35);margin-top:.18rem">0 / 18  FRAGMENTS</div>
   <div id="weather" style="font-size:.42rem;letter-spacing:.18em;color:rgba(174,247,200,.22);margin-top:.16rem">CLEAR</div>
+  <div id="kills" style="font-size:.42rem;letter-spacing:.18em;color:rgba(200,100,255,.38);margin-top:.14rem">0  SHADOWS SLAIN</div>
 </div>
 <div id="prompt" style="position:fixed;bottom:3.2rem;left:50%;transform:translateX(-50%);
   font-size:.58rem;letter-spacing:.2em;color:#aef7c8;opacity:0;transition:opacity .3s;
@@ -74,7 +75,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
   background:rgba(0,0,0,.45);padding:.5rem 1rem;border:1px solid rgba(174,247,200,.12)"></div>
 <div id="controls">
   WASD · SPACE JUMP ×2 · Q DASH<br>
-  SHIFT SPRINT · E COLLECT<br>
+  SHIFT SPRINT · E COLLECT / SAGE<br>
   Z MAGIC · R WEATHER · F CODEX<br>
   P CIN · N N64 · M MAP
 </div>
@@ -834,8 +835,15 @@ function checkInteraction() {
   });
   const promptEl = document.getElementById('prompt');
   if (promptEl) {
-    promptEl.style.opacity = nearArtifact ? '1' : '0';
-    if (nearArtifact) promptEl.textContent = `[ E ]  ${nearArtifact.name}`;
+    if (nearSage) {
+      promptEl.style.opacity = '1';
+      promptEl.textContent = '[ E ]  Speak with the Sage';
+    } else if (nearArtifact) {
+      promptEl.style.opacity = '1';
+      promptEl.textContent = `[ E ]  ${nearArtifact.name}`;
+    } else {
+      promptEl.style.opacity = '0';
+    }
   }
 }
 
@@ -1115,7 +1123,7 @@ function setupInput() {
       if (wrap) wrap.style.opacity = '1';
       playChargeSound();
     }
-    if (e.key === 'e' || e.key === 'E') collectArtifact();
+    if (e.key === 'e' || e.key === 'E') { if (nearSage) talkToSage(); else collectArtifact(); }
     if (e.key === 'p' || e.key === 'P') toggleCinematic();
     if (e.key === 'n' || e.key === 'N') { n64Mode = !n64Mode; }
     if (e.key === 'm' || e.key === 'M') {
@@ -1446,6 +1454,15 @@ function updateMinimap() {
     ctx.globalAlpha = 1;
   }
 
+  // Sage dot (gold)
+  if (sage && !nearSage) {
+    const [gx, gz] = worldToMM(8, 22);
+    ctx.globalAlpha = 0.70;
+    ctx.fillStyle = '#ffcc44';
+    ctx.beginPath(); ctx.arc(gx, gz, 3.0, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
   // Border
   ctx.strokeStyle = 'rgba(174,247,200,0.18)';
   ctx.lineWidth = 1;
@@ -1742,6 +1759,7 @@ function buildEnemies() {
       spikes:Array.from(g.children).slice(2, 7),
       light, x:ex, z:ez, tx:ex, tz:ez,
       speed:3.5, t:0, wanderT:0, alive:true,
+      origX:ex, origZ:ez,
     });
   });
 }
@@ -1835,7 +1853,11 @@ function updateProjectiles(dt) {
       _shakeMag = 0.20 + p.power*0.22; _shakeTimer = 0.45;
       if (enemy) {
         enemy.alive = false;
-        scene.remove(enemy.group);
+        enemy.group.visible = false;
+        killCount++;
+        const kEl = document.getElementById('kills');
+        if (kEl) kEl.textContent = `${killCount}  SHADOWS SLAIN`;
+        spawnHealthDrop(enemy.group.position.clone());
         spawnBurst(enemy.group.position.clone(), 0xcc00ff, 45, 14);
         playEnemyDeathSound();
       }
@@ -2184,6 +2206,234 @@ function hitBoss(proj) {
 }
 
 // ═══════════════════════════════════════════════════════
+// SAGE NPC + DIALOGUE
+// ═══════════════════════════════════════════════════════
+const SAGE_X = 8, SAGE_Z = 22;
+const SAGE_LINES = [
+  '"The island breathes. Can you feel it?"',
+  '"Six relics bind the Shadow King to this realm."',
+  '"Each shard of light weakens the darkness."',
+  '"The portals were built by those who came before us."',
+  '"Beware the shadow orbs — they hunger for the light."',
+  '"When all relics are united, face the Shadow King at the center."',
+  '"You carry the light of the ancients. Go forth."',
+];
+let sageDialogueIdx = 0, sage = null, nearSage = false;
+
+function buildSage() {
+  const h = getHeight(SAGE_X, SAGE_Z);
+  const g = new THREE.Group();
+  g.add(Object.assign(new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26, 0.44, 1.25, 6),
+    new THREE.MeshLambertMaterial({color:0x1E0E4A})
+  ), {position: new THREE.Vector3(0, 0.62, 0)}));
+  g.add(Object.assign(new THREE.Mesh(
+    new THREE.SphereGeometry(0.30, 7, 7),
+    new THREE.MeshLambertMaterial({color:0x150A38})
+  ), {position: new THREE.Vector3(0, 1.46, 0)}));
+  const eyeMat = new THREE.MeshStandardMaterial(
+    {color:0xFFCC44, emissive:0xFFCC44, emissiveIntensity:5});
+  [-0.10, 0.10].forEach(ox => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 5, 5), eyeMat);
+    eye.position.set(ox, 1.48, 0.26); g.add(eye);
+  });
+  const staffMat = new THREE.MeshLambertMaterial({color:0x3A1E08});
+  const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.055, 2.4, 5), staffMat);
+  staff.position.set(0.40, 1.2, 0.05); g.add(staff);
+  const staffOrb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8),
+    new THREE.MeshStandardMaterial({color:0x88EEFF, emissive:0x66CCFF, emissiveIntensity:4.5}));
+  staffOrb.position.set(0.40, 2.48, 0.05); g.add(staffOrb);
+  const sageLight = new THREE.PointLight(0x88CCFF, 2.8, 10);
+  g.add(sageLight);
+  g.position.set(SAGE_X, h, SAGE_Z);
+  g.castShadow = true;
+  scene.add(g);
+  sage = {group:g, staffOrb, sageLight, t:0};
+}
+
+function updateSage(dt) {
+  if (!sage) return;
+  sage.t += dt;
+  const pp = player.mesh.position;
+  const dx = pp.x - SAGE_X, dz = pp.z - SAGE_Z;
+  const dist = Math.sqrt(dx*dx + dz*dz);
+  let diff = Math.atan2(dx, dz) - sage.group.rotation.y;
+  while (diff >  Math.PI) diff -= Math.PI*2;
+  while (diff < -Math.PI) diff += Math.PI*2;
+  sage.group.rotation.y += diff * Math.min(1, dt*2);
+  sage.staffOrb.scale.setScalar(0.88 + Math.sin(sage.t*2.1)*0.12);
+  sage.sageLight.intensity = 2.4 + Math.sin(sage.t*1.7)*0.9;
+  sage.group.position.y = getHeight(SAGE_X, SAGE_Z) + Math.sin(sage.t*0.6)*0.04;
+  nearSage = dist < 5.0 && !isDead;
+}
+
+function talkToSage() {
+  showLore(SAGE_LINES[sageDialogueIdx % SAGE_LINES.length]);
+  sageDialogueIdx++;
+}
+
+// ═══════════════════════════════════════════════════════
+// SNOW AT PEAKS
+// ═══════════════════════════════════════════════════════
+let snowGeo, snowPts;
+const SNOW_N = 700;
+const _snowFallVel = new Float32Array(SNOW_N);
+
+function buildSnow() {
+  const pos = new Float32Array(SNOW_N * 3);
+  for (let i = 0; i < SNOW_N; i++) {
+    pos[i*3]=(Math.random()-.5)*50; pos[i*3+1]=Math.random()*20+5; pos[i*3+2]=(Math.random()-.5)*50;
+    _snowFallVel[i] = 1.2 + Math.random()*1.8;
+  }
+  snowGeo = new THREE.BufferGeometry();
+  snowGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  snowPts = new THREE.Points(snowGeo, new THREE.PointsMaterial(
+    {color:0xddeeff, size:0.07, transparent:true, opacity:0.75, depthWrite:false}));
+  snowPts.visible = false;
+  scene.add(snowPts);
+}
+
+function updateSnow(dt, time) {
+  if (!snowGeo || !snowPts) return;
+  const pp = player.mesh.position;
+  snowPts.visible = getHeight(pp.x, pp.z) > CFG.waterLevel + 17 && !rainActive;
+  if (!snowPts.visible) return;
+  const pos = snowGeo.attributes.position;
+  for (let i = 0; i < SNOW_N; i++) {
+    const ny = pos.getY(i) - _snowFallVel[i]*dt;
+    if (ny < pp.y - 8) {
+      pos.setXYZ(i, pp.x+(Math.random()-.5)*50, pp.y+16+Math.random()*8, pp.z+(Math.random()-.5)*50);
+    } else {
+      pos.setX(i, pos.getX(i) + Math.sin(time*.5+i*.3)*.018);
+      pos.setY(i, ny);
+    }
+  }
+  pos.needsUpdate = true;
+}
+
+// ═══════════════════════════════════════════════════════
+// BUTTERFLIES (daytime, low altitudes)
+// ═══════════════════════════════════════════════════════
+let butterflyGeo, butterflyPts;
+const BUTTERFLY_N = 80;
+const _bfVel = new Float32Array(BUTTERFLY_N*3);
+const _bfPh  = new Float32Array(BUTTERFLY_N);
+
+function buildButterflies() {
+  const pos = new Float32Array(BUTTERFLY_N*3);
+  const col = new Float32Array(BUTTERFLY_N*3);
+  const COLS = [[1,.5,.0],[.65,.1,.95],[.1,.75,.9],[1,.85,.0],[.05,.85,.4]];
+  for (let i = 0; i < BUTTERFLY_N; i++) {
+    const x=(Math.random()-.5)*180, z=(Math.random()-.5)*180;
+    pos[i*3]=x; pos[i*3+1]=getHeight(x,z)+0.5+Math.random()*3; pos[i*3+2]=z;
+    _bfVel[i*3]=(Math.random()-.5)*1.2; _bfVel[i*3+1]=(Math.random()-.5)*.4; _bfVel[i*3+2]=(Math.random()-.5)*1.2;
+    _bfPh[i]=Math.random()*Math.PI*2;
+    const c=COLS[i%COLS.length]; col[i*3]=c[0]; col[i*3+1]=c[1]; col[i*3+2]=c[2];
+  }
+  butterflyGeo = new THREE.BufferGeometry();
+  butterflyGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  butterflyGeo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  butterflyPts = new THREE.Points(butterflyGeo, new THREE.PointsMaterial(
+    {size:.22, vertexColors:true, transparent:true, opacity:.85, depthWrite:false, sizeAttenuation:true}));
+  scene.add(butterflyPts);
+}
+
+function updateButterflies(dt, time, dayFrac) {
+  if (!butterflyGeo || !butterflyPts) return;
+  butterflyPts.material.opacity = Math.max(0, dayFrac*0.9 - 0.1);
+  if (butterflyPts.material.opacity < 0.02) return;
+  const pos = butterflyGeo.attributes.position;
+  for (let i = 0; i < BUTTERFLY_N; i++) {
+    let px=pos.getX(i)+(_bfVel[i*3]+Math.sin(time*2.2+_bfPh[i])*.8)*dt;
+    let py=pos.getY(i)+_bfVel[i*3+1]*dt+Math.sin(time*3.5+_bfPh[i])*.5*dt;
+    let pz=pos.getZ(i)+(_bfVel[i*3+2]+Math.cos(time*2.8+_bfPh[i])*.8)*dt;
+    const fl=getHeight(px,pz)+0.4;
+    if(py<fl)py=fl+Math.random()*1.5;
+    if(py>fl+5)_bfVel[i*3+1]-=0.5*dt;
+    if(px>110)px-=220; if(px<-110)px+=220;
+    if(pz>110)pz-=220; if(pz<-110)pz+=224;
+    pos.setXYZ(i,px,py,pz);
+  }
+  pos.needsUpdate=true;
+}
+
+// ═══════════════════════════════════════════════════════
+// HEALTH DROPS + KILL COUNTER
+// ═══════════════════════════════════════════════════════
+const healthDrops = [];
+let killCount = 0;
+
+function spawnHealthDrop(pos) {
+  if (playerHP >= HP_MAX) return;
+  const color = new THREE.Color(0xff4488);
+  const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.20, 0),
+    new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:3.5}));
+  mesh.position.copy(pos); mesh.position.y += 0.8;
+  const light = new THREE.PointLight(0xff4488, 3, 6);
+  light.position.copy(mesh.position);
+  scene.add(mesh); scene.add(light);
+  healthDrops.push({mesh, light, baseY:pos.y+0.8, t:0, collected:false});
+}
+
+function updateHealthDrops(dt) {
+  const pp = player.mesh.position;
+  for (let i = healthDrops.length-1; i >= 0; i--) {
+    const d = healthDrops[i];
+    if (d.collected) continue;
+    d.t += dt;
+    d.mesh.rotation.y = d.t * 3;
+    const ny = d.baseY + Math.sin(d.t*2.2)*0.22;
+    d.mesh.position.y = ny; d.light.position.y = ny;
+    d.light.intensity = 2.5 + Math.sin(d.t*3)*1;
+    const dx=pp.x-d.mesh.position.x, dz=pp.z-d.mesh.position.z;
+    if (dx*dx+dz*dz < 1.8*1.8) {
+      d.collected=true; scene.remove(d.mesh); scene.remove(d.light);
+      playerHP=Math.min(HP_MAX,playerHP+1); updateHPDisplay();
+      spawnBurst(d.mesh.position.clone(),0xff4488,14,5); playCollectChime();
+    }
+    if (d.t > 12) { d.collected=true; scene.remove(d.mesh); scene.remove(d.light); }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ENEMY WAVE RESPAWN
+// ═══════════════════════════════════════════════════════
+let respawnTimer = -1, waveCount = 0;
+
+function checkEnemyRespawn(dt) {
+  if (boss && boss.alive) return;
+  const allDead = enemies.length > 0 && enemies.every(e => !e.alive);
+  if (allDead && respawnTimer < 0 && artifactsFound < artifacts.length) {
+    respawnTimer = 25;
+    showLore('The shadows disperse… but new ones gather in the dark.');
+  }
+  if (respawnTimer > 0) {
+    respawnTimer -= dt;
+    if (respawnTimer <= 0) {
+      respawnTimer = -1; waveCount++;
+      enemies.forEach(e => {
+        e.alive = true;
+        e.speed = 3.5 + waveCount*0.45;
+        e.group.visible = true;
+        e.x = e.origX; e.z = e.origZ; e.tx = e.origX; e.tz = e.origZ;
+        const h = getHeight(e.origX, e.origZ);
+        e.group.position.set(e.origX, h+1.6, e.origZ);
+        spawnBurst(e.group.position.clone(), 0x9900cc, 18, 7);
+      });
+      showLore('WAVE ' + (waveCount+1) + ' — The shadows return, stronger.');
+    }
+  }
+}
+
+// Night player glow
+let playerNightLight;
+function buildPlayerNightLight() {
+  playerNightLight = new THREE.PointLight(0x88CCFF, 0, 7);
+  playerNightLight.position.set(0, 1, 0);
+  player.mesh.add(playerNightLight);
+}
+
+// ═══════════════════════════════════════════════════════
 // QUEST LOG / RELIC CODEX
 // ═══════════════════════════════════════════════════════
 let questLogOpen = false;
@@ -2254,6 +2504,12 @@ function animate() {
   updateBoss(dt);
   updatePortals(dt);
   updatePetals(dt, clock.elapsedTime);
+  updateSage(dt);
+  updateSnow(dt, clock.elapsedTime);
+  updateButterflies(dt, clock.elapsedTime, dayFrac);
+  updateHealthDrops(dt);
+  checkEnemyRespawn(dt);
+  if (playerNightLight) playerNightLight.intensity = Math.max(0, 1 - dayFrac * 2.2) * 1.8;
   updateCameraShake(dt);
   // Charge bar fill
   if (charging) {
@@ -2303,6 +2559,10 @@ function init() {
   buildTrail();
   buildPortals();
   buildPetals();
+  buildSage();
+  buildSnow();
+  buildButterflies();
+  buildPlayerNightLight();
   buildPostProcessing();
   setupInput();
   animate();
