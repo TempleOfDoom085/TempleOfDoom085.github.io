@@ -239,7 +239,8 @@ section { padding: 7.5rem 4rem; }
 /* GAME SECTION */
 #game-section { background: #080b10; padding: 0; }
 .game-header { padding: 4rem 3rem 0; }
-.game-tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(184,147,58,0.2); padding: 0 3rem; background: #080b10; position: sticky; top: 70px; z-index: 50; }
+.game-dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 2rem 3rem 0; }
+.game-tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(184,147,58,0.2); padding: 0 3rem; background: #080b10; position: sticky; top: 70px; z-index: 50; margin-top: 2rem; }
 .game-tab {
   font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
   padding: 1rem 1.8rem; cursor: pointer; border: none; background: none;
@@ -250,6 +251,10 @@ section { padding: 7.5rem 4rem; }
 .game-tab:hover:not(.active) { color: rgba(245,242,236,0.7); }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+.game-card-wrap { border: 1px solid rgba(184,147,58,0.2); overflow: hidden; cursor: pointer; transition: border-color 0.3s; }
+.game-card-wrap:hover { border-color: rgba(184,147,58,0.5); }
+.game-card-wrap.realm-card { border-color: rgba(0,255,136,0.18); }
+.game-card-wrap.realm-card:hover { border-color: rgba(0,255,136,0.5); }
 
 /* GAME EMBED */
 #tab-game { padding: 2rem 3rem 4rem; }
@@ -269,6 +274,7 @@ section { padding: 7.5rem 4rem; }
 .game-launch-sub { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.2em; color: var(--neon); opacity: 0.7; position: relative; z-index: 1; }
 .game-launch-cta { margin-top: 1.5rem; display: inline-block; padding: 0.8rem 2.5rem; border: 2px solid var(--gold); color: var(--gold2); font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; position: relative; z-index: 1; animation: glowPulse 2.5s ease-in-out infinite; }
 @keyframes glowPulse { 0%,100%{box-shadow:0 0 8px rgba(184,147,58,0.3)}50%{box-shadow:0 0 24px rgba(184,147,58,0.7)} }
+@keyframes realmPulse { 0%,100%{box-shadow:0 0 8px rgba(0,255,136,0.2)}50%{box-shadow:0 0 24px rgba(0,255,136,0.55)} }
 #gameContainer { display: none; }
 #gameContainer iframe { width: 100%; height: 580px; border: none; display: block; }
 
@@ -889,6 +895,7 @@ body.cursor-click #cursor-ring {
   #tab-game { padding: 1rem 1rem 2rem; }
   #gameContainer iframe { height: 700px; }
   .game-launch-btn { padding: 2rem 1rem; }
+  .game-dual-grid { grid-template-columns: 1fr; padding: 1.5rem 1rem 0; gap: 1rem; }
   .game-tabs { padding: 0 1rem; gap: 0.3rem; }
   .game-tab { font-size: 0.7rem; padding: 0.55rem 1rem; letter-spacing: 0.1em; }
   .cyber-tools-grid { grid-template-columns: 1fr; }
@@ -2158,13 +2165,39 @@ html.stealth-mode #rain-indicator {
 <!-- GAME SECTION -->
 <section id="game-section" style="padding:0">
   <div class="game-header inner" style="padding-top:4rem;padding-bottom:0;">
-    <span class="section-label fade-in">04 — Featured Project</span>
-    <h2 class="section-title fade-in">Knights Templar: <em>The Siege of the Undead</em></h2>
+    <span class="section-label fade-in">04 — Featured Games</span>
+    <h2 class="section-title fade-in">Playable Projects</h2>
+  </div>
+
+  <!-- DUAL GAME CARD GRID -->
+  <div class="game-dual-grid">
+    <!-- Card 1: Knights Templar -->
+    <div class="game-card-wrap" onclick="document.querySelector('.game-tab').click();document.getElementById('game-section').scrollIntoView({behavior:'smooth'})">
+      <button class="game-launch-btn" onclick="launchGame();event.stopPropagation();" style="width:100%;padding:2.5rem 2rem;">
+        <div class="game-launch-title">KNIGHTS TEMPLAR</div>
+        <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — V10.0 —</div>
+        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(245,242,236,0.28);margin-top:0.6rem;position:relative;z-index:1;">Text adventure · Turn-based combat · NPC dialogue</div>
+        <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
+      </button>
+    </div>
+    <!-- Card 2: REALM -->
+    <div class="game-card-wrap realm-card">
+      <a href="world.html" target="_blank" style="display:block;text-decoration:none;">
+        <div class="game-launch-btn" style="background:linear-gradient(135deg,#050f08 0%,#040a06 100%);width:100%;padding:2.5rem 2rem;border:none;">
+          <div class="game-launch-title" style="color:#aef7c8;text-shadow:0 0 20px rgba(0,255,136,0.55);">REALM</div>
+          <div class="game-launch-sub" style="color:rgba(174,247,200,0.55);">— OPEN WORLD 3D — THREE.JS — v13.0 —</div>
+          <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(174,247,200,0.3);margin-top:0.6rem;position:relative;z-index:1;">Procedural terrain · Boss fight · Magic · Day/night</div>
+          <div style="margin-top:1.5rem;display:inline-block;padding:0.8rem 2.5rem;border:2px solid rgba(0,255,136,0.45);color:#aef7c8;font-family:var(--mono);font-size:0.85rem;letter-spacing:0.2em;text-transform:uppercase;position:relative;z-index:1;animation:realmPulse 2.5s ease-in-out infinite;">
+            🌍 &nbsp; ENTER THE REALM &nbsp; 🌍
+          </div>
+          <div style="margin-top:0.8rem;font-family:var(--mono);font-size:0.55rem;letter-spacing:0.1em;color:rgba(174,247,200,0.22);position:relative;z-index:1;">Opens full screen in a new page</div>
+        </div>
+      </a>
+    </div>
   </div>
 
   <div class="game-tabs">
-    <button class="game-tab active" onclick="switchTab('game', this)">▶ Play Game</button>
-    <button class="game-tab" onclick="switchTab('realm', this)">🌍 REALM</button>
+    <button class="game-tab active" onclick="switchTab('game', this)">▶ Play In Page</button>
     <button class="game-tab" onclick="switchTab('patches', this)">📋 Patch Notes</button>
     <button class="game-tab" onclick="switchTab('about-game', this)">📖 About</button>
   </div>
@@ -2188,20 +2221,8 @@ html.stealth-mode #rain-indicator {
     </p>
   </div>
 
-  <!-- REALM TAB -->
+  <!-- REALM TAB (kept for patch notes cross-ref, hidden from tab bar) -->
   <div id="tab-realm" class="tab-content">
-    <div class="game-frame-wrap" style="border-color:rgba(0,255,136,0.15);">
-      <a href="world.html" target="_blank" style="display:block;text-decoration:none;">
-        <div class="game-launch-btn" style="background:linear-gradient(135deg,#060f0a 0%,#050808 100%);width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem;cursor:pointer;border:none;">
-          <div class="game-launch-title" style="color:#aef7c8;text-shadow:0 0 20px rgba(0,255,136,0.55);font-size:clamp(1rem,2vw,1.4rem);letter-spacing:0.35em;">REALM</div>
-          <div class="game-launch-sub" style="color:rgba(174,247,200,0.55);margin-top:0.4rem;">— AN OPEN WORLD — THREE.JS — v1.0 —</div>
-          <div class="game-launch-cta" style="margin-top:1.5rem;padding:0.8rem 2.5rem;border:2px solid rgba(0,255,136,0.45);color:#aef7c8;font-family:var(--mono);font-size:0.85rem;letter-spacing:0.2em;text-transform:uppercase;display:inline-block;">
-            🌍 &nbsp; ENTER THE REALM &nbsp; 🌍
-          </div>
-          <div style="margin-top:1rem;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(174,247,200,0.3);">Opens full-screen — pointer lock required for mouse look</div>
-        </div>
-      </a>
-    </div>
     <div style="margin-top:1.4rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
       <div style="border:1px solid rgba(0,255,136,0.12);padding:0.9rem 1.1rem;flex:1;min-width:110px;background:rgba(0,255,136,0.02);">
         <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.15em;color:rgba(0,255,136,0.5);margin-bottom:0.3rem;">ENGINE</div>
