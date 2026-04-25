@@ -26,9 +26,11 @@ export class Environment {
     const h = getHeight(x, z);
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18*scale, 0.28*scale, 2.2*scale, 6), TRUNK_MAT);
     trunk.position.set(x, h + 1.1*scale, z);
+    trunk.castShadow = true; trunk.receiveShadow = true;
     this.scene.add(trunk);
     const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.7*scale, 3.8*scale, 7), LEAVES_MAT);
     leaves.position.set(x, h + 4.2*scale, z);
+    leaves.castShadow = true; leaves.receiveShadow = true;
     this.scene.add(leaves);
   }
 
@@ -36,9 +38,11 @@ export class Environment {
     const h = getHeight(x, z);
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 4, 6), TRUNK_MAT);
     trunk.position.set(x, h + 2, z); trunk.rotation.z = (Math.random()-0.5)*0.3;
+    trunk.castShadow = true; trunk.receiveShadow = true;
     this.scene.add(trunk);
     const top = new THREE.Mesh(new THREE.SphereGeometry(1.4, 8, 6), PALM_MAT);
     top.position.set(x + (Math.random()-0.5)*0.6, h + 4.3, z + (Math.random()-0.5)*0.6);
+    top.castShadow = true; top.receiveShadow = true;
     this.scene.add(top);
   }
 
