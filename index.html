@@ -2164,6 +2164,7 @@ html.stealth-mode #rain-indicator {
 
   <div class="game-tabs">
     <button class="game-tab active" onclick="switchTab('game', this)">▶ Play Game</button>
+    <button class="game-tab" onclick="switchTab('realm', this)">🌍 REALM</button>
     <button class="game-tab" onclick="switchTab('patches', this)">📋 Patch Notes</button>
     <button class="game-tab" onclick="switchTab('about-game', this)">📖 About</button>
   </div>
@@ -2187,8 +2188,116 @@ html.stealth-mode #rain-indicator {
     </p>
   </div>
 
+  <!-- REALM TAB -->
+  <div id="tab-realm" class="tab-content">
+    <div class="game-frame-wrap" style="border-color:rgba(0,255,136,0.15);">
+      <a href="world.html" target="_blank" style="display:block;text-decoration:none;">
+        <div class="game-launch-btn" style="background:linear-gradient(135deg,#060f0a 0%,#050808 100%);width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem;cursor:pointer;border:none;">
+          <div class="game-launch-title" style="color:#aef7c8;text-shadow:0 0 20px rgba(0,255,136,0.55);font-size:clamp(1rem,2vw,1.4rem);letter-spacing:0.35em;">REALM</div>
+          <div class="game-launch-sub" style="color:rgba(174,247,200,0.55);margin-top:0.4rem;">— AN OPEN WORLD — THREE.JS — v1.0 —</div>
+          <div class="game-launch-cta" style="margin-top:1.5rem;padding:0.8rem 2.5rem;border:2px solid rgba(0,255,136,0.45);color:#aef7c8;font-family:var(--mono);font-size:0.85rem;letter-spacing:0.2em;text-transform:uppercase;display:inline-block;">
+            🌍 &nbsp; ENTER THE REALM &nbsp; 🌍
+          </div>
+          <div style="margin-top:1rem;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(174,247,200,0.3);">Opens full-screen — pointer lock required for mouse look</div>
+        </div>
+      </a>
+    </div>
+    <div style="margin-top:1.4rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
+      <div style="border:1px solid rgba(0,255,136,0.12);padding:0.9rem 1.1rem;flex:1;min-width:110px;background:rgba(0,255,136,0.02);">
+        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.15em;color:rgba(0,255,136,0.5);margin-bottom:0.3rem;">ENGINE</div>
+        <div style="font-size:1rem;font-weight:300;color:rgba(245,242,236,0.7)">Three.js 0.158</div>
+      </div>
+      <div style="border:1px solid rgba(0,255,136,0.12);padding:0.9rem 1.1rem;flex:1;min-width:110px;background:rgba(0,255,136,0.02);">
+        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.15em;color:rgba(0,255,136,0.5);margin-bottom:0.3rem;">RELICS</div>
+        <div style="font-size:1rem;font-weight:300;color:rgba(245,242,236,0.7)">6 to collect</div>
+      </div>
+      <div style="border:1px solid rgba(0,255,136,0.12);padding:0.9rem 1.1rem;flex:1;min-width:110px;background:rgba(0,255,136,0.02);">
+        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.15em;color:rgba(0,255,136,0.5);margin-bottom:0.3rem;">FRAGMENTS</div>
+        <div style="font-size:1rem;font-weight:300;color:rgba(245,242,236,0.7)">18 hidden</div>
+      </div>
+      <div style="border:1px solid rgba(0,255,136,0.12);padding:0.9rem 1.1rem;flex:1;min-width:110px;background:rgba(0,255,136,0.02);">
+        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.15em;color:rgba(0,255,136,0.5);margin-bottom:0.3rem;">BOSS</div>
+        <div style="font-size:1rem;font-weight:300;color:rgba(245,242,236,0.7)">10 HP</div>
+      </div>
+      <div style="border:1px solid rgba(0,255,136,0.12);padding:0.9rem 1.1rem;flex:1;min-width:110px;background:rgba(0,255,136,0.02);">
+        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.15em;color:rgba(0,255,136,0.5);margin-bottom:0.3rem;">AUDIO</div>
+        <div style="font-size:1rem;font-weight:300;color:rgba(245,242,236,0.7)">100% procedural</div>
+      </div>
+    </div>
+    <p style="font-family:var(--mono);font-size:0.62rem;color:rgba(245,242,236,0.22);margin-top:1rem;letter-spacing:0.08em;line-height:1.9;">
+      WASD · Move &nbsp;·&nbsp; Space · Jump ×2 &nbsp;·&nbsp; Q · Dash &nbsp;·&nbsp; Shift · Sprint &nbsp;·&nbsp; E · Collect relic &nbsp;·&nbsp; Z · Magic shot &nbsp;·&nbsp; R · Weather &nbsp;·&nbsp; F · Relic codex &nbsp;·&nbsp; M · Map &nbsp;·&nbsp; P · Cinematic &nbsp;·&nbsp; N · N64 mode
+    </p>
+  </div>
+
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v13.0</span>
+        <span class="patch-version-name">REALM — Open World 3D Game</span>
+        <span class="patch-date">April 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">New — REALM: Open World (Three.js)</div>
+        <ul class="patch-list">
+          <li>Full open-world 3D game built in a single HTML file — no bundler, no backend, no assets — Three.js 0.158 via ES module importmap</li>
+          <li>Procedural island terrain using 6-octave FBM noise with island-shape edge falloff; 6 biomes (shoreline, lowlands, highlands, forest, mountains, peaks) each with vertex-colored terrain</li>
+          <li>Animated water shader with 3-layer wave function, specular glints, and foam blending; sky shader with dynamic day/night colors, sun disk, sunset gradient, and star field</li>
+          <li>140-second day/night cycle — sun arc drives light color/intensity, fog color, hemisphere light, and sky uniforms in real time</li>
+          <li>280 procedural trees with 3-layer foliage cones in 6 green tones; 130 deformed dodecahedron rocks; 10 ruin clusters with columns, broken walls, and standing arches</li>
+        </ul>
+        <div class="patch-category">Gameplay — Collect &amp; Explore</div>
+        <ul class="patch-list">
+          <li>6 glowing artifact relics on stone pedestals — E key to collect, spinning octahedron gem + orbit ring, point light glow, lore text on pickup</li>
+          <li>18 ancient fragments scattered across the island — auto-collected within 2 units, triangle-wave chime on pickup, gold dots on minimap</li>
+          <li>Relic Codex (F key) — full-screen overlay listing all 6 relics with name, lore, and glow dot; updates live when collecting</li>
+          <li>Relic power progression — each relic collected increases player speed and grants a named power (Speed Blessing → Eternal Light → Shadow King Awakens)</li>
+          <li>Pre-rendered 128×128 minimap with live player dot, direction arrow, artifact/fragment/portal/spirit dots; M key toggle</li>
+        </ul>
+        <div class="patch-category">Gameplay — Combat &amp; Abilities</div>
+        <ul class="patch-list">
+          <li>Health system — 3 hearts in HUD; 1.8s invincibility frames on hit (player flashes); passive heal +1 HP every 8s while undamaged</li>
+          <li>Death screen — red FALLEN overlay, 3-second respawn at origin with 3s iframe window</li>
+          <li>Magic projectile (Z — hold to charge, release to fire) — charge time scales bolt size, speed, and explosion; gravity-affected; charge bar fills at screen bottom</li>
+          <li>Dash (Q key) — 22-unit directional burst over 0.22s with invincibility frames; 1s cooldown; cyan particle burst on activate</li>
+          <li>Double jump — second Space in air triggers cyan ring burst; volume-preserving squash spring on landing</li>
+          <li>6 shadow enemy orbs — orbital rings, spike corona, point lights; patrol then chase within 16 units; speed ramps as they close in; killed by magic projectile</li>
+          <li>Boss fight — Shadow King spawns after collecting all 6 relics; 10 HP, 8 orbital orbs, red tracking eye; speeds up at low HP; triple-color death burst; VICTORY screen</li>
+        </ul>
+        <div class="patch-category">World — Atmosphere &amp; Systems</div>
+        <ul class="patch-list">
+          <li>Weather system (R key: clear → rain → storm) — 2,200-particle rain BufferGeometry resets near camera; storm adds lightning flashes, ambient spike, camera shake, and procedural thunder</li>
+          <li>Aurora borealis — animated multi-layer sin-wave curtain shader at night; shifts green→purple→cyan; fades out at dawn</li>
+          <li>220 wind petals (pink/white/green) drifting on sin-wave currents; speed multiplied in storm; world-edge wrap</li>
+          <li>2 teleport portals (blue SE / orange NW) — animated vortex disc shader inside stone pillar gates; walk through to teleport; ascending/descending whoosh sound</li>
+          <li>Wandering spirit creature — 4 orbiting wisps, cyan point light; wanders island, flees when player approaches, whispers when very close</li>
+          <li>70 fireflies — additive blending, warm/teal hue mix; dim by day, bright at dusk; float above terrain floor</li>
+          <li>Camera shake system reused across lightning, enemy contact, boss hits, projectile impacts, and death</li>
+        </ul>
+        <div class="patch-category">Visuals &amp; Performance</div>
+        <ul class="patch-list">
+          <li>UnrealBloomPass post-processing — gems, fireflies, aurora, enemy orbs, and projectiles all bloom</li>
+          <li>Color grade ShaderPass — soft rolloff, warm push, saturation boost, vignette</li>
+          <li>N64 mode (N key) — renders to 320×240 WebGLRenderTarget with NearestFilter then upscales to fill screen</li>
+          <li>Cinematic mode (P key) — slow orbiting camera with letterbox overlay; slow idle spin when player is stationary</li>
+          <li>Player walk bob, sprint lean (0.18 rad), smooth yaw slerp, and landing squash spring (stiffness 28, damping 7)</li>
+          <li>Sprint particle trail — 28-point ring buffer of cyan additive points; fades each frame</li>
+          <li>Tree and ruin-column collision — obstacle registry with per-frame pushObstacles() player separation</li>
+        </ul>
+        <div class="patch-category">Audio — 100% Procedural Web Audio API</div>
+        <ul class="patch-list">
+          <li>Ambient drone (48Hz + 72.5Hz sine through 220Hz lowpass); wind noise (bandpass 600Hz scales with altitude); water rumble (lowpass 280Hz scales near shoreline)</li>
+          <li>Jump whoosh (220→440Hz sine over 120ms); collect chime (C5→E5→G5→C6 pentatonic arpeggio)</li>
+          <li>Fragment chime (triangle wave); portal whoosh (ascending then descending sine); hurt sound (square wave drop)</li>
+          <li>Magic charge (sawtooth 110→660Hz ramp stopped on release); shoot snap (sine frequency fall); enemy death (sawtooth descend)</li>
+          <li>Thunder (2s shaped noise through 180Hz lowpass, 0.5s delay after flash); spirit whisper (descending sine fade)</li>
+          <li>Master DynamicsCompressor on all outputs; all audio deferred to first user click (autoplay policy)</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
@@ -2845,7 +2954,7 @@ html.stealth-mode #rain-indicator {
 
     <!-- ROADMAP -->
     <div class="patch-roadmap">
-      <div class="patch-roadmap-title">// Future Roadmap — The Path to Open World</div>
+      <div class="patch-roadmap-title">// Roadmap — Knights Templar Evolution</div>
       <div class="roadmap-item">
         <span class="roadmap-phase">v7.0 ✓</span>
         <span class="roadmap-desc">3-phase boss fight, world events, wandering merchant, equipment abilities, XP/leveling, portrait gallery overhaul, spectral NPC art</span>
@@ -2859,8 +2968,12 @@ html.stealth-mode #rain-indicator {
         <span class="roadmap-desc">2D isometric prototype — sprite-based characters, tile movement, animated combat, voiced NPCs, real-time exploration</span>
       </div>
       <div class="roadmap-item">
-        <span class="roadmap-phase">Phase 3 →</span>
-        <span class="roadmap-desc">Full 3D open-world sandbox — photorealistic medieval fortress, real-time combat, procedural dungeons, multiplayer co-op, orchestral soundtrack</span>
+        <span class="roadmap-phase">Phase 3 ✓</span>
+        <span class="roadmap-desc">Full 3D open-world sandbox — REALM is live. Procedural terrain, day/night, weather, boss fight, portals, magic, and 100% procedural Web Audio — all in a single HTML file</span>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase">Phase 4 →</span>
+        <span class="roadmap-desc">REALM expanded — multiplayer co-op, procedural dungeons with rooms, NPC dialogue system, orchestral soundtrack, save/load, mobile touch controls</span>
       </div>
     </div>
   </div>
