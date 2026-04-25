@@ -42,7 +42,7 @@
 let W=innerWidth,H=innerHeight;
 const canvas=document.getElementById('c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.setClearColor(0x000000,1);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.72;
 
@@ -319,24 +319,30 @@ function spawnShock(){
 setInterval(()=>{if(Math.random()<.3)spawnShock();},14000);
 
 // ══════════════════════════════════════════════════════
-// CORE ERUPTION BURST (every 5s, 400 particles)
+// CORE ERUPTION BURST — single GPU buffer, 1 draw call
 // ══════════════════════════════════════════════════════
-const burstParticles=[];
+const BURST_N=400;
+const burstPos=new Float32Array(BURST_N*3),burstCol=new Float32Array(BURST_N*3),burstVel=new Float32Array(BURST_N*3);
+const burstGeo=new THREE.BufferGeometry();
+burstGeo.setAttribute('position',new THREE.BufferAttribute(burstPos,3));
+burstGeo.setAttribute('color',new THREE.BufferAttribute(burstCol,3));
+const burstMat=new THREE.PointsMaterial({vertexColors:true,size:.05,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
+const burstPoints=new THREE.Points(burstGeo,burstMat);scene.add(burstPoints);
+let burstLife=-1,burstMaxLife=0;
 function spawnEruption(){
-  const N=400;
-  for(let i=0;i<N;i++){
+  for(let i=0;i<BURST_N;i++){
     const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
-    const speed=.05+Math.random()*.12;
-    const vx=Math.sin(ph)*Math.cos(th)*speed,vy=Math.sin(ph)*Math.sin(th)*speed,vz=Math.cos(ph)*speed;
-    const hue=Math.random()<.5?.07:.1;const c=new THREE.Color().setHSL(hue,1.,.85);
-    const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0)]);
-    const mat=new THREE.PointsMaterial({color:c,size:.04,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending});
-    const p=new THREE.Points(geo,mat);scene.add(p);
-    burstParticles.push({p,vx,vy,vz,life:0,maxLife:50+Math.random()*30});
+    const sp=.05+Math.random()*.12;
+    burstVel[i*3]=Math.sin(ph)*Math.cos(th)*sp;burstVel[i*3+1]=Math.sin(ph)*Math.sin(th)*sp;burstVel[i*3+2]=Math.cos(ph)*sp;
+    burstPos[i*3]=burstVel[i*3]*.4;burstPos[i*3+1]=burstVel[i*3+1]*.4;burstPos[i*3+2]=burstVel[i*3+2]*.4;
+    const c=new THREE.Color().setHSL(Math.random()<.5?.07:.1,1.,.85);
+    burstCol[i*3]=c.r;burstCol[i*3+1]=c.g;burstCol[i*3+2]=c.b;
   }
+  burstGeo.attributes.position.needsUpdate=true;burstGeo.attributes.color.needsUpdate=true;
+  burstLife=0;burstMaxLife=60+Math.floor(Math.random()*20);burstMat.opacity=.9;
 }
 setInterval(()=>{if(Math.random()<.5)spawnEruption();},38000);
-setTimeout(spawnEruption,5000); // first eruption after 5s
+setTimeout(spawnEruption,5000);
 
 // ══════════════════════════════════════════════════════
 // FLUID SIM + BACKGROUND PLANE
@@ -395,11 +401,11 @@ const nebulaVolPass=new THREE.ShaderPass({
       wN.xyz/=wN.w;wF.xyz/=wF.w;
       vec3 ro=camPos,rd=normalize(wF.xyz-wN.xyz);
       vec3 col=vec3(0.);float alpha=0.;float t=.08;
-      for(int i=0;i<48;i++){
+      for(int i=0;i<28;i++){
         if(alpha>.97||t>7.)break;
         vec3 p=ro+rd*t;
         float d=cloud(p);
-        float dens=pow(max(0.,(d-.24)/0.76),2.0)*.30;
+        float dens=pow(max(0.,(d-.24)/0.76),2.0)*.38;
         if(dens>.001){
           float core=1.-smoothstep(0.,1.3,length(p));
           vec3 c=mix(vec3(.005,.001,.016),vec3(.28,.04,.65),smoothstep(.26,.54,d));
@@ -407,7 +413,7 @@ const nebulaVolPass=new THREE.ShaderPass({
           c=mix(c,vec3(.96,.90,1.35),core*.88);
           float tr=1.-alpha;col+=c*dens*tr;alpha+=dens*tr;
         }
-        t+=.14;
+        t+=.22;
       }
       gl_FragColor=vec4(bg.rgb*(1.-alpha)+col,1.);
     }`
@@ -419,14 +425,14 @@ composer.addPass(bloom);
 
 // GOD RAYS — radial light shaft blur from core screen position
 const godRaysPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.12},decay:{value:.97},weight:{value:.010},samples:{value:80}},
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},exposure:{value:.12},decay:{value:.97},weight:{value:.010}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
     uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float exposure,decay,weight;
     varying vec2 vUv;
     void main(){
-      vec2 delta=(vUv-coreUV)/80.;vec2 uv=vUv;float illum=1.;vec3 rays=vec3(0.);
-      for(int i=0;i<80;i++){
+      vec2 delta=(vUv-coreUV)/48.;vec2 uv=vUv;float illum=1.;vec3 rays=vec3(0.);
+      for(int i=0;i<48;i++){
         uv-=delta;vec2 suv=clamp(uv,0.,1.);
         vec3 s=texture2D(tDiffuse,suv).rgb;
         float br=max(s.r,max(s.g,s.b));
@@ -436,49 +442,33 @@ const godRaysPass=new THREE.ShaderPass({
 });
 composer.addPass(godRaysPass);
 
-// ANAMORPHIC LENS STREAK — very subtle violet diffraction, not a gold band
-const streakPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},intensity:{value:.04},time:{value:0}},
+// FINAL PASS: streak + chroma + grain + vignette merged into 1 render
+const finalPass=new THREE.ShaderPass({
+  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},time:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
-    uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float intensity,time;
+    uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float time;
     varying vec2 vUv;
-    void main(){
-      vec3 orig=texture2D(tDiffuse,vUv).rgb;
-      float dy=abs(vUv.y-coreUV.y);
-      // Very tight vertical falloff so it doesn't span full screen height
-      float streak=exp(-dy*dy*520.)*intensity;
-      // Violet tint — matches nebula palette, not a gold cinema stripe
-      float dx=abs(vUv.x-coreUV.x);float falloff=exp(-dx*dx*2.8);
-      vec3 streakCol=vec3(.45,.18,.95)*streak*falloff;
-      float fl=.88+sin(time*11.3)*.12;
-      gl_FragColor=vec4(orig+streakCol*fl,1.);}`,
-});
-composer.addPass(streakPass);
-
-// CHROMATIC ABERRATION
-const chromaPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},amount:{value:.0015}},
-  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform sampler2D tDiffuse;uniform float amount;varying vec2 vUv;
-    void main(){vec2 d=vUv-.5;float dist=length(d);vec2 off=normalize(d)*amount*dist*dist*3.;
-    float r=texture2D(tDiffuse,vUv+off).r;float g=texture2D(tDiffuse,vUv).g;float b=texture2D(tDiffuse,vUv-off).b;
-    gl_FragColor=vec4(r,g,b,1.);}`,
-});
-composer.addPass(chromaPass);
-
-// FILM GRAIN + VIGNETTE (final)
-const grainPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},time:{value:0},grain:{value:.025}},
-  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform sampler2D tDiffuse;uniform float time,grain;varying vec2 vUv;
     float rnd(vec2 p){return fract(sin(dot(p+time,vec2(127.1,311.7)))*43758.5453);}
-    void main(){vec4 col=texture2D(tDiffuse,vUv);col.rgb+=rnd(vUv)*grain-grain*.5;
-    float vig=smoothstep(1.05,.3,length(vUv-.5)*1.55);col.rgb*=vig;
-    gl_FragColor=vec4(clamp(col.rgb,0.,1.),1.);}`,
+    void main(){
+      // Chromatic aberration
+      vec2 d=vUv-.5;float dist=length(d);vec2 off=normalize(d)*.0015*dist*dist*3.;
+      float r=texture2D(tDiffuse,vUv+off).r;
+      float g=texture2D(tDiffuse,vUv).g;
+      float b=texture2D(tDiffuse,vUv-off).b;
+      vec3 col=vec3(r,g,b);
+      // Anamorphic lens streak
+      float dy=abs(vUv.y-coreUV.y);
+      float streak=exp(-dy*dy*520.)*.04;
+      float dx=abs(vUv.x-coreUV.x);
+      col+=vec3(.45,.18,.95)*streak*exp(-dx*dx*2.8)*(.88+sin(time*11.3)*.12);
+      // Film grain + vignette
+      col+=rnd(vUv)*.025-.0125;
+      col*=smoothstep(1.05,.3,length(vUv-.5)*1.55);
+      gl_FragColor=vec4(clamp(col,0.,1.),1.);}`,
   renderToScreen:true
 });
-composer.addPass(grainPass);
+composer.addPass(finalPass);
 
 // ══════════════════════════════════════════════════════
 // LENS FLARE ELEMENTS (billboard planes in 3D scene)
@@ -538,18 +528,22 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   function jfbm(x){return jn(x)*.5+jn(x*2.1)*.25+jn(x*4.3)*.125;}
   var _invPV=new THREE.Matrix4();
 
+  var _fluidIdle=0;
   (function animate(){
   requestAnimationFrame(animate);
   time+=.006;
 
-  // Fluid sim
-  fluidMat.uniforms.prev.value=rt1.texture;
-  fluidMat.uniforms.mouse.value.set(mx,my);
-  fluidMat.uniforms.prevMouse.value.set(mxPrev,myPrev);
-  fluidMat.uniforms.active.value=mxActive?1.:0.;
-  renderer.setRenderTarget(rt2);renderer.render(fluidScene,fluidCam);
-  renderer.setRenderTarget(null);
-  const tmp=rt1;rt1=rt2;rt2=tmp;bgMat.uniforms.tex.value=rt1.texture;
+  // Fluid sim — skip render when mouse has been idle to save GPU
+  if(mxActive){_fluidIdle=0;}else{_fluidIdle++;}
+  if(_fluidIdle<4){
+    fluidMat.uniforms.prev.value=rt1.texture;
+    fluidMat.uniforms.mouse.value.set(mx,my);
+    fluidMat.uniforms.prevMouse.value.set(mxPrev,myPrev);
+    fluidMat.uniforms.active.value=mxActive?1.:0.;
+    renderer.setRenderTarget(rt2);renderer.render(fluidScene,fluidCam);
+    renderer.setRenderTarget(null);
+    const tmp=rt1;rt1=rt2;rt2=tmp;bgMat.uniforms.tex.value=rt1.texture;
+  }
   mxActive=false;
 
   // Nebula drift
@@ -617,25 +611,27 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   }
   wp.needsUpdate=true;
 
-  // Eruption bursts
-  for(let i=burstParticles.length-1;i>=0;i--){
-    const b=burstParticles[i];b.life++;
-    const ph=b.life/b.maxLife;
-    b.p.position.x+=b.vx;b.p.position.y+=b.vy;b.p.position.z+=b.vz;
-    b.p.material.opacity=ph<.2?ph/.2*.9:Math.max(0,.9*(1-ph)/.8);
-    if(b.life>=b.maxLife){scene.remove(b.p);burstParticles.splice(i,1);}
+  // Eruption burst — single buffer, 1 draw call
+  if(burstLife>=0){
+    burstLife++;
+    const ph=burstLife/burstMaxLife;
+    for(let i=0;i<BURST_N;i++){
+      burstPos[i*3]+=burstVel[i*3];burstPos[i*3+1]+=burstVel[i*3+1];burstPos[i*3+2]+=burstVel[i*3+2];
+    }
+    burstGeo.attributes.position.needsUpdate=true;
+    burstMat.opacity=ph<.2?ph/.2*.9:Math.max(0,.9*(1-ph)/.8);
+    if(burstLife>=burstMaxLife){burstLife=-1;burstMat.opacity=0;}
   }
 
   // Lens flare billboard (always face camera)
   flareGroup.quaternion.copy(camera.quaternion);
   flareMat.uniforms.time.value=time;hexMat.uniforms.time.value=time;
 
-  // Project core to UV for god rays
+  // Project core to UV for god rays + streak
   coreScreenPos.copy(coreWorldPos).project(camera);
-  godRaysPass.uniforms.coreUV.value.set((coreScreenPos.x+1)*.5,(.5+coreScreenPos.y*.5));
-  streakPass.uniforms.coreUV.value.y=(coreScreenPos.y+1)*.5;
-  streakPass.uniforms.time.value=time;
-  grainPass.uniforms.time.value=time*.9;
+  godRaysPass.uniforms.coreUV.value.set((coreScreenPos.x+1)*.5,(coreScreenPos.y+1)*.5);
+  finalPass.uniforms.coreUV.value.set((coreScreenPos.x+1)*.5,(coreScreenPos.y+1)*.5);
+  finalPass.uniforms.time.value=time;
 
   // Cinematic floating camera: noise-based drift instead of locked sine orbit.
   // Gives the slow weightless drift of Interstellar / Hubble footage.
