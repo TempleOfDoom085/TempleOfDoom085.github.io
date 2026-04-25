@@ -2506,10 +2506,10 @@ function animate() {
   updatePetals(dt, clock.elapsedTime);
   updateSage(dt);
   updateSnow(dt, clock.elapsedTime);
-  updateButterflies(dt, clock.elapsedTime, dayFrac);
+  updateButterflies(dt, clock.elapsedTime, skyUniforms.dayFrac.value);
   updateHealthDrops(dt);
   checkEnemyRespawn(dt);
-  if (playerNightLight) playerNightLight.intensity = Math.max(0, 1 - dayFrac * 2.2) * 1.8;
+  if (playerNightLight) playerNightLight.intensity = Math.max(0, 1 - skyUniforms.dayFrac.value * 2.2) * 1.8;
   updateCameraShake(dt);
   // Charge bar fill
   if (charging) {
