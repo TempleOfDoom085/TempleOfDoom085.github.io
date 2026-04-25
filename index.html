@@ -2172,13 +2172,15 @@ html.stealth-mode #rain-indicator {
   <!-- DUAL GAME CARD GRID -->
   <div class="game-dual-grid">
     <!-- Card 1: Knights Templar -->
-    <div class="game-card-wrap" onclick="document.querySelector('.game-tab').click();document.getElementById('game-section').scrollIntoView({behavior:'smooth'})">
-      <button class="game-launch-btn" onclick="launchGame();event.stopPropagation();" style="width:100%;padding:2.5rem 2rem;">
-        <div class="game-launch-title">KNIGHTS TEMPLAR</div>
-        <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — V10.0 —</div>
-        <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(245,242,236,0.28);margin-top:0.6rem;position:relative;z-index:1;">Text adventure · Turn-based combat · NPC dialogue</div>
-        <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
-      </button>
+    <div class="game-card-wrap">
+      <a href="game.html" target="_blank" style="display:block;text-decoration:none;">
+        <div class="game-launch-btn" style="width:100%;padding:2.5rem 2rem;border:none;">
+          <div class="game-launch-title">KNIGHTS TEMPLAR</div>
+          <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — V10.0 —</div>
+          <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(245,242,236,0.28);margin-top:0.6rem;position:relative;z-index:1;">Text adventure · Turn-based combat · NPC dialogue</div>
+          <div class="game-launch-cta">⚔ &nbsp; CLICK TO PLAY &nbsp; ⚔</div>
+        </div>
+      </a>
     </div>
     <!-- Card 2: REALM -->
     <div class="game-card-wrap realm-card">
