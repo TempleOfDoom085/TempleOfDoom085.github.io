@@ -25,7 +25,7 @@ const particles = new Particles(game.scene);
 
 // World
 const terrain   = new Terrain(game.scene);
-const lighting  = new Lighting(game.scene);
+const lighting  = new Lighting(game.scene, game.renderer);
 const city      = new City(game.scene);
 const env       = new Environment(game.scene);
 

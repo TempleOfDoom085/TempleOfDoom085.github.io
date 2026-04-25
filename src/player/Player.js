@@ -43,7 +43,9 @@ export class Player {
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.72,0.22), new THREE.MeshLambertMaterial({color:0x2244aa}));
       arm.position.set(ox,0.28,0); arm.name=`arm${i}`; g.add(arm);
     });
-    g.castShadow = true;
+    g.traverse(child => {
+      if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
     return g;
   }
 

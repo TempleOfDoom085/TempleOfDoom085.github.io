@@ -20,8 +20,7 @@ export class Game {
     this.renderer.toneMappingExposure = 1.1;
 
     this.camera = new THREE.PerspectiveCamera(70, this.W / this.H, 0.1, 800);
-    this.scene.fog = new THREE.Fog(0x87ceeb, 80, 420);
-    this.scene.background = new THREE.Color(0x87ceeb);
+    // Fog and background are owned by Lighting.js (Sky addon + FogExp2)
 
     this._setupComposer();
     window.addEventListener('resize', () => this._onResize());
@@ -43,9 +42,7 @@ export class Game {
   }
 
   setDayFrac(f) {
-    const sky = new THREE.Color().setHSL(0.58, 0.55, 0.12 + f * 0.48);
-    this.scene.background = sky;
-    this.scene.fog.color.copy(sky);
+    // Sky and fog colors are driven by Lighting.js; only exposure changes here
     this.renderer.toneMappingExposure = 0.72 + f * 0.52;
   }
 
