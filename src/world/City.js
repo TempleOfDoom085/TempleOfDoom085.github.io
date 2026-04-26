@@ -16,8 +16,9 @@ function box(w, h, d, mat) {
 }
 
 export class City {
-  constructor(scene) {
-    this.scene = scene;
+  constructor(scene, collision = null) {
+    this.scene     = scene;
+    this.collision = collision;
     this._build();
   }
 
@@ -56,6 +57,7 @@ export class City {
           const color = BLDG_COLORS[Math.floor(rng() * BLDG_COLORS.length)];
           const bMat = new THREE.MeshLambertMaterial({ color });
           const bldg = box(w, h, d, bMat); bldg.position.set(cx+ox, h/2, cz+oz); bldg.castShadow = true; this.scene.add(bldg);
+          if (this.collision) this.collision.register(bldg);
           // Windows
           for (let wy = 1; wy < h - 1; wy += 2.8) {
             for (let side = 0; side < 4; side++) {
