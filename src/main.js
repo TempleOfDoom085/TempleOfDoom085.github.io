@@ -14,6 +14,7 @@ import { NPCSystem }      from './npcs/NPCSystem.js';
 import { QuestSystem }    from './quests/QuestSystem.js';
 import { CombatSystem }   from './combat/CombatSystem.js';
 import { AudioSystem }    from './audio/AudioSystem.js';
+import { CollisionSystem } from './systems/CollisionSystem.js';
 import { HUD }            from './hud/HUD.js';
 import { Minimap }        from './hud/Minimap.js';
 
@@ -26,11 +27,12 @@ const particles = new Particles(game.scene);
 // World
 const terrain   = new Terrain(game.scene);
 const lighting  = new Lighting(game.scene, game.renderer);
-const city      = new City(game.scene);
+const collision = new CollisionSystem();
+const city      = new City(game.scene, collision);   // registers building boxes
 const env       = new Environment(game.scene);
 
 // Player
-const player    = new Player(game.scene);
+const player    = new Player(game.scene, collision); // uses boxes for wall slide
 const cam       = new CameraController(game.camera);
 
 // Systems
@@ -176,7 +178,8 @@ function animate() {
 
   if (!player.dead) {
     player.update(dt, input, cam.yaw);
-    if (audio._ready) audio.footstep();
+    if (audio._ready && player.onGround && player.speed > 0.8 && !player.inVehicle)
+      audio.footstep();
   }
 
   vehicles.update(dt, time, input, audio);
