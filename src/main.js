@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { Game }           from './core/Game.js';
 import { Input }          from './systems/Input.js';
 import { Particles }      from './systems/Particles.js';
+import { CollisionSystem } from './systems/CollisionSystem.js';
+import { WorldEvents }    from './systems/WorldEvents.js';
 import { Terrain }        from './world/Terrain.js';
 import { Lighting }       from './world/Lighting.js';
 import { City }           from './world/City.js';
@@ -14,7 +16,6 @@ import { NPCSystem }      from './npcs/NPCSystem.js';
 import { QuestSystem }    from './quests/QuestSystem.js';
 import { CombatSystem }   from './combat/CombatSystem.js';
 import { AudioSystem }    from './audio/AudioSystem.js';
-import { CollisionSystem } from './systems/CollisionSystem.js';
 import { HUD }            from './hud/HUD.js';
 import { Minimap }        from './hud/Minimap.js';
 
@@ -28,21 +29,22 @@ const particles = new Particles(game.scene);
 const terrain   = new Terrain(game.scene);
 const lighting  = new Lighting(game.scene, game.renderer);
 const collision = new CollisionSystem();
-const city      = new City(game.scene, collision);   // registers building boxes
+const city      = new City(game.scene, collision);
 const env       = new Environment(game.scene);
 
 // Player
-const player    = new Player(game.scene, collision); // uses boxes for wall slide
+const player    = new Player(game.scene, collision);
 const cam       = new CameraController(game.camera);
 
 // Systems
-const vehicles  = new VehicleSystem(game.scene);
+const vehicles  = new VehicleSystem(game.scene, collision);
 const activity  = new ActivitySystem(player, game.scene);
 const npcs      = new NPCSystem(game.scene);
 const quests    = new QuestSystem(game.scene, player);
 const combat    = new CombatSystem(game.scene, player, particles);
 const hud       = new HUD();
 const minimap   = new Minimap();
+const worldEvt  = new WorldEvents(game.scene, hud, particles);
 
 // Spawn vehicles
 vehicles.spawn('car',   30, -18, 0xff3333);
@@ -53,10 +55,42 @@ vehicles.spawn('bike',  18,  48, 0x111122);
 vehicles.spawn('bike', -55,  28, 0x882200);
 vehicles.spawn('horse',-82, -28);
 vehicles.spawn('horse', 42, -75);
-vehicles.spawn('plane',  0,-188, 0xdddddd); // on runway
+vehicles.spawn('plane',  0,-188, 0xdddddd);
 
-// Assign first quest after 4s
+// First quest after 4s
 setTimeout(() => quests.assignRandom(npcs.list), 4000);
+
+// ── Quest callbacks ─────────────────────────────────────────────
+quests.onComplete = (reward, title) => {
+  player.addXP(120);
+  hud.notify(`✅ ${title}\nCOMPLETE! +$${reward}  +120 XP`, 4.5);
+  audio.quest();
+  setTimeout(() => quests.assignRandom(npcs.list), 12000);
+};
+quests.onFail = () => {
+  hud.notify('❌ MISSION FAILED', 3);
+  audio.fail();
+  setTimeout(() => quests.assignRandom(npcs.list), 10000);
+};
+
+// ── Player callbacks ────────────────────────────────────────────
+player.onDamage = (amt) => {
+  cam.addShake(amt * 0.016);
+  hud.hitFlash();
+};
+player.onLevelUp = (level) => {
+  hud.notify(`⬆️ LEVEL UP! You are now Level ${level}`, 4);
+  audio.levelUp();
+};
+
+// ── Power surge hook (used by WorldEvents) ──────────────────────
+window._powerSurge = () => {
+  const flash = document.getElementById('hit-flash');
+  if (!flash) return;
+  flash.style.background = '#ffff00';
+  flash.style.opacity = '0.35';
+  setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => { flash.style.background = '#ff0000'; }, 300); }, 180);
+};
 
 // ── Input bindings ─────────────────────────────────────────────
 let shopOpen = false;
@@ -67,7 +101,6 @@ window.addEventListener('keydown', e => {
 
   if (e.key === 'e' || e.key === 'E') {
     if (shopOpen) return;
-    // Interact priority: vehicle > NPC > fish reel
     const nearV = vehicles.nearest(player.x, player.z);
     if (nearV && !player.inVehicle) { vehicles.enter(nearV, player); hud.notify(`Entered ${nearV.type.toUpperCase()} — F to exit`); return; }
     const nearN = npcs.nearest(player.x, player.z);
@@ -82,7 +115,7 @@ window.addEventListener('keydown', e => {
     }
     if (activity.mode === 'fish') {
       const catch_ = activity.reelIn();
-      if (catch_) { hud.notify(`🎣 CAUGHT: ${catch_}`); audio.pickup(); }
+      if (catch_) { hud.notify(`🎣 CAUGHT: ${catch_}`); player.addXP(15); audio.pickup(); }
       else hud.notify('No bite yet... wait for it.');
       return;
     }
@@ -94,7 +127,7 @@ window.addEventListener('keydown', e => {
     hud.notify('Exited vehicle');
   }
 
-  if (e.key === 'q' || e.key === 'Q') { // Skate toggle
+  if (e.key === 'q' || e.key === 'Q') {
     if (!player.inVehicle) {
       const next = activity.mode === 'skate' ? 'walk' : 'skate';
       activity.setMode(next);
@@ -124,7 +157,6 @@ function openShop() {
   input.unlock(); shopOpen=true;
 }
 
-// Shop buy
 window.buyItem = (item) => {
   const prices = { health:100, pistol:250, sword:350, bike:500 };
   const p = prices[item];
@@ -162,6 +194,16 @@ function respawn() {
   hud.notify('Respawned. Try not to die again.');
 }
 
+// ── Zone tracking for ambient audio ────────────────────────────
+let _lastZone = '';
+function getZone() {
+  const { x, z } = player;
+  if (Math.abs(x) < 110 && Math.abs(z) < 110) return 'city';
+  if (z > 145) return 'beach';
+  if (x < -100) return 'forest';
+  return 'plain';
+}
+
 // ── Game loop ──────────────────────────────────────────────────
 function animate() {
   requestAnimationFrame(animate);
@@ -170,11 +212,12 @@ function animate() {
 
   input.update();
 
-  // Mouse look
   if (input.mouse.dx || input.mouse.dy) cam.applyMouse(input.mouse.dx, input.mouse.dy);
 
   const dayFrac = lighting.update(dt);
   game.setDayFrac(dayFrac);
+  city.update(dayFrac);
+  env.update(time);
 
   if (!player.dead) {
     player.update(dt, input, cam.yaw);
@@ -182,20 +225,19 @@ function animate() {
       audio.footstep();
   }
 
+  // Ambient zone cross-fade
+  const zone = getZone();
+  if (zone !== _lastZone) { audio.setZone(zone); _lastZone = zone; }
+
   vehicles.update(dt, time, input, audio);
   activity.update(dt, time, input, audio);
-  npcs.update(dt, time);
+  npcs.update(dt, time, player);
   combat.update(dt, quests);
   quests.update(dt, player);
   particles.update(dt);
+  worldEvt.update(dt, player);
 
-  // Quest complete / fail callbacks
-  if (quests.active === null && quests._prevActive) {
-    setTimeout(() => quests.assignRandom(npcs.list), 12000);
-  }
-  quests._prevActive = quests.active;
-
-  // Sync player position when in vehicle
+  // Sync player to vehicle
   if (player.inVehicle) {
     const v = player.inVehicle;
     player.x=v.x; player.y=v.y+1.8; player.z=v.z;

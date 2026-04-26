@@ -75,10 +75,11 @@ function planeMesh() {
 // ── VehicleSystem ──────────────────────────────────────────────
 
 export class VehicleSystem {
-  constructor(scene) {
-    this.scene    = scene;
-    this.list     = [];
-    this.active   = null; // vehicle currently driven
+  constructor(scene, collision = null) {
+    this.scene     = scene;
+    this.collision = collision;
+    this.list      = [];
+    this.active    = null;
   }
 
   spawn(type, x, z, color) {
@@ -143,8 +144,14 @@ export class VehicleSystem {
         v.speed  = THREE.MathUtils.clamp(v.speed, -9, maxSpd);
         const turnRate = (v.type==='bike' ? 3.0 : 2.2) * Math.sign(v.speed||1);
         if (Math.abs(v.speed) > 0.4) v.angle += turn * turnRate * dt;
+        const oldX = v.x, oldZ = v.z;
         v.x += Math.sin(v.angle) * v.speed * dt;
         v.z += Math.cos(v.angle) * v.speed * dt;
+        if (this.collision) {
+          const r = this.collision.resolve(oldX, oldZ, v.x, v.z);
+          if (r.hitX || r.hitZ) v.speed *= 0.25; // crunch on impact
+          v.x = r.x; v.z = r.z;
+        }
         v.y  = getHeight(v.x, v.z) + (v.type==='bike' ? 0.55 : 0.9);
         v.mesh.position.set(v.x, v.y, v.z);
         v.mesh.rotation.y = v.angle;

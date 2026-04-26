@@ -106,15 +106,28 @@ export class NPCSystem {
     return best;
   }
 
-  update(dt, time) {
+  update(dt, time, player = null) {
     this.list.forEach(n => {
       if (!n.alive || n.type==='shopkeeper') return;
+
+      // Flee from player when wanted level is high
+      if (player && player.wanted >= 2 && n.type === 'citizen') {
+        const pdist = Math.hypot(n.x - player.x, n.z - player.z);
+        if (pdist < 22) {
+          const ang = Math.atan2(n.z - player.z, n.x - player.x);
+          n.wx = THREE.MathUtils.clamp(n.x + Math.cos(ang)*32, -88, 88);
+          n.wz = THREE.MathUtils.clamp(n.z + Math.sin(ang)*32, -88, 88);
+          n._fleeSpd = 5.2;
+        }
+      }
+      if (n._fleeSpd > 0) n._fleeSpd = Math.max(0, n._fleeSpd - dt * 0.6);
+
       const dx = n.wx - n.x, dz = n.wz - n.z, dist = Math.hypot(dx,dz);
       if (dist < 1.2 || Math.random() < 0.003) {
         n.wx = THREE.MathUtils.clamp(n.x+(Math.random()-.5)*40,-88,88);
         n.wz = THREE.MathUtils.clamp(n.z+(Math.random()-.5)*40,-88,88);
       }
-      const spd = n.speed * dt;
+      const spd = (n._fleeSpd || n.speed) * dt;
       if (dist > 0.1) { n.x += (dx/dist)*spd; n.z += (dz/dist)*spd; }
       const h = getHeight(n.x, n.z);
       n.mesh.position.set(n.x, h+0.9, n.z);

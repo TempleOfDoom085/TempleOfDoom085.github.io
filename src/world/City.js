@@ -17,9 +17,19 @@ function box(w, h, d, mat) {
 
 export class City {
   constructor(scene, collision = null) {
-    this.scene     = scene;
-    this.collision = collision;
+    this.scene        = scene;
+    this.collision    = collision;
+    this.streetLights = [];
+    this._winDay      = new THREE.Color(0x223344);
+    this._winNight    = new THREE.Color(0xffcc44);
     this._build();
+  }
+
+  update(dayFrac) {
+    const night = Math.max(0, 1 - dayFrac * 2.2);
+    WIN.emissive.lerpColors(this._winDay, this._winNight, night);
+    WIN.emissiveIntensity = 0.15 + night * 1.8;
+    this.streetLights.forEach(pl => { pl.intensity = 0.05 + night * 2.8; });
   }
 
   _build() {
@@ -84,8 +94,9 @@ export class City {
         pole.position.set(s + 3.2, 2.75, p); this.scene.add(pole);
         const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.28, 7, 7), BULB);
         bulb.position.set(s + 3.2, 5.7, p); this.scene.add(bulb);
-        const pl = new THREE.PointLight(0xffee88, 0.9, 22);
+        const pl = new THREE.PointLight(0xffee88, 0.05, 22);
         pl.position.set(s + 3.2, 5.4, p); this.scene.add(pl);
+        this.streetLights.push(pl);
       }
     });
     // Beach boardwalk
