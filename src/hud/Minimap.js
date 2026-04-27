@@ -9,7 +9,7 @@ export class Minimap {
   _w(x) { return x * this.scale + this.D / 2; }
   _h(z) { return z * this.scale + this.D / 2; }
 
-  update(player, vehicleSystem, npcSystem, combatSystem) {
+  update(player, vehicleSystem, npcSystem, combatSystem, policeSystem) {
     const { ctx, D } = this;
     ctx.clearRect(0, 0, D, D);
     // Background
@@ -43,6 +43,15 @@ export class Minimap {
       ctx.fillStyle='#ff3333';
       ctx.beginPath(); ctx.arc(this._w(e.x),this._h(e.z),2.5,0,Math.PI*2); ctx.fill();
     });
+    // Police units
+    if (policeSystem) {
+      policeSystem.units.forEach(u => {
+        ctx.fillStyle = '#4499ff';
+        ctx.beginPath(); ctx.arc(this._w(u.x), this._h(u.z), 3.5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.arc(this._w(u.x), this._h(u.z), 3.5, 0, Math.PI*2); ctx.stroke();
+      });
+    }
     // Player
     const px=this._w(player.x),pz=this._h(player.z);
     ctx.fillStyle='#00ff88';

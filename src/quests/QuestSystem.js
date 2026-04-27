@@ -36,6 +36,8 @@ export class QuestSystem {
     this.completed= 0;
     this._objects = [];
     this._killCount=0;
+    this.onComplete = null; // (reward, title) => void
+    this.onFail     = null; // () => void
   }
 
   assign(npc) {
@@ -135,12 +137,14 @@ export class QuestSystem {
     this._clearObjects();
     const title = this.active.title;
     this.active = null;
+    if (this.onComplete) this.onComplete(r, title);
     return { title, reward: r };
   }
 
   _fail() {
     this._clearObjects();
     this.active = null;
+    if (this.onFail) this.onFail();
     return 'fail';
   }
 

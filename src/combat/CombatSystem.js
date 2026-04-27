@@ -70,6 +70,7 @@ export class CombatSystem {
     this.scene.remove(e.mesh);
     this.particles.burst(e.mesh.position.clone(), 0xff2200, 20, 10);
     this.player.money += 55;
+    this.player.addXP(25);
     return true;
   }
 

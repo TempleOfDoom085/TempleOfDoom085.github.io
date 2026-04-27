@@ -1,8 +1,11 @@
 export class HUD {
   constructor() {
     this._notifTimer = 0;
-    this._notifEl   = document.getElementById('notif');
-    this._promptEl  = document.getElementById('prompt');
+    this._notifEl    = document.getElementById('notif');
+    this._promptEl   = document.getElementById('prompt');
+    this._xpFill     = document.getElementById('xp-fill');
+    this._xpLbl      = document.getElementById('xp-lbl');
+    this._hitFlash   = document.getElementById('hit-flash');
   }
 
   update(player, vehicleSystem, activitySystem, questSystem, dt) {
@@ -11,11 +14,13 @@ export class HUD {
     // Money
     document.getElementById('money').textContent = `$${player.money}`;
     // Wanted
-    document.getElementById('wanted').textContent = '⭐'.repeat(player.wanted) + '☆'.repeat(Math.max(0, 5-player.wanted));
+    const wantedEl = document.getElementById('wanted');
+    wantedEl.textContent = '⭐'.repeat(player.wanted) + '☆'.repeat(Math.max(0, 5-player.wanted));
+    wantedEl.classList.toggle('chased', player.wanted > 0);
     // Vehicle / activity
     const veh = vehicleSystem.active;
     if (veh) {
-      document.getElementById('mode').textContent = veh.type.toUpperCase();
+      document.getElementById('mode').textContent  = veh.type.toUpperCase();
       document.getElementById('speed').textContent = Math.round(Math.abs(veh.speed)) + ' MPH';
     } else {
       document.getElementById('mode').textContent  = activitySystem.label;
@@ -23,6 +28,9 @@ export class HUD {
     }
     // Ammo
     document.getElementById('ammo').textContent = player.weapon==='pistol' ? `🔫 ${player.ammo}` : player.weapon==='sword' ? '⚔️' : '👊';
+    // XP bar
+    if (this._xpFill) this._xpFill.style.width = (player.xp / player.xpToNext * 100) + '%';
+    if (this._xpLbl)  this._xpLbl.textContent  = `LV ${player.level}`;
     // Quest
     this._updateQuest(questSystem);
     // Notif timer
@@ -48,5 +56,11 @@ export class HUD {
   prompt(msg) {
     this._promptEl.textContent = msg;
     this._promptEl.style.opacity = msg ? '1' : '0';
+  }
+
+  hitFlash() {
+    if (!this._hitFlash) return;
+    this._hitFlash.style.opacity = '0.5';
+    setTimeout(() => { if (this._hitFlash) this._hitFlash.style.opacity = '0'; }, 260);
   }
 }

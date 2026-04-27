@@ -25,7 +25,9 @@ nav a{pointer-events:all}
 #hp-fill{height:100%;width:100%;background:linear-gradient(90deg,#ff4444,#ff9999);border-radius:2px;transition:width .18s}
 #hp-lbl{font-size:.52rem;letter-spacing:.14em;color:rgba(255,120,120,.65)}
 #money{font-size:1.05rem;letter-spacing:.07em;color:#f0c040;text-shadow:0 0 12px rgba(240,192,64,.45);margin-bottom:.25rem}
-#wanted{font-size:.85rem;letter-spacing:.08em;margin-bottom:.25rem}
+#wanted{font-size:.85rem;letter-spacing:.08em;margin-bottom:.25rem;color:#ffdd00}
+#wanted.chased{animation:wantedFlash 0.75s infinite}
+@keyframes wantedFlash{0%,100%{color:#ffdd00;text-shadow:0 0 8px #ff8800,0 0 22px #ff4400}50%{color:#ff3300;text-shadow:0 0 16px #ff0000,0 0 36px rgba(255,0,0,.5)}}
 #mode{font-size:.52rem;letter-spacing:.18em;color:rgba(255,255,255,.38);margin-bottom:.18rem}
 #speed{font-size:.85rem;letter-spacing:.06em;color:rgba(255,255,255,.65)}
 #ammo{font-size:.58rem;letter-spacing:.12em;color:rgba(255,200,80,.7);margin-top:.18rem}
@@ -101,11 +103,20 @@ nav a{pointer-events:all}
   <div class="nt">REALM — OPEN WORLD</div>
 </nav>
 
+<!-- HIT FLASH -->
+<div id="hit-flash" style="position:fixed;inset:0;background:#ff0000;pointer-events:none;opacity:0;transition:opacity 0.28s;z-index:150;"></div>
+
 <!-- HUD -->
 <div id="hud">
   <div id="hp-wrap">
     <div id="hp-bg"><div id="hp-fill"></div></div>
     <span id="hp-lbl">HP</span>
+  </div>
+  <div id="xp-wrap" style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+    <div style="width:148px;height:5px;background:rgba(0,0,0,.5);border:1px solid rgba(80,200,255,.25);border-radius:2px;">
+      <div id="xp-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0088ff,#00ffcc);border-radius:2px;transition:width .3s"></div>
+    </div>
+    <span id="xp-lbl" style="font-size:.46rem;letter-spacing:.14em;color:rgba(80,200,255,.6)">LV 1</span>
   </div>
   <div id="money">$500</div>
   <div id="wanted">⭐⭐⭐⭐⭐</div>

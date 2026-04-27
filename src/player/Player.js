@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { getHeight } from '../world/Terrain.js';
 
+const XP_CURVE = [0, 100, 250, 480, 800, 1250, 1900, 2800]; // xp needed per level
+
 export class Player {
   constructor(scene, collision = null) {
     this.scene     = scene;
@@ -12,6 +14,10 @@ export class Player {
     this.weapon   = 'fist';
     this.ammo     = 0;
     this.activity = 'walk';
+    // XP / progression
+    this.xp       = 0;
+    this.level    = 1;
+    this.xpToNext = XP_CURVE[1];
     // Physics
     this.x = 8; this.y = 3; this.z = 8;
     this.vx = 0; this.vy = 0; this.vz = 0;
@@ -24,6 +30,10 @@ export class Player {
     this.shootCd   = 0;
     this.punchCd   = 0;
     this.walkPhase = 0;
+    // Callbacks
+    this.onDamage  = null; // (amt) => void
+    this.onLevelUp = null; // (level) => void
+
     this._mesh = this._buildMesh();
     scene.add(this._mesh);
   }
@@ -50,6 +60,16 @@ export class Player {
     return g;
   }
 
+  addXP(amount) {
+    this.xp += amount;
+    if (this.xp >= this.xpToNext) {
+      this.xp -= this.xpToNext;
+      this.level++;
+      this.xpToNext = XP_CURVE[Math.min(this.level, XP_CURVE.length - 1)];
+      if (this.onLevelUp) this.onLevelUp(this.level);
+    }
+  }
+
   update(dt, input, camYaw) {
     if (this.inVehicle || this.dead) return;
     if (this.shootCd > 0) this.shootCd -= dt;
@@ -61,7 +81,7 @@ export class Player {
 
     const skate   = this.activity === 'skate';
     const speed   = skate ? 13 : 9;
-    const accel   = skate ? 0.10 : 0.18; // lerp factor — gives acceleration feel
+    const accel   = skate ? 0.10 : 0.18;
     const friction = skate ? 0.93 : 0.72;
 
     const fwd   = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
@@ -76,7 +96,6 @@ export class Player {
 
     if (moving) {
       dir.normalize();
-      // Lerp toward target speed — feels like acceleration, not teleportation
       this.vx = THREE.MathUtils.lerp(this.vx, dir.x * speed, accel);
       this.vz = THREE.MathUtils.lerp(this.vz, dir.z * speed, accel);
       this.facing = Math.atan2(dir.x, dir.z);
@@ -100,11 +119,11 @@ export class Player {
       if (r.hitZ) this.vz = 0;
     }
 
-    // Soft world boundary — gentle pushback before the ocean / map edge
+    // Soft world boundary
     const bdist = Math.sqrt(this.x * this.x + this.z * this.z);
     if (bdist > 315) { this.x *= 0.97; this.z *= 0.97; this.vx *= 0.5; this.vz *= 0.5; }
 
-    // Ground constraint via height map
+    // Ground constraint
     const gh = getHeight(this.x, this.z) + 1.55;
     if (this.y <= gh) { this.y = gh; this.vy = 0; this.onGround = true; }
     else { this.onGround = false; }
@@ -112,7 +131,6 @@ export class Player {
     this._mesh.position.set(this.x, this.y - 0.72, this.z);
     this._mesh.rotation.y = this.facing;
 
-    // Walk / skate limb animation
     if (moving) {
       this.walkPhase += dt * (skate ? 2 : 4);
       const s = Math.sin(this.walkPhase);
@@ -133,12 +151,12 @@ export class Player {
     if (this.invTimer > 0 || this.dead) return;
     this.hp = Math.max(0, this.hp - amt);
     this.invTimer = 1.4;
+    if (this.onDamage) this.onDamage(amt);
     if (this.hp <= 0) this.dead = true;
   }
 
   heal(amt) { this.hp = Math.min(this.maxHp, this.hp + amt); }
 
   get position() { return new THREE.Vector3(this.x, this.y, this.z); }
-
-  get speed() { return Math.hypot(this.vx, this.vz); }
+  get speed()    { return Math.hypot(this.vx, this.vz); }
 }
