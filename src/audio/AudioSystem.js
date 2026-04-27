@@ -9,7 +9,10 @@ export class AudioSystem {
     if (this._ready) return;
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this._ready = true;
+    this._sirenGain = null;
+    this._sirenOn   = false;
     this._initAmbients();
+    this._initSiren();
   }
 
   _play(freq, type = 'sine', dur = 0.15, gain = 0.15, detune = 0) {
@@ -93,6 +96,33 @@ export class AudioSystem {
       g.gain.linearRampToValueAtTime(val, t + ramp);
     });
   }
+
+  _initSiren() {
+    const ctx = this.ctx;
+    this._sirenGain = ctx.createGain();
+    this._sirenGain.gain.value = 0;
+    const lfo = ctx.createOscillator(), lfoG = ctx.createGain();
+    lfo.frequency.value = 0.9; lfoG.gain.value = 220;
+    lfo.connect(lfoG);
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth'; osc.frequency.value = 580;
+    lfoG.connect(osc.frequency);
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass'; filt.frequency.value = 680; filt.Q.value = 1.2;
+    osc.connect(filt); filt.connect(this._sirenGain); this._sirenGain.connect(ctx.destination);
+    osc.start(); lfo.start();
+  }
+
+  setSiren(on) {
+    if (!this._ready || !this._sirenGain || this._sirenOn === on) return;
+    this._sirenOn = on;
+    const t = this.ctx.currentTime;
+    this._sirenGain.gain.cancelScheduledValues(t);
+    this._sirenGain.gain.setValueAtTime(this._sirenGain.gain.value, t);
+    this._sirenGain.gain.linearRampToValueAtTime(on ? 0.08 : 0, t + 0.3);
+  }
+
+  sirenAlert() { [800,1050,800].forEach((f,i)=>setTimeout(()=>this._play(f,'square',0.12,0.15),i*100)); }
 
   footstep()  { if (Math.random() < 0.18) this._play(55 + Math.random()*20, 'triangle', 0.04, 0.05); }
   jump()      { this._play(300, 'sine', 0.18, 0.2); }

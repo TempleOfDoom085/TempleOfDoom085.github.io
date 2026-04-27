@@ -15,6 +15,7 @@ import { ActivitySystem } from './activities/ActivitySystem.js';
 import { NPCSystem }      from './npcs/NPCSystem.js';
 import { QuestSystem }    from './quests/QuestSystem.js';
 import { CombatSystem }   from './combat/CombatSystem.js';
+import { PoliceSystem }   from './systems/PoliceSystem.js';
 import { AudioSystem }    from './audio/AudioSystem.js';
 import { HUD }            from './hud/HUD.js';
 import { Minimap }        from './hud/Minimap.js';
@@ -45,6 +46,7 @@ const combat    = new CombatSystem(game.scene, player, particles);
 const hud       = new HUD();
 const minimap   = new Minimap();
 const worldEvt  = new WorldEvents(game.scene, hud, particles);
+const police    = new PoliceSystem(game.scene, player, hud, audio);
 
 // Spawn vehicles
 vehicles.spawn('car',   30, -18, 0xff3333);
@@ -143,11 +145,18 @@ window.addEventListener('mousedown', e => {
   if (e.button === 0) {
     if (player.weapon==='pistol' && player.ammo>0) {
       const fired = combat.shoot(game.camera);
-      if (fired) audio.shoot();
-      else hud.notify('No ammo!');
+      if (fired) {
+        audio.shoot();
+        const nearN = npcs.nearest(player.x, player.z);
+        if (nearN && nearN.type==='citizen') { player.wanted = Math.min(5, player.wanted+1); hud.notify('🚔 WANTED +1'); }
+        if (police.isNearUnit(player.x, player.z, 6)) { player.wanted = Math.min(5, player.wanted+2); hud.notify('🚔 WANTED +2 — Attacking police!'); }
+      } else { hud.notify('No ammo!'); }
     } else {
       combat.punch(game.camera);
       audio.punch();
+      const nearN = npcs.nearest(player.x, player.z);
+      if (nearN && nearN.type==='citizen') { player.wanted = Math.min(5, player.wanted+1); hud.notify('🚔 WANTED +1'); }
+      if (police.isNearUnit(player.x, player.z, 4)) { player.wanted = Math.min(5, player.wanted+2); hud.notify('🚔 WANTED +2 — Attacking police!'); }
     }
   }
 });
@@ -187,6 +196,7 @@ function checkPrompt() {
 // ── Respawn ────────────────────────────────────────────────────
 function respawn() {
   player.hp = player.maxHp; player.dead = false;
+  player.wanted = 0; police.clear();
   player.x=8; player.y=3; player.z=8; player.vx=0; player.vz=0;
   player.mesh.visible=true; player.invTimer=2.5;
   document.getElementById('death').style.opacity='0';
@@ -246,6 +256,7 @@ function animate() {
   npcs.update(dt, time, player);
   combat.update(dt, quests);
   quests.update(dt, player);
+  police.update(dt, time);
   particles.update(dt);
   worldEvt.update(dt, player);
 
@@ -258,7 +269,7 @@ function animate() {
   checkPrompt();
   cam.update(dt, player, vehicles.active);
   hud.update(player, vehicles, activity, quests, dt);
-  minimap.update(player, vehicles, npcs, combat);
+  minimap.update(player, vehicles, npcs, combat, police);
 
   // Death screen
   if (player.dead && !document.getElementById('death').style.display.includes('flex')) {

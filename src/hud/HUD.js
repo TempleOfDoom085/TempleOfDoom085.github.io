@@ -14,7 +14,9 @@ export class HUD {
     // Money
     document.getElementById('money').textContent = `$${player.money}`;
     // Wanted
-    document.getElementById('wanted').textContent = '⭐'.repeat(player.wanted) + '☆'.repeat(Math.max(0, 5-player.wanted));
+    const wantedEl = document.getElementById('wanted');
+    wantedEl.textContent = '⭐'.repeat(player.wanted) + '☆'.repeat(Math.max(0, 5-player.wanted));
+    wantedEl.classList.toggle('chased', player.wanted > 0);
     // Vehicle / activity
     const veh = vehicleSystem.active;
     if (veh) {
