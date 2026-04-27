@@ -230,6 +230,18 @@ function animate() {
   if (zone !== _lastZone) { audio.setZone(zone); _lastZone = zone; }
 
   vehicles.update(dt, time, input, audio);
+
+  // Vehicle dust + exhaust particles
+  if (vehicles.active) {
+    const v = vehicles.active;
+    const spd = Math.abs(v.speed);
+    if ((v.type==='car' || v.type==='bike') && spd > 6) {
+      if (Math.random() < spd * 0.025)
+        particles.dust(new THREE.Vector3(v.x, v.y - 0.3, v.z), 0x887766, 3, 2.2);
+      if ((input.is('w')||input.is('s')) && Math.random() < 0.12)
+        particles.exhaust(new THREE.Vector3(v.x - Math.sin(v.angle)*3.5, v.y + 0.4, v.z - Math.cos(v.angle)*3.5));
+    }
+  }
   activity.update(dt, time, input, audio);
   npcs.update(dt, time, player);
   combat.update(dt, quests);
