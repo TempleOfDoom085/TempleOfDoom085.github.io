@@ -79,10 +79,10 @@ const nebulaFS=`
   }`;
 
 const nebulaLayers=[
-  {z:-9.0,sz:50,seed:0.0, bright:0.42,op:1.0},
-  {z:-6.5,sz:36,seed:2.3, bright:0.22,op:0.5},
-  {z:-4.5,sz:26,seed:5.7, bright:0.15,op:0.28},
-  {z:-2.5,sz:18,seed:9.1, bright:0.08,op:0.12},
+  {z:-9.0,sz:50,seed:0.0, bright:0.10,op:0.70},
+  {z:-6.5,sz:36,seed:2.3, bright:0.06,op:0.35},
+  {z:-4.5,sz:26,seed:5.7, bright:0.03,op:0.15},
+  {z:-2.5,sz:18,seed:9.1, bright:0.01,op:0.06},
 ];
 const nebulaMeshes=nebulaLayers.map(l=>{
   const m=new THREE.Mesh(new THREE.PlaneGeometry(l.sz,l.sz),
@@ -240,12 +240,18 @@ for(let i=0;i<24;i++){
 // ══════════════════════════════════════════════════════
 // ORBIT RINGS
 // ══════════════════════════════════════════════════════
+// Debris fields — irregular point clouds instead of perfect glowing rings
 const rings=[];
-[[1.25,0x5511cc,.28,.6,0,0],[1.65,0x3308aa,.20,0,.8,.4],[2.05,0xaa6622,.14,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
-  const pts=[];for(let i=0;i<=300;i++){const a=(i/300)*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
-  const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}));
-  ring.rotation.set(rx,ry,rz);scene.add(ring);rings.push(ring);
+[[1.25,0x6622dd,.11,.6,0,0],[1.65,0x4408bb,.09,0,.8,.4],[2.05,0xbb6611,.07,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
+  const N=240;const rPos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2+(Math.random()-.5)*.18;
+    const jR=r+(Math.random()-.5)*.22;const jY=(Math.random()-.5)*.15;
+    rPos[i*3]=Math.cos(a)*jR;rPos[i*3+1]=jY;rPos[i*3+2]=Math.sin(a)*jR;
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(rPos,3));
+  const debris=new THREE.Points(geo,new THREE.PointsMaterial({color:col,size:.014,transparent:true,opacity:op,depthWrite:false,blending:THREE.AdditiveBlending}));
+  debris.rotation.set(rx,ry,rz);scene.add(debris);rings.push(debris);
 });
 
 // ══════════════════════════════════════════════════════
@@ -387,11 +393,11 @@ const nebulaVolPass=new THREE.ShaderPass({
     float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
       return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
                  mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
-    float fbm(vec3 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n3(p);p*=2.1;a*=.48;}return v;}
+    float fbm(vec3 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n3(p);p*=2.1;a*=.48;}return v;}
     float cloud(vec3 p){
       vec3 q=vec3(fbm(p+time*.020),fbm(p+vec3(5.2,1.3,2.8)+time*.016),fbm(p+vec3(2.9,7.4,3.1)+time*.013));
-      float d=fbm(p*1.5+q*1.5-time*.019);
-      float env=1.-smoothstep(.25,2.2,length(p+vec3(q.x*.22,q.y*.18,q.z*.12)));
+      float d=fbm(p*1.1+q*1.6-time*.019);
+      float env=1.-smoothstep(.3,3.0,length(p+vec3(q.x*.28,q.y*.22,q.z*.16)));
       return d*env;
     }
     void main(){
@@ -401,16 +407,16 @@ const nebulaVolPass=new THREE.ShaderPass({
       wN.xyz/=wN.w;wF.xyz/=wF.w;
       vec3 ro=camPos,rd=normalize(wF.xyz-wN.xyz);
       vec3 col=vec3(0.);float alpha=0.;float t=.08;
-      for(int i=0;i<28;i++){
-        if(alpha>.97||t>7.)break;
+      for(int i=0;i<64;i++){
+        if(alpha>.97||t>9.)break;
         vec3 p=ro+rd*t;
         float d=cloud(p);
-        float dens=pow(max(0.,(d-.24)/0.76),2.0)*.38;
+        float dens=pow(max(0.,(d-.22)/0.78),2.0)*.28;
         if(dens>.001){
-          float core=1.-smoothstep(0.,1.3,length(p));
-          vec3 c=mix(vec3(.005,.001,.016),vec3(.28,.04,.65),smoothstep(.26,.54,d));
-          c=mix(c,vec3(.68,.18,1.45),smoothstep(.50,.78,d));
-          c=mix(c,vec3(.96,.90,1.35),core*.88);
+          float core=1.-smoothstep(0.,.9,length(p));
+          vec3 c=mix(vec3(.002,.000,.010),vec3(.28,.04,.65),smoothstep(.22,.52,d));
+          c=mix(c,vec3(.68,.18,1.45),smoothstep(.48,.76,d));
+          c=mix(c,vec3(.96,.90,1.35),core);
           float tr=1.-alpha;col+=c*dens*tr;alpha+=dens*tr;
         }
         t+=.22;
@@ -531,7 +537,7 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
   var _fluidIdle=0;
   (function animate(){
   requestAnimationFrame(animate);
-  time+=.006;
+  time+=.0035;
 
   // Fluid sim — skip render when mouse has been idle to save GPU
   if(mxActive){_fluidIdle=0;}else{_fluidIdle++;}
@@ -635,15 +641,15 @@ const coreWorldPos=new THREE.Vector3(0,0,0);
 
   // Cinematic floating camera: noise-based drift instead of locked sine orbit.
   // Gives the slow weightless drift of Interstellar / Hubble footage.
-  var cT=time*.038;
-  var camOrbitR=4.5+jfbm(cT*.6)*.7-.35;
-  var camOrbitA=time*.072+jfbm(cT*1.2)*.15;
-  var camDriftY=(jfbm(cT*.8+5.)-.5)*1.5;
-  camera.position.x=Math.sin(camOrbitA)*camOrbitR*.38;
+  var cT=time*.022;
+  var camOrbitR=4.2+jfbm(cT*.5)*.6-.25;
+  var camOrbitA=time*.038+jfbm(cT*.9)*.12;
+  var camDriftY=(jfbm(cT*.6+5.)-.5)*1.1;
+  camera.position.x=Math.sin(camOrbitA)*camOrbitR*.40;
   camera.position.y=camDriftY;
-  camera.position.z=Math.cos(camOrbitA)*camOrbitR*.9;
-  // Micro-jitter lookAt: imperceptible frame-to-frame but never locked
-  camera.lookAt((jfbm(time*2.9+1.7)-.5)*.012,(jfbm(time*2.3+4.1)-.5)*.008,0);
+  camera.position.z=Math.cos(camOrbitA)*camOrbitR*.92;
+  // Sub-pixel lookAt drift — camera never fully locked, never obviously moving
+  camera.lookAt((jfbm(time*1.8+1.7)-.5)*.018,(jfbm(time*1.5+4.1)-.5)*.012,0);
   // Force matrix update so raymarcher gets correct clip→world transform this frame
   camera.updateMatrixWorld();
   nebulaVolPass.uniforms.time.value=time;
