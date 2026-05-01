@@ -114,14 +114,14 @@ for(let i=0;i<TOTAL;i++){
   }
   gPos[i*3]=x;gPos[i*3+1]=y;gPos[i*3+2]=z;
   const c=Math.random();
-  if(c<.10){gCol[i*3]=.85;gCol[i*3+1]=.92;gCol[i*3+2]=1.;}        // blue-white hot star
-  else if(c<.22){gCol[i*3]=1.;gCol[i*3+1]=.82;gCol[i*3+2]=.42;}   // warm yellow
-  else if(c<.38){gCol[i*3]=1.;gCol[i*3+1]=.52;gCol[i*3+2]=.18;}   // orange star
-  else if(c<.52){gCol[i*3]=.95;gCol[i*3+1]=.28;gCol[i*3+2]=.38;}  // HII pink/red
-  else if(c<.64){gCol[i*3]=.9;gCol[i*3+1]=.68;gCol[i*3+2]=.22;}   // amber
-  else if(c<.76){gCol[i*3]=.42;gCol[i*3+1]=.55;gCol[i*3+2]=.95;}  // blue cluster
-  else if(c<.88){gCol[i*3]=.75;gCol[i*3+1]=.38;gCol[i*3+2]=.12;}  // rust brown
-  else{gCol[i*3]=1.;gCol[i*3+1]=.95;gCol[i*3+2]=.85;}             // cream core star
+  // Real deep-field palette: mostly white/cream, subtle tints only
+  if(c<.08){gCol[i*3]=.82;gCol[i*3+1]=.90;gCol[i*3+2]=1.;}        // pale blue-white (O/B type)
+  else if(c<.20){gCol[i*3]=.95;gCol[i*3+1]=.97;gCol[i*3+2]=1.;}   // cool blue-white (A type)
+  else if(c<.38){gCol[i*3]=1.;gCol[i*3+1]=.98;gCol[i*3+2]=.92;}   // warm white (F type)
+  else if(c<.58){gCol[i*3]=1.;gCol[i*3+1]=.96;gCol[i*3+2]=.86;}   // pale yellow (G type)
+  else if(c<.74){gCol[i*3]=1.;gCol[i*3+1]=.93;gCol[i*3+2]=.78;}   // pale amber (K type)
+  else if(c<.88){gCol[i*3]=.96;gCol[i*3+1]=.95;gCol[i*3+2]=.94;}  // neutral white
+  else{gCol[i*3]=.88;gCol[i*3+1]=.92;gCol[i*3+2]=1.;}              // faint blue (distant hot)
   gSz[i]=.25+Math.random()*1.2;gOff[i]=Math.random()*Math.PI*2;
 }
 const galGeo=new THREE.BufferGeometry();
@@ -202,26 +202,7 @@ scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.1,64,64),glowMat));
 const nebMats=[glowMat];
 
 
-// ══════════════════════════════════════════════════════
-// MAGNETIC FIELD LINES — dipole arcs
-// ══════════════════════════════════════════════════════
-for(let i=0;i<14;i++){
-  const phi=(i/14)*Math.PI*2;
-  const tilt=.3+Math.abs(Math.sin(phi))*.5;
-  const pts=[];
-  for(let t=0;t<=40;t++){
-    const a=(t/40)*Math.PI;
-    const r=Math.sin(a)*Math.sin(a)*(1.4+tilt);
-    const x=Math.cos(phi)*r*Math.sin(a);
-    const y=(a/Math.PI-.5)*2*(1.2+tilt);
-    const z=Math.sin(phi)*r*Math.sin(a);
-    pts.push(new THREE.Vector3(x,y,z));
-  }
-  const mat=new THREE.LineBasicMaterial({
-    color:new THREE.Color().setHSL(.08+Math.random()*.06,1.,.45),
-    transparent:true,opacity:.06+Math.random()*.05,depthWrite:false});
-  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat));
-}
+// Magnetic field line arcs removed — too physics-textbook for astrophotography aesthetic
 
 // ══════════════════════════════════════════════════════
 // CORONA SPIKES
@@ -413,10 +394,16 @@ const nebulaVolPass=new THREE.ShaderPass({
         float d=cloud(p);
         float dens=pow(max(0.,(d-.22)/0.78),2.0)*.28;
         if(dens>.001){
+          // Shadow ray: 3 steps toward the core — denser pillars occlude the light behind them
+          float shadow=0.;
+          vec3 ldir=normalize(-p);float ldist=length(p);float ss=ldist*.30;
+          for(int s=1;s<=3;s++){shadow+=cloud(p+ldir*float(s)*ss);}
+          float lt=exp(-shadow*1.6);
           float core=1.-smoothstep(0.,.9,length(p));
           vec3 c=mix(vec3(.002,.000,.010),vec3(.28,.04,.65),smoothstep(.22,.52,d));
           c=mix(c,vec3(.68,.18,1.45),smoothstep(.48,.76,d));
           c=mix(c,vec3(.96,.90,1.35),core);
+          c*=mix(lt,1.,core*.88);
           float tr=1.-alpha;col+=c*dens*tr;alpha+=dens*tr;
         }
         t+=.22;
