@@ -52,6 +52,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
   <button class="cbtn" data-mode="WORMHOLE" onclick="setMode('WORMHOLE',this)">⊕ WORMHOLE</button>
   <button class="cbtn" data-mode="BLACKHOLE" onclick="setMode('BLACKHOLE',this)">● BLACK HOLE</button>
   <button class="cbtn audio" id="audio-btn" onclick="enableAudio()">◎ AUDIO REACT</button>
+  <button class="cbtn" id="cine-btn" onclick="toggleCinematic(this)">▶ CINEMATIC</button>
+</div>
+<div id="cine-title" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;text-align:center;pointer-events:none;opacity:0;transition:opacity .8s ease">
+  <div style="font-family:'Rajdhani',sans-serif;font-size:2.2rem;font-weight:700;letter-spacing:.35em;color:rgba(255,255,255,.92);text-transform:uppercase;text-shadow:0 0 40px rgba(100,50,255,.8)" id="cine-title-text"></div>
+  <div style="font-size:.52rem;letter-spacing:.3em;color:rgba(0,204,255,.55);margin-top:.5rem" id="cine-title-sub"></div>
 </div>
 <div id="hud">
   <div class="met"><span class="lbl">PARTICLE DENSITY</span><span class="val" id="hpd">52,300</span></div>
@@ -68,6 +73,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 <script src="/vendor/three/ShaderPass.js"></script>
 <script src="/vendor/three/UnrealBloomPass.js"></script>
 <script src="/cursor.js"></script>
+<script src="/transitions.js"></script>
 <script>
 'use strict';
 let W=innerWidth,H=innerHeight;
@@ -684,6 +690,50 @@ window.addEventListener('resize',function(){
   rt1.dispose();rt2.dispose();rt1=makeRT(W,H);rt2=makeRT(W,H);clearRT(rt1);clearRT(rt2);
   fluidMat.uniforms.res.value.set(W,H);bloom.setSize(W,H);
 });
+
+// ══════════════════════════════════════════════════════
+// CINEMATIC AUTO-PILOT
+// ══════════════════════════════════════════════════════
+var cinematicActive=false,cinematicTimer=null,cinematicStep=0;
+var cinematicScript=[
+  {mode:'CORE',    title:'ENERGY CORE',          sub:'STELLAR PLASMA · 15.7 MK',   dur:9000, erupt:true},
+  {mode:'CORE',    title:'ACCRETION DISK',        sub:'KEPLERIAN ROTATION DETECTED', dur:8000, erupt:false},
+  {mode:'WORMHOLE',title:'WORMHOLE EVENT',        sub:'SPACETIME CURVATURE · CLASS IV', dur:9000, erupt:true},
+  {mode:'WORMHOLE',title:'APPROACHING THRESHOLD', sub:'TIDAL FORCES INCREASING',    dur:8000, erupt:false},
+  {mode:'BLACKHOLE',title:'SINGULARITY',          sub:'SCHWARZSCHILD RADIUS · 0.38 AU',dur:10000,erupt:true},
+  {mode:'BLACKHOLE',title:'PHOTON SPHERE',        sub:'LIGHT CAPTURE CONFIRMED',    dur:8000, erupt:false},
+  {mode:'CORE',    title:'SYSTEM RESTORED',       sub:'NOMINAL OPERATION RESUMED',  dur:8000, erupt:false},
+];
+
+function showCineTitle(title,sub){
+  var el=document.getElementById('cine-title'),t=document.getElementById('cine-title-text'),s=document.getElementById('cine-title-sub');
+  t.textContent=title;s.textContent=sub;el.style.opacity='1';
+  setTimeout(function(){el.style.opacity='0';},2800);
+}
+
+function runCineStep(){
+  if(!cinematicActive)return;
+  var step=cinematicScript[cinematicStep%cinematicScript.length];
+  var btn=document.querySelector('.cbtn[data-mode="'+step.mode+'"]');
+  if(btn)setMode(step.mode,btn);
+  showCineTitle(step.title,step.sub);
+  if(step.erupt)setTimeout(spawnEruption,1200);
+  cinematicStep++;
+  cinematicTimer=setTimeout(runCineStep,step.dur);
+}
+
+function toggleCinematic(btn){
+  cinematicActive=!cinematicActive;
+  if(cinematicActive){
+    btn.classList.add('on');btn.textContent='■ STOP';
+    cinematicStep=0;runCineStep();
+  }else{
+    btn.classList.remove('on');btn.textContent='▶ CINEMATIC';
+    if(cinematicTimer)clearTimeout(cinematicTimer);
+    var coreBtn=document.querySelector('.cbtn[data-mode="CORE"]');
+    if(coreBtn)setMode('CORE',coreBtn);
+  }
+}
 
 // ══════════════════════════════════════════════════════
 // HUD LIVE METRICS
