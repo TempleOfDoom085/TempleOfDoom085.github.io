@@ -1,8 +1,46 @@
 import * as THREE from 'three';
 import { getHeight } from '../world/Terrain.js';
+import { DialogueSystem } from '../ui/DialogueSystem.js';
 
 const SKIN  = [0xffd0a0,0xe8a870,0xc87040,0xffe0c0,0xd0a080,0xb87040];
 const SHIRT = [0xdd3333,0x3355dd,0x33aa44,0xddaa22,0x8833cc,0xdd7722,0x22aacc,0xdddd22];
+
+const NPC_NAMES = [
+  'Aldric','Serafine','Morwen','Theron','Lysa','Gareth','Nyvara','Caelan',
+  'Isolde','Draven','Thalassa','Oryn','Vesper','Fennick','Amarae','Rourke',
+  'Sylvaine','Calix','Mireille','Dorian'
+];
+
+const DIALOGUE_POOL = [
+  // Trading rumors
+  "The merchant at the south gate doubles his prices after sundown. Come early.",
+  "I heard the eastern traders found a new route through the mountains. Spices aplenty.",
+  "Don't buy swords from old Petyr — they snap in the cold.",
+  "There's a black market near the docks. Ask for 'the heron.' Don't mention my name.",
+  // Quest hints
+  "Something's been killing livestock near Ashford. Nobody dares investigate.",
+  "Three travellers went into the ruins last week. Only one came back — and they won't speak.",
+  "The old lighthouse hasn't been lit in months. Ships keep running aground.",
+  "Word is there's a hermit on the eastern ridge who knows where the temple entrance is.",
+  // World lore
+  "These lands used to be part of the old empire, before the Sundering.",
+  "The stones here sing at dawn if you know how to listen. My grandmother taught me.",
+  "There were dragons here once. Not the fire kind — the ones that walked like men.",
+  "The river runs backwards every hundred years. My grandfather swore he saw it.",
+  // Warnings
+  "Don't travel north after dark. I mean it. Not even close to north.",
+  "The fog that rolls in from the sea — it's not natural. Stay indoors when it comes.",
+  "Whatever you do, don't disturb the cairns on the hilltop. The last person who did... changed.",
+  "I saw lights in the forest again last night. No torches move like that.",
+  // General flavour
+  "They say the new governor taxes even the rain. Wouldn't surprise me.",
+  "My father built half the walls in this city. Never got so much as a thank-you.",
+  "I've been trying to leave for three years. Something always comes up.",
+  "Best stew in the region? Three blocks east, look for the blue door. Tell them Mira sent you.",
+  "Keep your coin purse close — nimble fingers around here.",
+  "Every great hero passing through and still the roads are full of potholes.",
+];
+
 const DIALOGUE_CITIZEN = [
   "I saw a pigeon wearing sunglasses. Very suspicious.",
   "My car just told me to 'turn left into the ocean.' I said no.",
@@ -51,10 +89,22 @@ function buildNPCMesh(scene, x, z) {
   return g;
 }
 
+function pickLines(rng, count) {
+  const pool = [...DIALOGUE_POOL];
+  const result = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const idx = Math.floor(rng() * pool.length);
+    result.push(pool.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
 export class NPCSystem {
   constructor(scene) {
     this.scene = scene;
     this.list  = [];
+    this.dialogue = new DialogueSystem();
+    this._talking = false;
     this._build();
   }
 
@@ -91,8 +141,15 @@ export class NPCSystem {
     const dlg = type==='quest'   ? DIALOGUE_QUEST[Math.floor(rng()*DIALOGUE_QUEST.length)]
               : type==='shopkeeper' ? DIALOGUE_SHOP[Math.floor(rng()*DIALOGUE_SHOP.length)]
               : DIALOGUE_CITIZEN[Math.floor(rng()*DIALOGUE_CITIZEN.length)];
+
+    // Assign a random name and a random pool of 2-4 lines
+    const nameIdx = Math.floor(rng() * NPC_NAMES.length);
+    const lineCount = 2 + Math.floor(rng() * 3); // 2, 3, or 4
+    const dialogueLines = pickLines(rng, lineCount);
+
     const npc = { mesh, type, x, z, wx:x, wz:z, speed:1.6+rng()*1.2, walkPhase:rng()*Math.PI*2,
-      alive:true, indicator, dialogue:dlg, hasQuest: type==='quest', questGiven:false, pendingQuest:null };
+      alive:true, indicator, dialogue:dlg, hasQuest: type==='quest', questGiven:false, pendingQuest:null,
+      npcName: NPC_NAMES[nameIdx], dialogueLines, cooldownUntil: 0 };
     this.list.push(npc);
     return npc;
   }
@@ -105,6 +162,29 @@ export class NPCSystem {
     });
     return best;
   }
+
+  /**
+   * Attempt to start a conversation with the nearest NPC within 3 units.
+   * Returns true if a dialogue was started, false otherwise.
+   */
+  tryTalk(px, pz) {
+    if (this._talking) return false;
+    const npc = this.nearest(px, pz, 3);
+    if (!npc) return false;
+    if (npc.type === 'shopkeeper') return false; // handled separately
+
+    const now = performance.now();
+    if (now < npc.cooldownUntil) return false;
+
+    this._talking = true;
+    this.dialogue.showDialogue(npc.npcName, npc.dialogueLines, () => {
+      this._talking = false;
+      npc.cooldownUntil = performance.now() + 30000; // 30s cooldown
+    });
+    return true;
+  }
+
+  get isTalking() { return this._talking; }
 
   update(dt, time, player = null) {
     this.list.forEach(n => {

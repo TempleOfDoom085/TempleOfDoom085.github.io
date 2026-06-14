@@ -105,6 +105,7 @@ window.addEventListener('keydown', e => {
 
   if (e.key === 'e' || e.key === 'E') {
     if (shopOpen) return;
+    if (npcs.isTalking) return; // dialogue system consumes E via its own listener
     const nearV = vehicles.nearest(player.x, player.z);
     if (nearV && !player.inVehicle) { vehicles.enter(nearV, player); hud.notify(`Entered ${nearV.type.toUpperCase()} — F to exit`); return; }
     const nearN = npcs.nearest(player.x, player.z);
@@ -114,6 +115,8 @@ window.addEventListener('keydown', e => {
         const ok = quests.assign(nearN);
         if (ok) { hud.notify(`📋 MISSION: ${quests.active?.title || ''}\n"${nearN.dialogue}"`); audio.quest(); return; }
       }
+      // Try the rich dialogue system first (citizens & quest npcs within 3 units)
+      if (npcs.tryTalk(player.x, player.z)) { audio.notif(); return; }
       hud.notify(`💬 "${nearN.dialogue}"`); audio.notif();
       return;
     }
