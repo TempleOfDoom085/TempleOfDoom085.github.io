@@ -1,7 +1,7 @@
 // Cache strategy: Cache First for assets, Network First for HTML
-const CACHE_VERSION = 'temple-tools-v1';
-const STATIC_CACHE = 'temple-static-v1';
-const DYNAMIC_CACHE = 'temple-dynamic-v1';
+const CACHE_VERSION = 'temple-tools-v3';
+const STATIC_CACHE = 'temple-static-v3';
+const DYNAMIC_CACHE = 'temple-dynamic-v3';
 
 // Core files to precache on install
 const PRECACHE_URLS = [
@@ -35,6 +35,22 @@ const PRECACHE_URLS = [
   '/timeline.html',
   '/game.html',
   '/runner.html',
+  '/insane-engine.html',
+  '/threat-globe.html',
+  '/career.html',
+  '/ctf-writeups.html',
+  '/hacker-feed.html',
+  '/pentest-sim.html',
+  '/soc.html',
+  '/attack-viz.html',
+  '/cursor.js',
+  '/transitions.js',
+  '/vendor/three/LuminosityHighPassShader.js',
+  '/vendor/three/CopyShader.js',
+  '/vendor/three/EffectComposer.js',
+  '/vendor/three/RenderPass.js',
+  '/vendor/three/ShaderPass.js',
+  '/vendor/three/UnrealBloomPass.js',
 ];
 
 // API hostnames that should never be cached
