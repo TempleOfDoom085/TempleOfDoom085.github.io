@@ -8,6 +8,7 @@ import { Terrain }        from './world/Terrain.js';
 import { Lighting }       from './world/Lighting.js';
 import { City }           from './world/City.js';
 import { Environment }    from './world/Environment.js';
+import { Weather }        from './world/Weather.js';
 import { Player }         from './player/Player.js';
 import { CameraController} from './player/Camera.js';
 import { VehicleSystem }  from './vehicles/VehicleSystem.js';
@@ -32,6 +33,7 @@ const lighting  = new Lighting(game.scene, game.renderer);
 const collision = new CollisionSystem();
 const city      = new City(game.scene, collision);
 const env       = new Environment(game.scene);
+const weather   = new Weather(game.scene, lighting, game.camera);
 
 // Player
 const player    = new Player(game.scene, collision);
@@ -228,6 +230,7 @@ function animate() {
   game.setDayFrac(dayFrac);
   city.update(dayFrac);
   env.update(time);
+  weather.update(dt);
 
   if (!player.dead) {
     player.update(dt, input, cam.yaw);
