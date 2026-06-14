@@ -50,6 +50,10 @@ body { font-family: var(--serif); background: var(--ink); color: var(--paper); l
   transform: translateY(0);
 }
 
+/* SCROLL REVEAL */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
 /* ACTIVE NAV */
 .nav-links a.active { color: var(--gold); }
 
@@ -1716,10 +1720,10 @@ html.stealth-mode #rain-indicator {
 <!-- PROJECTS -->
 <section id="projects">
   <div class="inner">
-    <span class="section-label">04 — Projects</span>
-    <h2 class="section-title">Things I've <em>built.</em></h2>
+    <span class="section-label reveal">04 — Projects</span>
+    <h2 class="section-title reveal">Things I've <em>built.</em></h2>
     <div class="project-list stagger-children fade-in">
-      <div class="project-item">
+      <div class="project-item reveal">
         <div class="project-type">Python / Game Dev / JavaScript</div>
         <div class="project-name">Knights Templar: The Siege of the Undead</div>
         <div class="project-desc">A fully original text adventure game — started as a Python assignment for IT 140 at SNHU, expanded into a feature-rich browser game with combat, NPCs, achievements, procedural audio, and SVG artwork. Now in active development toward an open-world 3D experience. Play it below.</div>
@@ -5854,6 +5858,121 @@ void main() {
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+})();
+</script>
+
+<!-- ── SCROLL REVEAL, PARTICLE CURSOR, TYPING EFFECT ── -->
+<script>
+// ── 1. Scroll-reveal with IntersectionObserver ──
+(function() {
+  const revealObs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(function(el) {
+    revealObs.observe(el);
+  });
+})();
+
+// ── 2. Particle cursor (2D canvas trail) ──
+(function() {
+  var canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+  document.body.appendChild(canvas);
+  var ctx = canvas.getContext('2d');
+  var W = window.innerWidth, H = window.innerHeight;
+  canvas.width = W; canvas.height = H;
+  window.addEventListener('resize', function() {
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+  }, { passive: true });
+
+  var mouse = { x: -200, y: -200 };
+  window.addEventListener('mousemove', function(e) {
+    mouse.x = e.clientX; mouse.y = e.clientY;
+  }, { passive: true });
+
+  var MAX = 20;
+  var particles = [];
+  var colors = ['#00d4ff', '#b8933a', '#a855f7', '#00d4ff', '#d4a84b'];
+
+  function spawnParticle() {
+    particles.push({
+      x: mouse.x,
+      y: mouse.y,
+      r: 3 + Math.random() * 3,
+      alpha: 0.75,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 1.2,
+      vy: (Math.random() - 0.5) * 1.2,
+      life: 1.0
+    });
+    if (particles.length > MAX) particles.shift();
+  }
+
+  var spawnInterval = 0;
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    spawnInterval++;
+    if (spawnInterval % 2 === 0) spawnParticle();
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.life -= 0.045;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.r *= 0.97;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = p.life * 0.75;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.restore();
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// ── 3. Typing effect on main hero title ──
+(function() {
+  var el = document.getElementById('hero-cycle-left');
+  if (!el) return;
+  var words = ['intelligent', 'automated', 'resilient', 'scalable'];
+  var wordIdx = 0;
+  var charIdx = 0;
+  var deleting = false;
+  var DELAY_TYPE = 90, DELAY_DELETE = 55, DELAY_PAUSE = 1800;
+
+  function tick() {
+    var word = words[wordIdx];
+    if (!deleting) {
+      el.textContent = word.slice(0, charIdx + 1);
+      charIdx++;
+      if (charIdx === word.length) {
+        deleting = true;
+        setTimeout(tick, DELAY_PAUSE);
+        return;
+      }
+      setTimeout(tick, DELAY_TYPE);
+    } else {
+      el.textContent = word.slice(0, charIdx - 1);
+      charIdx--;
+      if (charIdx === 0) {
+        deleting = false;
+        wordIdx = (wordIdx + 1) % words.length;
+      }
+      setTimeout(tick, DELAY_DELETE);
+    }
+  }
+  setTimeout(tick, 1200);
 })();
 </script>
 </body>
