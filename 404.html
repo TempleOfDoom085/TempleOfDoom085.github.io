@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — LOST IN SPACE · Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace}
+#c{position:fixed;inset:0;width:100%;height:100%;z-index:1}
+#overlay{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.code{font-family:'Rajdhani',sans-serif;font-size:clamp(5rem,18vw,12rem);font-weight:700;letter-spacing:.05em;color:rgba(255,255,255,.06);line-height:1;user-select:none}
+.msg{font-size:clamp(.6rem,2vw,.85rem);letter-spacing:.45em;color:rgba(0,204,255,.55);text-transform:uppercase;margin-top:.5rem;margin-bottom:3rem}
+.sub{font-size:clamp(.45rem,1.5vw,.6rem);letter-spacing:.28em;color:rgba(255,255,255,.22);text-transform:uppercase;margin-bottom:2.5rem}
+#home{pointer-events:auto;font:600 .55rem/1 'Share Tech Mono',monospace;letter-spacing:.24em;padding:.6rem 1.4rem;background:rgba(0,0,0,.7);border:1px solid rgba(0,204,255,.4);color:rgba(0,204,255,.85);text-decoration:none;text-transform:uppercase;transition:all .2s;display:inline-block}
+#home:hover{background:rgba(0,204,255,.12);border-color:#0cf;color:#0cf}
+.cor{position:fixed;width:22px;height:22px;z-index:60;pointer-events:none;border-color:rgba(0,204,255,.18);border-style:solid}
+.cor.tl{top:.8rem;left:.8rem;border-width:1px 0 0 1px}
+.cor.br{bottom:.8rem;right:.8rem;border-width:0 1px 1px 0}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="cor tl"></div><div class="cor br"></div>
+<div id="overlay">
+  <div class="code">404</div>
+  <div class="msg">SIGNAL LOST — LOCATION UNKNOWN</div>
+  <div class="sub">YOU HAVE DRIFTED BEYOND THE KNOWN SECTOR</div>
+  <a href="/" id="home">← RETURN TO ORIGIN</a>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/vendor/three/LuminosityHighPassShader.js"></script>
+<script src="/vendor/three/CopyShader.js"></script>
+<script src="/vendor/three/EffectComposer.js"></script>
+<script src="/vendor/three/RenderPass.js"></script>
+<script src="/vendor/three/ShaderPass.js"></script>
+<script src="/vendor/three/UnrealBloomPass.js"></script>
+<script src="/cursor.js"></script>
+<script src="/transitions.js"></script>
+<script>
+'use strict';
+let W=innerWidth,H=innerHeight;
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.setClearColor(0x000000,1);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.65;
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,W/H,0.1,200);
+camera.position.z=6;
+
+// Sparse deep-field starfield
+const STARS=30000;
+const sPos=new Float32Array(STARS*3),sCol=new Float32Array(STARS*3),sSz=new Float32Array(STARS);
+for(let i=0;i<STARS;i++){
+  const r=8+Math.random()*40,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+  sPos[i*3]=r*Math.sin(ph)*Math.cos(th);sPos[i*3+1]=r*Math.sin(ph)*Math.sin(th);sPos[i*3+2]=r*Math.cos(ph);
+  const c=Math.random();
+  if(c<.15){sCol[i*3]=.80;sCol[i*3+1]=.90;sCol[i*3+2]=1.;}
+  else if(c<.5){sCol[i*3]=1.;sCol[i*3+1]=.97;sCol[i*3+2]=.92;}
+  else{sCol[i*3]=1.;sCol[i*3+1]=.94;sCol[i*3+2]=.84;}
+  sSz[i]=.15+Math.random()*.8;
+}
+const sGeo=new THREE.BufferGeometry();
+sGeo.setAttribute('position',new THREE.BufferAttribute(sPos,3));
+sGeo.setAttribute('aCol',new THREE.BufferAttribute(sCol,3));
+sGeo.setAttribute('aSz',new THREE.BufferAttribute(sSz,1));
+const sMat=new THREE.ShaderMaterial({
+  uniforms:{time:{value:0}},
+  vertexShader:`attribute vec3 aCol;attribute float aSz;uniform float time;varying vec3 vC;varying float vA;
+    void main(){vC=aCol;float t=.25+.75*abs(sin(time*.8+aSz*12.));vA=t;vec4 mv=modelViewMatrix*vec4(position,1.);
+    gl_PointSize=aSz*(140./-mv.z);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying vec3 vC;varying float vA;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(vC,pow(1.-d,2.)*vA);}`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
+});
+const stars=new THREE.Points(sGeo,sMat);scene.add(stars);
+
+// Debris field — scattered ship fragments
+const DEBRIS=120;
+const debrisGroup=new THREE.Group();
+for(let i=0;i<DEBRIS;i++){
+  const sz=.005+Math.random()*.045;
+  const geo=Math.random()<.5?new THREE.BoxGeometry(sz,sz*(.3+Math.random()*.7),sz*(.3+Math.random()*.7)):new THREE.TetrahedronGeometry(sz);
+  const hue=Math.random()<.6?.68+Math.random()*.06:.08+Math.random()*.05;
+  const mat=new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(hue,1.,.4+Math.random()*.3),transparent:true,opacity:.6+Math.random()*.4});
+  const m=new THREE.Mesh(geo,mat);
+  const r=1+Math.random()*5,th=Math.random()*Math.PI*2,ph=(Math.random()-.5)*Math.PI;
+  m.position.set(Math.cos(th)*Math.cos(ph)*r,Math.sin(ph)*r,Math.sin(th)*Math.cos(ph)*r);
+  m.rotation.set(Math.random()*Math.PI*2,Math.random()*Math.PI*2,Math.random()*Math.PI*2);
+  debrisGroup.add(m);
+}
+scene.add(debrisGroup);
+
+// Faint nebula layer
+scene.add(new THREE.AmbientLight(0x04010a,2));
+const fog=new THREE.PointLight(0x2200aa,.8,30);fog.position.set(0,0,-5);scene.add(fog);
+
+const composer=new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene,camera));
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),.9,.5,.45);
+composer.addPass(bloom);
+const finalPass=new THREE.ShaderPass({
+  uniforms:{tDiffuse:{value:null},time:{value:0}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float time;varying vec2 vUv;
+    float rnd(vec2 p){return fract(sin(dot(p+time,vec2(127.1,311.7)))*43758.5453);}
+    void main(){vec3 col=texture2D(tDiffuse,vUv).rgb;col+=rnd(vUv)*.018-.009;
+    col*=smoothstep(1.05,.28,length(vUv-.5)*1.6);gl_FragColor=vec4(clamp(col,0.,1.),1.);}`,
+  renderToScreen:true});
+composer.addPass(finalPass);
+
+window.addEventListener('resize',function(){W=innerWidth;H=innerHeight;renderer.setSize(W,H);composer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();});
+
+let t=0;
+function jn(x){var i=Math.floor(x),f=x-i,u=f*f*(3-2*f),a=(Math.sin(i*127.1)*43758.5453)%1,b=(Math.sin((i+1)*127.1)*43758.5453)%1;a=a<0?a+1:a;b=b<0?b+1:b;return a*(1-u)+b*u;}
+
+(function animate(){
+  requestAnimationFrame(animate);t+=.002;
+  sMat.uniforms.time.value=t;
+  finalPass.uniforms.time.value=t;
+  stars.rotation.y+=.00004;
+  debrisGroup.children.forEach(function(m,i){m.rotation.x+=.0003*(i%3-.5);m.rotation.z+=.0002*(i%2?.8:-.6);});
+  debrisGroup.rotation.y+=.0001;
+  var cT=t*.015;
+  camera.position.x=Math.sin(t*.028+jn(cT)*.3)*.8;
+  camera.position.y=(jn(cT*.7+2)-.5)*.5;
+  camera.position.z=6+jn(cT*.4)*.4;
+  camera.lookAt(0,0,0);
+  composer.render();
+})();
+</script>
+</body>
+</html>

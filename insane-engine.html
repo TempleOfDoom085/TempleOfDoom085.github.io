@@ -645,17 +645,71 @@ async function enableAudio(){
     actx.createMediaStreamSource(stream).connect(analyser);
     btn.textContent='◉ MIC LIVE';
   }catch(e){
-    // Synthetic fallback: pulsing oscillator bank
-    [[55,'sawtooth',1.8],[110,'sine',3.2],[330,'sine',2.1],[880,'sine',5.0]].forEach(function(p,i){
+    // Rich ambient space music synthesis — no mic needed
+    var master=actx.createGain();master.gain.value=0.18;master.connect(analyser);
+
+    // Reverb simulation via delay feedback network
+    var delay1=actx.createDelay(2.5),delay2=actx.createDelay(3.8);
+    var fb1=actx.createGain(),fb2=actx.createGain(),wet=actx.createGain();
+    delay1.delayTime.value=1.4;delay2.delayTime.value=2.1;
+    fb1.gain.value=0.55;fb2.gain.value=0.48;wet.gain.value=0.6;
+    delay1.connect(fb1);fb1.connect(delay1);delay1.connect(wet);
+    delay2.connect(fb2);fb2.connect(delay2);delay2.connect(wet);
+    wet.connect(master);
+
+    // Low-pass filter for warmth
+    var warmth=actx.createBiquadFilter();warmth.type='lowpass';warmth.frequency.value=1800;warmth.Q.value=0.8;
+    warmth.connect(delay1);warmth.connect(delay2);warmth.connect(master);
+
+    // Sub-bass drone: 27.5Hz (A0) — felt more than heard
+    var drone=function(freq,type,amp,lfoRate,lfoDepth){
       var o=actx.createOscillator(),g=actx.createGain(),lfo=actx.createOscillator(),lg=actx.createGain();
-      o.type=p[1];o.frequency.value=p[0];
-      lfo.frequency.value=p[2];lg.gain.value=0.45;
-      g.gain.value=0.18/(i+1);
+      o.type=type;o.frequency.value=freq;g.gain.value=amp;
+      lfo.frequency.value=lfoRate;lg.gain.value=lfoDepth;
       lfo.connect(lg);lg.connect(g.gain);
-      o.connect(g);g.connect(analyser);
-      lfo.start();o.start();
-    });
-    btn.textContent='◉ SYNTH ACTIVE';
+      o.connect(g);g.connect(warmth);lfo.start();o.start();return o;
+    };
+
+    drone(27.5,'sine',0.7,0.05,0.15);       // sub bass
+    drone(55,'sawtooth',0.25,0.12,0.08);     // bass
+    drone(82.4,'triangle',0.18,0.18,0.06);   // low mid
+    drone(110,'sine',0.12,0.28,0.04);        // mid drone
+
+    // Pentatonic melody: A minor pentatonic (A2, C3, D3, E3, G3 + octaves)
+    var penta=[110,131,147,165,196,220,262,294,330,392];
+    var melodySched=function(){
+      if(!audioActive)return;
+      var freq=penta[Math.floor(Math.random()*penta.length)];
+      var o=actx.createOscillator(),g=actx.createGain(),f=actx.createBiquadFilter();
+      o.type='sine';o.frequency.value=freq;
+      f.type='lowpass';f.frequency.value=freq*4;
+      var now=actx.currentTime,dur=2+Math.random()*4;
+      g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(0.06,now+0.4);g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+      o.connect(f);f.connect(g);g.connect(delay1);g.connect(delay2);
+      o.start(now);o.stop(now+dur);
+      setTimeout(melodySched,(1200+Math.random()*3000));
+    };
+    setTimeout(melodySched,500);
+
+    // Whoosh pads: slow rising filtered noise bursts
+    var padSched=function(){
+      if(!audioActive)return;
+      var buf=actx.createBuffer(1,actx.sampleRate*3,actx.sampleRate);
+      var data=buf.getChannelData(0);
+      for(var i=0;i<data.length;i++)data[i]=(Math.random()*2-1);
+      var src=actx.createBufferSource(),filt=actx.createBiquadFilter(),g=actx.createGain();
+      var baseFreq=200+Math.random()*600;
+      filt.type='bandpass';filt.frequency.value=baseFreq;filt.Q.value=8;
+      var now=actx.currentTime;
+      filt.frequency.setValueAtTime(baseFreq,now);filt.frequency.exponentialRampToValueAtTime(baseFreq*2.5,now+2.5);
+      g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(0.04,now+0.8);g.gain.exponentialRampToValueAtTime(0.001,now+2.8);
+      src.buffer=buf;src.connect(filt);filt.connect(g);g.connect(wet);
+      src.start(now);
+      setTimeout(padSched,4000+Math.random()*8000);
+    };
+    setTimeout(padSched,1000);
+
+    btn.textContent='◉ AMBIENT LIVE';
   }
   btn.classList.add('on');audioActive=true;
 }
@@ -684,6 +738,17 @@ function setMode(m,btn){
 // ══════════════════════════════════════════════════════
 window.addEventListener('mousemove',function(e){mxActive=true;mxPrev=mx;myPrev=my;mx=e.clientX/W;my=1-e.clientY/H;});
 canvas.addEventListener('click',function(){spawnEruption();spawnShock();});
+window.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  switch(e.key){
+    case '1':setMode('CORE',document.querySelector('.cbtn[data-mode="CORE"]'));break;
+    case '2':setMode('WORMHOLE',document.querySelector('.cbtn[data-mode="WORMHOLE"]'));break;
+    case '3':setMode('BLACKHOLE',document.querySelector('.cbtn[data-mode="BLACKHOLE"]'));break;
+    case 'a':case 'A':enableAudio();break;
+    case 'c':case 'C':toggleCinematic(document.getElementById('cine-btn'));break;
+    case ' ':e.preventDefault();spawnEruption();spawnShock();break;
+  }
+});
 window.addEventListener('resize',function(){
   W=innerWidth;H=innerHeight;renderer.setSize(W,H);composer.setSize(W,H);
   camera.aspect=W/H;camera.updateProjectionMatrix();
