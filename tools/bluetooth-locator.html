@@ -19,12 +19,21 @@
 html { scroll-behavior: smooth; font-size: 18px; }
 body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
 
+/* Ambient proximity glow — pulses faster & brighter as the tracked device gets closer */
+#ambient-glow {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 18%, rgba(41,182,255,0.16) 0%, transparent 55%);
+  opacity: 0; transition: opacity 0.4s ease;
+  mix-blend-mode: screen;
+}
+
 nav {
   position: sticky; top: 0; z-index: 100;
   display: flex; justify-content: space-between; align-items: center;
   padding: 1rem 1.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-c);
 }
+nav, .hero, .main, footer { position: relative; z-index: 1; }
 .nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; }
 .nav-center { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.28em; color: var(--text-faint); text-transform: uppercase; }
 .nav-right { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
@@ -34,7 +43,13 @@ nav {
 .hero-title {
   font-size: clamp(2rem, 7vw, 3.4rem); font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; line-height: 1; color: var(--c);
-  text-shadow: 0 0 40px rgba(41,182,255,0.4);
+  text-shadow: 0 0 40px rgba(41,182,255,0.4); animation: heroGlitch 6s infinite;
+}
+@keyframes heroGlitch {
+  0%,92%,100% { text-shadow: 0 0 40px rgba(41,182,255,0.4); transform: none; }
+  93% { text-shadow: -2px 0 rgba(41,182,255,0.9), 2px 0 rgba(0,255,136,0.4); transform: skewX(-1deg); }
+  94% { text-shadow: 2px 0 rgba(41,182,255,0.9), -2px 0 rgba(255,77,166,0.4); transform: skewX(0.6deg); }
+  95% { text-shadow: 0 0 40px rgba(41,182,255,0.4); transform: none; }
 }
 .hero-sub { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-dim); margin-top: 0.85rem; }
 
@@ -112,6 +127,40 @@ nav {
 }
 .empty-note { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); text-align: center; padding: 1.25rem 0.5rem; }
 
+/* ── RADAR HUD ─────────────────────────────────────────────────────── */
+.radar-wrap {
+  position: relative; width: 100%; max-width: 320px; aspect-ratio: 1 / 1; margin: 0.25rem auto 0.5rem;
+}
+.radar-wrap.small { max-width: 260px; }
+#radar-canvas, #radar-canvas-scan { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.radar-ring {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 1px var(--border-c), 0 0 30px rgba(41,182,255,0.15), inset 0 0 40px rgba(41,182,255,0.08);
+  transition: box-shadow 0.3s;
+}
+.radar-ring.locked { box-shadow: 0 0 0 2px rgba(0,255,136,0.7), 0 0 45px rgba(0,255,136,0.4), inset 0 0 50px rgba(0,255,136,0.15); }
+
+/* Corner HUD brackets */
+.radar-bracket { position: absolute; width: 18px; height: 18px; border: 2px solid var(--c); opacity: 0.8; transition: border-color 0.3s, opacity 0.3s; pointer-events: none; }
+.radar-bracket.tl { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+.radar-bracket.tr { top: -4px; right: -4px; border-left: none; border-bottom: none; }
+.radar-bracket.bl { bottom: -4px; left: -4px; border-right: none; border-top: none; }
+.radar-bracket.br { bottom: -4px; right: -4px; border-left: none; border-top: none; }
+.radar-wrap.locked .radar-bracket { border-color: var(--green); opacity: 1; animation: bracketPulse 0.9s ease-in-out infinite; }
+@keyframes bracketPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+.radar-locked-banner {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.2em;
+  color: var(--green); text-shadow: 0 0 12px rgba(0,255,136,0.8); text-transform: uppercase;
+  background: rgba(10,10,12,0.75); padding: 0.5rem 1rem; border: 1px solid var(--green);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap;
+}
+.radar-locked-banner.show { opacity: 1; animation: lockFlash 0.6s steps(2) 2; }
+@keyframes lockFlash { 50% { opacity: 0.25; } }
+
+.radar-caption { text-align: center; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; color: var(--text-faint); margin: 0.5rem 0 1rem; }
+
 /* Tracking header */
 .track-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .track-device-name { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
@@ -173,6 +222,7 @@ footer a { color: var(--c); text-decoration: none; }
 </style>
 </head>
 <body>
+<div id="ambient-glow"></div>
 
 <nav>
   <a class="nav-back" href="index.html">← tools</a>
@@ -228,6 +278,12 @@ footer a { color: var(--c); text-decoration: none; }
     </div>
 
     <div id="device-list-wrap" class="hidden" style="margin-top:1.25rem;">
+      <div class="radar-wrap small" id="radar-wrap-scan">
+        <canvas id="radar-canvas-scan"></canvas>
+        <div class="radar-bracket tl"></div><div class="radar-bracket tr"></div>
+        <div class="radar-bracket bl"></div><div class="radar-bracket br"></div>
+      </div>
+      <div class="radar-caption">sonar sweep — ring position ≈ signal strength, not real direction</div>
       <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--text-faint);text-transform:uppercase;margin-bottom:0.6rem;">Devices Found — strongest first</div>
       <div class="device-list" id="device-list"></div>
     </div>
@@ -246,6 +302,15 @@ footer a { color: var(--c); text-decoration: none; }
     <div class="status-banner info" id="track-status">
       <span>ℹ</span><span id="track-status-text">Waiting for signal…</span>
     </div>
+
+    <div class="radar-wrap" id="radar-wrap">
+      <canvas id="radar-canvas"></canvas>
+      <div class="radar-ring" id="radar-ring"></div>
+      <div class="radar-bracket tl"></div><div class="radar-bracket tr"></div>
+      <div class="radar-bracket bl"></div><div class="radar-bracket br"></div>
+      <div class="radar-locked-banner" id="radar-locked-banner">◆ Target Locked ◆</div>
+    </div>
+    <div class="radar-caption">proximity radar — distance only, Bluetooth gives no bearing</div>
 
     <div class="gauge-wrap">
       <svg class="gauge-svg" viewBox="0 0 300 175">
@@ -273,7 +338,7 @@ footer a { color: var(--c); text-decoration: none; }
 
     <div class="audio-row">
       <div class="toggle" id="audio-toggle"></div>
-      <span class="audio-label">🔊 Audio beep (faster = closer)</span>
+      <span class="audio-label" id="audio-label">🔊📳 Audio + haptic beep (faster = closer)</span>
       <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.05" value="0.5">
     </div>
 
@@ -320,7 +385,17 @@ let currentPct = null, currentRssi = null;
 let displayedPct = 0;         // smoothed needle position
 let favorites = [];
 
-let audioOn = false, audioCtx = null, beepHandle = null, volume = 0.5;
+let audioOn = false, audioCtx = null, volume = 0.5;
+
+// ── RADAR / HUD STATE ──────────────────────────────────────────────────
+const LOCK_PCT = 88;                // proximity threshold for "target locked"
+const PING_LIFETIME = 900;          // ms a sonar ping ring takes to fade out
+let sweepAngle = 0;
+let trackPings = [];                // [{start, x, y, pct}]
+let wasLocked = false;
+let pulseHandle = null;
+const hasVibrate = 'vibrate' in navigator;
+const radarSizeCache = new Map();   // canvas -> {ctx, w, h}
 
 // ── DOM ────────────────────────────────────────────────────────────────
 const el = (id) => document.getElementById(id);
@@ -346,7 +421,8 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 function rssiToPercent(rssi) {
   return Math.round(mapRange(rssi, RSSI_MIN, RSSI_MAX, 0, 100));
 }
-function pctToColor(pct) {
+function pctToColor(pct, alpha) {
+  if (alpha === undefined) alpha = 1;
   const RED = [255,77,77], YEL = [255,215,0], GRN = [0,255,136];
   let c1, c2, t;
   if (pct <= 50) { c1 = RED; c2 = YEL; t = pct / 50; }
@@ -354,7 +430,16 @@ function pctToColor(pct) {
   const r = Math.round(lerp(c1[0], c2[0], t));
   const g = Math.round(lerp(c1[1], c2[1], t));
   const b = Math.round(lerp(c1[2], c2[2], t));
-  return `rgb(${r},${g},${b})`;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function hashAngleDeg(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+function angDiffDeg(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
 }
 function estimateDistanceMeters(rssi, txPower) {
   const ref = (typeof txPower === 'number') ? txPower : REF_TXPOWER;
@@ -649,6 +734,7 @@ function onGattDisconnected() {
 function showTrackingPanel(devInfo) {
   scanPanel.classList.add('hidden');
   trackingPanel.classList.remove('hidden');
+  trackingPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   el('track-name').textContent = devInfo.name || 'Unknown Device';
   el('track-meta').textContent = shortId(devInfo.id);
   const favBtn = el('track-fav-btn');
@@ -656,11 +742,17 @@ function showTrackingPanel(devInfo) {
   favBtn.classList.toggle('active', isFavorite(devInfo.id));
   favBtn.onclick = () => toggleFavorite(devInfo.id, devInfo.name);
   currentRssi = null; currentPct = null; displayedPct = 0;
+  wasLocked = false;
+  trackPings = [];
+  el('radar-wrap').classList.remove('locked');
+  el('radar-ring').classList.remove('locked');
+  el('radar-locked-banner').classList.remove('show');
   drawChart();
 }
 
 function handleReading(rssi, txPower) {
   if (typeof rssi !== 'number') return;
+  const firstReading = (currentPct === null);
   lastReadingTs = Date.now();
   hardLossToastShown = false;
   currentRssi = rssi;
@@ -677,7 +769,21 @@ function handleReading(rssi, txPower) {
   updateTrend();
   drawChart();
   updateStatusMessage();
-  if (audioOn) scheduleBeep();
+  updateLockState();
+  if (firstReading) schedulePulse();
+}
+
+function updateLockState() {
+  const locked = currentPct !== null && currentPct >= LOCK_PCT;
+  if (locked === wasLocked) return;
+  wasLocked = locked;
+  el('radar-wrap').classList.toggle('locked', locked);
+  el('radar-ring').classList.toggle('locked', locked);
+  if (locked) {
+    el('radar-locked-banner').classList.add('show');
+    setTimeout(() => el('radar-locked-banner').classList.remove('show'), 1400);
+    if (hasVibrate && audioOn) navigator.vibrate([40, 40, 80]);
+  }
 }
 
 function updateTrend() {
@@ -752,7 +858,14 @@ function disconnectAndReset() {
   currentPct = null; currentRssi = null;
   audioOn = false;
   el('audio-toggle').classList.remove('on');
-  clearTimeout(beepHandle);
+  clearTimeout(pulseHandle);
+  pulseHandle = null;
+  trackPings = [];
+  wasLocked = false;
+  el('radar-wrap').classList.remove('locked');
+  el('radar-ring').classList.remove('locked');
+  el('radar-locked-banner').classList.remove('show');
+  el('ambient-glow').style.opacity = '0';
   trackingPanel.classList.add('hidden');
   scanPanel.classList.remove('hidden');
   setStatus(scanStatusEl, null, 'info', 'Pick a device to track, or start a new scan.');
@@ -853,8 +966,7 @@ function ensureAudioCtx() {
 function toggleAudio() {
   audioOn = !audioOn;
   el('audio-toggle').classList.toggle('on', audioOn);
-  if (audioOn) { ensureAudioCtx(); scheduleBeep(); }
-  else { clearTimeout(beepHandle); }
+  if (audioOn) ensureAudioCtx();
 }
 function beepOnce(freq) {
   ensureAudioCtx();
@@ -870,20 +982,176 @@ function beepOnce(freq) {
   osc.start(now);
   osc.stop(now + 0.11);
 }
-function scheduleBeep() {
-  clearTimeout(beepHandle);
-  if (!audioOn) return;
-  const pct = currentPct === null ? 0 : currentPct;
+
+// ── PULSE LOOP — the "heartbeat" driving sonar pings + optional beep/haptic ──
+// Runs continuously once tracking starts (independent of the audio toggle) so
+// the radar always feels alive; sound and vibration are opt-in layered on top.
+function schedulePulse() {
+  clearTimeout(pulseHandle);
+  if (!trackingId || currentPct === null) { pulseHandle = null; return; }
+  const pct = currentPct;
   const interval = mapRange(pct, 0, 100, 1400, 160);
-  const freq = mapRange(pct, 0, 100, 280, 1100);
-  if (currentPct !== null) beepOnce(freq);
-  beepHandle = setTimeout(scheduleBeep, interval);
+  spawnTrackPing(pct);
+  if (audioOn) {
+    beepOnce(mapRange(pct, 0, 100, 280, 1100));
+    if (hasVibrate) navigator.vibrate(Math.round(mapRange(pct, 0, 100, 12, 35)));
+  }
+  pulseHandle = setTimeout(schedulePulse, interval);
+}
+
+// ── RADAR RENDERING ─────────────────────────────────────────────────────
+function getRadarCtx(canvas) {
+  let c = radarSizeCache.get(canvas);
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  if (!cw || !ch) return null;
+  if (!c || c.w !== cw || c.h !== ch) {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = cw * dpr; canvas.height = ch * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c = { ctx, w: cw, h: ch };
+    radarSizeCache.set(canvas, c);
+  }
+  return c;
+}
+function blipPosition(id, pct, cx, cy, R) {
+  const frac = mapRange(pct, 0, 100, 0.86, 0.12);
+  const angle = hashAngleDeg(id) * Math.PI / 180;
+  return { x: cx + R * frac * Math.cos(angle), y: cy + R * frac * Math.sin(angle), angleDeg: (hashAngleDeg(id)) };
+}
+function drawRadarBase(ctx, cx, cy, R) {
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  bgGrad.addColorStop(0, '#0d1b22');
+  bgGrad.addColorStop(1, '#05070a');
+  ctx.fillStyle = bgGrad;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = 'rgba(41,182,255,0.18)';
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(f => { ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI * 2); ctx.stroke(); });
+  ctx.beginPath();
+  ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+  ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+  ctx.stroke();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+  ctx.translate(cx, cy);
+  ctx.rotate(sweepAngle * Math.PI / 180);
+  const sweepGrad = ctx.createLinearGradient(0, 0, R, 0);
+  sweepGrad.addColorStop(0, 'rgba(41,182,255,0.4)');
+  sweepGrad.addColorStop(1, 'rgba(41,182,255,0)');
+  ctx.fillStyle = sweepGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, R, -0.55, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(245,242,236,0.85)'; ctx.fill();
+}
+function spawnTrackPing(pct) {
+  const canvas = el('radar-canvas');
+  const rc = getRadarCtx(canvas);
+  if (!rc) return;
+  const cx = rc.w / 2, cy = rc.h / 2, R = Math.min(rc.w, rc.h) / 2 - 4;
+  const pos = blipPosition(trackingId, pct, cx, cy, R);
+  trackPings.push({ start: performance.now(), x: pos.x, y: pos.y, pct });
+  if (trackPings.length > 8) trackPings.shift();
+}
+function drawTrackRadar() {
+  const canvas = el('radar-canvas');
+  const rc = getRadarCtx(canvas);
+  if (!rc) return;
+  const { ctx, w, h } = rc;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 4;
+  ctx.clearRect(0, 0, w, h);
+  drawRadarBase(ctx, cx, cy, R);
+
+  const now = performance.now();
+  trackPings = trackPings.filter(p => now - p.start < PING_LIFETIME);
+  trackPings.forEach(p => {
+    const t = (now - p.start) / PING_LIFETIME;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4 + t * 30, 0, Math.PI * 2);
+    ctx.strokeStyle = pctToColor(p.pct, (1 - t) * 0.85);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  if (currentPct !== null && trackingId) {
+    const pos = blipPosition(trackingId, displayedPct, cx, cy, R);
+    const glowR = 10 + 6 * Math.sin(now / 220);
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, glowR, 0, Math.PI * 2);
+    ctx.fillStyle = pctToColor(currentPct, 0.18);
+    ctx.fill();
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = pctToColor(currentPct);
+    ctx.shadowColor = pctToColor(currentPct); ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+function drawScanRadar() {
+  const canvas = el('radar-canvas-scan');
+  const rc = getRadarCtx(canvas);
+  if (!rc) return;
+  const { ctx, w, h } = rc;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 4;
+  ctx.clearRect(0, 0, w, h);
+  drawRadarBase(ctx, cx, cy, R);
+
+  const now = performance.now();
+  Array.from(devices.values()).forEach(d => {
+    if (typeof d.rssi !== 'number') return;
+    const pct = rssiToPercent(d.rssi);
+    const pos = blipPosition(d.id, pct, cx, cy, R);
+    const diff = angDiffDeg(sweepAngle, pos.angleDeg);
+    const flash = diff < 18 ? mapRange(diff, 0, 18, 1, 0) : 0;
+    const r = (d.id === trackingId ? 7 : 5) + flash * 4;
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, r + 5, 0, Math.PI * 2);
+    ctx.fillStyle = pctToColor(pct, 0.12 + flash * 0.25);
+    ctx.fill();
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = pctToColor(pct, 0.65 + flash * 0.35);
+    ctx.fill();
+    if (d.id === trackingId) {
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, r + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = pctToColor(pct, 0.8); ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  });
+}
+
+// ── AMBIENT GLOW ─────────────────────────────────────────────────────────
+function updateAmbientGlow(ts) {
+  const glow = el('ambient-glow');
+  if (currentPct === null || trackingPanel.classList.contains('hidden')) { glow.style.opacity = '0'; return; }
+  const speed = mapRange(currentPct, 0, 100, 0.35, 2.0);
+  const wave = 0.5 + 0.5 * Math.sin((ts / 1000) * speed * Math.PI * 2);
+  const base = mapRange(currentPct, 0, 100, 0.05, 0.14);
+  const amp  = mapRange(currentPct, 0, 100, 0.03, 0.24);
+  const alpha = base + amp * wave;
+  const rgba = pctToColor(currentPct, alpha).replace('rgba(', '').replace(')', '').split(',');
+  glow.style.background = `radial-gradient(circle at 50% 18%, rgba(${rgba[0]},${rgba[1]},${rgba[2]},${rgba[3]}) 0%, transparent 55%)`;
+  glow.style.opacity = '1';
+}
+
+// ── MASTER ANIMATION LOOP (sweep rotation, radar redraw, ambient glow) ────
+function radarLoop(ts) {
+  sweepAngle = (sweepAngle + 1.5) % 360;
+  updateAmbientGlow(ts);
+  if (!trackingPanel.classList.contains('hidden')) drawTrackRadar();
+  if (!deviceListWrap.classList.contains('hidden')) drawScanRadar();
+  requestAnimationFrame(radarLoop);
 }
 
 // ── BOOT ───────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   init();
   requestAnimationFrame(() => { try { initGaugeGeometry(); } catch (e) {} });
+  requestAnimationFrame(radarLoop);
 });
 
 })();
