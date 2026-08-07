@@ -271,7 +271,7 @@ footer a { color: var(--c); text-decoration: none; }
 
 <div class="main">
 
-  <!-- Unsupported browser warning -->
+  <!-- Unsupported browser warning (generic) -->
   <div class="panel warn-panel hidden" id="unsupported-panel">
     <div class="panel-title">⚠ Web Bluetooth Not Available</div>
     <p>This browser doesn't support the Web Bluetooth API, so this tool can't scan for devices here. Bluetooth access also requires a secure (HTTPS) connection, which this page has.</p>
@@ -283,8 +283,20 @@ footer a { color: var(--c); text-decoration: none; }
       <span class="browser-chip">Opera / Brave</span>
       <span class="browser-chip bad">Safari — unsupported</span>
       <span class="browser-chip bad">Firefox — unsupported</span>
-      <span class="browser-chip bad">iOS (any browser) — unsupported</span>
     </div>
+  </div>
+
+  <!-- iOS-specific explainer -->
+  <div class="panel warn-panel hidden" id="ios-panel">
+    <div class="panel-title">🍎 iPhone &amp; iPad — Apple Blocks This</div>
+    <p>This isn't a bug, and switching browsers won't help. <strong>Apple has never implemented Web Bluetooth in WebKit</strong>, and every browser on iOS is required to run on WebKit underneath — so Chrome, Edge, Firefox, and DuckDuckGo on iPhone all hit the same wall Safari does.</p>
+    <p style="color:var(--text);margin-top:1rem;"><strong>Two ways to actually use this:</strong></p>
+    <ol style="font-size:0.85rem;color:var(--text-dim);line-height:1.8;padding-left:1.2rem;margin-bottom:0.75rem;">
+      <li><strong style="color:var(--c)">Bluefy — Web BLE Browser</strong> (free on the App Store). A third-party browser that bridges Web Bluetooth to Apple's native Bluetooth framework. Open this page inside it and everything works.</li>
+      <li><strong style="color:var(--c)">Use an Android phone or a computer</strong> with Chrome, Edge, Brave, or Opera — Web Bluetooth works natively there, nothing to install.</li>
+    </ol>
+    <a class="btn btn-primary" style="text-decoration:none;margin-top:0.5rem;" href="https://apps.apple.com/us/search?term=bluefy%20web%20ble%20browser" target="_blank" rel="noopener noreferrer">↗ Find Bluefy on the App Store</a>
+    <p style="font-size:0.72rem;color:var(--text-faint);margin-top:1rem;margin-bottom:0;">Bluefy is a third-party app — not affiliated with this site, and not something I can vouch for beyond it being the common workaround among BLE developers.</p>
   </div>
 
   <!-- Scan panel -->
@@ -608,6 +620,11 @@ async function quickReconnect(saved) {
 
 // ── SUPPORT CHECK ─────────────────────────────────────────────────────
 function hasBluetooth() { return 'bluetooth' in navigator; }
+// iPadOS 13+ reports itself as "MacIntel", so touch points disambiguate it.
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 
 async function init() {
   loadFavorites();
@@ -615,8 +632,11 @@ async function init() {
   renderLastDevice();
 
   if (!hasBluetooth()) {
-    el('unsupported-panel').classList.remove('hidden');
+    // On iOS the cause is Apple's WebKit restriction, not the browser choice —
+    // a generic "try another browser" message would send people in circles.
+    el(isIOS() ? 'ios-panel' : 'unsupported-panel').classList.remove('hidden');
     scanPanel.classList.add('hidden');
+    el('how-it-works').classList.add('hidden');
     return;
   }
 
