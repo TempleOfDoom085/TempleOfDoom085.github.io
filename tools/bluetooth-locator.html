@@ -161,6 +161,39 @@ nav, .hero, .main, footer { position: relative; z-index: 1; }
 
 .radar-caption { text-align: center; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; color: var(--text-faint); margin: 0.5rem 0 1rem; }
 
+/* ── HUNT MODE (full-screen game view) ─────────────────────────────── */
+#hunt-overlay {
+  position: fixed; inset: 0; z-index: 500; background: #05070a;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 1.5rem 1.25rem 2rem; text-align: center;
+}
+#hunt-overlay.hidden { display: none !important; }
+.hunt-top { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.hunt-name { font-size: 1.05rem; font-weight: 700; color: var(--text); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hunt-exit {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.7rem 1rem; min-height: 44px; border: 1px solid var(--border-c); background: none;
+  color: var(--text-dim); cursor: pointer; flex-shrink: 0;
+}
+.hunt-mid { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; justify-content: center; width: 100%; }
+.hunt-arrow-wrap { position: relative; width: min(62vw, 260px); height: min(62vw, 260px); }
+#hunt-arrow-svg { width: 100%; height: 100%; transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); }
+.hunt-dist { font-family: var(--mono); font-weight: 700; line-height: 0.95; letter-spacing: -0.02em; }
+.hunt-dist-num { font-size: clamp(4rem, 22vw, 8rem); display: block; }
+.hunt-dist-unit { font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--text-dim); }
+.hunt-hotcold { font-family: var(--mono); font-size: 1.15rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; min-height: 1.6rem; }
+.hunt-hint { font-family: var(--mono); font-size: 0.68rem; color: var(--text-faint); letter-spacing: 0.05em; line-height: 1.7; max-width: 32ch; }
+.hunt-bottom { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+.hunt-bar-wrap { width: 100%; max-width: 420px; height: 10px; background: rgba(255,255,255,0.07); border-radius: 5px; overflow: hidden; }
+.hunt-bar { height: 100%; width: 0%; border-radius: 5px; transition: width 0.3s, background 0.3s; }
+.hunt-sub { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.06em; }
+
+.btn-hunt {
+  background: rgba(0,255,136,0.08); border-color: var(--green); color: var(--green);
+  box-shadow: 0 0 20px rgba(0,255,136,0.12);
+}
+.btn-hunt:hover { background: rgba(0,255,136,0.16); box-shadow: 0 0 30px rgba(0,255,136,0.25); }
+
 /* Tracking header */
 .track-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .track-device-name { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
@@ -342,7 +375,9 @@ footer a { color: var(--c); text-decoration: none; }
       <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.05" value="0.5">
     </div>
 
-    <div class="btn-row" style="margin-top:1.25rem;">
+    <button class="btn btn-hunt" id="btn-hunt" style="margin-top:1.25rem;">🎯 Hunt Mode — walk to it</button>
+
+    <div class="btn-row" style="margin-top:0.75rem;">
       <button class="btn btn-ghost" id="btn-retry">↻ Retry Signal</button>
       <button class="btn btn-danger" id="btn-disconnect">✕ Disconnect / New Device</button>
     </div>
@@ -357,6 +392,39 @@ footer a { color: var(--c); text-decoration: none; }
 
 <footer>temple tools — bluetooth device locator &nbsp;·&nbsp; 100% client-side, nothing leaves your browser &nbsp;·&nbsp; <a href="index.html">← all tools</a></footer>
 
+<!-- HUNT MODE — full-screen "walk to it" game view -->
+<div id="hunt-overlay" class="hidden">
+  <div class="hunt-top">
+    <div class="hunt-name" id="hunt-name">Unknown Device</div>
+    <button class="hunt-exit" id="hunt-exit">✕ Exit</button>
+  </div>
+
+  <div class="hunt-mid">
+    <div class="hunt-arrow-wrap">
+      <svg id="hunt-arrow-svg" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(41,182,255,0.12)" stroke-width="2"/>
+        <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(41,182,255,0.08)" stroke-width="1"/>
+        <g id="hunt-arrow-g">
+          <path id="hunt-arrow-path" d="M100 24 L142 132 L100 110 L58 132 Z" fill="#29b6ff"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="hunt-dist">
+      <span class="hunt-dist-num" id="hunt-dist-num">—</span>
+      <span class="hunt-dist-unit" id="hunt-dist-unit">feet away</span>
+    </div>
+
+    <div class="hunt-hotcold" id="hunt-hotcold">Calibrating…</div>
+    <div class="hunt-hint" id="hunt-hint">Walk in any direction for a few seconds — the arrow learns which way the signal gets stronger.</div>
+  </div>
+
+  <div class="hunt-bottom">
+    <div class="hunt-bar-wrap"><div class="hunt-bar" id="hunt-bar"></div></div>
+    <div class="hunt-sub" id="hunt-sub">— dBm · —% signal</div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
@@ -367,8 +435,11 @@ footer a { color: var(--c); text-decoration: none; }
 const LAST_DEVICE_KEY = 'bleLocator_lastDevice';
 const FAVORITES_KEY   = 'bleLocator_favorites';
 const RSSI_MIN = -100, RSSI_MAX = -30;       // gauge clamp range
-const REF_TXPOWER = -30;                      // reference RSSI @ 1m per spec
-const PATH_LOSS_N = 2;                        // ~6dB drop per doubling of distance
+// Typical measured RSSI at 1m for phone<->BLE, and an indoor path-loss exponent.
+// Free-space (ref -30 / n=2) is textbook-correct but wildly overestimates real
+// indoor distance — it reads ~580ft at -75dBm, where the truth is closer to 15ft.
+const REF_TXPOWER = -59;
+const PATH_LOSS_N = 2.5;
 const LOST_WARN_MS = 4000;                    // "signal lost" threshold
 const LOST_HARD_MS = 20000;                   // toast "lost track of device" threshold
 
@@ -709,6 +780,11 @@ async function selectDevice(device) {
     } catch (err) {
       setStatus(trackStatusEl, trackStatusTxt, 'warn', 'Live signal tracking isn’t available for this device in this browser. Try Chrome with the experimental Web Bluetooth flag enabled.');
     }
+  } else if (scanMode === 'lescan') {
+    // No per-device advertisement watching, but passive scanning is available —
+    // track this device's RSSI off the global scan stream instead.
+    setStatus(trackStatusEl, trackStatusTxt, 'info', 'Tracking this device via passive scan…');
+    if (!isScanning) await startScan();
   } else {
     setStatus(trackStatusEl, trackStatusTxt, 'warn', 'This browser can’t read live signal strength (no watchAdvertisements support). Connected, but no RSSI meter is available here.');
   }
@@ -770,6 +846,8 @@ function handleReading(rssi, txPower) {
   drawChart();
   updateStatusMessage();
   updateLockState();
+  recordHeadingSample();
+  updateHuntUI();
   if (firstReading) schedulePulse();
 }
 
@@ -862,6 +940,8 @@ function disconnectAndReset() {
   pulseHandle = null;
   trackPings = [];
   wasLocked = false;
+  exitHuntMode();
+  headingSamples = [];
   el('radar-wrap').classList.remove('locked');
   el('radar-ring').classList.remove('locked');
   el('radar-locked-banner').classList.remove('show');
@@ -997,6 +1077,133 @@ function schedulePulse() {
     if (hasVibrate) navigator.vibrate(Math.round(mapRange(pct, 0, 100, 12, 35)));
   }
   pulseHandle = setTimeout(schedulePulse, interval);
+}
+
+// ── HUNT MODE ───────────────────────────────────────────────────────────
+// Bluetooth RSSI carries no bearing, so direction is *inferred*: we log
+// (compass heading, signal) as the user walks and point toward whichever
+// heading has measured the strongest signal recently.
+const HEADING_SAMPLE_TTL = 45000;   // drop samples older than this (user has moved on)
+const MIN_BUCKETS_FOR_ARROW = 3;    // need coverage in a few directions before guessing
+let huntActive = false;
+let currentHeading = null;          // degrees, 0 = north
+let headingSamples = [];            // [{heading, rssi, ts}]
+let bestHeading = null;
+let compassAttached = false;
+
+function onCompass(e) {
+  let hdg = null;
+  if (typeof e.webkitCompassHeading === 'number') hdg = e.webkitCompassHeading;
+  else if (typeof e.alpha === 'number') hdg = (360 - e.alpha) % 360;
+  if (hdg === null || isNaN(hdg)) return;
+  currentHeading = hdg;
+}
+function attachCompass() {
+  if (compassAttached) return;
+  compassAttached = true;
+  window.addEventListener('deviceorientationabsolute', onCompass, true);
+  window.addEventListener('deviceorientation', onCompass, true);
+}
+function recordHeadingSample() {
+  if (currentHeading === null || currentRssi === null) return;
+  headingSamples.push({ heading: currentHeading, rssi: currentRssi, ts: Date.now() });
+  if (headingSamples.length > 400) headingSamples.shift();
+}
+function computeBestHeading() {
+  const cutoff = Date.now() - HEADING_SAMPLE_TTL;
+  headingSamples = headingSamples.filter(s => s.ts >= cutoff);
+  if (!headingSamples.length) return null;
+  const BUCKETS = 24, SPAN = 360 / BUCKETS;
+  const sums = new Array(BUCKETS).fill(0), counts = new Array(BUCKETS).fill(0);
+  headingSamples.forEach(s => {
+    const b = Math.floor((s.heading % 360) / SPAN) % BUCKETS;
+    sums[b] += s.rssi; counts[b]++;
+  });
+  let filled = 0, bestB = -1, bestAvg = -Infinity;
+  for (let b = 0; b < BUCKETS; b++) {
+    if (!counts[b]) continue;
+    filled++;
+    const avg = sums[b] / counts[b];
+    if (avg > bestAvg) { bestAvg = avg; bestB = b; }
+  }
+  if (filled < MIN_BUCKETS_FOR_ARROW || bestB < 0) return null;
+  return bestB * SPAN + SPAN / 2;
+}
+
+el('btn-hunt').addEventListener('click', enterHuntMode);
+el('hunt-exit').addEventListener('click', exitHuntMode);
+
+async function enterHuntMode() {
+  huntActive = true;
+  headingSamples = [];
+  bestHeading = null;
+  el('hunt-name').textContent = el('track-name').textContent;
+  el('hunt-overlay').classList.remove('hidden');
+  // iOS-style explicit permission gate (harmless where not required)
+  try {
+    const DOE = window.DeviceOrientationEvent;
+    if (DOE && typeof DOE.requestPermission === 'function') await DOE.requestPermission();
+  } catch (e) { /* user declined — hunt still works without the arrow */ }
+  attachCompass();
+  updateHuntUI();
+}
+function exitHuntMode() {
+  huntActive = false;
+  el('hunt-overlay').classList.add('hidden');
+}
+
+function updateHuntUI() {
+  if (!huntActive) return;
+  const distEl = el('hunt-dist-num'), unitEl = el('hunt-dist-unit');
+
+  if (currentPct === null) {
+    distEl.textContent = '—';
+    el('hunt-hotcold').textContent = 'Waiting for signal…';
+    el('hunt-hotcold').style.color = 'var(--text-faint)';
+    return;
+  }
+
+  const color = pctToColor(currentPct);
+  const meters = estimateDistanceMeters(currentRssi, null);
+  const feet = meters * 3.28084;
+  distEl.textContent = feet < 10 ? feet.toFixed(1) : Math.round(feet);
+  distEl.style.color = color;
+  unitEl.textContent = feet < 2 ? 'foot away' : 'feet away';
+
+  el('hunt-bar').style.width = currentPct + '%';
+  el('hunt-bar').style.background = color;
+  el('hunt-sub').textContent = `${currentRssi} dBm · ${currentPct}% signal`;
+
+  // hot/cold from the same trend logic driving the main view
+  const hc = el('hunt-hotcold');
+  if (currentPct >= LOCK_PCT) { hc.textContent = '🔥 RIGHT HERE'; hc.style.color = 'var(--green)'; }
+  else {
+    const trendTxt = el('trend-line').textContent;
+    if (trendTxt.indexOf('closer') !== -1) { hc.textContent = '▲ WARMER'; hc.style.color = 'var(--green)'; }
+    else if (trendTxt.indexOf('farther') !== -1) { hc.textContent = '▼ COLDER'; hc.style.color = 'var(--red)'; }
+    else { hc.textContent = '▬ STEADY'; hc.style.color = 'var(--text-dim)'; }
+  }
+
+  // arrow: rotate toward the best-signal heading, relative to where the phone points
+  const arrow = el('hunt-arrow-g');
+  const path = el('hunt-arrow-path');
+  path.setAttribute('fill', color);
+  const hint = el('hunt-hint');
+  if (currentHeading === null) {
+    arrow.style.opacity = '0.25';
+    hint.textContent = 'No compass on this device — use the distance number and WARMER/COLDER to close in.';
+    return;
+  }
+  bestHeading = computeBestHeading();
+  if (bestHeading === null) {
+    arrow.style.opacity = '0.3';
+    hint.textContent = 'Walk in any direction for a few seconds — the arrow learns which way the signal gets stronger.';
+    return;
+  }
+  arrow.style.opacity = '1';
+  hint.textContent = 'Arrow points where the signal has been strongest. It re-learns as you move — keep walking.';
+  const rel = ((bestHeading - currentHeading) % 360 + 360) % 360;
+  el('hunt-arrow-svg').style.transform = `rotate(${rel}deg)`;
 }
 
 // ── RADAR RENDERING ─────────────────────────────────────────────────────
@@ -1142,8 +1349,11 @@ function updateAmbientGlow(ts) {
 function radarLoop(ts) {
   sweepAngle = (sweepAngle + 1.5) % 360;
   updateAmbientGlow(ts);
-  if (!trackingPanel.classList.contains('hidden')) drawTrackRadar();
-  if (!deviceListWrap.classList.contains('hidden')) drawScanRadar();
+  if (huntActive) updateHuntUI();
+  else {
+    if (!trackingPanel.classList.contains('hidden')) drawTrackRadar();
+    if (!deviceListWrap.classList.contains('hidden')) drawScanRadar();
+  }
   requestAnimationFrame(radarLoop);
 }
 
