@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bluetooth Device Locator — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #29b6ff; --c-dim: rgba(41,182,255,0.08); --c-mid: rgba(41,182,255,0.3);
+  --gold: #c8a96e; --text: #f5f2ec;
+  --text-dim: rgba(245,242,236,0.55); --text-faint: rgba(245,242,236,0.22);
+  --border: rgba(255,255,255,0.07); --border-c: rgba(41,182,255,0.22);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --red: #ff4d4d; --yellow: #ffd700; --green: #00ff88; --orange: #ff7722;
+}
+html { scroll-behavior: smooth; font-size: 18px; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; }
+.nav-center { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.28em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 3rem 1.5rem 2.25rem; text-align: center; border-bottom: 1px solid var(--border-c); }
+.hero-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1rem; }
+.hero-title {
+  font-size: clamp(2rem, 7vw, 3.4rem); font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; line-height: 1; color: var(--c);
+  text-shadow: 0 0 40px rgba(41,182,255,0.4);
+}
+.hero-sub { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-dim); margin-top: 0.85rem; }
+
+.main { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.25rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+
+/* Buttons — large touch targets */
+.btn {
+  font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 1rem 1.25rem; min-height: 56px; cursor: pointer; border: 1px solid var(--border-c);
+  background: none; color: var(--text-dim); transition: all 0.2s; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--c-dim); border-color: var(--c); color: var(--c); box-shadow: 0 0 20px rgba(41,182,255,0.12); }
+.btn-primary:hover { background: rgba(41,182,255,0.15); box-shadow: 0 0 30px rgba(41,182,255,0.25); }
+.btn-danger { border-color: rgba(255,77,77,0.4); color: var(--red); }
+.btn-danger:hover { background: rgba(255,77,77,0.1); }
+.btn-ghost { border-color: var(--border); color: var(--text-dim); }
+.btn-ghost:hover { border-color: var(--c); color: var(--c); }
+.btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 140px; }
+.btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* Support warning */
+.warn-panel { border-color: rgba(255,119,34,0.35); }
+.warn-panel .panel-title { color: var(--orange); }
+.warn-panel p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.75rem; }
+.browser-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.browser-chip { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em; padding: 0.35rem 0.7rem; border: 1px solid rgba(0,255,136,0.3); color: var(--green); }
+.browser-chip.bad { border-color: rgba(255,77,77,0.3); color: var(--red); }
+
+/* Status banner */
+.status-banner {
+  font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em; line-height: 1.6;
+  padding: 0.85rem 1rem; border-left: 3px solid var(--text-faint); background: var(--bg3);
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem;
+}
+.status-banner.info { border-color: var(--c); color: var(--c); }
+.status-banner.good { border-color: var(--green); color: var(--green); }
+.status-banner.warn { border-color: var(--orange); color: var(--orange); }
+.status-banner.bad  { border-color: var(--red); color: var(--red); }
+
+/* Last device / favorites */
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.25rem; }
+.device-chip {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.05em; padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border-c); background: var(--bg3); color: var(--text-dim); cursor: pointer;
+  display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; min-height: 44px;
+}
+.device-chip:hover { border-color: var(--c); color: var(--c); }
+.device-chip .star { color: var(--gold); }
+
+/* Discovered device list */
+.device-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.device-item {
+  background: var(--bg3); border: 1px solid var(--border); padding: 0.9rem 1rem;
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.device-info { flex: 1; min-width: 0; }
+.device-name { font-size: 0.95rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device-meta { font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.04em; margin-top: 0.2rem; }
+.device-rssi { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+.device-actions { display: flex; align-items: center; gap: 0.4rem; }
+.icon-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); background: none; color: var(--text-faint); cursor: pointer; font-size: 1.05rem; flex-shrink: 0;
+}
+.icon-btn.active { color: var(--gold); border-color: rgba(200,169,110,0.4); }
+.track-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.6rem 0.9rem; min-height: 40px; border: 1px solid var(--c); background: var(--c-dim); color: var(--c); cursor: pointer; white-space: nowrap;
+}
+.empty-note { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); text-align: center; padding: 1.25rem 0.5rem; }
+
+/* Tracking header */
+.track-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.track-device-name { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
+.track-device-meta { font-family: var(--mono); font-size: 0.68rem; color: var(--text-faint); margin-top: 0.3rem; letter-spacing: 0.04em; }
+
+/* Gauge */
+.gauge-wrap { text-align: center; margin: 0.5rem 0 0.25rem; }
+.gauge-svg { width: 100%; max-width: 340px; height: auto; }
+.gauge-readout { margin-top: -1.75rem; position: relative; z-index: 2; }
+.gauge-dbm { font-family: var(--mono); font-size: 2.6rem; font-weight: 700; line-height: 1; transition: color 0.25s; }
+.gauge-pct { font-family: var(--mono); font-size: 0.95rem; color: var(--text-dim); margin-top: 0.25rem; }
+.gauge-dist { font-family: var(--mono); font-size: 0.8rem; color: var(--text-dim); margin-top: 0.4rem; letter-spacing: 0.03em; }
+
+/* Trend + chart */
+.trend-line { font-family: var(--mono); font-size: 0.78rem; text-align: center; margin: 0.75rem 0 0.5rem; letter-spacing: 0.04em; }
+.chart-wrap { position: relative; height: 140px; margin-top: 0.5rem; }
+#history-chart { width: 100%; height: 100%; display: block; }
+
+/* Audio controls */
+.audio-row { display: flex; align-items: center; gap: 0.9rem; margin-top: 1rem; }
+.toggle {
+  width: 44px; height: 26px; background: var(--bg3); border: 1px solid var(--border-c);
+  border-radius: 13px; position: relative; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.toggle.on { background: var(--c-dim); border-color: var(--c); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; background: var(--text-faint); border-radius: 50%; transition: all 0.2s;
+}
+.toggle.on::after { left: 20px; background: var(--c); }
+.audio-label { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); flex: 1; }
+.vol-slider { width: 90px; -webkit-appearance: none; appearance: none; height: 4px; background: var(--border-c); outline: none; cursor: pointer; border-radius: 2px; }
+.vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; background: var(--c); cursor: pointer; border-radius: 50%; }
+.vol-slider::-moz-range-thumb { width: 15px; height: 15px; background: var(--c); cursor: pointer; border-radius: 50%; border: none; }
+
+/* Toasts */
+#toast-container { position: fixed; bottom: 1rem; left: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.6rem; max-width: 500px; margin: 0 auto; pointer-events: none; }
+.toast {
+  background: var(--bg2); border: 1px solid var(--border-c); border-left: 3px solid var(--orange);
+  padding: 0.9rem 1rem; font-family: var(--mono); font-size: 0.75rem; color: var(--text);
+  display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  pointer-events: auto; animation: toastIn 0.25s ease-out;
+}
+.toast button { flex-shrink: 0; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.5rem 0.8rem; min-height: 36px; background: var(--c-dim); border: 1px solid var(--c); color: var(--c); cursor: pointer; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); letter-spacing: 0.1em; border-top: 1px solid var(--border); }
+footer a { color: var(--c); text-decoration: none; }
+
+.hidden { display: none !important; }
+
+@media (max-width: 480px) {
+  nav { padding: 0.85rem 1rem; }
+  .hero { padding: 2.25rem 1rem 1.75rem; }
+  .main { padding: 1rem 0.75rem 3rem; }
+  .panel { padding: 1.1rem; }
+  .gauge-dbm { font-size: 2.1rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="index.html">← tools</a>
+  <span class="nav-center">temple tools</span>
+  <span class="nav-right">ble locator</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">// temple tools — proximity tracking</div>
+  <div class="hero-title">📡 BLE Locator</div>
+  <div class="hero-sub">find a lost bluetooth device by signal strength</div>
+</div>
+
+<div class="main">
+
+  <!-- Unsupported browser warning -->
+  <div class="panel warn-panel hidden" id="unsupported-panel">
+    <div class="panel-title">⚠ Web Bluetooth Not Available</div>
+    <p>This browser doesn't support the Web Bluetooth API, so this tool can't scan for devices here. Bluetooth access also requires a secure (HTTPS) connection, which this page has.</p>
+    <p>Try one of these instead:</p>
+    <div class="browser-list">
+      <span class="browser-chip">Chrome (desktop)</span>
+      <span class="browser-chip">Chrome (Android)</span>
+      <span class="browser-chip">Edge</span>
+      <span class="browser-chip">Opera / Brave</span>
+      <span class="browser-chip bad">Safari — unsupported</span>
+      <span class="browser-chip bad">Firefox — unsupported</span>
+      <span class="browser-chip bad">iOS (any browser) — unsupported</span>
+    </div>
+  </div>
+
+  <!-- Scan panel -->
+  <div class="panel" id="scan-panel">
+    <div class="panel-title"><span>Scan</span><span id="scan-mode-badge" style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;color:var(--text-faint);"></span></div>
+
+    <div class="status-banner info" id="scan-status">
+      <span>ℹ</span><span>Tap "Start Scan" and allow Bluetooth access when your browser prompts you.</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-scan">🔍 Start Scan</button>
+      <button class="btn btn-danger hidden" id="btn-stop-scan">■ Stop Scan</button>
+    </div>
+
+    <div id="last-device-wrap" class="hidden" style="margin-top:1rem;">
+      <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--text-faint);text-transform:uppercase;margin-bottom:0.5rem;">Last Searched</div>
+      <div class="chip-row" id="last-device-chip"></div>
+    </div>
+
+    <div id="favorites-wrap" class="hidden" style="margin-top:1rem;">
+      <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--text-faint);text-transform:uppercase;margin-bottom:0.5rem;">★ Favorites</div>
+      <div class="chip-row" id="favorites-chip-row"></div>
+    </div>
+
+    <div id="device-list-wrap" class="hidden" style="margin-top:1.25rem;">
+      <div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;color:var(--text-faint);text-transform:uppercase;margin-bottom:0.6rem;">Devices Found — strongest first</div>
+      <div class="device-list" id="device-list"></div>
+    </div>
+  </div>
+
+  <!-- Tracking panel -->
+  <div class="panel hidden" id="tracking-panel">
+    <div class="track-header">
+      <div>
+        <div class="track-device-name" id="track-name">Unknown Device</div>
+        <div class="track-device-meta" id="track-meta">—</div>
+      </div>
+      <button class="icon-btn" id="track-fav-btn" title="Favorite">☆</button>
+    </div>
+
+    <div class="status-banner info" id="track-status">
+      <span>ℹ</span><span id="track-status-text">Waiting for signal…</span>
+    </div>
+
+    <div class="gauge-wrap">
+      <svg class="gauge-svg" viewBox="0 0 300 175">
+        <path id="gauge-track" d="M 30 160 A 120 120 0 0 1 270 160" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="22" stroke-linecap="round"/>
+        <path id="gauge-fill" d="M 30 160 A 120 120 0 0 1 270 160" fill="none" stroke="url(#gaugeGrad)" stroke-width="22" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ff4d4d"/>
+            <stop offset="50%" stop-color="#ffd700"/>
+            <stop offset="100%" stop-color="#00ff88"/>
+          </linearGradient>
+        </defs>
+        <line id="gauge-needle" x1="150" y1="160" x2="150" y2="52" stroke="#f5f2ec" stroke-width="4" stroke-linecap="round" transform="rotate(-90 150 160)"/>
+        <circle cx="150" cy="160" r="9" fill="#f5f2ec"/>
+      </svg>
+      <div class="gauge-readout">
+        <div class="gauge-dbm" id="gauge-dbm">— dBm</div>
+        <div class="gauge-pct" id="gauge-pct">— % signal</div>
+        <div class="gauge-dist" id="gauge-dist">≈ estimating distance…</div>
+      </div>
+    </div>
+
+    <div class="trend-line" id="trend-line">—</div>
+    <div class="chart-wrap"><canvas id="history-chart"></canvas></div>
+
+    <div class="audio-row">
+      <div class="toggle" id="audio-toggle"></div>
+      <span class="audio-label">🔊 Audio beep (faster = closer)</span>
+      <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.05" value="0.5">
+    </div>
+
+    <div class="btn-row" style="margin-top:1.25rem;">
+      <button class="btn btn-ghost" id="btn-retry">↻ Retry Signal</button>
+      <button class="btn btn-danger" id="btn-disconnect">✕ Disconnect / New Device</button>
+    </div>
+  </div>
+
+  <div class="panel" id="how-it-works" style="font-family:var(--mono);font-size:0.68rem;color:var(--text-faint);line-height:1.8;">
+    <div class="panel-title" style="font-size:0.85rem;">How This Works</div>
+    <p>This tool uses Web Bluetooth's advertisement scanning to read the raw signal strength (RSSI) broadcast by nearby BLE devices — no pairing required. Distance is a rough estimate from the signal's path loss and can vary a lot with obstacles, device orientation, and interference. Full passive multi-device scanning (<code>requestLEScan</code>) is only available in Chromium browsers, sometimes behind <code>chrome://flags/#enable-experimental-web-platform-features</code>. Where it's unavailable, this tool falls back to your browser's native device picker plus <code>watchAdvertisements()</code> for live tracking.</p>
+  </div>
+
+</div>
+
+<footer>temple tools — bluetooth device locator &nbsp;·&nbsp; 100% client-side, nothing leaves your browser &nbsp;·&nbsp; <a href="index.html">← all tools</a></footer>
+
+<div id="toast-container"></div>
+
+<script>
+(function(){
+'use strict';
+
+// ── STATE ──────────────────────────────────────────────────────────────
+const LAST_DEVICE_KEY = 'bleLocator_lastDevice';
+const FAVORITES_KEY   = 'bleLocator_favorites';
+const RSSI_MIN = -100, RSSI_MAX = -30;       // gauge clamp range
+const REF_TXPOWER = -30;                      // reference RSSI @ 1m per spec
+const PATH_LOSS_N = 2;                        // ~6dB drop per doubling of distance
+const LOST_WARN_MS = 4000;                    // "signal lost" threshold
+const LOST_HARD_MS = 20000;                   // toast "lost track of device" threshold
+
+let scanMode = null;          // 'lescan' | 'chooser'
+let scanHandle = null;        // BluetoothLEScan handle (stop() available)
+let isScanning = false;
+let devices = new Map();      // id -> {id,name,rssi,txPower,uuids,lastSeen}
+let currentDevice = null;     // BluetoothDevice currently tracked
+let trackingId = null;
+let history = [];             // [{rssi, ts}]
+let lastReadingTs = 0;
+let hardLossToastShown = false;
+let currentPct = null, currentRssi = null;
+let displayedPct = 0;         // smoothed needle position
+let favorites = [];
+
+let audioOn = false, audioCtx = null, beepHandle = null, volume = 0.5;
+
+// ── DOM ────────────────────────────────────────────────────────────────
+const el = (id) => document.getElementById(id);
+const scanStatusEl   = el('scan-status');
+const trackStatusEl  = el('track-status');
+const trackStatusTxt = el('track-status-text');
+const deviceListWrap = el('device-list-wrap');
+const deviceListEl   = el('device-list');
+const lastDeviceWrap = el('last-device-wrap');
+const lastDeviceChip = el('last-device-chip');
+const favWrap         = el('favorites-wrap');
+const favChipRow      = el('favorites-chip-row');
+const trackingPanel  = el('tracking-panel');
+const scanPanel      = el('scan-panel');
+
+// ── UTIL ───────────────────────────────────────────────────────────────
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function mapRange(v, inMin, inMax, outMin, outMax) {
+  const t = clamp((v - inMin) / (inMax - inMin), 0, 1);
+  return outMin + t * (outMax - outMin);
+}
+function lerp(a, b, t) { return a + (b - a) * t; }
+function rssiToPercent(rssi) {
+  return Math.round(mapRange(rssi, RSSI_MIN, RSSI_MAX, 0, 100));
+}
+function pctToColor(pct) {
+  const RED = [255,77,77], YEL = [255,215,0], GRN = [0,255,136];
+  let c1, c2, t;
+  if (pct <= 50) { c1 = RED; c2 = YEL; t = pct / 50; }
+  else { c1 = YEL; c2 = GRN; t = (pct - 50) / 50; }
+  const r = Math.round(lerp(c1[0], c2[0], t));
+  const g = Math.round(lerp(c1[1], c2[1], t));
+  const b = Math.round(lerp(c1[2], c2[2], t));
+  return `rgb(${r},${g},${b})`;
+}
+function estimateDistanceMeters(rssi, txPower) {
+  const ref = (typeof txPower === 'number') ? txPower : REF_TXPOWER;
+  return Math.pow(10, (ref - rssi) / (10 * PATH_LOSS_N));
+}
+function fmtDistance(m) {
+  if (!isFinite(m) || m <= 0) return '≈ estimating distance…';
+  const ft = m * 3.28084;
+  return `≈ ${m < 10 ? m.toFixed(1) : Math.round(m)} m &nbsp;/&nbsp; ${ft < 10 ? ft.toFixed(1) : Math.round(ft)} ft`;
+}
+function shortId(id) {
+  if (!id) return 'unknown-address';
+  return id.length > 20 ? id.slice(0, 8) + '…' + id.slice(-6) : id;
+}
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function setStatus(bannerEl, textEl, type, msg) {
+  bannerEl.className = 'status-banner ' + type;
+  const icon = { info: 'ℹ', good: '✓', warn: '⚠', bad: '✕' }[type] || 'ℹ';
+  bannerEl.querySelector('span').textContent = icon;
+  (textEl || bannerEl.querySelector('span:last-child')).innerHTML = msg;
+}
+function showToast(msg, actionLabel, actionFn) {
+  const container = el('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>⚠</span><span style="flex:1;">${escHtml(msg)}</span>`;
+  if (actionLabel && actionFn) {
+    const btn = document.createElement('button');
+    btn.textContent = actionLabel;
+    btn.onclick = () => { actionFn(); t.remove(); };
+    t.appendChild(btn);
+  }
+  container.appendChild(t);
+  if (!actionLabel) setTimeout(() => t.remove(), 6000);
+}
+
+// ── LOCAL STORAGE ─────────────────────────────────────────────────────
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
+}
+function saveLastDevice(dev) {
+  localStorage.setItem(LAST_DEVICE_KEY, JSON.stringify({ id: dev.id, name: dev.name || 'Unknown Device', ts: Date.now() }));
+  renderLastDevice();
+}
+function renderLastDevice() {
+  const last = loadJSON(LAST_DEVICE_KEY, null);
+  if (!last) { lastDeviceWrap.classList.add('hidden'); return; }
+  lastDeviceWrap.classList.remove('hidden');
+  lastDeviceChip.innerHTML = '';
+  const chip = document.createElement('div');
+  chip.className = 'device-chip';
+  chip.innerHTML = `📶 <span>${escHtml(last.name)}</span>`;
+  chip.onclick = () => quickReconnect(last);
+  lastDeviceChip.appendChild(chip);
+}
+function loadFavorites() { favorites = loadJSON(FAVORITES_KEY, []); }
+function saveFavorites() { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }
+function isFavorite(id) { return favorites.some(f => f.id === id); }
+function toggleFavorite(id, name) {
+  if (isFavorite(id)) favorites = favorites.filter(f => f.id !== id);
+  else favorites.push({ id, name });
+  saveFavorites();
+  renderFavorites();
+  if (trackingId === id) el('track-fav-btn').textContent = isFavorite(id) ? '★' : '☆';
+  el('track-fav-btn') && el('track-fav-btn').classList.toggle('active', isFavorite(id));
+}
+function renderFavorites() {
+  if (!favorites.length) { favWrap.classList.add('hidden'); return; }
+  favWrap.classList.remove('hidden');
+  favChipRow.innerHTML = '';
+  favorites.forEach(f => {
+    const chip = document.createElement('div');
+    chip.className = 'device-chip';
+    chip.innerHTML = `<span class="star">★</span><span>${escHtml(f.name)}</span>`;
+    chip.onclick = () => quickReconnect(f);
+    favChipRow.appendChild(chip);
+  });
+}
+
+async function quickReconnect(saved) {
+  // If we already discovered this id in the current scan session, just select it
+  if (devices.has(saved.id)) { selectDeviceFromMap(saved.id); return; }
+  // Otherwise, try Chrome's getDevices() to reuse a previously-permitted device (no chooser prompt)
+  if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+    try {
+      const known = await navigator.bluetooth.getDevices();
+      const match = known.find(d => d.id === saved.id);
+      if (match) { selectDevice(match); return; }
+    } catch (e) { /* fall through */ }
+  }
+  showToast(`Couldn't auto-reconnect to "${saved.name}". Start a new scan to find it again.`);
+}
+
+// ── SUPPORT CHECK ─────────────────────────────────────────────────────
+function hasBluetooth() { return 'bluetooth' in navigator; }
+
+async function init() {
+  loadFavorites();
+  renderFavorites();
+  renderLastDevice();
+
+  if (!hasBluetooth()) {
+    el('unsupported-panel').classList.remove('hidden');
+    scanPanel.classList.add('hidden');
+    return;
+  }
+
+  scanMode = ('requestLEScan' in navigator.bluetooth) ? 'lescan' : 'chooser';
+  el('scan-mode-badge').textContent = scanMode === 'lescan' ? 'passive scan' : 'device picker';
+
+  if (navigator.bluetooth.getAvailability) {
+    try {
+      const avail = await navigator.bluetooth.getAvailability();
+      if (!avail) setStatus(scanStatusEl, null, 'warn', 'No Bluetooth adapter detected, or it looks turned off. Enable Bluetooth then tap Start Scan.');
+    } catch (e) { /* not fatal */ }
+  }
+}
+
+// ── SCANNING ───────────────────────────────────────────────────────────
+el('btn-scan').addEventListener('click', startScan);
+el('btn-stop-scan').addEventListener('click', stopScan);
+
+async function startScan() {
+  if (isScanning) return;
+  setStatus(scanStatusEl, null, 'info', 'Requesting Bluetooth permission…');
+
+  if (scanMode === 'lescan') {
+    try {
+      navigator.bluetooth.addEventListener('advertisementreceived', onAdvertisement);
+      scanHandle = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
+      isScanning = true;
+      el('btn-scan').classList.add('hidden');
+      el('btn-stop-scan').classList.remove('hidden');
+      deviceListWrap.classList.remove('hidden');
+      setStatus(scanStatusEl, null, 'good', 'Scanning… walk around, nearby BLE devices will appear below sorted by signal strength.');
+    } catch (err) {
+      navigator.bluetooth.removeEventListener('advertisementreceived', onAdvertisement);
+      handleScanError(err, true);
+    }
+    return;
+  }
+
+  // Chooser fallback — the browser itself shows the "list of nearby devices"
+  try {
+    const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [] });
+    setStatus(scanStatusEl, null, 'good', `Selected "${device.name || 'Unknown Device'}". Connecting for live signal…`);
+    selectDevice(device);
+  } catch (err) {
+    handleScanError(err, false);
+  }
+}
+
+function handleScanError(err, triedLescan) {
+  const name = err && err.name;
+  if (name === 'NotFoundError') {
+    setStatus(scanStatusEl, null, 'warn', 'Device not found — no device was selected. Tap "Start Scan" to try again.');
+  } else if (name === 'SecurityError' || name === 'NotAllowedError') {
+    setStatus(scanStatusEl, null, 'bad', 'Bluetooth permission was denied. Allow Bluetooth access for this site in your browser settings, then retry.');
+  } else if (name === 'NotSupportedError' && triedLescan) {
+    // Passive scanning unavailable (likely needs the experimental flag) — fall back to the chooser
+    scanMode = 'chooser';
+    el('scan-mode-badge').textContent = 'device picker';
+    setStatus(scanStatusEl, null, 'warn', 'Passive scanning isn’t enabled in this browser. Switched to the device picker — tap "Start Scan" again.');
+  } else {
+    setStatus(scanStatusEl, null, 'bad', `Couldn't start scanning: ${escHtml(err && err.message || 'unknown error')}.`);
+  }
+}
+
+function stopScan() {
+  if (scanHandle) { try { scanHandle.stop(); } catch (e) {} }
+  navigator.bluetooth.removeEventListener('advertisementreceived', onAdvertisement);
+  isScanning = false;
+  el('btn-scan').classList.remove('hidden');
+  el('btn-stop-scan').classList.add('hidden');
+  setStatus(scanStatusEl, null, 'info', 'Scan stopped. Tap "Start Scan" to search again.');
+}
+
+function onAdvertisement(event) {
+  const dev = event.device;
+  const entry = devices.get(dev.id) || { id: dev.id, name: dev.name || event.name || 'Unknown Device', firstSeen: Date.now() };
+  entry.name = dev.name || event.name || entry.name;
+  entry.rssi = (typeof event.rssi === 'number') ? event.rssi : entry.rssi;
+  entry.txPower = (typeof event.txPower === 'number') ? event.txPower : entry.txPower;
+  entry.uuids = (event.uuids && event.uuids.length) ? event.uuids : entry.uuids;
+  entry.lastSeen = Date.now();
+  devices.set(dev.id, entry);
+  renderDeviceList();
+
+  if (dev.id === trackingId) handleReading(event.rssi, event.txPower);
+
+  // auto quick-reconnect: if this matches the saved last device and nothing is being tracked yet
+  const last = loadJSON(LAST_DEVICE_KEY, null);
+  if (!currentDevice && last && last.id === dev.id) {
+    currentDevice = dev;
+    selectDeviceFromMap(dev.id);
+  }
+}
+
+function renderDeviceList() {
+  const list = Array.from(devices.values()).sort((a, b) => (b.rssi ?? -999) - (a.rssi ?? -999));
+  if (!list.length) {
+    deviceListEl.innerHTML = '<div class="empty-note">No devices found yet — keep scanning…</div>';
+    return;
+  }
+  deviceListEl.innerHTML = '';
+  list.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'device-item';
+    const pct = (typeof d.rssi === 'number') ? rssiToPercent(d.rssi) : null;
+    const color = pct !== null ? pctToColor(pct) : 'var(--text-faint)';
+    row.innerHTML = `
+      <div class="device-info">
+        <div class="device-name">${escHtml(d.name)}</div>
+        <div class="device-meta">${shortId(d.id)} ${d.uuids && d.uuids.length ? '· ' + d.uuids.length + ' service(s)' : ''}</div>
+      </div>
+      <div class="device-rssi" style="color:${color}">${typeof d.rssi === 'number' ? d.rssi + ' dBm' : '—'}</div>
+      <div class="device-actions">
+        <button class="icon-btn ${isFavorite(d.id) ? 'active' : ''}" data-fav="${d.id}" title="Favorite">${isFavorite(d.id) ? '★' : '☆'}</button>
+        <button class="track-btn" data-track="${d.id}">Track</button>
+      </div>`;
+    deviceListEl.appendChild(row);
+  });
+  deviceListEl.querySelectorAll('[data-track]').forEach(btn => {
+    btn.addEventListener('click', () => selectDeviceFromMap(btn.getAttribute('data-track')));
+  });
+  deviceListEl.querySelectorAll('[data-fav]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-fav');
+      toggleFavorite(id, devices.get(id) ? devices.get(id).name : 'Unknown Device');
+      renderDeviceList();
+    });
+  });
+}
+
+function selectDeviceFromMap(id) {
+  const entry = devices.get(id);
+  if (!entry) return;
+  trackingId = id;
+  history = [];
+  lastReadingTs = 0;
+  hardLossToastShown = false;
+  showTrackingPanel({ id: entry.id, name: entry.name });
+  saveLastDevice({ id: entry.id, name: entry.name });
+  setStatus(trackStatusEl, trackStatusTxt, 'info', 'Waiting for signal…');
+  if (typeof entry.rssi === 'number') handleReading(entry.rssi, entry.txPower);
+}
+
+// ── SINGLE-DEVICE (CHOOSER) TRACKING PATH ────────────────────────────
+async function selectDevice(device) {
+  currentDevice = device;
+  trackingId = device.id;
+  history = [];
+  lastReadingTs = 0;
+  hardLossToastShown = false;
+  showTrackingPanel({ id: device.id, name: device.name || 'Unknown Device' });
+  saveLastDevice({ id: device.id, name: device.name || 'Unknown Device' });
+
+  device.addEventListener('gattserverdisconnected', onGattDisconnected);
+
+  if ('watchAdvertisements' in device) {
+    device.addEventListener('advertisementreceived', onDeviceAdvertisement);
+    try {
+      await device.watchAdvertisements();
+      setStatus(trackStatusEl, trackStatusTxt, 'info', 'Waiting for signal…');
+    } catch (err) {
+      setStatus(trackStatusEl, trackStatusTxt, 'warn', 'Live signal tracking isn’t available for this device in this browser. Try Chrome with the experimental Web Bluetooth flag enabled.');
+    }
+  } else {
+    setStatus(trackStatusEl, trackStatusTxt, 'warn', 'This browser can’t read live signal strength (no watchAdvertisements support). Connected, but no RSSI meter is available here.');
+  }
+}
+
+function onDeviceAdvertisement(event) {
+  if (!currentDevice || event.device.id !== trackingId) return;
+  handleReading(event.rssi, event.txPower);
+}
+
+function onGattDisconnected() {
+  showToast('Device disconnected unexpectedly.', 'Reconnect', async () => {
+    if (currentDevice) {
+      try { await currentDevice.gatt.connect(); } catch (e) {}
+      if ('watchAdvertisements' in currentDevice) {
+        try { await currentDevice.watchAdvertisements(); } catch (e) {}
+      }
+    }
+  });
+}
+
+// ── READINGS / GAUGE ───────────────────────────────────────────────────
+function showTrackingPanel(devInfo) {
+  scanPanel.classList.add('hidden');
+  trackingPanel.classList.remove('hidden');
+  el('track-name').textContent = devInfo.name || 'Unknown Device';
+  el('track-meta').textContent = shortId(devInfo.id);
+  const favBtn = el('track-fav-btn');
+  favBtn.textContent = isFavorite(devInfo.id) ? '★' : '☆';
+  favBtn.classList.toggle('active', isFavorite(devInfo.id));
+  favBtn.onclick = () => toggleFavorite(devInfo.id, devInfo.name);
+  currentRssi = null; currentPct = null; displayedPct = 0;
+  drawChart();
+}
+
+function handleReading(rssi, txPower) {
+  if (typeof rssi !== 'number') return;
+  lastReadingTs = Date.now();
+  hardLossToastShown = false;
+  currentRssi = rssi;
+  currentPct = rssiToPercent(rssi);
+  history.push({ rssi, ts: lastReadingTs });
+  if (history.length > 20) history.shift();
+
+  const color = pctToColor(currentPct);
+  el('gauge-dbm').textContent = `${rssi} dBm`;
+  el('gauge-dbm').style.color = color;
+  el('gauge-pct').textContent = `${currentPct}% signal`;
+  el('gauge-dist').innerHTML = fmtDistance(estimateDistanceMeters(rssi, txPower));
+
+  updateTrend();
+  drawChart();
+  updateStatusMessage();
+  if (audioOn) scheduleBeep();
+}
+
+function updateTrend() {
+  const trendEl = el('trend-line');
+  if (history.length < 4) { trendEl.textContent = 'Gathering readings…'; trendEl.style.color = 'var(--text-faint)'; return; }
+  // Compare a small recent window against the window just before it, so a sharp
+  // reversal shows up immediately instead of being diluted by the full history.
+  const WINDOW = 5;
+  const newSlice = history.slice(-WINDOW);
+  const oldSlice = history.slice(-WINDOW * 2, -WINDOW).length
+    ? history.slice(-WINDOW * 2, -WINDOW)
+    : history.slice(0, Math.max(1, history.length - newSlice.length));
+  const newer = newSlice.reduce((s, r) => s + r.rssi, 0) / newSlice.length;
+  const older = oldSlice.reduce((s, r) => s + r.rssi, 0) / oldSlice.length;
+  const diff = newer - older;
+  if (diff > 1.5) { trendEl.textContent = '▲ Getting closer…'; trendEl.style.color = 'var(--green)'; }
+  else if (diff < -1.5) { trendEl.textContent = '▼ Getting farther…'; trendEl.style.color = 'var(--red)'; }
+  else { trendEl.textContent = '▬ Holding steady'; trendEl.style.color = 'var(--text-dim)'; }
+}
+
+function updateStatusMessage() {
+  if (currentPct === null) return;
+  if (currentPct >= 80) setStatus(trackStatusEl, trackStatusTxt, 'good', '🔥 Very close — you’re right on top of it!');
+  else if (currentPct >= 50) setStatus(trackStatusEl, trackStatusTxt, 'good', 'Getting warmer…');
+  else if (currentPct >= 20) setStatus(trackStatusEl, trackStatusTxt, 'warn', 'Still searching — keep moving.');
+  else setStatus(trackStatusEl, trackStatusTxt, 'warn', 'Weak signal — device is far away or blocked.');
+}
+
+// ── LOST-SIGNAL WATCHER ─────────────────────────────────────────────
+setInterval(() => {
+  if (!trackingId || !lastReadingTs) return;
+  const gap = Date.now() - lastReadingTs;
+  if (gap > LOST_HARD_MS && !hardLossToastShown) {
+    hardLossToastShown = true;
+    const name = el('track-name').textContent;
+    setStatus(trackStatusEl, trackStatusTxt, 'bad', 'Signal lost — device not found nearby.');
+    showToast(`Lost track of "${name}". Signal hasn't been seen in a while.`, 'Retry', retrySignal);
+  } else if (gap > LOST_WARN_MS) {
+    setStatus(trackStatusEl, trackStatusTxt, 'warn', 'Signal lost — still searching…');
+  }
+}, 1000);
+
+el('btn-retry').addEventListener('click', retrySignal);
+async function retrySignal() {
+  if (scanMode === 'lescan') {
+    if (!isScanning) await startScan();
+    setStatus(trackStatusEl, trackStatusTxt, 'info', 'Rescanning for signal…');
+    return;
+  }
+  if (currentDevice) {
+    setStatus(trackStatusEl, trackStatusTxt, 'info', 'Retrying connection…');
+    try {
+      if (currentDevice.gatt && !currentDevice.gatt.connected) await currentDevice.gatt.connect();
+      if ('watchAdvertisements' in currentDevice) await currentDevice.watchAdvertisements();
+    } catch (e) {
+      setStatus(trackStatusEl, trackStatusTxt, 'bad', 'Still no signal. Make sure the device is powered on and nearby.');
+    }
+  }
+}
+
+// ── DISCONNECT / RESET ────────────────────────────────────────────────
+el('btn-disconnect').addEventListener('click', disconnectAndReset);
+function disconnectAndReset() {
+  if (currentDevice) {
+    currentDevice.removeEventListener('advertisementreceived', onDeviceAdvertisement);
+    currentDevice.removeEventListener('gattserverdisconnected', onGattDisconnected);
+    try { if (currentDevice.gatt && currentDevice.gatt.connected) currentDevice.gatt.disconnect(); } catch (e) {}
+  }
+  currentDevice = null;
+  trackingId = null;
+  history = [];
+  currentPct = null; currentRssi = null;
+  audioOn = false;
+  el('audio-toggle').classList.remove('on');
+  clearTimeout(beepHandle);
+  trackingPanel.classList.add('hidden');
+  scanPanel.classList.remove('hidden');
+  setStatus(scanStatusEl, null, 'info', 'Pick a device to track, or start a new scan.');
+}
+
+// ── GAUGE ANIMATION LOOP (smooth needle, up to 5x/sec) ────────────────
+let gaugeFillLen = null;
+function initGaugeGeometry() {
+  const path = el('gauge-fill');
+  gaugeFillLen = path.getTotalLength();
+  path.style.strokeDasharray = gaugeFillLen;
+  path.style.strokeDashoffset = gaugeFillLen;
+}
+function tickGauge() {
+  const target = currentPct === null ? 0 : currentPct;
+  displayedPct = lerp(displayedPct, target, 0.25);
+  if (Math.abs(displayedPct - target) < 0.2) displayedPct = target;
+  const deg = -90 + (displayedPct / 100) * 180;
+  el('gauge-needle').setAttribute('transform', `rotate(${deg} 150 160)`);
+  if (gaugeFillLen !== null) {
+    el('gauge-fill').style.strokeDashoffset = gaugeFillLen * (1 - displayedPct / 100);
+  }
+}
+setInterval(tickGauge, 100);
+
+// ── HISTORY CHART ──────────────────────────────────────────────────────
+function drawChart() {
+  const canvas = el('history-chart');
+  const wrap = canvas.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 34, padR = 8, padT = 8, padB = 18;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  // gridlines
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.font = '10px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(245,242,236,0.3)';
+  [RSSI_MAX, (RSSI_MAX + RSSI_MIN) / 2, RSSI_MIN].forEach(v => {
+    const y = padT + mapRange(v, RSSI_MAX, RSSI_MIN, 0, plotH);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(Math.round(v), 2, y + 3);
+  });
+
+  if (history.length < 2) {
+    ctx.fillStyle = 'rgba(245,242,236,0.25)';
+    ctx.font = '11px "Share Tech Mono", monospace';
+    ctx.fillText('waiting for readings…', padL, h / 2);
+    return;
+  }
+
+  const n = history.length;
+  const pts = history.map((r, i) => ({
+    x: padL + (n === 1 ? plotW : (i / (n - 1)) * plotW),
+    y: padT + mapRange(clamp(r.rssi, RSSI_MIN, RSSI_MAX), RSSI_MAX, RSSI_MIN, 0, plotH),
+    rssi: r.rssi
+  }));
+
+  // line
+  ctx.strokeStyle = 'rgba(41,182,255,0.7)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+
+  // filled area
+  ctx.lineTo(pts[pts.length - 1].x, padT + plotH);
+  ctx.lineTo(pts[0].x, padT + plotH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(41,182,255,0.08)';
+  ctx.fill();
+
+  // dots
+  pts.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = pctToColor(rssiToPercent(p.rssi));
+    ctx.fill();
+  });
+}
+window.addEventListener('resize', () => { if (!trackingPanel.classList.contains('hidden')) drawChart(); });
+
+// ── AUDIO CUES ─────────────────────────────────────────────────────────
+el('audio-toggle').addEventListener('click', toggleAudio);
+el('vol-slider').addEventListener('input', (e) => { volume = parseFloat(e.target.value); });
+
+function ensureAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function toggleAudio() {
+  audioOn = !audioOn;
+  el('audio-toggle').classList.toggle('on', audioOn);
+  if (audioOn) { ensureAudioCtx(); scheduleBeep(); }
+  else { clearTimeout(beepHandle); }
+}
+function beepOnce(freq) {
+  ensureAudioCtx();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.value = volume * 0.3;
+  osc.connect(gain).connect(audioCtx.destination);
+  const now = audioCtx.currentTime;
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+  osc.start(now);
+  osc.stop(now + 0.11);
+}
+function scheduleBeep() {
+  clearTimeout(beepHandle);
+  if (!audioOn) return;
+  const pct = currentPct === null ? 0 : currentPct;
+  const interval = mapRange(pct, 0, 100, 1400, 160);
+  const freq = mapRange(pct, 0, 100, 280, 1100);
+  if (currentPct !== null) beepOnce(freq);
+  beepHandle = setTimeout(scheduleBeep, interval);
+}
+
+// ── BOOT ───────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  init();
+  requestAnimationFrame(() => { try { initGaugeGeometry(); } catch (e) {} });
+});
+
+})();
+</script>
+</body>
+</html>
