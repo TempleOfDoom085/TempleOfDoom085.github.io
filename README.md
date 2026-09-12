@@ -84,6 +84,7 @@ Hosting:           GitHub Pages
 
 ## Certifications
 
+- Cranium AI: AI Security Certificate · AI Red Team Certificate (Sep 2026)
 - Anthropic: AI Fluency, Claude Code in Action, Claude 101, Introduction to Subagents, Introduction to Claude Cowork (2026)
 - Mastercard Cybersecurity Job Simulation — Forage (Feb 2024)
 - University of Colorado Boulder (2023): DFIR & Threat Hunting · Ethical Hacking · Python for Security · Cybersecurity Infrastructure & Technology · Network Security · Linux Security · Cloud Security · Computer Networking · Microsoft Security
