@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /vendor/
+
+Sitemap: https://templeofdoom085.github.io/sitemap.xml
