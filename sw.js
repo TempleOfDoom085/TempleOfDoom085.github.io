@@ -1,40 +1,43 @@
-// Cache strategy: Cache First for assets, Network First for HTML
-const CACHE_VERSION = 'temple-tools-v1';
-const STATIC_CACHE = 'temple-static-v1';
-const DYNAMIC_CACHE = 'temple-dynamic-v1';
+// Cache strategy: Cache First for assets, Network First for HTML.
+// Bump CACHE_VERSION whenever precached files change so old caches are purged.
+const CACHE_VERSION = 'v2';
+const STATIC_CACHE = `temple-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `temple-dynamic-${CACHE_VERSION}`;
 
-// Core files to precache on install
+// Core files to precache on install.
+// Every entry MUST exist — cache.addAll() rejects the whole install on a single 404.
 const PRECACHE_URLS = [
   '/',
   '/index.html',
+  '/404.html',
+  '/manifest.json',
+  '/assets/css/site.css',
+  '/assets/js/main.js',
+  '/assets/js/particles.js',
+  '/assets/js/visitor-intel.js',
   '/tools/index.html',
+  '/tools/bluetooth-locator.html',
+  '/tools/cidr.html',
+  '/tools/cracker.html',
+  '/tools/cron.html',
+  '/tools/cve.html',
+  '/tools/dns.html',
+  '/tools/email.html',
+  '/tools/encode.html',
   '/tools/hash.html',
-  '/tools/recon.html',
+  '/tools/headers.html',
+  '/tools/http-builder.html',
+  '/tools/jwt.html',
   '/tools/osint.html',
   '/tools/password.html',
-  '/tools/scanner.html',
-  '/tools/jwt.html',
-  '/tools/encode.html',
-  '/tools/email.html',
-  '/tools/regex.html',
-  '/tools/cidr.html',
-  '/tools/cron.html',
-  '/tools/headers.html',
-  '/tools/pwgen.html',
-  '/tools/ssl.html',
   '/tools/payloads.html',
-  '/tools/cve.html',
-  '/tools/whois.html',
-  '/tools/ctf.html',
-  '/tools/pwdaudit.html',
-  '/tools/httpreq.html',
   '/tools/pentest.html',
-  '/tools/dnsprop.html',
-  '/globe.html',
-  '/writeups.html',
-  '/timeline.html',
-  '/game.html',
-  '/runner.html',
+  '/tools/pwgen.html',
+  '/tools/recon.html',
+  '/tools/regex.html',
+  '/tools/scanner.html',
+  '/tools/ssl.html',
+  '/tools/whois.html',
 ];
 
 // API hostnames that should never be cached
@@ -46,6 +49,7 @@ const NETWORK_ONLY_HOSTS = [
   'ipinfo.io',
   'cve.circl.lu',
   'rdap.org',
+  'api.github.com',
 ];
 
 // ── INSTALL ──────────────────────────────────────────────────────────────────
@@ -78,8 +82,8 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle http/https
-  if (!url.protocol.startsWith('http')) return;
+  // Only handle http/https GET requests
+  if (!url.protocol.startsWith('http') || request.method !== 'GET') return;
 
   // Network Only — external APIs
   if (NETWORK_ONLY_HOSTS.some(host => url.hostname.includes(host))) {
@@ -109,9 +113,10 @@ self.addEventListener('fetch', event => {
 async function networkFirstWithOfflineFallback(request) {
   try {
     const networkResponse = await fetch(request);
-    // Update the dynamic cache with fresh response
-    const cache = await caches.open(DYNAMIC_CACHE);
-    cache.put(request, networkResponse.clone());
+    if (networkResponse && networkResponse.status === 200) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
     return networkResponse;
   } catch {
     // Try cache first
@@ -130,7 +135,7 @@ async function networkFirstWithOfflineFallback(request) {
           color:#f5f2ec;font-family:monospace;font-size:0.85rem;
           padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;">
           <span style="color:#00d4ff;font-size:1.2rem;">⚠</span>
-          <span>You are offline. Showing cached version of Temple Tools.</span>
+          <span>You are offline. Showing cached version of this site.</span>
           <button onclick="document.getElementById('sw-offline-banner').remove()"
             style="margin-left:auto;background:none;border:1px solid rgba(0,212,255,0.4);
             color:#00d4ff;padding:0.25rem 0.75rem;cursor:pointer;font-family:monospace;">
@@ -143,7 +148,7 @@ async function networkFirstWithOfflineFallback(request) {
       });
     }
 
-    return new Response('<h1>Offline</h1><p>Temple Tools is unavailable offline.</p>', {
+    return new Response('<h1>Offline</h1><p>This site is unavailable offline.</p>', {
       status: 503,
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });

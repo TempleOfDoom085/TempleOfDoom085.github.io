@@ -1,7 +1,7 @@
 {
   "name": "Temple Tools — Security Toolkit",
   "short_name": "Temple Tools",
-  "description": "17 client-side cybersecurity tools. Zero tracking. Zero server.",
+  "description": "22 client-side cybersecurity tools. Zero tracking. Zero server.",
   "start_url": "/tools/index.html",
   "scope": "/",
   "display": "standalone",

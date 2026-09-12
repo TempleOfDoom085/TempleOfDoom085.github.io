@@ -1,91 +1,98 @@
 # Brian Temple — Personal Portfolio
 
-**🌐 Live Site:** [TempleOfDoom085.github.io](https://TempleOfDoom085.github.io)
+**Live site:** [templeofdoom085.github.io](https://templeofdoom085.github.io)
 
-> AI Automation Builder · Cybersecurity Student · Developer · Cook
+> AI Security Advisor @ Cranium AI · AI Agent Builder · Cybersecurity Student · Cook
 
----
+Personal portfolio for Brian Temple — AI Security Advisor at [Cranium AI](https://cranium.ai) (Short Hills, NJ), working with CISOs, Chief AI Officers and third-party risk leaders at regulated enterprises on AI visibility, governance and runtime security. Background building and deploying production AI agent systems. SNHU Cyber Security student, based in Towaco, NJ.
 
-## About
-
-Personal portfolio site for Brian Temple — AI automation builder, cybersecurity professional, and SNHU Cyber Security student based in Towaco, NJ.
-
-Built entirely from scratch in vanilla HTML, CSS, and JavaScript. No frameworks. No templates. No dependencies.
+Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build step, no tracking. Hosted on GitHub Pages.
 
 ---
 
-## What's Inside
+## Pages
 
-| Section | Description |
+| Page | What it is |
 |---|---|
-| About | Background in AI automation and sales |
-| Experience | Current role at Unblinded + full work history |
-| Skills | AI, Cybersecurity, Technical Stack, Sales |
-| Projects | Featured game + future projects |
-| Certifications | 11 certs from CU Boulder, Forage/Mastercard, Oracle |
-| Education | SNHU (in progress) + CU Boulder |
-| All Skills | Complete LinkedIn skill set, categorized |
-| Volunteering | Humane Society + Cystic Fibrosis Foundation |
-| Kitchen | Original recipes with photos |
-| Contact | Email, phone, LinkedIn, GitHub |
+| [`index.html`](index.html) | Main portfolio — about, experience, skills, projects, certifications, education, contact. Includes a Ctrl+K command palette, an interactive terminal (press `` ` ``), achievements and a few easter eggs. |
+| [`career.html`](career.html) | Career timeline — Cranium AI, Unblinded, and a decade of consultative sales. |
+| [`tools/`](tools/) | **Temple Tools** — 22 client-side security utilities (hash analyzer, OSINT dashboard, JWT decoder, CIDR calculator, header grader, CVE search, Bluetooth locator, and more). Zero server, zero tracking. Installable as a PWA. |
+| [`ctf-writeups.html`](ctf-writeups.html) | CTF challenge writeups with methodology. |
+| [`threat-globe.html`](threat-globe.html) | Live 3D threat globe (Three.js / WebGL). |
+| [`soc.html`](soc.html) | SOC dashboard — CVE feed, alerts, topology. |
+| [`attack-viz.html`](attack-viz.html) | Animated explainers for SQL injection, XSS, buffer overflow. |
+| [`pentest-sim.html`](pentest-sim.html) | Pentest simulator. |
+| [`hacker-feed.html`](hacker-feed.html) | Live GitHub activity rendered as a security ops console. |
+| [`insane-engine.html`](insane-engine.html) | GPU cinematic demo — fluid ink, particles, bloom. |
+| [`game.html`](game.html) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. |
+| [`world.html`](world.html) + [`src/`](src/) | **REALM** — modular open-world 3D sandbox (procedural terrain, day/night, weather, vehicles, quests). |
+| [`kitchen.html`](kitchen.html) | Original recipes. |
 
 ---
 
-## ⚔ Featured Project — Knights Templar: The Siege of the Undead
-
-A fully original text adventure game — started as a Python assignment for **IT 140 at SNHU**, grown into a browser game with:
-
-- 17 interconnected rooms across a cursed medieval fortress
-- Full combat system with attack, defend, flee
-- 4 NPCs with branching dialogue (monk, prisoner knight, ghost, merchant)
-- 8 hidden Bible verse scrolls (randomized each playthrough)
-- Fog-of-war map — unvisited rooms are blacked out
-- Saint Michael's Armor — unlock by finding all scrolls AND all relics
-- 8 achievements
-- Historical portraits: Hugues de Payens, Jacques de Molay, Philip IV
-- Gregorian chant soundtrack via YouTube
-- Procedural SFX via Web Audio API
-- Batman Beyond art direction — 60% black, 30% gold/crimson, 10% ice blue
-
-**Long-term goal:** Full 3D open-world game. This is version 5 of an ongoing build.
-
----
-
-## Tech Stack
+## Repository layout
 
 ```
-Frontend:     HTML5 · CSS3 · Vanilla JavaScript (ES6+)
-Game Engine:  None — pure JS logic
-Graphics:     Hand-coded SVG
-Audio:        Web Audio API (procedural SFX) + YouTube IFrame API
-Hosting:      GitHub Pages (free, HTTPS, CDN)
-Original:     Python 3 — SNHU IT 140
+.
+├── index.html            # main portfolio (markup only)
+├── assets/
+│   ├── css/site.css      # all portfolio styles
+│   └── js/
+│       ├── main.js       # tabs, fade-ins, nav, terminal, achievements, hero
+│       ├── particles.js  # hero particle-text explosion
+│       └── visitor-intel.js
+├── career.html, ctf-writeups.html, soc.html, ...   # standalone pages
+├── tools/                # Temple Tools (one self-contained HTML file per tool)
+├── src/                  # REALM open-world engine modules (ES modules)
+├── vendor/three/         # Three.js post-processing passes
+├── docs/                 # design notes (Knights Templar art guide)
+├── img/                  # optional .webp room art for game.html (auto-detected)
+├── sw.js                 # service worker (offline cache for tools + portfolio)
+├── manifest.json         # PWA manifest for Temple Tools
+├── 404.html              # GitHub Pages not-found page
+├── robots.txt, sitemap.xml
+└── README.md
+```
+
+---
+
+## Run locally
+
+Everything is static, but the service worker and absolute asset paths need an HTTP origin (not `file://`):
+
+```bash
+python -m http.server 8080
+```
+
+Then open <http://localhost:8080>.
+
+---
+
+## Tech stack
+
+```
+Markup / styling:  HTML5 · CSS3 (custom properties, no preprocessor)
+Scripting:         Vanilla JavaScript (ES6+), ES modules for REALM
+3D / graphics:     Three.js (globe, engine, REALM) · hand-coded SVG · Canvas 2D
+Audio:             Web Audio API — 100% procedural, no audio files
+Data sources:      GitHub API · HIBP · Shodan InternetDB · URLhaus · NVD
+Offline:           Service worker + PWA manifest
+Hosting:           GitHub Pages
 ```
 
 ---
 
 ## Certifications
 
+- Anthropic: AI Fluency, Claude Code in Action, Claude 101, Introduction to Subagents, Introduction to Claude Cowork (2026)
 - Mastercard Cybersecurity Job Simulation — Forage (Feb 2024)
-- DFIR & Threat Hunting — CU Boulder (Oct 2023)
-- Offensive Security: Ethical Hacking — CU Boulder (Sep 2023)
-- Introduction to Python for Security — CU Boulder (Aug 2023)
-- Cybersecurity Infrastructure & Technology — CU Boulder (Jul 2023)
-- Network Security — CU Boulder (Jun 2023)
-- Linux Security — CU Boulder (May 2023)
-- Cloud Security — CU Boulder (May 2023)
-- Computer Networking — CU Boulder (Apr 2023)
-- Microsoft Security — CU Boulder (Mar 2023)
+- University of Colorado Boulder (2023): DFIR & Threat Hunting · Ethical Hacking · Python for Security · Cybersecurity Infrastructure & Technology · Network Security · Linux Security · Cloud Security · Computer Networking · Microsoft Security
 - Oracle Cloud ERP Financials 2021 Sales Specialist
 
 ---
 
 ## Contact
 
-- 📧 btemp085@gmail.com
-- 🔗 [linkedin.com/in/briantemple1](https://www.linkedin.com/in/briantemple1)
-- ⌨ [github.com/TempleOfDoom085](https://github.com/TempleOfDoom085)
-
----
-
-
+- Email: btemp085@gmail.com
+- LinkedIn: [linkedin.com/in/briantemple1](https://www.linkedin.com/in/briantemple1)
+- GitHub: [github.com/TempleOfDoom085](https://github.com/TempleOfDoom085)
