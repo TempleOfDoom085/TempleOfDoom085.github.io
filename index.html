@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- SEO -->
-<meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI, based in Towaco, NJ. AI visibility, governance and runtime security for regulated enterprises, backed by hands-on experience building production AI agent systems. 20+ live security tools.">
+<meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises, plus 22 live security tools.">
 <meta name="keywords" content="AI security, AI governance, AI red teaming, third-party AI risk, EU AI Act, NIST AI RMF, ISO 42001, AI automation, cybersecurity, voice AI, workflow automation, Brian Temple, NJ">
 <meta name="author" content="Brian Temple">
 <link rel="canonical" href="https://templeofdoom085.github.io/">
@@ -12,12 +13,17 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://templeofdoom085.github.io/">
 <meta property="og:title" content="Brian Temple — AI Security & Automation">
-<meta property="og:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises — plus 20+ live security tools and an interactive portfolio.">
+<meta property="og:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises — plus 22 live security tools and an interactive portfolio.">
 <meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
 <!-- Twitter / X -->
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Brian Temple — AI Security & Automation">
-<meta name="twitter:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security — 20+ live security tools, interactive terminal, and a playable game built into the portfolio.">
+<meta name="twitter:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security — 22 live security tools, interactive terminal, and a playable game built into the portfolio.">
+<meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#00d4ff">
@@ -48,6 +54,9 @@
 </script>
 </head>
 <body>
+
+<!-- SKIP LINK (first focusable element, for keyboard and screen-reader users) -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
 <!-- AURORA BACKGROUND -->
 <canvas id="auroraCanvas"></canvas>
@@ -145,6 +154,7 @@
 </nav>
 
 <!-- HERO -->
+<main id="main-content" tabindex="-1">
 <div class="hero">
   <canvas id="heroBgCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
   <canvas id="particleTextCanvas"></canvas>
@@ -787,7 +797,7 @@
 <!-- GAME SECTION -->
 <section id="game-section" style="padding:0">
   <div class="game-header inner" style="padding-top:4rem;padding-bottom:0;">
-    <span class="section-label fade-in">04 — Featured Games</span>
+    <span class="section-label fade-in">07 — Featured Games</span>
     <h2 class="section-title fade-in">Playable Projects</h2>
   </div>
 
@@ -795,7 +805,7 @@
   <div class="game-dual-grid">
     <!-- Card 1: Knights Templar -->
     <div class="game-card-wrap">
-      <a href="game.html" target="_blank" style="display:block;text-decoration:none;">
+      <a href="game.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
         <div class="game-launch-btn" style="width:100%;padding:2.5rem 2rem;border:none;">
           <div class="game-launch-title">KNIGHTS TEMPLAR</div>
           <div class="game-launch-sub">— THE SIEGE OF THE UNDEAD — V10.0 —</div>
@@ -806,7 +816,7 @@
     </div>
     <!-- Card 2: REALM -->
     <div class="game-card-wrap realm-card">
-      <a href="world.html" target="_blank" style="display:block;text-decoration:none;">
+      <a href="world.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
         <div class="game-launch-btn" style="background:linear-gradient(135deg,#050f08 0%,#040a06 100%);width:100%;padding:2.5rem 2rem;border:none;">
           <div class="game-launch-title" style="color:#aef7c8;text-shadow:0 0 20px rgba(0,255,136,0.55);">REALM</div>
           <div class="game-launch-sub" style="color:rgba(174,247,200,0.55);">— OPEN WORLD — GTA-STYLE — V1.0 —</div>
@@ -820,7 +830,7 @@
     </div>
     <!-- Card 3: Cinematic Engine -->
     <div class="game-card-wrap">
-      <a href="insane-engine.html" target="_blank" style="display:block;text-decoration:none;">
+      <a href="insane-engine.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
         <div class="game-launch-btn" style="background:linear-gradient(135deg,#0a0514 0%,#06030d 100%);width:100%;padding:2.5rem 2rem;border:none;">
           <div class="game-launch-title" style="color:#c084fc;text-shadow:0 0 20px rgba(180,0,255,0.55);">CINEMATIC ENGINE</div>
           <div class="game-launch-sub" style="color:rgba(192,132,252,0.55);">— GPU VISUAL DEMO — THREE.JS —</div>
@@ -834,7 +844,7 @@
     </div>
     <!-- Card 4: Attack Visualizer -->
     <div class="game-card-wrap">
-      <a href="attack-viz.html" target="_blank" style="display:block;text-decoration:none;">
+      <a href="attack-viz.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
         <div class="game-launch-btn" style="background:linear-gradient(135deg,#0f0505 0%,#0a0303 100%);width:100%;padding:2.5rem 2rem;border:none;">
           <div class="game-launch-title" style="color:#ff6b6b;text-shadow:0 0 20px rgba(255,50,50,0.55);">ATTACK VIZ</div>
           <div class="game-launch-sub" style="color:rgba(255,107,107,0.55);">— CYBER ATTACK EXPLAINER —</div>
@@ -1691,7 +1701,7 @@
 <!-- CERTS -->
 <section id="certs" style="background:#111;">
   <div class="inner">
-    <span class="section-label fade-in">05 — Licenses & Certifications</span>
+    <span class="section-label fade-in">08 — Licenses & Certifications</span>
     <h2 class="section-title fade-in">Credentials that <em>count.</em></h2>
     <div class="cert-grid-full fade-in">
 
@@ -1814,7 +1824,7 @@
 <!-- EDUCATION -->
 <section id="education" style="background:#111;">
   <div class="inner">
-    <span class="section-label fade-in">06 — Education</span>
+    <span class="section-label fade-in">09 — Education</span>
     <h2 class="section-title fade-in">Always <em>learning.</em></h2>
     <div class="edu-list">
 
@@ -1907,7 +1917,7 @@
 <!-- FULL SKILLS -->
 <section id="all-skills" style="background:var(--cyber);">
   <div class="inner">
-    <span class="section-label fade-in">07 — Skills</span>
+    <span class="section-label fade-in">10 — Skills</span>
     <h2 class="section-title fade-in" style="color:var(--paper)">Full <em>skill set.</em></h2>
     <div class="skills-full-grid">
 
@@ -2012,29 +2022,9 @@
 </section>
 
 <!-- VOLUNTEERING -->
-<!-- COOKING -->
-<section id="cooking" style="background:#0a0c08;">
-  <div class="inner">
-    <span class="section-label fade-in">09 — Kitchen Lab</span>
-    <h2 class="section-title fade-in">Outside the <em>terminal.</em></h2>
-    <div class="fade-in" style="max-width:680px;margin:0 auto;text-align:center">
-      <p style="font-size:1.15rem;font-weight:300;color:rgba(245,242,236,0.7);line-height:1.9;margin-bottom:2.5rem">
-        Outside of my professional life, my passion is cooking. I love building flavors from scratch —
-        testing techniques, layering ingredients, and chasing that moment when everything comes together.
-      </p>
-      <div style="border:1px solid rgba(184,147,58,0.2);padding:2.5rem;background:rgba(184,147,58,0.03);margin-bottom:2rem">
-        <div style="font-family:var(--mono);font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:0.8rem">Featured Recipe</div>
-        <div style="font-size:clamp(1.3rem,2.5vw,1.8rem);font-weight:300;line-height:1.2;margin-bottom:0.6rem">Crispy Peruvian Chicken<br><em style="font-style:italic;color:#d4a94a">with Ají Verde &amp; Corn Salsa</em></div>
-        <div style="font-family:var(--mono);font-size:0.68rem;color:rgba(245,242,236,0.35);letter-spacing:0.08em;margin-bottom:1.5rem">Serves 4 &nbsp;·&nbsp; Prep 20 min + marinate &nbsp;·&nbsp; Cook ~20 min &nbsp;·&nbsp; Intermediate</div>
-      </div>
-      <a href="kitchen.html" style="display:inline-block;font-family:var(--mono);font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;padding:0.85rem 2.5rem;border:1px solid rgba(184,147,58,0.5);color:rgba(184,147,58,0.9);text-decoration:none;transition:all 0.2s;background:rgba(184,147,58,0.04)" onmouseenter="this.style.background='rgba(184,147,58,0.12)';this.style.borderColor='rgba(184,147,58,0.8)'" onmouseleave="this.style.background='rgba(184,147,58,0.04)';this.style.borderColor='rgba(184,147,58,0.5)'">View Kitchen Lab →</a>
-    </div>
-  </div>
-</section>
-
 <section id="volunteering" style="background:#0c0c0c;">
   <div class="inner">
-    <span class="section-label fade-in">10 — Volunteering</span>
+    <span class="section-label fade-in">11 — Volunteering</span>
     <h2 class="section-title fade-in">Giving <em>back.</em></h2>
     <div class="vol-list">
 
@@ -2065,7 +2055,7 @@
 <!-- CONTACT -->
 <section id="contact">
   <div class="inner" style="text-align:center">
-    <span class="section-label fade-in">11 — Contact</span>
+    <span class="section-label fade-in">12 — Contact</span>
     <h2 class="section-title fade-in">Let's <em>work together.</em></h2>
     <p class="contact-sub">Open to conversations about AI security, governance, agent systems, and automation — or anything else on this site.</p>
 
@@ -2088,11 +2078,11 @@
         </div>
         <div class="contact-info-row">
           <span class="contact-info-icon">🔗</span>
-          <a href="https://www.linkedin.com/in/briantemple1" target="_blank">linkedin.com/in/briantemple1</a>
+          <a href="https://www.linkedin.com/in/briantemple1" target="_blank" rel="noopener noreferrer">linkedin.com/in/briantemple1</a>
         </div>
         <div class="contact-info-row">
           <span class="contact-info-icon">⌨</span>
-          <a href="https://github.com/TempleOfDoom085" target="_blank" id="githubLink">github.com/TempleOfDoom085</a>
+          <a href="https://github.com/TempleOfDoom085" target="_blank" rel="noopener noreferrer" id="githubLink">github.com/TempleOfDoom085</a>
         </div>
         <div class="contact-meta">
           <span>📍 Towaco, NJ &nbsp;·&nbsp; EST (UTC−5)</span>
@@ -2116,6 +2106,7 @@
     </div>
   </div>
 </section>
+</main>
 
 <button class="cmd-palette-trigger" onclick="openCmdPalette()" title="Ctrl+K — Quick navigation" style="position:fixed;bottom:4.5rem;right:2rem;z-index:90;">⌘K</button>
 <button id="audioWidget" aria-label="Toggle ambient audio" title="Toggle cyberpunk ambient audio">

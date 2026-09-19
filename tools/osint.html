@@ -2,7 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Domain intelligence dashboard - DNS, certificate transparency, exposed services and threat scoring.">
+<link rel="canonical" href="https://templeofdoom085.github.io/tools/osint.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:url" content="https://templeofdoom085.github.io/tools/osint.html">
+<meta property="og:title" content="OSINT Dashboard — Temple Tools">
+<meta property="og:description" content="Domain intelligence dashboard - DNS, certificate transparency, exposed services and threat scoring.">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OSINT Dashboard — Temple Tools">
+<meta name="twitter:description" content="Domain intelligence dashboard - DNS, certificate transparency, exposed services and threat scoring.">
+<meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <title>OSINT Dashboard — Temple Tools</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -184,6 +200,22 @@ body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba
 }
 
 html { font-size: 18px; }
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────────────
+   Honours the OS "reduce motion" setting: stops the ambient animation and the
+   custom cursor, and gives the native pointer back. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  html { scroll-behavior: auto; }
+  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
+}
 </style>
 </head>
 <body>
