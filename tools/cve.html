@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CVE Intelligence — Temple Tools</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -129,6 +130,7 @@ nav {
 .cve-refs-title { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.4rem; }
 .cve-refs-list a { display: block; font-family: var(--mono); font-size: 0.65rem; color: var(--cyan); text-decoration: none; margin-bottom: 0.2rem; word-break: break-all; }
 .cve-refs-list a:hover { color: var(--c); }
+.cve-ref-blocked { display: block; font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); text-decoration: line-through; margin-bottom: 0.2rem; word-break: break-all; }
 
 /* Pagination */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; }
@@ -372,12 +374,12 @@ function renderResults() {
     const shortDesc = desc.length > 200 ? desc.slice(0, 200) + '...' : desc;
     const pubDate = cve.published ? cve.published.slice(0,10) : 'N/A';
     const refs    = (cve.references || []).slice(0, 5);
-    const nvdLink = `https://nvd.nist.gov/vuln/detail/${cve.id}`;
+    const nvdLink = `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(cve.id)}`;
 
     return `
       <div class="cve-card">
         <div class="cve-card-header" onclick="toggleCard(${i})">
-          <a class="cve-id" href="${nvdLink}" target="_blank" onclick="event.stopPropagation()">${cve.id}</a>
+          <a class="cve-id" href="${nvdLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${escHtml(cve.id)}</a>
           <div class="cve-score-badge ${sevCls}">${scoreStr}<br><span style="font-size:0.55rem;">${cvss.severity||'N/A'}</span></div>
           <div class="cve-meta">
             <div class="cve-desc-short">${escHtml(shortDesc)}</div>
@@ -390,7 +392,7 @@ function renderResults() {
           ${cvss.vector ? `<div class="cve-vector">CVSS: ${escHtml(cvss.vector)}</div>` : ''}
           ${refs.length ? `
             <div class="cve-refs-title">References</div>
-            <div class="cve-refs-list">${refs.map(r => `<a href="${escHtml(r.url)}" target="_blank">${escHtml(r.url)}</a>`).join('')}</div>
+            <div class="cve-refs-list">${refs.map(r => { const u = safeUrl(r.url); return u ? `<a href="${u}" target="_blank" rel="noopener noreferrer">${escHtml(r.url)}</a>` : `<span class="cve-ref-blocked">${escHtml(r.url)}</span>`; }).join('')}</div>
           ` : ''}
         </div>
       </div>`;
@@ -426,6 +428,18 @@ function toggleCard(i) {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Only http/https survive. Reference URLs come from the NVD API, so a
+// javascript: or data: URL must never reach an href attribute.
+function safeUrl(u) {
+  try {
+    const parsed = new URL(String(u), window.location.href);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return escHtml(parsed.href);
+  } catch (e) {
+    return '';
+  }
 }
 </script>
 <div id="cursor"></div>

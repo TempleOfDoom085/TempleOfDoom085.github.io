@@ -2,7 +2,7 @@
 
 **Live site:** [templeofdoom085.github.io](https://templeofdoom085.github.io)
 
-> AI Security Advisor @ Cranium AI · AI Agent Builder · Cybersecurity Student · Cook
+> AI Security Advisor @ Cranium AI · AI Agent Builder · Cybersecurity Student
 
 Personal portfolio for Brian Temple — AI Security Advisor at [Cranium AI](https://cranium.ai) (Short Hills, NJ), working with CISOs, Chief AI Officers and third-party risk leaders at regulated enterprises on AI visibility, governance and runtime security. Background building and deploying production AI agent systems. SNHU Cyber Security student, based in Towaco, NJ.
 
@@ -26,7 +26,6 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 | [`insane-engine.html`](insane-engine.html) | GPU cinematic demo — fluid ink, particles, bloom. |
 | [`game.html`](game.html) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. |
 | [`world.html`](world.html) + [`src/`](src/) | **REALM** — modular open-world 3D sandbox (procedural terrain, day/night, weather, vehicles, quests). |
-| [`kitchen.html`](kitchen.html) | Original recipes. |
 
 ---
 
