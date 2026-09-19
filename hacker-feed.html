@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Live GitHub activity rendered as a security operations console.">
+<link rel="canonical" href="https://templeofdoom085.github.io/hacker-feed.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:url" content="https://templeofdoom085.github.io/hacker-feed.html">
+<meta property="og:title" content="Live Hacker Feed — Brian Temple">
+<meta property="og:description" content="Live GitHub activity rendered as a security operations console.">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Live Hacker Feed — Brian Temple">
+<meta name="twitter:description" content="Live GitHub activity rendered as a security operations console.">
+<meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <title>Live Hacker Feed — Brian Temple</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -116,6 +131,22 @@ footer{padding:1.5rem 2rem;border-top:1px solid rgba(184,147,58,.08);
   .feed-badge{min-width:4.5rem;font-size:.52rem}
   .feed-desc{font-size:.62rem}
   footer{padding:1rem}
+}
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────────────
+   Honours the OS "reduce motion" setting: stops the ambient animation and the
+   custom cursor, and gives the native pointer back. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  html { scroll-behavior: auto; }
+  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
 }
 </style>
 </head>

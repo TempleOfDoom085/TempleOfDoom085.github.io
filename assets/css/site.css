@@ -1421,3 +1421,56 @@ html.stealth-mode #rain-indicator {
   opacity: 0;
   transition: opacity 0.15s ease;
 }
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────────────
+   Honours the OS "reduce motion" setting. The site leans heavily on animation
+   (aurora canvas, particle hero, cursor trails, scroll reveals), so this turns
+   the motion off rather than merely shortening it. Content must still be
+   readable, so scroll-reveal elements are forced visible instead of being left
+   at opacity 0 with their transition removed. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  html { scroll-behavior: auto; }
+
+  /* Never leave revealed content stuck hidden. */
+  .fade-in { opacity: 1 !important; transform: none !important; }
+
+  /* The custom cursor is itself a motion effect: give the pointer back. */
+  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
+
+  /* Decorative canvases carry the ambient motion. */
+  #auroraCanvas, #clickCanvas, #heroBgCanvas, #particleTextCanvas { display: none !important; }
+}
+
+/* ── SKIP LINK ───────────────────────────────────────────────────────────────
+   Visible only once focused, so keyboard users can jump the nav. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100000;
+  padding: 0.85rem 1.6rem;
+  background: var(--cyber);
+  color: var(--neon);
+  border: 1px solid var(--neon);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  outline: 2px solid var(--neon);
+  outline-offset: 2px;
+}
+#main-content:focus { outline: none; }

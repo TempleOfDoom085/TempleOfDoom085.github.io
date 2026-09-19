@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- SEO -->
-<meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI, based in Towaco, NJ. AI visibility, governance and runtime security for regulated enterprises, backed by hands-on experience building production AI agent systems. 22 live security tools.">
+<meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises, plus 22 live security tools.">
 <meta name="keywords" content="AI security, AI governance, AI red teaming, third-party AI risk, EU AI Act, NIST AI RMF, ISO 42001, AI automation, cybersecurity, voice AI, workflow automation, Brian Temple, NJ">
 <meta name="author" content="Brian Temple">
 <link rel="canonical" href="https://templeofdoom085.github.io/">
@@ -15,10 +15,15 @@
 <meta property="og:title" content="Brian Temple — AI Security & Automation">
 <meta property="og:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises — plus 22 live security tools and an interactive portfolio.">
 <meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
 <!-- Twitter / X -->
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Brian Temple — AI Security & Automation">
 <meta name="twitter:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security — 22 live security tools, interactive terminal, and a playable game built into the portfolio.">
+<meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#00d4ff">
@@ -49,6 +54,9 @@
 </script>
 </head>
 <body>
+
+<!-- SKIP LINK (first focusable element, for keyboard and screen-reader users) -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
 <!-- AURORA BACKGROUND -->
 <canvas id="auroraCanvas"></canvas>
@@ -146,6 +154,7 @@
 </nav>
 
 <!-- HERO -->
+<main id="main-content" tabindex="-1">
 <div class="hero">
   <canvas id="heroBgCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
   <canvas id="particleTextCanvas"></canvas>
@@ -2097,6 +2106,7 @@
     </div>
   </div>
 </section>
+</main>
 
 <button class="cmd-palette-trigger" onclick="openCmdPalette()" title="Ctrl+K — Quick navigation" style="position:fixed;bottom:4.5rem;right:2rem;z-index:90;">⌘K</button>
 <button id="audioWidget" aria-label="Toggle ambient audio" title="Toggle cyberpunk ambient audio">
