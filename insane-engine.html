@@ -4,20 +4,20 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="A GPU cinematic demo - volumetric cloud raymarching, fluid ink, particle systems and bloom, all in WebGL.">
+<meta name="description" content="A physically-grounded deep-field renderer - volumetric dust with true extinction, blackbody starlight and Halpha/OIII emission, in WebGL.">
 <link rel="canonical" href="https://templeofdoom085.github.io/insane-engine.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brian Temple Portfolio">
 <meta property="og:url" content="https://templeofdoom085.github.io/insane-engine.html">
 <meta property="og:title" content="CINEMATIC ENGINE — Brian Temple">
-<meta property="og:description" content="A GPU cinematic demo - volumetric cloud raymarching, fluid ink, particle systems and bloom, all in WebGL.">
+<meta property="og:description" content="A physically-grounded deep-field renderer - volumetric dust with true extinction, blackbody starlight and Halpha/OIII emission, in WebGL.">
 <meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="CINEMATIC ENGINE — Brian Temple">
-<meta name="twitter:description" content="A GPU cinematic demo - volumetric cloud raymarching, fluid ink, particle systems and bloom, all in WebGL.">
+<meta name="twitter:description" content="A physically-grounded deep-field renderer - volumetric dust with true extinction, blackbody starlight and Halpha/OIII emission, in WebGL.">
 <meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <title>CINEMATIC ENGINE — Brian Temple</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -41,12 +41,12 @@
 <body>
 <nav>
   <a href="/" class="nb">← PORTFOLIO</a>
-  <div class="nt"><span>CINEMATIC ENGINE</span><span>VOLUMETRIC RENDERER · v5.0</span></div>
+  <div class="nt"><span>CINEMATIC ENGINE</span><span>DEEP FIELD RENDERER · v6.0</span></div>
 </nav>
 <canvas id="c"></canvas>
-<div class="cl tl">ENERGY CORE ACTIVE<br><span id="stars">PARTICLES: —</span></div>
-<div class="cl bl">MOVE MOUSE TO INTERACT</div>
-<div class="cl br"><span id="fps">—</span><br>VOLUMETRIC · BLOOM · GOD RAYS<br>CHROMA · ANAMORPHIC · GRAIN</div>
+<div class="cl tl">DEEP FIELD SURVEY<br><span id="stars">SOURCES: —</span></div>
+<div class="cl bl">MOVE MOUSE TO PARALLAX</div>
+<div class="cl br"><span id="fps">—</span><br>VOLUMETRIC DUST · TRUE EXTINCTION<br>BLACKBODY SPD · Hα / OIII · ASINH</div>
 <script src="/vendor/three/three.min.js"></script>
 <script src="/vendor/three/LuminosityHighPassShader.js"></script>
 <script src="/vendor/three/CopyShader.js"></script>
@@ -61,7 +61,6 @@ const canvas=document.getElementById('c');
 
 // ══════════════════════════════════════════════════════
 // QUALITY TIERS — picked from hardware, then adapted live
-// tier 2 = desktop GPU · 1 = modest laptop · 0 = phone / iGPU
 // ══════════════════════════════════════════════════════
 const coarse=matchMedia('(pointer:coarse)').matches;
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -69,11 +68,11 @@ const cores=navigator.hardwareConcurrency||4;
 const mem=navigator.deviceMemory||4;
 let tier=(coarse||mem<4)?0:(cores<=4?1:2);
 const TIERS=[
-  {dpr:0.85,vol:0.30,steps:22,shadow:0},   // 0 — low
-  {dpr:1.15,vol:0.42,steps:32,shadow:1},   // 1 — medium
-  {dpr:1.50,vol:0.55,steps:48,shadow:1}    // 2 — high
+  {dpr:0.85,vol:0.30,steps:24,shadow:0},
+  {dpr:1.15,vol:0.46,steps:32,shadow:1},
+  {dpr:1.50,vol:0.64,steps:44,shadow:1}
 ];
-const STAR_COUNT=[12000,26000,45000][tier];
+const STAR_COUNT=[14000,30000,52000][tier];
 
 function bail(msg){
   document.querySelectorAll('.cl').forEach(el=>el.remove());
@@ -90,28 +89,57 @@ try{
 }catch(e){ renderer=null; }
 if(!renderer){
   canvas.style.display='none';
-  bail('WebGL unavailable in this browser<br>the cinematic engine needs hardware acceleration<br><br>'+
+  bail('WebGL unavailable in this browser<br>the deep field renderer needs hardware acceleration<br><br>'+
        '<a href="/" style="color:rgba(0,204,255,.8)">← back to portfolio</a>');
   throw new Error('WebGL unavailable');
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio,TIERS[tier].dpr));
 renderer.setSize(W,H);
 renderer.setClearColor(0x000000,1);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.62;
 
 const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(55,W/H,0.1,200);
+const camera=new THREE.PerspectiveCamera(52,W/H,0.1,300);
 camera.position.z=4.5;
 
+function makeRT(w,h){return new THREE.WebGLRenderTarget(Math.max(2,w|0),Math.max(2,h|0),
+  {minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,depthBuffer:false,stencilBuffer:false});}
+function clearRT(rt){const p=renderer.getRenderTarget();renderer.setRenderTarget(rt);renderer.clear(true,true,true);renderer.setRenderTarget(p);}
+
 // ══════════════════════════════════════════════════════
-// STARFIELD — spiral arms + halo, one draw call
+// STARFIELD
+// Three things separate a real star field from a CG one, and all three are
+// distributions rather than effects:
+//   · luminosity follows a steep power law — a handful of bright sources
+//     among a great many faint ones, never a uniform spread
+//   · colour comes from a blackbody spectrum at the star's temperature, and
+//     real populations are dominated by cool orange dwarfs, not blue
+//   · the PSF is Moffat, not Gaussian: a sharp core with faint wide wings
+// Diffraction spikes appear ONLY above a brightness threshold, and grow with
+// it, because that is how a real instrument behaves.
 // ══════════════════════════════════════════════════════
+function bbRGB(T){
+  const t=T/100;let r,g,b;
+  if(t<=66){r=255;}else{r=329.698727446*Math.pow(t-60,-0.1332047592);}
+  if(t<=66){g=99.4708025861*Math.log(t)-161.1195681661;}else{g=288.1221695283*Math.pow(t-60,-0.0755148492);}
+  if(t>=66){b=255;}else if(t<=19){b=0;}else{b=138.5177312231*Math.log(t-10)-305.0447927307;}
+  const c=v=>Math.min(255,Math.max(0,v))/255;
+  return [c(r),c(g),c(b)];
+}
+function starTemp(){
+  const u=Math.random();
+  if(u<.76) return 2600+Math.random()*1300;   // M — most of any real field
+  if(u<.90) return 3900+Math.random()*1300;   // K
+  if(u<.962)return 5200+Math.random()*800;    // G
+  if(u<.987)return 6000+Math.random()*1500;   // F
+  if(u<.9975)return 7500+Math.random()*2500;  // A
+  return 10000+Math.random()*18000;           // B/O — rare, hot, blue
+}
 const TOTAL=STAR_COUNT;
-const gPos=new Float32Array(TOTAL*3),gCol=new Float32Array(TOTAL*3),gSz=new Float32Array(TOTAL),gOff=new Float32Array(TOTAL);
+const sPos=new Float32Array(TOTAL*3),sCol=new Float32Array(TOTAL*3),
+      sLum=new Float32Array(TOTAL),sSpk=new Float32Array(TOTAL),sOff=new Float32Array(TOTAL);
 for(let i=0;i<TOTAL;i++){
-  const layer=i/TOTAL;
   let x,y,z;
-  if(layer<0.55){
+  if(i/TOTAL<0.55){
     const arm=Math.floor(Math.random()*3),armAngle=(arm/3)*Math.PI*2;
     const r=0.5+Math.pow(Math.random(),0.7)*20;
     const spread=0.3+r*.09;
@@ -124,276 +152,118 @@ for(let i=0;i<TOTAL;i++){
     const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
     x=r*Math.sin(ph)*Math.cos(th);y=r*Math.sin(ph)*Math.sin(th);z=r*Math.cos(ph);
   }
-  gPos[i*3]=x;gPos[i*3+1]=y;gPos[i*3+2]=z;
-  const c=Math.random();
-  // Real deep-field palette: mostly white/cream, subtle tints only
-  if(c<.08){gCol[i*3]=.82;gCol[i*3+1]=.90;gCol[i*3+2]=1.;}        // pale blue-white (O/B type)
-  else if(c<.20){gCol[i*3]=.95;gCol[i*3+1]=.97;gCol[i*3+2]=1.;}   // cool blue-white (A type)
-  else if(c<.38){gCol[i*3]=1.;gCol[i*3+1]=.98;gCol[i*3+2]=.92;}   // warm white (F type)
-  else if(c<.58){gCol[i*3]=1.;gCol[i*3+1]=.96;gCol[i*3+2]=.86;}   // pale yellow (G type)
-  else if(c<.74){gCol[i*3]=1.;gCol[i*3+1]=.93;gCol[i*3+2]=.78;}   // pale amber (K type)
-  else if(c<.88){gCol[i*3]=.96;gCol[i*3+1]=.95;gCol[i*3+2]=.94;}  // neutral white
-  else{gCol[i*3]=.88;gCol[i*3+1]=.92;gCol[i*3+2]=1.;}              // faint blue (distant hot)
-  gSz[i]=.25+Math.random()*1.2;gOff[i]=Math.random()*Math.PI*2;
+  sPos[i*3]=x;sPos[i*3+1]=y;sPos[i*3+2]=z;
+  const T=starTemp();
+  // Inverse-CDF sample of m over [0,6] weighted by 10^(0.6m), then flux=10^(-0.4m).
+  const mag=Math.log10(1+Math.random()*(Math.pow(10,2.1)-1))/0.6;
+  let lum=Math.pow(10,-0.4*mag);
+  if(T>9000)lum=Math.min(1,lum*2.2);                 // hot stars run luminous
+  const c=bbRGB(T);
+  sCol[i*3]=c[0];sCol[i*3+1]=c[1];sCol[i*3+2]=c[2];
+  sLum[i]=lum;
+  sSpk[i]=Math.max(0,Math.min(1,(lum-.72)/.28));
+  sOff[i]=Math.random()*Math.PI*2;
 }
-const galGeo=new THREE.BufferGeometry();
-galGeo.setAttribute('position',new THREE.BufferAttribute(gPos,3));
-galGeo.setAttribute('aCol',new THREE.BufferAttribute(gCol,3));
-galGeo.setAttribute('aSize',new THREE.BufferAttribute(gSz,1));
-galGeo.setAttribute('aOff',new THREE.BufferAttribute(gOff,1));
-const galMat=new THREE.ShaderMaterial({
+const starGeo=new THREE.BufferGeometry();
+starGeo.setAttribute('position',new THREE.BufferAttribute(sPos,3));
+starGeo.setAttribute('aCol',new THREE.BufferAttribute(sCol,3));
+starGeo.setAttribute('aLum',new THREE.BufferAttribute(sLum,1));
+starGeo.setAttribute('aSpk',new THREE.BufferAttribute(sSpk,1));
+starGeo.setAttribute('aOff',new THREE.BufferAttribute(sOff,1));
+const starMat=new THREE.ShaderMaterial({
   uniforms:{time:{value:0},pxs:{value:renderer.getPixelRatio()/1.5}},
-  vertexShader:`attribute vec3 aCol;attribute float aSize,aOff;uniform float time,pxs;varying vec3 vC;varying float vA;
-    void main(){vC=aCol;float tw=.06+.19*abs(sin(time*1.6+aOff));vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=min(aSize*pxs*(150./-mv.z),22.);gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`varying vec3 vC;varying float vA;
-    void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
-    float a=pow(1.-d,2.)*vA;gl_FragColor=vec4(vC,a);}`,
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
-});
-const galaxy=new THREE.Points(galGeo,galMat);scene.add(galaxy);
-
-// ══════════════════════════════════════════════════════
-// FOREGROUND SPARKLE MOTES — diffraction spikes, parallax
-// ══════════════════════════════════════════════════════
-const MOTES=coarse?140:300;
-const mPos=new Float32Array(MOTES*3),mCol=new Float32Array(MOTES*3),mSz=new Float32Array(MOTES),mOff2=new Float32Array(MOTES);
-for(let i=0;i<MOTES;i++){
-  mPos[i*3]=(Math.random()-.5)*6;mPos[i*3+1]=(Math.random()-.5)*4;mPos[i*3+2]=1.5+Math.random()*2.5;
-  const h=Math.random()<.5?.08:.12;const c=new THREE.Color().setHSL(h,1.,.75);
-  mCol[i*3]=c.r;mCol[i*3+1]=c.g;mCol[i*3+2]=c.b;
-  mSz[i]=1.5+Math.random()*3.5;mOff2[i]=Math.random()*Math.PI*2;
-}
-const mGeo=new THREE.BufferGeometry();
-mGeo.setAttribute('position',new THREE.BufferAttribute(mPos,3));
-mGeo.setAttribute('aCol',new THREE.BufferAttribute(mCol,3));
-mGeo.setAttribute('aSize',new THREE.BufferAttribute(mSz,1));
-mGeo.setAttribute('aOff',new THREE.BufferAttribute(mOff2,1));
-const moteMat=new THREE.ShaderMaterial({
-  uniforms:{time:{value:0},pxs:{value:renderer.getPixelRatio()/1.5}},
-  vertexShader:`attribute vec3 aCol;attribute float aSize,aOff;uniform float time,pxs;varying vec3 vC;varying float vA;
-    void main(){vC=aCol;float tw=.2+.8*pow(abs(sin(time*2.2+aOff)),3.);vA=tw;vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=min(aSize*tw*pxs*(300./-mv.z),96.);gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`varying vec3 vC;varying float vA;
-    void main(){vec2 c=gl_PointCoord-.5;float d=length(c)*2.;if(d>1.)discard;
-    float spike=max(exp(-abs(c.x)*80.)*exp(-abs(c.y)*8.),exp(-abs(c.y)*80.)*exp(-abs(c.x)*8.));
-    float core=exp(-d*d*30.);
-    float a=(core+spike*.6)*vA;gl_FragColor=vec4(vC,a);}`,
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
-});
-scene.add(new THREE.Points(mGeo,moteMat));
-
-// ══════════════════════════════════════════════════════
-// LIGHTING + CORE HALO
-// ══════════════════════════════════════════════════════
-scene.add(new THREE.AmbientLight(0x06020f,1.4));
-const coreLight=new THREE.PointLight(0x7722ff,2.2,20);scene.add(coreLight);
-
-const glowMat=new THREE.ShaderMaterial({
-  uniforms:{time:{value:0}},
-  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform float time;varying vec2 vUv;
+  vertexShader:`attribute vec3 aCol;attribute float aLum,aSpk,aOff;uniform float time,pxs;
+    varying vec3 vC;varying float vI,vS;
     void main(){
-      float d=length(vUv-.5)*2.;
-      if(d>=1.)discard;
-      float breathe=.78+sin(time*1.6)*.14+sin(time*3.4)*.06;
-      float halo=pow(1.-d,3.0);      // wide corona
-      float inner=pow(1.-d,9.0);     // tight core
-      vec3 col=mix(vec3(.30,.05,.72),vec3(.80,.44,1.),inner);
-      gl_FragColor=vec4(col*breathe*(halo*.26+inner*.80),1.);
-    }`,
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
-
-// ══════════════════════════════════════════════════════
-// CORONA SPIKES — 24 spikes, 1 draw call, animated on GPU
-// ══════════════════════════════════════════════════════
-const SPIKES=24;
-const spPos=new Float32Array(SPIKES*2*3),spDir=new Float32Array(SPIKES*2*3),
-      spBase=new Float32Array(SPIKES*2),spPhase=new Float32Array(SPIKES*2),
-      spTip=new Float32Array(SPIKES*2),spCol=new Float32Array(SPIKES*2*3);
-for(let i=0;i<SPIKES;i++){
-  const th=(i/SPIKES)*Math.PI*2,ph=(Math.random()-.5)*Math.PI;
-  const dx=Math.cos(th)*Math.cos(ph),dy=Math.sin(ph),dz=Math.sin(th)*Math.cos(ph);
-  const baseLen=.16+Math.random()*.30,phase=Math.random()*Math.PI*2;
-  const c=new THREE.Color().setHSL(.07+Math.random()*.08,1.,.72);
-  for(let v=0;v<2;v++){
-    const k=i*2+v;
-    spDir[k*3]=dx;spDir[k*3+1]=dy;spDir[k*3+2]=dz;
-    spBase[k]=baseLen;spPhase[k]=phase;spTip[k]=v;
-    spCol[k*3]=c.r;spCol[k*3+1]=c.g;spCol[k*3+2]=c.b;
-  }
-}
-const spGeo=new THREE.BufferGeometry();
-spGeo.setAttribute('position',new THREE.BufferAttribute(spPos,3)); // unused, shader builds it
-spGeo.setAttribute('aDir',new THREE.BufferAttribute(spDir,3));
-spGeo.setAttribute('aBase',new THREE.BufferAttribute(spBase,1));
-spGeo.setAttribute('aPhase',new THREE.BufferAttribute(spPhase,1));
-spGeo.setAttribute('aTip',new THREE.BufferAttribute(spTip,1));
-spGeo.setAttribute('aCol',new THREE.BufferAttribute(spCol,3));
-spGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),2);
-const spikeMat=new THREE.ShaderMaterial({
-  uniforms:{time:{value:0}},
-  vertexShader:`attribute vec3 aDir,aCol;attribute float aBase,aPhase,aTip;uniform float time;
-    varying vec3 vC;varying float vA;
-    void main(){
-      float p=.25+sin(time*2.2+aPhase)*.45+sin(time*5.5+aPhase*1.9)*.18;
-      vA=max(0.,p*.26);vC=aCol;
-      float len=aBase*(.5+p*.9);
-      vec3 pos=aDir*(.38+len*aTip);
-      gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.);
-    }`,
-  fragmentShader:`varying vec3 vC;varying float vA;void main(){gl_FragColor=vec4(vC,vA);}`,
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
-scene.add(new THREE.LineSegments(spGeo,spikeMat));
-
-// ══════════════════════════════════════════════════════
-// DEBRIS FIELDS — irregular point rings
-// ══════════════════════════════════════════════════════
-const rings=[];
-[[1.25,0x6622dd,.11,.6,0,0],[1.65,0x4408bb,.09,0,.8,.4],[2.05,0xbb6611,.07,-.5,.3,.7]].forEach(([r,col,op,rx,ry,rz])=>{
-  const N=240;const rPos=new Float32Array(N*3);
-  for(let i=0;i<N;i++){
-    const a=(i/N)*Math.PI*2+(Math.random()-.5)*.18;
-    const jR=r+(Math.random()-.5)*.22;const jY=(Math.random()-.5)*.15;
-    rPos[i*3]=Math.cos(a)*jR;rPos[i*3+1]=jY;rPos[i*3+2]=Math.sin(a)*jR;
-  }
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(rPos,3));
-  const debris=new THREE.Points(geo,new THREE.PointsMaterial({color:col,size:.014,transparent:true,opacity:op,depthWrite:false,blending:THREE.AdditiveBlending}));
-  debris.rotation.set(rx,ry,rz);scene.add(debris);rings.push(debris);
-});
-
-// ══════════════════════════════════════════════════════
-// ORBITERS — 42 bodies, 1 draw call, orbits solved on GPU
-// ══════════════════════════════════════════════════════
-const ORB=42;
-const oPos=new Float32Array(ORB*3),oR=new Float32Array(ORB),oSp=new Float32Array(ORB),
-      oTilt=new Float32Array(ORB),oPh=new Float32Array(ORB),oCol=new Float32Array(ORB*3),oSz=new Float32Array(ORB);
-for(let i=0;i<ORB;i++){
-  oR[i]=1.0+Math.random()*1.3;oSp[i]=.12+Math.random()*.38;
-  oTilt[i]=(Math.random()-.5)*2.;oPh[i]=Math.random()*Math.PI*2;
-  // Violet (~70%) or amber (~30%) — strict 2-hue palette
-  const hue=Math.random()<.7?.72+Math.random()*.06:.07+Math.random()*.04;
-  const c=new THREE.Color().setHSL(hue,1.,.25+Math.random()*.45);
-  oCol[i*3]=c.r;oCol[i*3+1]=c.g;oCol[i*3+2]=c.b;
-  oSz[i]=2.2+Math.random()*3.8;
-}
-const orbGeo=new THREE.BufferGeometry();
-orbGeo.setAttribute('position',new THREE.BufferAttribute(oPos,3));
-orbGeo.setAttribute('aR',new THREE.BufferAttribute(oR,1));
-orbGeo.setAttribute('aSp',new THREE.BufferAttribute(oSp,1));
-orbGeo.setAttribute('aTilt',new THREE.BufferAttribute(oTilt,1));
-orbGeo.setAttribute('aPh',new THREE.BufferAttribute(oPh,1));
-orbGeo.setAttribute('aCol',new THREE.BufferAttribute(oCol,3));
-orbGeo.setAttribute('aSize',new THREE.BufferAttribute(oSz,1));
-orbGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),4);
-const orbMat=new THREE.ShaderMaterial({
-  uniforms:{time:{value:0},pxs:{value:renderer.getPixelRatio()/1.5}},
-  vertexShader:`attribute vec3 aCol;attribute float aR,aSp,aTilt,aPh,aSize;uniform float time,pxs;varying vec3 vC;
-    void main(){
-      vC=aCol;
-      float a=time*aSp+aPh;
-      float er=aR*(1.+.14*sin(a*.5+aPh));
-      vec3 p=vec3(cos(a)*er, sin(aTilt)*sin(a)*er*.52, sin(a)*er*cos(aTilt));
-      vec4 mv=modelViewMatrix*vec4(p,1.);
-      gl_PointSize=min(aSize*pxs*(16./-mv.z),48.);
+      vC=aCol;vS=aSpk;
+      vec4 mv=modelViewMatrix*vec4(position,1.);
+      // Inverse-square dimming with range; the PSF itself stays put.
+      float att=clamp(90./(mv.z*mv.z),.18,1.4);
+      float app=clamp(aLum*att,0.,1.);
+      // Scintillation is tiny for a real exposure — a hint, not a disco.
+      vI=app*(.94+.06*sin(time*1.4+aOff));
+      // Only saturation blooming widens a star, so radius tracks sqrt(flux).
+      gl_PointSize=min((1.8+sqrt(app)*8.0)*(1.+aSpk*1.6)*pxs,26.);
       gl_Position=projectionMatrix*mv;
     }`,
-  fragmentShader:`varying vec3 vC;void main(){
-    float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
-    gl_FragColor=vec4(vC,pow(1.-d,1.6)*.8);}`,
+  fragmentShader:`varying vec3 vC;varying float vI,vS;
+    void main(){
+      vec2 c=gl_PointCoord-.5;float r=length(c)*2.;
+      if(r>1.)discard;
+      // Moffat PSF: sharp core, faint extended wings. Gaussians look synthetic.
+      float m=pow(1.+r*r*9.,-2.6);
+      if(vS>0.){
+        float s=max(exp(-abs(c.x)*70.)*exp(-abs(c.y)*9.),exp(-abs(c.y)*70.)*exp(-abs(c.x)*9.));
+        m+=s*vS*.55;
+      }
+      m*=smoothstep(1.,.72,r);        // reach zero before the sprite edge
+      gl_FragColor=vec4(vC,m*vI);
+    }`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Points(orbGeo,orbMat));
+const starField=new THREE.Points(starGeo,starMat);scene.add(starField);
 
 // ══════════════════════════════════════════════════════
-// ENERGY ARC LIGHTNING
+// BACKGROUND GALAXIES
+// Every real deep field is littered with them — small, elongated, reddened by
+// distance. Nothing says "photograph" faster, and they cost one draw call.
 // ══════════════════════════════════════════════════════
-const arcs=[];
-function makeArc(){
-  const srcAngle=Math.random()*Math.PI*2;
-  const r=1.2+Math.random()*.9;
-  const src=new THREE.Vector3(Math.cos(srcAngle)*r,(Math.random()-.5)*.8,Math.sin(srcAngle)*r);
-  const tgt=new THREE.Vector3((Math.random()-.5)*.5,(Math.random()-.5)*.5,(Math.random()-.5)*.5);
-  const mid=src.clone().lerp(tgt,.5);
-  mid.x+=(Math.random()-.5)*.6;mid.y+=(Math.random()-.5)*.6;mid.z+=(Math.random()-.5)*.6;
-  const curve=new THREE.CatmullRomCurve3([src,mid,tgt]);
-  const pts=curve.getPoints(30);
-  const mat=new THREE.LineBasicMaterial({
-    color:new THREE.Color().setHSL(Math.random()<.65?.74:.08,1.,.72),
-    transparent:true,opacity:.0,depthWrite:false});
-  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);
-  scene.add(line);
-  arcs.push({line,life:0,maxLife:55+Math.random()*40});
-}
-makeArc();makeArc();
-
-// ══════════════════════════════════════════════════════
-// SOLAR WIND PARTICLE EMITTER
-// ══════════════════════════════════════════════════════
-const WIND=coarse?700:2000;
-const wVel=new Float32Array(WIND*3),wCol=new Float32Array(WIND*3),wAge=new Float32Array(WIND),wLife=new Float32Array(WIND);
-const wPos=new Float32Array(WIND*3);
-function seedWind(i,resetAge){
+const GAL_N=coarse?36:80;
+const gPos=new Float32Array(GAL_N*3),gCol=new Float32Array(GAL_N*3),
+      gAng=new Float32Array(GAL_N),gQ=new Float32Array(GAL_N),gSz=new Float32Array(GAL_N);
+for(let i=0;i<GAL_N;i++){
+  const r=24+Math.random()*34;
   const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
-  const sp=.012+Math.random()*.025;
-  wVel[i*3]=Math.sin(ph)*Math.cos(th)*sp;wVel[i*3+1]=Math.sin(ph)*Math.sin(th)*sp;wVel[i*3+2]=Math.cos(ph)*sp;
-  wPos[i*3]=wVel[i*3]*.4;wPos[i*3+1]=wVel[i*3+1]*.4;wPos[i*3+2]=wVel[i*3+2]*.4;
-  wLife[i]=120+Math.random()*60;
-  if(resetAge)wAge[i]=0;
+  gPos[i*3]=r*Math.sin(ph)*Math.cos(th);gPos[i*3+1]=r*Math.sin(ph)*Math.sin(th);gPos[i*3+2]=r*Math.cos(ph);
+  // Redshifted and dust-reddened: warm tans and ambers, a few bluer spirals.
+  const u=Math.random();
+  const c=u<.62?[1.0,.80,.60]:(u<.86?[1.0,.90,.78]:[.74,.82,1.0]);
+  const dim=.20+Math.random()*.45;
+  gCol[i*3]=c[0]*dim;gCol[i*3+1]=c[1]*dim;gCol[i*3+2]=c[2]*dim;
+  gAng[i]=Math.random()*Math.PI;
+  gQ[i]=.26+Math.random()*.74;             // axis ratio — edge-on to face-on
+  gSz[i]=10+Math.random()*26;
 }
-for(let i=0;i<WIND;i++){
-  seedWind(i,false);
-  wAge[i]=Math.random()*150;
-  const hue=Math.random()<.55?.73:.07;const c=new THREE.Color().setHSL(hue,1.,.60);
-  wCol[i*3]=c.r;wCol[i*3+1]=c.g;wCol[i*3+2]=c.b;
-}
-const windGeo=new THREE.BufferGeometry();
-windGeo.setAttribute('position',new THREE.BufferAttribute(wPos,3));
-windGeo.setAttribute('color',new THREE.BufferAttribute(wCol,3));
-windGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),12);
-const windAttr=windGeo.attributes.position;
-scene.add(new THREE.Points(windGeo,new THREE.PointsMaterial({vertexColors:true,size:.020,transparent:true,opacity:.22,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true})));
+const galaxyGeo=new THREE.BufferGeometry();
+galaxyGeo.setAttribute('position',new THREE.BufferAttribute(gPos,3));
+galaxyGeo.setAttribute('aCol',new THREE.BufferAttribute(gCol,3));
+galaxyGeo.setAttribute('aAng',new THREE.BufferAttribute(gAng,1));
+galaxyGeo.setAttribute('aQ',new THREE.BufferAttribute(gQ,1));
+galaxyGeo.setAttribute('aSize',new THREE.BufferAttribute(gSz,1));
+const galaxyMat=new THREE.ShaderMaterial({
+  uniforms:{pxs:{value:renderer.getPixelRatio()/1.5}},
+  vertexShader:`attribute vec3 aCol;attribute float aAng,aQ,aSize;uniform float pxs;
+    varying vec3 vC;varying float vA,vQ;
+    void main(){vC=aCol;vA=aAng;vQ=aQ;
+      vec4 mv=modelViewMatrix*vec4(position,1.);
+      gl_PointSize=min(aSize*pxs*(150./-mv.z),40.);
+      gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying vec3 vC;varying float vA,vQ;
+    void main(){
+      vec2 c=gl_PointCoord-.5;
+      float s=sin(vA),co=cos(vA);
+      vec2 q=vec2(c.x*co-c.y*s,(c.x*s+c.y*co)/vQ);   // rotate, then squash
+      float d=length(q)*2.;
+      if(d>1.)discard;
+      float disc=exp(-d*3.4);                        // exponential disc
+      float bulge=exp(-d*d*30.)*.55;                 // central concentration
+      gl_FragColor=vec4(vC,(disc+bulge)*smoothstep(1.,.6,d)*.85);
+    }`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Points(galaxyGeo,galaxyMat));
 
 // ══════════════════════════════════════════════════════
-// SHOCKWAVE RINGS
+// SUPERNOVA — a star in the field goes up, throws a shell
 // ══════════════════════════════════════════════════════
 const shockGeo=new THREE.RingGeometry(.01,.045,48);
 const shockwaves=[];
 function spawnShock(at,col,speed,scale){
-  const mat=new THREE.MeshBasicMaterial({color:col===undefined?0xcc5500:col,transparent:true,opacity:.40,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.30,depthWrite:false,
+    side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
   const wave=new THREE.Mesh(shockGeo,mat);
   wave.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,0);
   if(at)wave.position.copy(at);
-  scene.add(wave);shockwaves.push({wave,t:0,sp:speed||.024,sc:scale||4.5});
+  scene.add(wave);shockwaves.push({wave,t:0,sp:speed,sc:scale});
 }
-
-// ══════════════════════════════════════════════════════
-// CORE ERUPTION BURST — single GPU buffer, 1 draw call
-// ══════════════════════════════════════════════════════
-const BURST_N=400;
-const burstPos=new Float32Array(BURST_N*3),burstCol=new Float32Array(BURST_N*3),burstVel=new Float32Array(BURST_N*3);
-const burstGeo=new THREE.BufferGeometry();
-burstGeo.setAttribute('position',new THREE.BufferAttribute(burstPos,3));
-burstGeo.setAttribute('color',new THREE.BufferAttribute(burstCol,3));
-burstGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),14);
-const burstMat=new THREE.PointsMaterial({vertexColors:true,size:.05,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Points(burstGeo,burstMat));
-let burstLife=-1,burstMaxLife=0;
-function spawnEruption(){
-  for(let i=0;i<BURST_N;i++){
-    const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
-    const sp=.05+Math.random()*.12;
-    burstVel[i*3]=Math.sin(ph)*Math.cos(th)*sp;burstVel[i*3+1]=Math.sin(ph)*Math.sin(th)*sp;burstVel[i*3+2]=Math.cos(ph)*sp;
-    burstPos[i*3]=burstVel[i*3]*.4;burstPos[i*3+1]=burstVel[i*3+1]*.4;burstPos[i*3+2]=burstVel[i*3+2]*.4;
-    const c=new THREE.Color().setHSL(Math.random()<.5?.07:.1,1.,.85);
-    burstCol[i*3]=c.r;burstCol[i*3+1]=c.g;burstCol[i*3+2]=c.b;
-  }
-  burstGeo.attributes.position.needsUpdate=true;burstGeo.attributes.color.needsUpdate=true;
-  burstLife=0;burstMaxLife=60+Math.floor(Math.random()*20);burstMat.opacity=.9;
-}
-
-// ══════════════════════════════════════════════════════
-// SUPERNOVA — rare, bright, and gone. One point, big spikes.
-// ══════════════════════════════════════════════════════
 const novaGeo=new THREE.BufferGeometry();
 novaGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(3),3));
 novaGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),24);
@@ -401,47 +271,44 @@ const novaMat=new THREE.ShaderMaterial({
   uniforms:{amp:{value:0},pxs:{value:renderer.getPixelRatio()/1.5}},
   vertexShader:`uniform float amp,pxs;varying float vA;
     void main(){vA=amp;vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=min(amp*72.*pxs*(60./-mv.z),165.);gl_Position=projectionMatrix*mv;}`,
+    gl_PointSize=min(amp*66.*pxs*(60./-mv.z),150.);gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`varying float vA;
     void main(){vec2 c=gl_PointCoord-.5;float d=length(c)*2.;if(d>1.)discard;
     float spike=max(exp(-abs(c.x)*62.)*exp(-abs(c.y)*7.),exp(-abs(c.y)*62.)*exp(-abs(c.x)*7.));
-    float diag=max(exp(-abs(c.x-c.y)*82.),exp(-abs(c.x+c.y)*82.))*exp(-d*4.)*.32;
-    float core=exp(-d*d*30.);
-    // Force everything to zero before the sprite edge, or the spikes get
-    // clipped square by the discard and read as rectangles.
+    float core=pow(1.+d*d*9.,-2.6);
     float edge=pow(max(0.,1.-d),1.5);
-    vec3 col=mix(vec3(.72,.86,1.),vec3(1.,.96,.88),core);
-    gl_FragColor=vec4(col,(core+spike*.7+diag)*edge*vA*.9);}`,
+    vec3 col=mix(vec3(.66,.80,1.),vec3(1.,.95,.86),core);   // hot, blue-white
+    gl_FragColor=vec4(col,(core+spike*.7)*edge*vA*.95);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
-const novaPoint=new THREE.Points(novaGeo,novaMat);scene.add(novaPoint);
+scene.add(new THREE.Points(novaGeo,novaMat));
 let novaLife=-1,novaMax=0;
 function spawnNova(){
-  // Sit it out among the spiral arms so it reads as one of the stars going up
   const th=Math.random()*Math.PI*2,r=3.5+Math.random()*7;
   novaGeo.attributes.position.setXYZ(0,Math.cos(th)*r,(Math.random()-.5)*1.4,Math.sin(th)*r);
   novaGeo.attributes.position.needsUpdate=true;
   novaLife=0;novaMax=330;
-  spawnShock(new THREE.Vector3().fromBufferAttribute(novaGeo.attributes.position,0),0x88bbff,.010,3.2);
+  spawnShock(new THREE.Vector3().fromBufferAttribute(novaGeo.attributes.position,0),0x7799cc,.010,3.2);
 }
 
 // ══════════════════════════════════════════════════════
-// COMET — a head and a decaying tail on a long trajectory
+// COMET — head plus a tail laid out by distance, not by
+// frame history, so its length never depends on framerate
 // ══════════════════════════════════════════════════════
 const COMET_N=110;
-const cometPos=new Float32Array(COMET_N*3),cometA=new Float32Array(COMET_N);
+const cPos=new Float32Array(COMET_N*3),cA=new Float32Array(COMET_N);
 const cometGeo=new THREE.BufferGeometry();
-cometGeo.setAttribute('position',new THREE.BufferAttribute(cometPos,3));
-cometGeo.setAttribute('aA',new THREE.BufferAttribute(cometA,1));
+cometGeo.setAttribute('position',new THREE.BufferAttribute(cPos,3));
+cometGeo.setAttribute('aA',new THREE.BufferAttribute(cA,1));
 cometGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),30);
 const cometMat=new THREE.ShaderMaterial({
   uniforms:{amp:{value:0},pxs:{value:renderer.getPixelRatio()/1.5}},
   vertexShader:`attribute float aA;uniform float amp,pxs;varying float vA;
     void main(){vA=aA*amp;vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=min((1.5+aA*9.)*pxs*(40./-mv.z),46.);gl_Position=projectionMatrix*mv;}`,
+    gl_PointSize=min((1.5+aA*8.)*pxs*(40./-mv.z),42.);gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`varying float vA;
     void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;
-    vec3 col=mix(vec3(.42,.70,1.),vec3(.96,.99,1.),vA);
-    gl_FragColor=vec4(col,pow(1.-d,2.)*vA*.85);}`,
+    vec3 col=mix(vec3(.50,.72,.96),vec3(.94,.97,1.),vA);   // ion tail runs blue
+    gl_FragColor=vec4(col,pow(1.-d,2.)*vA*.7);}`,
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Points(cometGeo,cometMat));
 let cometLife=-1,cometMax=0;
@@ -449,56 +316,24 @@ const cometHead=new THREE.Vector3(),cometVel=new THREE.Vector3(),cometDir=new TH
 function spawnComet(){
   const th=Math.random()*Math.PI*2;
   cometHead.set(Math.cos(th)*13,(Math.random()-.5)*5,Math.sin(th)*13);
-  // Aim past the core, not at it, so it sweeps through frame on an arc
-  // Aim wide of the core so it sweeps across frame instead of vanishing into the glare
   cometVel.set(-cometHead.x,(Math.random()-.5)*2.5,-cometHead.z).normalize()
           .add(new THREE.Vector3(-Math.sin(th)*.95,0,Math.cos(th)*.95)).normalize();
-  cometDir.copy(cometVel);
-  cometVel.multiplyScalar(.055);
-  for(let i=0;i<COMET_N;i++)cometA[i]=Math.pow(1-i/(COMET_N-1),1.8);
+  cometDir.copy(cometVel);cometVel.multiplyScalar(.055);
+  for(let i=0;i<COMET_N;i++)cA[i]=Math.pow(1-i/(COMET_N-1),1.8);
   cometGeo.attributes.aA.needsUpdate=true;
   cometLife=0;cometMax=380;
 }
 
 // ══════════════════════════════════════════════════════
-// FLUID INK SIM — half-res ping-pong, idles when untouched
-// ══════════════════════════════════════════════════════
-function makeRT(w,h){return new THREE.WebGLRenderTarget(Math.max(2,w|0),Math.max(2,h|0),
-  {minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,depthBuffer:false,stencilBuffer:false});}
-function clearRT(rt){const p=renderer.getRenderTarget();renderer.setRenderTarget(rt);renderer.clear(true,true,true);renderer.setRenderTarget(p);}
-const FLUID_SCALE=0.5;
-let fw=W*FLUID_SCALE,fh=H*FLUID_SCALE;
-let rt1=makeRT(fw,fh),rt2=makeRT(fw,fh);clearRT(rt1);clearRT(rt2);
-let mxActive=false,mx=.5,my=.5,mxPrev=.5,myPrev=.5;
-const fluidMat=new THREE.ShaderMaterial({
-  uniforms:{prev:{value:rt1.texture},mouse:{value:new THREE.Vector2(.5,.5)},prevMouse:{value:new THREE.Vector2(.5,.5)},res:{value:new THREE.Vector2(fw,fh)},splat:{value:0.}},
-  vertexShader:'void main(){gl_Position=vec4(position,1.);}',
-  fragmentShader:`uniform sampler2D prev;uniform vec2 mouse,prevMouse,res;uniform float splat;
-    void main(){vec2 uv=gl_FragCoord.xy/res;vec3 col=texture2D(prev,uv).rgb;
-    if(splat>.5){vec2 vel=clamp(mouse-prevMouse,vec2(-.06),vec2(.06));float sp=length(vel)*16.;float d=distance(uv,mouse);
-    float splash=exp(-d*15.)*min(sp,.9)*1.0;vec3 ink=vec3(.20+mouse.x*.30,.03+mouse.y*.09,.34+(1.-mouse.y)*.38);
-    col+=ink*splash;col=mix(col,texture2D(prev,uv-vel*.03).rgb,.18);}
-    col*=.955;col=min(col,vec3(.42));gl_FragColor=vec4(col,1.);}`});
-const fluidScene=new THREE.Scene(),fluidCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-const fluidQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),fluidMat);fluidQuad.frustumCulled=false;fluidScene.add(fluidQuad);
-const bgMat=new THREE.ShaderMaterial({
-  uniforms:{tex:{value:rt1.texture}},
-  vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform sampler2D tex;varying vec2 v;
-    void main(){vec3 c=texture2D(tex,v).rgb;c*=.85;c=c/(1.+c);float lum=dot(c,vec3(.299,.587,.114));c=mix(vec3(lum),c,1.25);gl_FragColor=vec4(c,1.);}`,
-  depthWrite:false});
-const bgPlane=new THREE.Mesh(new THREE.PlaneGeometry(24,24),bgMat);bgPlane.position.z=-5.5;scene.add(bgPlane);
-
-// ══════════════════════════════════════════════════════
-// VOLUMETRIC NEBULA — rendered OFF-SCREEN at a fraction of
-// screen res, then upsampled. This is the single most
-// expensive thing on the page, so it gets its own budget:
-//   · analytic ray/sphere test skips every pixel that
-//     cannot possibly contain cloud (most of the screen)
-//   · marches only the intersected segment, not a fixed 9 units
-//   · multiply-fract hash instead of sin() hashing
-//   · 4-octave density, 2-octave shadow taps
-//   · per-pixel dithered ray start kills banding at low step counts
+// VOLUMETRIC NEBULA
+// The realism here is not the noise, it is the physics of what the noise
+// means. Two quantities come out of one density field:
+//   · EMISSION — ionised gas that glows, coloured by which line dominates:
+//     OIII teal close to the ionising source, Halpha crimson further out
+//   · EXTINCTION — dust that only blocks. Optically thick cores absorb far
+//     more than they emit, and that asymmetry is what carves the dark lanes
+//     that define a real nebula's silhouette
+// Rays also terminate on scene depth, so stars sit inside the cloud.
 // ══════════════════════════════════════════════════════
 const volScene=new THREE.Scene(),volCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
 const volMat=new THREE.ShaderMaterial({
@@ -507,7 +342,7 @@ const volMat=new THREE.ShaderMaterial({
     invProjView:{value:new THREE.Matrix4()},prevViewProj:{value:new THREE.Matrix4()},
     tDepth:{value:null},tPrev:{value:null},
     time:{value:0},maxSteps:{value:TIERS[tier].steps},shadowOn:{value:TIERS[tier].shadow},
-    useDepth:{value:0},camNear:{value:0.1},camFar:{value:200},
+    useDepth:{value:0},camNear:{value:0.1},camFar:{value:300},
     histWeight:{value:0},frameSeed:{value:1.7}
   },
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
@@ -518,7 +353,6 @@ const volMat=new THREE.ShaderMaterial({
     uniform float time,maxSteps,shadowOn,useDepth,camNear,camFar,histWeight,frameSeed;
     varying vec2 vUv;
 
-    // iq-style multiply-fract hash — no transcendentals in the inner loop
     float h3(vec3 p){
       p=fract(p*0.3183099+vec3(.11,.17,.13));
       p*=17.0;
@@ -531,30 +365,34 @@ const volMat=new THREE.ShaderMaterial({
                  mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),
                      mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);
     }
-    float fbm4(vec3 p){
+    // Ridged noise sharpens the high band into filaments and sheets. Plain
+    // fbm gives soft cotton wool; real dust has edges.
+    float fbmR(vec3 p){
       float v=0.,a=.5;
-      for(int i=0;i<4;i++){v+=a*n3(p);p=p*2.03+vec3(1.7,9.2,4.3);a*=.5;}
-      return v;
+      for(int i=0;i<5;i++){
+        float n=n3(p);
+        v+=a*(i>0?(1.-abs(n*2.-1.)):n);
+        p=p*2.11+vec3(1.7,9.2,4.3);a*=.54;
+      }
+      return v*.86;
     }
     float fbm2(vec3 p){return n3(p)*.62+n3(p*2.07+vec3(1.7,9.2,4.3))*.31;}
 
-    const float R=3.25;          // cloud bounding radius (must contain the envelope)
-    // Flattened disc plus two polar lobes — an hourglass, not a ball.
+    const float R=3.25;
     float envelope(vec3 p){
-      vec3 q=p;q.y*=1.60;                                  // squash into a disc
+      vec3 q=p;q.y*=1.60;
       float disc=length(q);
-      vec3 lp=p;lp.y-=clamp(p.y,-1.,1.)*.82;               // two lobes off the poles
+      vec3 lp=p;lp.y-=clamp(p.y,-1.,1.)*.82;
       float lobe=length(lp)*1.34;
-      return 1.-smoothstep(.30,2.78,min(disc,lobe));
+      return 1.-smoothstep(.18,3.15,min(disc,lobe));
     }
-
     float cloud(vec3 p){
-      float t=time*.018;
+      float t=time*.015;
       vec3 q=vec3(fbm2(p+t),fbm2(p+vec3(5.2,1.3,2.8)-t*.8),fbm2(p+vec3(2.9,7.4,3.1)+t*.6));
-      float d=fbm4(p*1.1+q*1.6-t);
+      float d=fbmR(p*1.15+q*1.7-t);
       return d*envelope(p+q*.24);
     }
-    float cloudCheap(vec3 p){return fbm2(p*1.1)*envelope(p);}
+    float cloudCheap(vec3 p){return fbm2(p*1.15)*envelope(p);}
 
     void main(){
       vec4 wN=invProjView*vec4(vUv*2.-1.,-1.,1.);
@@ -562,14 +400,12 @@ const volMat=new THREE.ShaderMaterial({
       wN.xyz/=wN.w;wF.xyz/=wF.w;
       vec3 ro=camPos,rd=normalize(wF.xyz-wN.xyz);
 
-      // Analytic ray/sphere — bail out instantly on empty sky
       float b=dot(ro,rd),cc=dot(ro,ro)-R*R;
       float disc=b*b-cc;
       if(disc<=0.){gl_FragColor=vec4(0.);return;}
       float sq=sqrt(disc);
       float t0=max(-b-sq,.05),t1=-b+sq;
 
-      // Stop the march at whatever the scene already drew here.
       if(useDepth>.5){
         float dz=texture2D(tDepth,vUv).x;
         if(dz<1.){
@@ -581,47 +417,60 @@ const volMat=new THREE.ShaderMaterial({
       if(t1<=t0){gl_FragColor=vec4(0.);return;}
 
       float dt=(t1-t0)/maxSteps;
-      // Dither the entry point so 22 steps look like 60
       float jitter=h3(vec3(gl_FragCoord.xy,frameSeed));
       float t=t0+dt*jitter;
 
+      const vec3 Ha  =vec3(.80,.27,.21);   // hydrogen-alpha, 656nm
+      const vec3 OIII=vec3(.24,.56,.53);   // doubly-ionised oxygen, 501nm
+      const vec3 HOT =vec3(.96,.86,.70);   // continuum where it is brightest
+      const vec3 DUST=vec3(.034,.019,.013);
+
       vec3 col=vec3(0.);float alpha=0.;
-      for(int i=0;i<48;i++){
-        if(float(i)>=maxSteps||alpha>.97)break;
+      for(int i=0;i<44;i++){
+        if(float(i)>=maxSteps||alpha>.985)break;
         vec3 p=ro+rd*t;
         float d=cloud(p);
-        float dens=pow(max(0.,(d-.20)/.80),1.85)*.42*(dt/.22);
-        if(dens>.0015){
-          vec3 ldir=normalize(-p);
-          // 2 cheap shadow taps toward the core — pillars occlude what's behind them
+        float k=dt/.22;
+
+        float dn=d*1.9;                         // bring the field into 0..~1.3
+        float emis=pow(clamp((dn-.42)/.58,0.,1.),2.0);
+        // Dust only takes hold in the densest gas, which is what carves lanes.
+        float dust=pow(clamp((dn-.62)/.38,0.,1.),1.2);
+        float ext=dust*1.60*k;
+
+        if(ext>.0012||emis>.0012){
           float lt=1.;
           if(shadowOn>.5){
-            float ss=length(p)*.42;
-            float shadow=cloudCheap(p+ldir*ss)+cloudCheap(p+ldir*ss*2.2);
-            lt=exp(-shadow*2.1);
+            vec3 ldir=normalize(-p);float ss=length(p)*.42;
+            float sh=cloudCheap(p+ldir*ss)+cloudCheap(p+ldir*ss*2.2);
+            lt=exp(-sh*2.3);
           }
-          // Henyey-Greenstein forward scattering — the thing that reads as "volumetric"
-          float ct=dot(rd,ldir),g=.55;
+          vec3 ldir=normalize(-p);
+          float ct=dot(rd,ldir),g=.52;
           float hg=(1.-g*g)/pow(1.+g*g-2.*g*ct,1.5)*.0796;
 
-          float core=1.-smoothstep(0.,.9,length(p));
-          vec3 c=mix(vec3(.004,.001,.016),vec3(.26,.05,.62),smoothstep(.22,.52,d));
-          c=mix(c,vec3(.66,.18,1.38),smoothstep(.48,.76,d));
-          c=mix(c,vec3(1.12,.66,.46),core*core);      // amber hot core
-          c*=mix(lt*(.42+hg*2.1),1.,core*.88);
+          // Ionisation falls off with distance from the source, so the line
+          // ratio shifts from OIII near in to Halpha further out.
+          float shield=smoothstep(.98,.44,dn);        // thick gas self-shields
+          float ion=(1.-smoothstep(.22,1.90,length(p)))*mix(.30,1.,shield);
+          vec3 c=mix(Ha,OIII,smoothstep(.12,.58,ion));
+          c=mix(c,HOT,smoothstep(.72,.98,ion)*.55);
+          c*=lt*(.50+hg*1.9)+.045;
 
-          float tr=1.-alpha;col+=c*dens*tr;alpha+=dens*tr;
+          float tr=1.-alpha;
+          col+=(c*emis*3.10+DUST*dust*.22)*k*tr;
+          alpha+=ext*tr;
         }
         t+=dt;
       }
-      vec4 cur=vec4(col,alpha);
+
+      vec4 cur=vec4(col,min(alpha,1.));
       if(histWeight>.001){
         float tRep=max(dot(-ro,rd),.1);
         vec4 pc=prevViewProj*vec4(ro+rd*tRep,1.);
         vec2 puv=(pc.xy/pc.w)*.5+.5;
         if(pc.w>0.&&puv.x>0.&&puv.x<1.&&puv.y>0.&&puv.y<1.){
           vec4 hist=texture2D(tPrev,puv);
-          // A large alpha jump means we uncovered new cloud: trust the new sample.
           if(abs(hist.a-cur.a)<.22)cur=mix(cur,hist,histWeight);
         }
       }
@@ -629,36 +478,28 @@ const volMat=new THREE.ShaderMaterial({
     }`,
   depthTest:false,depthWrite:false});
 const volQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),volMat);volQuad.frustumCulled=false;volScene.add(volQuad);
-// Depth textures are core in WebGL2 and an extension in WebGL1; without one
-// we simply keep the old uniform compositing.
-const DEPTH_OK=renderer.capabilities.isWebGL2||!!renderer.extensions.get('WEBGL_depth_texture');
 
-// Only the things that actually read as foreground need to occlude the cloud:
-// the starfield and the near sparkle motes. Rendered depth-only, at volume
-// resolution, so this costs a vertex pass and no fragment colour work.
+const DEPTH_OK=renderer.capabilities.isWebGL2||!!renderer.extensions.get('WEBGL_depth_texture');
 const depthScene=new THREE.Scene();
-function depthMatFor(src,capBase){
-  return new THREE.ShaderMaterial({
-    uniforms:{pxs:{value:1},cap:{value:capBase}},
-    vertexShader:src,
-    fragmentShader:`void main(){if(length(gl_PointCoord-.5)>.5)discard;gl_FragColor=vec4(1.);}`,
-    colorWrite:false,depthWrite:true,depthTest:true,blending:THREE.NoBlending});
-}
-const galDepthMat=depthMatFor(
-  `attribute float aSize;uniform float pxs,cap;void main(){
+const starDepthMat=new THREE.ShaderMaterial({
+  uniforms:{pxs:{value:1},cap:{value:7}},
+  vertexShader:`attribute float aLum,aSpk;uniform float pxs,cap;varying float vApp;void main(){
     vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=min(aSize*pxs*(150./-mv.z),cap);gl_Position=projectionMatrix*mv;}`,22.);
-const moteDepthMat=depthMatFor(
-  `attribute float aSize;uniform float pxs,cap;void main(){
-    vec4 mv=modelViewMatrix*vec4(position,1.);
-    gl_PointSize=min(aSize*pxs*(300./-mv.z),cap);gl_Position=projectionMatrix*mv;}`,96.);
-depthScene.add(new THREE.Points(galGeo,galDepthMat));
-depthScene.add(new THREE.Points(mGeo,moteDepthMat));
+    float att=clamp(90./(mv.z*mv.z),.18,1.4);
+    float app=clamp(aLum*att,0.,1.);
+    vApp=app;
+    gl_PointSize=min((1.2+sqrt(app)*3.0)*pxs,cap);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying float vApp;
+    void main(){
+      if(vApp<.42)discard;                       // faint stars do not occlude
+      if(length(gl_PointCoord-.5)>.5)discard;
+      gl_FragColor=vec4(1.);}`,
+  colorWrite:false,depthWrite:true,depthTest:true,blending:THREE.NoBlending});
+depthScene.add(new THREE.Points(starGeo,starDepthMat));
 
 let volA,volB,depthRT;
-function volSize(){return [Math.max(2,W*TIERS[tier].vol|0),Math.max(2,H*TIERS[tier].vol|0)];}
 function rebuildVolTargets(){
-  const [vw,vh]=volSize();
+  const vw=Math.max(2,W*TIERS[tier].vol|0),vh=Math.max(2,H*TIERS[tier].vol|0);
   if(volA){volA.dispose();volB.dispose();if(depthRT)depthRT.dispose();}
   volA=makeRT(vw,vh);volB=makeRT(vw,vh);clearRT(volA);clearRT(volB);
   if(DEPTH_OK){
@@ -668,23 +509,22 @@ function rebuildVolTargets(){
     volMat.uniforms.tDepth.value=depthRT.depthTexture;
     volMat.uniforms.useDepth.value=1;
   }
-  // Point sizes are in the CURRENT target's pixels, so scale them from the
-  // main framebuffer down into the (smaller) volume buffer.
   const dpr=renderer.getPixelRatio(),k=TIERS[tier].vol/dpr;
-  galDepthMat.uniforms.pxs.value=(dpr/1.5)*k; galDepthMat.uniforms.cap.value=Math.max(1,22*k);
-  moteDepthMat.uniforms.pxs.value=(dpr/1.5)*k;moteDepthMat.uniforms.cap.value=Math.max(1,96*k);
+  starDepthMat.uniforms.pxs.value=(dpr/1.5)*k;
+  starDepthMat.uniforms.cap.value=Math.max(1,7*k);
 }
 rebuildVolTargets();
 
 // ══════════════════════════════════════════════════════
-// POST: render → cloud composite → bloom → grade
+// POST — render → cloud composite → bloom → stretch/grade
+// God rays and the anamorphic streak are gone. Neither exists in a telescope
+// image; they were the loudest "rendered, not photographed" signal on screen.
+// Dropping them also buys back 20 texture taps a pixel.
 // ══════════════════════════════════════════════════════
 const composer=new THREE.EffectComposer(renderer);
 composer.setPixelRatio(renderer.getPixelRatio());
 composer.addPass(new THREE.RenderPass(scene,camera));
 
-// Upsample + composite the cloud. Holding back a little of the
-// occlusion lets starlight keep glinting through the dust.
 const volComposite=new THREE.ShaderPass({
   uniforms:{tDiffuse:{value:null},tVol:{value:null}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -692,60 +532,46 @@ const volComposite=new THREE.ShaderPass({
     void main(){
       vec4 v=texture2D(tVol,vUv);
       vec3 bg=texture2D(tDiffuse,vUv).rgb;
-      gl_FragColor=vec4(bg*(1.-v.a*.82)+v.rgb,1.);
+      // Dust genuinely occludes what is behind it, so this is close to full
+      // extinction; rays already stopped at anything in FRONT of the cloud.
+      gl_FragColor=vec4(bg*(1.-v.a*.96)+v.rgb,1.);
     }`
 });
 composer.addPass(volComposite);
 
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),0.85,0.72,0.55);
+// Sensor bloom is tight and only around genuinely saturated sources.
+const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(W,H),0.42,0.36,0.72);
 composer.addPass(bloom);
 
-// FINAL: god rays + chroma + anamorphic streak + grade + grain + vignette,
-// all in one pass so there is no extra full-screen read/write between them.
 const finalPass=new THREE.ShaderPass({
-  uniforms:{tDiffuse:{value:null},coreUV:{value:new THREE.Vector2(.5,.5)},time:{value:0},
-            rayExposure:{value:.30},novaFlash:{value:0}},
+  uniforms:{tDiffuse:{value:null},time:{value:0},novaFlash:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`
-    uniform sampler2D tDiffuse;uniform vec2 coreUV;uniform float time,rayExposure,novaFlash;
+    uniform sampler2D tDiffuse;uniform float time,novaFlash;
     varying vec2 vUv;
     float rnd(vec2 p){return fract(sin(dot(p+time,vec2(127.1,311.7)))*43758.5453);}
     void main(){
-      // Chromatic aberration
-      vec2 d=vUv-.5;float dist=length(d);vec2 off=normalize(d+1e-6)*.0015*dist*dist*3.;
+      // A whisper of lateral colour, the way a real refractor has some.
+      vec2 d=vUv-.5;float dist=length(d);vec2 off=normalize(d+1e-6)*.0008*dist*dist*2.;
       vec3 col=vec3(texture2D(tDiffuse,vUv+off).r,
                     texture2D(tDiffuse,vUv).g,
                     texture2D(tDiffuse,vUv-off).b);
 
-      // God rays — 20 taps instead of 48; the decay curve is retuned
-      // so the shaft length and falloff match the old 48-tap look.
-      vec2 delta=(vUv-coreUV)/20.;vec2 uv=vUv;float illum=1.;vec3 rays=vec3(0.);
-      for(int i=0;i<20;i++){
-        uv-=delta;
-        vec3 s=texture2D(tDiffuse,clamp(uv,0.,1.)).rgb;
-        float br=max(s.r,max(s.g,s.b));
-        rays+=s*illum*.024*smoothstep(.15,.6,br);
-        illum*=.928;
-      }
-      col+=rays*rayExposure;
+      col+=vec3(.66,.76,1.)*novaFlash;
 
-      // Anamorphic lens streak
-      float dy=abs(vUv.y-coreUV.y);
-      float streak=exp(-dy*dy*520.)*.04;
-      float dx=abs(vUv.x-coreUV.x);
-      col+=vec3(.45,.18,.95)*streak*exp(-dx*dx*2.8)*(.88+sin(time*11.3)*.12);
+      // Asinh stretch — the standard transfer for astronomical data. It lifts
+      // faint nebulosity while compressing the cores instead of clipping them.
+      // Black point comes off first, or the stretch lifts the sky itself.
+      col=max(vec3(0.),col-.002);
+      const float A=2.0;
+      col=log(col*A+sqrt(col*col*(A*A)+1.))/log(A+sqrt(A*A+1.));
 
-      col+=vec3(.62,.74,1.)*novaFlash;   // distant detonation lifts the whole frame
-      // Grade: gentle S-curve + split tone (cool shadows, warm highs)
-      col=col*col*(3.-2.*col)*.34+col*.66;
+      // Sensor noise: slightly chromatic, and strongest in the shadows.
       float lum=dot(col,vec3(.299,.587,.114));
-      col=mix(col,col*vec3(.94,.97,1.06),1.-smoothstep(0.,.35,lum));
-      col=mix(col,col*vec3(1.05,1.0,.97),smoothstep(.55,1.,lum));
+      vec3 grain=vec3(rnd(vUv),rnd(vUv+.31),rnd(vUv+.73))-.5;
+      col+=grain*.030*(1.-smoothstep(0.,.55,lum));
 
-      // Vignette, then grain + ordered dither so the deep blacks
-      // gradate smoothly instead of banding on an 8-bit buffer.
-      col*=smoothstep(1.05,.3,length(vUv-.5)*1.55);
-      col+=rnd(vUv)*.025-.0125;
+      col*=smoothstep(1.18,.34,length(vUv-.5)*1.45);   // gentle optical falloff
       col+=(fract(dot(gl_FragCoord.xy,vec2(.7548776,.5698403)))-.5)/255.;
       gl_FragColor=vec4(clamp(col,0.,1.),1.);}`,
   renderToScreen:true
@@ -753,52 +579,14 @@ const finalPass=new THREE.ShaderPass({
 composer.addPass(finalPass);
 
 // ══════════════════════════════════════════════════════
-// LENS FLARE ELEMENTS (billboarded in-scene)
-// ══════════════════════════════════════════════════════
-const flareGroup=new THREE.Group();scene.add(flareGroup);
-const flareMat=new THREE.ShaderMaterial({
-  uniforms:{time:{value:0}},
-  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform float time;varying vec2 vUv;
-    void main(){vec2 c=vUv-.5;float d=length(c);float a=pow(max(0.,1.-d*2.),4.5)*.24;
-    if(a<.001)discard;float fl=.82+sin(time*4.8)*.12;
-    vec3 col=mix(vec3(.38,.06,.82),vec3(.72,.35,1.),pow(max(0.,1.-d*2.),8.));
-    gl_FragColor=vec4(col*fl,a*fl);}`,
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
-flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(.7,.7),flareMat));
-const hexMat=new THREE.ShaderMaterial({
-  uniforms:{time:{value:0}},
-  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform float time;varying vec2 vUv;
-    void main(){vec2 c=vUv-.5;float d=length(c);
-    float ang=atan(c.y,c.x);float hex=cos(floor(ang/1.047)*1.047-ang)*length(c)/.5;
-    float ring=exp(-pow(hex-.42,2.)*90.)*.3+exp(-pow(d-.28,2.)*120.)*.2;
-    float fl=.7+sin(time*3.2)*.3;
-    gl_FragColor=vec4(vec3(.52,.14,.92)*ring*fl,ring*fl*.4);}`,
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
-flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4),hexMat));
-flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.2),glowMat));
-
-// ══════════════════════════════════════════════════════
 // INPUT + RESIZE
 // ══════════════════════════════════════════════════════
 let contextLost=false;
-canvas.addEventListener('webglcontextlost',e=>{
-  e.preventDefault();               // without this the context is never restored
-  contextLost=true;
-},false);
-canvas.addEventListener('webglcontextrestored',()=>{
-  // Render targets do not survive a context loss; everything else three
-  // re-uploads on its own.
-  rt1=makeRT(fw,fh);rt2=makeRT(fw,fh);clearRT(rt1);clearRT(rt2);
-  fluidMat.uniforms.prev.value=rt1.texture;bgMat.uniforms.tex.value=rt1.texture;
-  rebuildVolTargets();
-  contextLost=false;
-},false);
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;},false);
+canvas.addEventListener('webglcontextrestored',()=>{rebuildVolTargets();contextLost=false;},false);
 
 let paraX=0,paraY=0,paraTX=0,paraTY=0;
-function pointer(x,y){mxActive=true;mxPrev=mx;myPrev=my;mx=x/W;my=1-y/H;
-  paraTX=(x/W-.5)*2;paraTY=(y/H-.5)*2;}
+function pointer(x,y){paraTX=(x/W-.5)*2;paraTY=(y/H-.5)*2;}
 addEventListener('mousemove',e=>pointer(e.clientX,e.clientY),{passive:true});
 addEventListener('touchmove',e=>{const t=e.touches[0];if(t)pointer(t.clientX,t.clientY);},{passive:true});
 
@@ -809,17 +597,14 @@ addEventListener('resize',()=>{
     W=innerWidth;H=innerHeight;
     renderer.setSize(W,H);composer.setSize(W,H);
     camera.aspect=W/H;camera.updateProjectionMatrix();
-    fw=W*FLUID_SCALE;fh=H*FLUID_SCALE;
-    rt1.setSize(fw,fh);rt2.setSize(fw,fh);clearRT(rt1);clearRT(rt2);
-    fluidMat.uniforms.res.value.set(fw,fh);
     rebuildVolTargets();
   },150);
 },{passive:true});
 
 // ══════════════════════════════════════════════════════
-// ADAPTIVE QUALITY — measure, then spend what the GPU has
+// ADAPTIVE QUALITY
 // ══════════════════════════════════════════════════════
-const pxsUniforms=[galMat,moteMat,orbMat,novaMat,cometMat];
+const pxsUniforms=[starMat,galaxyMat,novaMat,cometMat];
 function applyTier(t){
   tier=t;const q=TIERS[t];
   const dpr=Math.min(devicePixelRatio,q.dpr);
@@ -832,9 +617,8 @@ function applyTier(t){
 let frameMs=16.7,slowRun=0,fastRun=0,drops=0,vsyncMs=16.7,warmup=0;
 const startTier=tier;
 
-// HUD
 const fpsEl=document.getElementById('fps'),starEl=document.getElementById('stars');
-starEl.textContent='PARTICLES: '+(TOTAL>=1000?(TOTAL/1000).toFixed(0)+'K':TOTAL);
+starEl.textContent='SOURCES: '+(TOTAL/1000).toFixed(0)+'K + '+GAL_N+' GALAXIES';
 let hudT=-1e9;
 
 // ══════════════════════════════════════════════════════
@@ -842,132 +626,61 @@ let hudT=-1e9;
 // ══════════════════════════════════════════════════════
 const clock=new THREE.Clock();
 let time=0;
-const coreScreenPos=new THREE.Vector3(),coreWorldPos=new THREE.Vector3(0,0,0);
 const _invPV=new THREE.Matrix4(),_camFwd=new THREE.Vector3(),_prevCamPos=new THREE.Vector3();
 let frameNo=0;
-let nextArc=6000,nextShock=14000,nextBurst=5000,nextNova=26000,nextComet=48000,elapsed=0,fluidIdle=0;
+let nextNova=26000,nextComet=48000,elapsed=0;
 
-// Value noise for camera drift — reads as weightless float, not a sine orbit
 function jn(x){var i=Math.floor(x),f=x-i,u=f*f*(3-2*f),
   a=(Math.sin(i*127.1)*43758.5453)%1,b=(Math.sin((i+1)*127.1)*43758.5453)%1;
   a=a<0?a+1:a;b=b<0?b+1:b;return a*(1-u)+b*u;}
 function jfbm(x){return jn(x)*.5+jn(x*2.1)*.25+jn(x*4.3)*.125;}
-
 const motion=reduceMotion?.25:1;
 
 function animate(){
   requestAnimationFrame(animate);
-
-  // Don't burn the GPU (or the battery) on a tab nobody is looking at
   const dtRaw=clock.getDelta();
   if(document.hidden||contextLost)return;
   const dt=Math.min(dtRaw,1/20);
-  const fs=dt*60;                    // "frames at 60fps", for legacy per-frame tuning
-  time+=dt*0.21;                     // was 0.0035/frame — now identical at any refresh rate
+  const fs=dt*60;
+  time+=dt*0.21;
   elapsed+=dt*1000;
 
-  // ── Fluid ink: only simulate while it still has energy to spend
-  if(mxActive)fluidIdle=0;else fluidIdle+=fs;
-  if(fluidIdle<4){
-    fluidMat.uniforms.prev.value=rt1.texture;
-    fluidMat.uniforms.mouse.value.set(mx,my);
-    fluidMat.uniforms.prevMouse.value.set(mxPrev,myPrev);
-    fluidMat.uniforms.splat.value=mxActive?1.:0.;
-    renderer.setRenderTarget(rt2);renderer.render(fluidScene,fluidCam);
-    renderer.setRenderTarget(null);
-    const tmp=rt1;rt1=rt2;rt2=tmp;bgMat.uniforms.tex.value=rt1.texture;
-  }
-  mxActive=false;
+  starMat.uniforms.time.value=time;
+  starField.rotation.y+=.00006*fs*motion;
 
-  // ── GPU-animated systems: one uniform each, no buffer traffic
-  galMat.uniforms.time.value=time;
-  galaxy.rotation.y+=.00006*fs*motion;
-  moteMat.uniforms.time.value=time;
-  spikeMat.uniforms.time.value=time;
-  orbMat.uniforms.time.value=time;
-  flareMat.uniforms.time.value=time;hexMat.uniforms.time.value=time;
-  glowMat.uniforms.time.value=time;
-  coreLight.intensity=(0.72+jfbm(time*.11)*.28)*(0.78+jn(time*3.8)*.14+jn(time*9.2)*.05);
-
-  rings[0].rotation.z+=.004*fs*motion;rings[1].rotation.x+=.003*fs*motion;rings[2].rotation.y+=.005*fs*motion;
-
-  // ── Timed events, on animation time: they stay in step with the visuals
-  //    and a backgrounded tab never builds up a backlog to fire all at once.
-  if(elapsed>nextArc){nextArc=elapsed+6000;if(arcs.length<3&&Math.random()<.4)makeArc();}
-  if(elapsed>nextShock){nextShock=elapsed+14000;if(Math.random()<.3)spawnShock();}
-  if(elapsed>nextBurst){nextBurst=elapsed+38000;spawnEruption();}
   if(elapsed>nextNova){nextNova=elapsed+55000+Math.random()*50000;if(novaLife<0)spawnNova();}
   if(elapsed>nextComet){nextComet=elapsed+62000+Math.random()*60000;if(cometLife<0)spawnComet();}
 
-  // ── Shockwaves
   for(let i=shockwaves.length-1;i>=0;i--){
     const sw=shockwaves[i];sw.t+=sw.sp*fs;
     sw.wave.scale.setScalar(sw.t*sw.sc);
-    sw.wave.material.opacity=Math.max(0,.75*(1-sw.t));
+    sw.wave.material.opacity=Math.max(0,.55*(1-sw.t));
     if(sw.t>=1){scene.remove(sw.wave);sw.wave.material.dispose();shockwaves.splice(i,1);}
   }
 
-  // ── Energy arcs (iterate backwards — splicing forwards skipped entries)
-  for(let i=arcs.length-1;i>=0;i--){
-    const a=arcs[i];a.life+=fs;const phase=a.life/a.maxLife;
-    if(phase<.15)a.line.material.opacity=phase/.15*.45;
-    else if(phase<.5)a.line.material.opacity=.45;
-    else a.line.material.opacity=Math.max(0,.45*(1-phase)/.5);
-    if(a.life>=a.maxLife){
-      scene.remove(a.line);a.line.geometry.dispose();a.line.material.dispose();
-      arcs.splice(i,1);makeArc();
-    }
-  }
-
-  // ── Solar wind: straight typed-array math, no accessor calls, no per-particle RNG
-  for(let i=0,j=0;i<WIND;i++,j+=3){
-    wAge[i]+=fs;
-    if(wAge[i]>wLife[i]){seedWind(i,true);}
-    else{wPos[j]+=wVel[j]*fs;wPos[j+1]+=wVel[j+1]*fs;wPos[j+2]+=wVel[j+2]*fs;}
-  }
-  windAttr.needsUpdate=true;
-
-  // ── Eruption burst
-  if(burstLife>=0){
-    burstLife+=fs;
-    const ph=burstLife/burstMaxLife;
-    for(let i=0,j=0;i<BURST_N;i++,j+=3){
-      burstPos[j]+=burstVel[j]*fs;burstPos[j+1]+=burstVel[j+1]*fs;burstPos[j+2]+=burstVel[j+2]*fs;
-    }
-    burstGeo.attributes.position.needsUpdate=true;
-    burstMat.opacity=ph<.2?ph/.2*.9:Math.max(0,.9*(1-ph)/.8);
-    if(burstLife>=burstMaxLife){burstLife=-1;burstMat.opacity=0;}
-  }
-
-  // ── Supernova: hard rise, long decay, with a brief lift on the whole frame
   if(novaLife>=0){
     novaLife+=fs;const ph=novaLife/novaMax;
     const amp=ph<.035?ph/.035:Math.pow(Math.max(0,1-(ph-.035)/.965),2.3);
     novaMat.uniforms.amp.value=amp;
-    finalPass.uniforms.novaFlash.value=amp*.10;
+    finalPass.uniforms.novaFlash.value=amp*.05;
     if(novaLife>=novaMax){novaLife=-1;novaMat.uniforms.amp.value=0;finalPass.uniforms.novaFlash.value=0;}
   }
 
-  // ── Comet: advance the head, shift the tail down the buffer behind it
   if(cometLife>=0){
     cometLife+=fs;const ph=cometLife/cometMax;
     cometHead.addScaledVector(cometVel,fs);
     for(let i=0,j=0;i<COMET_N;i++,j+=3){
       const f=i/(COMET_N-1),back=f*8.2;
-      cometPos[j]  =cometHead.x-cometDir.x*back;
-      cometPos[j+1]=cometHead.y-cometDir.y*back+f*f*.5;   // slight arc, so it isn't a ruler
-      cometPos[j+2]=cometHead.z-cometDir.z*back;
+      cPos[j]  =cometHead.x-cometDir.x*back;
+      cPos[j+1]=cometHead.y-cometDir.y*back+f*f*.5;
+      cPos[j+2]=cometHead.z-cometDir.z*back;
     }
     cometGeo.attributes.position.needsUpdate=true;
     cometMat.uniforms.amp.value=Math.min(1,ph*14)*Math.min(1,(1-ph)*5);
     if(cometLife>=cometMax){cometLife=-1;cometMat.uniforms.amp.value=0;}
   }
 
-  flareGroup.quaternion.copy(camera.quaternion);
-
-  // ── Cinematic floating camera: noise drift, never a locked orbit.
-  //    Plus a long dolly (~80s) so the framing actually changes, and mouse
-  //    parallax eased toward its target so it feels weighted, not glued.
+  // ── Camera: slow drift, a long dolly, and eased mouse parallax
   paraX+=(paraTX-paraX)*Math.min(1,dt*2.2);
   paraY+=(paraTY-paraY)*Math.min(1,dt*2.2);
   const cT=time*.022;
@@ -977,23 +690,18 @@ function animate(){
   camera.position.x=Math.sin(camOrbitA)*camOrbitR*.40+paraX*.42*motion;
   camera.position.y=(jfbm(cT*.6+5.)-.5)*1.1*motion-paraY*.26*motion;
   camera.position.z=Math.cos(camOrbitA)*camOrbitR*.92;
-  // Look slightly against the parallax so near and far separate as you move
   camera.lookAt((jfbm(time*1.8+1.7)-.5)*.018*motion-paraX*.06*motion,
                 (jfbm(time*1.5+4.1)-.5)*.012*motion+paraY*.04*motion,0);
   camera.updateMatrixWorld();
 
-  coreScreenPos.copy(coreWorldPos).project(camera);
-  finalPass.uniforms.coreUV.value.set((coreScreenPos.x+1)*.5,(coreScreenPos.y+1)*.5);
   finalPass.uniforms.time.value=time;
 
-  // ── Volumetric cloud, off-screen at tier resolution.
-  // Depth prepass first so the march can stop at whatever the scene drew.
+  // ── Depth prepass, then the cloud
   if(DEPTH_OK){
     renderer.setRenderTarget(depthRT);
     renderer.clear(true,true,false);
     renderer.render(depthScene,camera);
   }
-
   volMat.uniforms.time.value=time;
   volMat.uniforms.camPos.value.copy(camera.position);
   camera.getWorldDirection(_camFwd);
@@ -1003,9 +711,6 @@ function animate(){
   _invPV.copy(camera.projectionMatrix).multiply(camera.matrixWorldInverse).invert();
   volMat.uniforms.invProjView.value.copy(_invPV);
 
-  // Accumulate only while the camera is nearly still. A dolly or a mouse
-  // flick drops the history weight to zero within a frame or two, which is
-  // what keeps this from smearing.
   const camSpeed=camera.position.distanceTo(_prevCamPos)/Math.max(dt,1e-4);
   _prevCamPos.copy(camera.position);
   volMat.uniforms.histWeight.value=Math.max(0,Math.min(.84,.84-camSpeed*.9));
@@ -1017,27 +722,16 @@ function animate(){
   renderer.render(volScene,volCam);
   renderer.setRenderTarget(null);
   volComposite.uniforms.tVol.value=volA.texture;
-  const vt=volA;volA=volB;volB=vt;          // this frame becomes next frame's history
-
-  // Next frame reprojects through this frame's view
+  const vt=volA;volA=volB;volB=vt;
   volMat.uniforms.prevViewProj.value.copy(camera.projectionMatrix).multiply(camera.matrixWorldInverse);
 
   composer.render();
 
-  // ── Adaptive quality.
-  // Measure the real rAF-to-rAF interval, not CPU time around the draw
-  // calls: GPU work is asynchronous, so a timer that stops after
-  // composer.render() reports a fast frame on a GPU that is drowning.
-  // Thresholds are relative to the display's own refresh rate, because a
-  // perfectly idle 60Hz machine still never beats 16.7ms.
   frameMs+=(Math.min(dtRaw,.25)*1000-frameMs)*.05;
-  if(warmup<40){warmup++;}                       // ignore startup jank
+  if(warmup<40){warmup++;}
   else if(dtRaw>.004)vsyncMs=Math.min(vsyncMs,Math.max(dtRaw*1000,6));
   const slowAt=Math.max(22,vsyncMs*1.7),fastAt=vsyncMs*1.12;
   if(warmup>=40){
-    // Gate the counters on being ABLE to move, so a long slow spell at the
-    // bottom tier can't bank hundreds of ticks and then skip the debounce
-    // the next time we climb.
     if(frameMs>slowAt&&tier>0){if(++slowRun>45){applyTier(tier-1);drops++;slowRun=0;fastRun=0;}}
     else slowRun=0;
     if(frameMs<fastAt&&tier<startTier&&drops<3){if(++fastRun>300*(drops+1)){applyTier(tier+1);fastRun=0;}}
