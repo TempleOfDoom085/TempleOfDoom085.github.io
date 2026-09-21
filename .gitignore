@@ -16,3 +16,20 @@ __pycache__/
 
 # Local dev config
 .claude/
+
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+.npmrc
+.netrc
+secrets.json
+credentials.json
+service-account*.json
