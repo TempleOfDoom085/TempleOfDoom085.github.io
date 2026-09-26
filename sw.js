@@ -1,6 +1,6 @@
 // Cache strategy: Cache First for assets, Network First for HTML.
 // Bump CACHE_VERSION whenever precached files change so old caches are purged.
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE = `temple-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `temple-dynamic-${CACHE_VERSION}`;
 
@@ -22,6 +22,8 @@ const PRECACHE_URLS = [
   '/attack-viz.html',
   '/pentest-sim.html',
   '/hacker-feed.html',
+  '/soc.html',
+  '/vendor/three/three.min.js',
   // Tools
   '/tools/index.html',
   '/tools/bluetooth-locator.html',
