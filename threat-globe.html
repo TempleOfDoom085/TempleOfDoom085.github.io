@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="description" content="A live 3D threat globe rendering global cyber attack traffic in WebGL.">
 <link rel="canonical" href="https://templeofdoom085.github.io/threat-globe.html">
 <meta property="og:type" content="website">
@@ -1177,13 +1178,13 @@ body::after {
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="/vendor/three/three.min.js"></script>
+<script src="/vendor/three/LuminosityHighPassShader.js"></script>
+<script src="/vendor/three/CopyShader.js"></script>
+<script src="/vendor/three/EffectComposer.js"></script>
+<script src="/vendor/three/RenderPass.js"></script>
+<script src="/vendor/three/ShaderPass.js"></script>
+<script src="/vendor/three/UnrealBloomPass.js"></script>
 <script>
 'use strict';
 
@@ -1697,7 +1698,6 @@ function triggerCME(ts) {
     sphereMat.map = tex;
     sphereMat.color.set(0xffffff); // MUST be white — otherwise color multiplies texture
     sphereMat.needsUpdate = true;
-    console.log('[earth] day texture applied');
     // Try to also load specular map
     trySpec(0);
   }
@@ -2252,7 +2252,6 @@ async function loadCountryBorders() {
       }));
     }
   });
-  console.log(`Country borders loaded: ${Object.keys(borderLines).length} entries`);
 }
 
 function pulseCountryBorder(countryName) {
@@ -3249,18 +3248,27 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 // ─── SIDEBAR TAB SWITCHING ────────────────────────────────────────────────────
-document.getElementById('tab-feed-btn').addEventListener('click', () => {
-  document.getElementById('tab-feed-btn').classList.add('active');
-  document.getElementById('tab-intel-btn').classList.remove('active');
-  document.getElementById('tab-feed-panel').classList.add('active');
-  document.getElementById('tab-intel-panel').classList.remove('active');
-});
-document.getElementById('tab-intel-btn').addEventListener('click', () => {
-  document.getElementById('tab-intel-btn').classList.add('active');
-  document.getElementById('tab-feed-btn').classList.remove('active');
-  document.getElementById('tab-intel-panel').classList.add('active');
-  document.getElementById('tab-feed-panel').classList.remove('active');
-});
+// Guarded: the tab markup is optional, and throwing here would abort the
+// country-profile click handler below.
+(function () {
+  const feedBtn = document.getElementById('tab-feed-btn');
+  const intelBtn = document.getElementById('tab-intel-btn');
+  const feedPanel = document.getElementById('tab-feed-panel');
+  const intelPanel = document.getElementById('tab-intel-panel');
+  if (!feedBtn || !intelBtn || !feedPanel || !intelPanel) return;
+  feedBtn.addEventListener('click', () => {
+    feedBtn.classList.add('active');
+    intelBtn.classList.remove('active');
+    feedPanel.classList.add('active');
+    intelPanel.classList.remove('active');
+  });
+  intelBtn.addEventListener('click', () => {
+    intelBtn.classList.add('active');
+    feedBtn.classList.remove('active');
+    intelPanel.classList.add('active');
+    feedPanel.classList.remove('active');
+  });
+})();
 
 // ─── COUNTRY PROFILE CLICK ────────────────────────────────────────────────────
 const raycaster  = new THREE.Raycaster();

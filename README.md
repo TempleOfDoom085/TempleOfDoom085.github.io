@@ -23,7 +23,7 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 | [`attack-viz.html`](attack-viz.html) | Animated explainers for SQL injection, XSS, buffer overflow. |
 | [`pentest-sim.html`](pentest-sim.html) | Pentest simulator. |
 | [`hacker-feed.html`](hacker-feed.html) | Live GitHub activity rendered as a security ops console. |
-| [`insane-engine.html`](insane-engine.html) | GPU cinematic demo — fluid ink, particles, bloom. |
+| [`insane-engine.html`](insane-engine.html) | Cinematic Engine — physically-grounded deep-field renderer (volumetric nebula, blackbody stars). |
 | [`game.html`](game.html) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. |
 | [`world.html`](world.html) + [`src/`](src/) | **REALM** — modular open-world 3D sandbox (procedural terrain, day/night, weather, vehicles, quests). |
 
@@ -43,11 +43,12 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 ├── career.html, ctf-writeups.html, soc.html, ...   # standalone pages
 ├── tools/                # Temple Tools (one self-contained HTML file per tool)
 ├── src/                  # REALM open-world engine modules (ES modules)
-├── vendor/three/         # Three.js post-processing passes
+├── vendor/three/         # Three.js r128 + post-processing passes (globe, engine)
 ├── docs/                 # design notes (Knights Templar art guide)
 ├── img/                  # optional .webp room art for game.html (auto-detected)
 ├── sw.js                 # service worker (offline cache for tools + portfolio)
 ├── manifest.json         # PWA manifest for Temple Tools
+├── favicon.svg           # site-wide tab icon
 ├── 404.html              # GitHub Pages not-found page
 ├── robots.txt, sitemap.xml
 └── README.md

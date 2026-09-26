@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="description" content="Knights Templar: The Siege of the Undead - a browser RPG that grew out of an SNHU IT 140 Python assignment. No install required.">
 <link rel="canonical" href="https://templeofdoom085.github.io/game.html">
 <meta property="og:type" content="website">
@@ -969,7 +970,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v9.1</span></div>
+  <div class="game-title-bar"><a href="/" class="btn-audio" style="text-decoration:none;margin-right:10px" title="Back to portfolio">← Portfolio</a>⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v9.1</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -3471,9 +3472,6 @@ function updateButtons() {
   document.getElementById('btnScroll').style.display = canScroll ? 'inline-block' : 'none';
   document.getElementById('btnTalk').style.display = canTalk ? 'inline-block' : 'none';
   document.getElementById('btnPortrait').style.display = canPortrait ? 'inline-block' : 'none';
-  
-  // Debug: log button state
-  console.log('updateButtons:', STATE.currentRoom, 'relic:', room.relic, 'scroll:', room.hasScroll, 'npc:', room.npc, 'combat:', STATE.inCombat);
 }
 
 function updateEnemyHP() {

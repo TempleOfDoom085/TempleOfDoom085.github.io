@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <!-- SEO -->
 <meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises, plus 22 live security tools.">
 <meta name="keywords" content="AI security, AI governance, AI red teaming, third-party AI risk, EU AI Act, NIST AI RMF, ISO 42001, AI automation, cybersecurity, voice AI, workflow automation, Brian Temple, NJ">
@@ -668,6 +669,20 @@
         <span class="tool-card-cta">Start Race →</span>
       </a>
 
+      <a href="tools/bluetooth-locator.html" class="cyber-tool-card tool-cyan">
+        <div class="tool-card-glow"></div>
+        <div class="tool-card-icon">📡</div>
+        <div class="tool-card-label">22</div>
+        <div class="tool-card-name">Bluetooth Device Locator</div>
+        <div class="tool-card-desc">Find a lost Bluetooth device by walking toward it — radar/sonar HUD, live RSSI signal meter, Hunt Mode with realistic distance estimates, and audio hot/cold cues via the Web Bluetooth API.</div>
+        <div class="tool-card-tags">
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">Web Bluetooth</span>
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">RSSI</span>
+          <span class="ptag" style="border-color:rgba(0,200,255,0.3);color:rgba(0,200,255,0.7)">Hunt Mode</span>
+        </div>
+        <span class="tool-card-cta">Launch Tool →</span>
+      </a>
+
     </div>
 
     <div style="text-align:center;margin-top:2.5rem">
@@ -700,10 +715,10 @@
         <div class="tool-card-icon" style="color:rgba(180,100,255,0.9);text-shadow:0 0 16px rgba(140,0,255,0.7)">⚡</div>
         <div class="tool-card-label">DEMO</div>
         <div class="tool-card-name">Cinematic Engine</div>
-        <div class="tool-card-desc">GPU-powered visual demo — fluid ink simulation, glass energy core, orbiting particles, and cinematic bloom. All running live in the browser at 60fps.</div>
+        <div class="tool-card-desc">A physically-grounded deep-field renderer — volumetric dust with true extinction, blackbody starlight, and Hα/OIII emission nebula. Real-time WebGL in the browser.</div>
         <div class="tool-card-tags">
           <span class="ptag" style="border-color:rgba(140,0,255,0.3);color:rgba(180,100,255,0.75)">WebGL Shaders</span>
-          <span class="ptag" style="border-color:rgba(140,0,255,0.3);color:rgba(180,100,255,0.75)">Fluid Sim</span>
+          <span class="ptag" style="border-color:rgba(140,0,255,0.3);color:rgba(180,100,255,0.75)">Volumetrics</span>
           <span class="ptag" style="border-color:rgba(140,0,255,0.3);color:rgba(180,100,255,0.75)">Bloom FX</span>
         </div>
         <span class="tool-card-cta">Launch Demo →</span>
@@ -833,8 +848,8 @@
       <a href="insane-engine.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
         <div class="game-launch-btn" style="background:linear-gradient(135deg,#0a0514 0%,#06030d 100%);width:100%;padding:2.5rem 2rem;border:none;">
           <div class="game-launch-title" style="color:#c084fc;text-shadow:0 0 20px rgba(180,0,255,0.55);">CINEMATIC ENGINE</div>
-          <div class="game-launch-sub" style="color:rgba(192,132,252,0.55);">— GPU VISUAL DEMO — THREE.JS —</div>
-          <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(192,132,252,0.3);margin-top:0.6rem;position:relative;z-index:1;">Fluid ink · Glass core · Bloom · 60fps live in browser</div>
+          <div class="game-launch-sub" style="color:rgba(192,132,252,0.55);">— DEEP-FIELD RENDERER — THREE.JS —</div>
+          <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:rgba(192,132,252,0.3);margin-top:0.6rem;position:relative;z-index:1;">Deep field · Volumetric nebula · Blackbody stars · Live in browser</div>
           <div style="margin-top:1.5rem;display:inline-block;padding:0.8rem 2.5rem;border:2px solid rgba(180,0,255,0.45);color:#c084fc;font-family:var(--mono);font-size:0.85rem;letter-spacing:0.2em;text-transform:uppercase;position:relative;z-index:1;">
             ✦ &nbsp; LAUNCH ENGINE &nbsp; ✦
           </div>
@@ -914,6 +929,108 @@
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v15.1</span>
+        <span class="patch-version-name">Polish Pass — Favicon, Offline Assets, Cleanup</span>
+        <span class="patch-date">September 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Site</div>
+        <ul class="patch-list">
+          <li>Site-wide favicon on all 35 pages — browser tabs no longer show a blank icon</li>
+          <li>Bluetooth Device Locator added to the portfolio tools grid — all 22 tools are now linked from the homepage</li>
+          <li>Knights Templar gets a ← Portfolio link in its top bar; it was the only page with no way back</li>
+          <li>Cinematic Engine cards rewritten to describe the deep-field renderer instead of the retired fluid-ink demo</li>
+        </ul>
+        <div class="patch-category">Threat Globe</div>
+        <ul class="patch-list">
+          <li>Three.js and all six post-processing passes now load from the site's own /vendor/three/ instead of cdnjs and unpkg — a CDN outage can no longer take the globe down</li>
+          <li>Content-Security-Policy script-src tightened to self plus the YouTube player API</li>
+          <li>Fixed clicking a city to open its country profile — a leftover sidebar-tab handler threw on load and silently disabled it</li>
+        </ul>
+        <div class="patch-category">Housekeeping</div>
+        <ul class="patch-list">
+          <li>Removed leftover debug console.log calls from the Threat Globe, Tools Hub and Knights Templar</li>
+          <li>Pentest Simulator: custom-cursor hover handler no longer throws when the pointer enters the page itself</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v15.0</span>
+        <span class="patch-version-name">Cranium AI, Site Overhaul &amp; Deep-Field Engine</span>
+        <span class="patch-date">September 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Content</div>
+        <ul class="patch-list">
+          <li>New role — AI Security Advisor at Cranium AI (Aug 2026 – Present) across experience, career timeline, hero, about, contact, JSON-LD and the terminal</li>
+          <li>New "AI Security &amp; Governance" branch in the skill tree</li>
+          <li>Kitchen Lab / recipes page retired; portfolio section numbers renumbered 01–12 with no repeats or gaps</li>
+        </ul>
+        <div class="patch-category">Architecture</div>
+        <ul class="patch-list">
+          <li>index.html split into assets/css/site.css and assets/js/{main, particles, visitor-intel}.js — homepage down from 366 KB to ~210 KB</li>
+          <li>Service worker fixed: the precache list had eight 404s, so it never installed; now precaches every content page and tool</li>
+          <li>Added 404 page, robots.txt, sitemap.xml with lastmod dates from git history, and canonical URLs</li>
+        </ul>
+        <div class="patch-category">Security</div>
+        <ul class="patch-list">
+          <li>Content-Security-Policy on every page — default-src 'self', object-src 'none', explicit script-src allowlist, no 'unsafe-eval'</li>
+          <li>CVE Search: reference links now allowlist http/https, blocking javascript: and data: URLs from NVD data</li>
+          <li>rel="noopener noreferrer" on every target="_blank" link</li>
+        </ul>
+        <div class="patch-category">SEO, Sharing &amp; Accessibility</div>
+        <ul class="patch-list">
+          <li>1200×630 social share image and large Twitter cards — shared links no longer render blank</li>
+          <li>Hand-written description, canonical, Open Graph and Twitter tags on all 35 pages</li>
+          <li>prefers-reduced-motion honoured site-wide across 70+ animations; scroll-reveal content forced visible</li>
+          <li>Skip-to-content link and a proper &lt;main&gt; landmark</li>
+          <li>PWA manifest icons fixed (a malformed closing tag broke both)</li>
+        </ul>
+        <div class="patch-category">Cinematic Engine → Deep-Field Renderer</div>
+        <ul class="patch-list">
+          <li>Rebuilt as a physically-grounded telescope image — anything a real instrument could not capture was removed</li>
+          <li>Starfield from real distributions: number-counts luminosity law, blackbody colour by temperature, Moffat PSF with brightness-gated diffraction spikes</li>
+          <li>Nebula from one density field: Hα/OIII emission driven by ionisation and self-shielding, plus dust extinction that carves dark lanes</li>
+          <li>Half-res raymarch with analytic bounds, adaptive quality tiers, delta-time animation, and WebGL context-loss recovery</li>
+          <li>Three.js vendored locally — no third-party scripts on the page</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v14.0</span>
+        <span class="patch-version-name">Bluetooth Device Locator — Tool 22</span>
+        <span class="patch-date">August 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">New — Bluetooth Device Locator</div>
+        <ul class="patch-list">
+          <li>Find a lost BLE device by walking toward it — passive advertisement scanning via Web Bluetooth, with a device-picker fallback</li>
+          <li>Live RSSI proximity gauge, distance estimate, trend chart, and optional hot/cold audio beeps</li>
+          <li>Remembers the last device and favourites locally; handles unsupported browsers, denied permissions and dropped signal</li>
+        </ul>
+        <div class="patch-category">Radar HUD &amp; Hunt Mode</div>
+        <ul class="patch-list">
+          <li>Sonar-style radar with rotating sweep, signal-scaled blip, quickening ping rings and a TARGET LOCKED flash</li>
+          <li>Ambient page glow that pulses with proximity, plus synced haptics on mobile</li>
+          <li>Hunt Mode — full-screen distance-in-feet readout, WARMER/COLDER feedback, and a direction arrow inferred from compass heading vs. signal strength</li>
+          <li>Indoor-calibrated path-loss model (−59 dBm @ 1 m, n = 2.5) — the textbook constants read ~583 ft where the real answer was ~15 ft</li>
+          <li>iPhone/iPad users get an accurate explanation of Apple's WebKit Web Bluetooth restriction instead of a misleading "try another browser"</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
