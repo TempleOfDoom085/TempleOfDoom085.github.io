@@ -1,0 +1,72 @@
+/* Temple Tools shared styles.
+   Linked by every tool page with the standard layout (not the Cracker Race
+   or the Bluetooth Locator, which have their own designs). Each page keeps
+   its own :root palette and defines its accent as --c, --c-dim, --c-mid and
+   --border-c; everything tool-specific stays in the page's own <style>. */
+
+/* Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 18px; scroll-behavior: smooth; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; cursor: none; }
+
+/* Navigation */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; transition: opacity 0.2s; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+/* Hero */
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
+
+/* Panels */
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.panel-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
+
+/* Custom cursor (disabled on touch widths below) */
+#cursor {
+  position: fixed; pointer-events: none; z-index: 99999;
+  width: 8px; height: 8px;
+  transform: translate(-50%, -50%);
+  background: rgba(184,147,58,0.95);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(184,147,58,0.5);
+  transition: width 0.12s ease, height 0.12s ease;
+}
+body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba(184,147,58,0.7); }
+.cursor-trail {
+  position: fixed; width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(184,147,58,0.7); pointer-events: none; z-index: 99998;
+  animation: trailFade 0.55s forwards;
+}
+@keyframes trailFade {
+  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
+}
+a, button, [role="button"], input, textarea, select { cursor: none; }
+@media (max-width: 768px) {
+  body { cursor: auto !important; }
+  a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, .cursor-trail { display: none !important; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  html { scroll-behavior: auto; }
+  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
+}
