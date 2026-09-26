@@ -933,7 +933,7 @@
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
         <span class="patch-version-tag">v15.1</span>
-        <span class="patch-version-name">Polish Pass — Favicon, Offline Assets, Cleanup</span>
+        <span class="patch-version-name">Polish Pass — Favicon, CSP, Shared Styles</span>
         <span class="patch-date">September 2026</span>
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
@@ -951,6 +951,16 @@
           <li>Three.js and all six post-processing passes now load from the site's own /vendor/three/ instead of cdnjs and unpkg — a CDN outage can no longer take the globe down</li>
           <li>Content-Security-Policy script-src tightened to self plus the YouTube player API</li>
           <li>Fixed clicking a city to open its country profile — a leftover sidebar-tab handler threw on load and silently disabled it</li>
+        </ul>
+        <div class="patch-category">Security</div>
+        <ul class="patch-list">
+          <li>Per-page Content-Security-Policy — 33 of 35 pages now allow scripts from this site only; soc.html moved to the vendored three.js too</li>
+        </ul>
+        <div class="patch-category">Under the Hood</div>
+        <ul class="patch-list">
+          <li>Homepage inline styles cut from 256 to 30 — card colours now come from a CSS accent-theme system, and all hover effects are pure CSS instead of JavaScript</li>
+          <li>New shared assets/css/tools.css for the nav, hero, panels and custom cursor used across 21 tool pages</li>
+          <li>Verified as pure refactors: computed styles of every element identical before and after</li>
         </ul>
         <div class="patch-category">Housekeeping</div>
         <ul class="patch-list">

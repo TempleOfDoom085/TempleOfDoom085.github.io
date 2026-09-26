@@ -22,8 +22,8 @@
 <meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <title>HTTP Request Builder — Temple Tools</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/tools.css">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
   --green: #00ff88; --green-dim: rgba(0,255,136,0.12); --green-mid: rgba(0,255,136,0.35);
@@ -31,21 +31,9 @@
   --text: #f5f2ec; --text-dim: rgba(245,242,236,0.5); --text-faint: rgba(245,242,236,0.2);
   --border: rgba(255,255,255,0.06); --border-green: rgba(0,255,136,0.2);
   --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+  --c: var(--green); --c-dim: var(--green-dim); --c-mid: var(--green-mid); --border-c: var(--border-green);
 }
-html { scroll-behavior: smooth; }
 body { font-family: var(--head); background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
-
-nav {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1rem 2.5rem;
-  background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-green);
-}
-.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--green); text-decoration: none; transition: opacity 0.2s; }
-.nav-back:hover { opacity: 0.7; }
-.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
-.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--green); text-transform: uppercase; }
 
 .hero {
   position: relative; overflow: hidden;
@@ -54,7 +42,6 @@ nav {
 }
 .hero-canvas { position: absolute; inset: 0; opacity: 0.15; }
 .hero-content { position: relative; z-index: 1; }
-.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; margin-bottom: 1.2rem; }
 .hero-title {
   font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; line-height: 1; color: var(--text);
@@ -67,7 +54,6 @@ nav {
   94% { text-shadow: 2px 0 rgba(0,255,136,0.8), -2px 0 rgba(0,255,136,0.4); transform: skewX(1deg); }
   95% { text-shadow: 0 0 40px rgba(0,255,136,0.3); transform: none; }
 }
-.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; color: var(--text-dim); margin-top: 1rem; }
 
 .main { max-width: 1000px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
@@ -75,10 +61,6 @@ nav {
   background: var(--bg2); border: 1px solid var(--border);
   padding: 1.75rem; margin-bottom: 1.25rem;
   position: relative; overflow: hidden;
-}
-.panel::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--green-mid), transparent);
 }
 .panel-title { font-size: 1rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; color: var(--text); }
 .section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; margin-bottom: 0.6rem; display: block; }
@@ -188,50 +170,10 @@ pre.res-body {
 .toast.show { transform: translateX(-50%) translateY(0); }
 
 /* ── GOLD CURSOR ── */
-body { cursor: none; }
-a, button, [role="button"], input, textarea, select { cursor: none; }
-#cursor {
-  position: fixed; pointer-events: none; z-index: 99999;
-  width: 8px; height: 8px;
-  transform: translate(-50%, -50%);
-  background: rgba(184,147,58,0.95);
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(184,147,58,0.5);
-  transition: width 0.12s ease, height 0.12s ease;
-}
-body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba(184,147,58,0.7); }
-@keyframes trailFade {
-  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
-  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
-}
-.cursor-trail {
-  position: fixed; width: 5px; height: 5px; border-radius: 50%;
-  background: rgba(184,147,58,0.7); pointer-events: none; z-index: 99998;
-  animation: trailFade 0.55s forwards;
-}
-@media (max-width: 768px) {
-  body { cursor: auto !important; }
-  a, button, [role="button"], input, textarea, select { cursor: auto !important; }
-  #cursor, .cursor-trail { display: none !important; }
-}
-
-html { font-size: 18px; }
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────────────────
    Honours the OS "reduce motion" setting: stops the ambient animation and the
    custom cursor, and gives the native pointer back. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0ms !important;
-    transition-duration: 1ms !important;
-    transition-delay: 0ms !important;
-  }
-  html { scroll-behavior: auto; }
-  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
-  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
-}
 </style>
 </head>
 <body>

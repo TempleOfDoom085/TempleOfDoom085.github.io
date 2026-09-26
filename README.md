@@ -36,12 +36,13 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 ├── index.html            # main portfolio (markup only)
 ├── assets/
 │   ├── css/site.css      # all portfolio styles
+│   ├── css/tools.css     # shared Temple Tools layout (nav, hero, panels, cursor)
 │   └── js/
 │       ├── main.js       # tabs, fade-ins, nav, terminal, achievements, hero
 │       ├── particles.js  # hero particle-text explosion
 │       └── visitor-intel.js
 ├── career.html, ctf-writeups.html, soc.html, ...   # standalone pages
-├── tools/                # Temple Tools (one self-contained HTML file per tool)
+├── tools/                # Temple Tools (one HTML file per tool + assets/css/tools.css)
 ├── src/                  # REALM open-world engine modules (ES modules)
 ├── vendor/three/         # Three.js r128 + post-processing passes (globe, engine)
 ├── docs/                 # design notes (Knights Templar art guide)

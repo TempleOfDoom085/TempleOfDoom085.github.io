@@ -29,8 +29,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Temple Tools — Security Toolkit</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/tools.css">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
   --accent: #00d4ff;
@@ -41,8 +41,6 @@
   --green: #00ff88; --cyan: #00c8ff; --red: #ff4d4d; --purple: #b06aff;
   --orange: #ff7722; --teal: #00d4aa; --lime: #c8ff00; --pink: #ff4da6;
 }
-html { scroll-behavior: smooth; }
-body { font-family: var(--head); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
 
 /* Matrix rain canvas */
 #matrix-rain { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.07; }
@@ -56,9 +54,8 @@ nav {
   border-bottom: 1px solid rgba(0,212,255,0.15);
 }
 .nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--accent); text-decoration: none; transition: opacity 0.2s; }
-.nav-back:hover { opacity: 0.7; }
 .nav-center { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.4em; color: var(--text-faint); text-transform: uppercase; }
-.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--text-faint); }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--text-faint); text-transform: none; }
 
 /* HERO */
 .hero { position: relative; overflow: hidden; padding: 6rem 2.5rem 5rem; text-align: center; border-bottom: 1px solid rgba(0,212,255,0.12); }
@@ -156,50 +153,10 @@ footer a { color: var(--accent); text-decoration: none; }
 }
 
 /* ── GOLD CURSOR ── */
-body { cursor: none; }
-a, button, [role="button"], input, textarea, select { cursor: none; }
-#cursor {
-  position: fixed; pointer-events: none; z-index: 99999;
-  width: 8px; height: 8px;
-  transform: translate(-50%, -50%);
-  background: rgba(184,147,58,0.95);
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(184,147,58,0.5);
-  transition: width 0.12s ease, height 0.12s ease;
-}
-body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba(184,147,58,0.7); }
-@keyframes trailFade {
-  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
-  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
-}
-.cursor-trail {
-  position: fixed; width: 5px; height: 5px; border-radius: 50%;
-  background: rgba(184,147,58,0.7); pointer-events: none; z-index: 99998;
-  animation: trailFade 0.55s forwards;
-}
-@media (max-width: 768px) {
-  body { cursor: auto !important; }
-  a, button, [role="button"], input, textarea, select { cursor: auto !important; }
-  #cursor, .cursor-trail { display: none !important; }
-}
-
-html { font-size: 18px; }
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────────────────
    Honours the OS "reduce motion" setting: stops the ambient animation and the
    custom cursor, and gives the native pointer back. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0ms !important;
-    transition-duration: 1ms !important;
-    transition-delay: 0ms !important;
-  }
-  html { scroll-behavior: auto; }
-  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
-  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
-}
 </style>
 </head>
 <body>
