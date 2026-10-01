@@ -1,0 +1,46 @@
+/* Shared chrome for Temple Tools pages: gold cursor + reduced-motion overrides.
+   Each tool keeps its own palette and layout inline. */
+
+/* ── GOLD CURSOR ── */
+body { cursor: none; }
+a, button, [role="button"], input, textarea, select { cursor: none; }
+#cursor {
+  position: fixed; pointer-events: none; z-index: 99999;
+  width: 8px; height: 8px;
+  transform: translate(-50%, -50%);
+  background: rgba(184,147,58,0.95);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(184,147,58,0.5);
+  transition: width 0.12s ease, height 0.12s ease;
+}
+body.cursor-hover #cursor { width: 12px; height: 12px; box-shadow: 0 0 14px rgba(184,147,58,0.7); }
+@keyframes trailFade {
+  0%   { opacity: 0.75; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
+}
+.cursor-trail {
+  position: fixed; width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(184,147,58,0.7); pointer-events: none; z-index: 99998;
+  animation: trailFade 0.55s forwards;
+}
+@media (max-width: 768px) {
+  body { cursor: auto !important; }
+  a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, .cursor-trail { display: none !important; }
+}
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────────────
+   Honours the OS "reduce motion" setting: stops the ambient animation and the
+   custom cursor, and gives the native pointer back. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  html { scroll-behavior: auto; }
+  body, a, button, [role="button"], input, textarea, select { cursor: auto !important; }
+  #cursor, #cursor-ring, .cursor-trail { display: none !important; }
+}

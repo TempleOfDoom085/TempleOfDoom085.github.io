@@ -1,6 +1,6 @@
 // Cache strategy: Cache First for assets, Network First for HTML.
 // Bump CACHE_VERSION whenever precached files change so old caches are purged.
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `temple-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `temple-dynamic-${CACHE_VERSION}`;
 
@@ -15,14 +15,65 @@ const PRECACHE_URLS = [
   '/assets/js/main.js',
   '/assets/js/particles.js',
   '/assets/js/visitor-intel.js',
+  '/img/snhu-logo.webp',
+  '/img/cu-boulder-logo.webp',
   // Standalone content pages (self-contained, usable offline)
   '/career.html',
   '/ctf-writeups.html',
   '/attack-viz.html',
   '/pentest-sim.html',
   '/hacker-feed.html',
+  // 3D / WebGL pages and the vendored three.js they run on. The large Earth
+  // textures are left out on purpose: they're cached on first view instead.
+  '/threat-globe.html',
+  '/soc.html',
+  '/insane-engine.html',
+  '/game.html',
+  '/world.html',
+  '/vendor/three/three.min.js',
+  '/vendor/three/CopyShader.js',
+  '/vendor/three/EffectComposer.js',
+  '/vendor/three/LuminosityHighPassShader.js',
+  '/vendor/three/RenderPass.js',
+  '/vendor/three/ShaderPass.js',
+  '/vendor/three/UnrealBloomPass.js',
+  // REALM (world.html) ES modules + three.js r158
+  '/src/activities/ActivitySystem.js',
+  '/src/audio/AudioSystem.js',
+  '/src/combat/CombatSystem.js',
+  '/src/core/Game.js',
+  '/src/hud/HUD.js',
+  '/src/hud/Minimap.js',
+  '/src/main.js',
+  '/src/npcs/NPCSystem.js',
+  '/src/player/Camera.js',
+  '/src/player/Player.js',
+  '/src/quests/QuestSystem.js',
+  '/src/systems/CollisionSystem.js',
+  '/src/systems/Input.js',
+  '/src/systems/Particles.js',
+  '/src/systems/PoliceSystem.js',
+  '/src/systems/WorldEvents.js',
+  '/src/vehicles/VehicleSystem.js',
+  '/src/world/City.js',
+  '/src/world/Environment.js',
+  '/src/world/Lighting.js',
+  '/src/world/Terrain.js',
+  '/vendor/three-r158/build/three.module.min.js',
+  '/vendor/three-r158/examples/jsm/environments/RoomEnvironment.js',
+  '/vendor/three-r158/examples/jsm/objects/Sky.js',
+  '/vendor/three-r158/examples/jsm/postprocessing/EffectComposer.js',
+  '/vendor/three-r158/examples/jsm/postprocessing/MaskPass.js',
+  '/vendor/three-r158/examples/jsm/postprocessing/Pass.js',
+  '/vendor/three-r158/examples/jsm/postprocessing/RenderPass.js',
+  '/vendor/three-r158/examples/jsm/postprocessing/ShaderPass.js',
+  '/vendor/three-r158/examples/jsm/postprocessing/UnrealBloomPass.js',
+  '/vendor/three-r158/examples/jsm/shaders/CopyShader.js',
+  '/vendor/three-r158/examples/jsm/shaders/LuminosityHighPassShader.js',
   // Tools
   '/tools/index.html',
+  '/tools/tools.css',
+  '/tools/tools.js',
   '/tools/bluetooth-locator.html',
   '/tools/cidr.html',
   '/tools/cracker.html',
