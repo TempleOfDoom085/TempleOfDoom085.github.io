@@ -1,7 +1,7 @@
 {
   "name": "Temple Tools — Security Toolkit",
   "short_name": "Temple Tools",
-  "description": "22 client-side cybersecurity tools. Zero tracking. Zero server.",
+  "description": "24 client-side cybersecurity tools. Zero tracking. Zero server.",
   "start_url": "/tools/index.html",
   "scope": "/",
   "display": "standalone",
@@ -26,7 +26,8 @@
     { "name": "Hash Analyzer", "url": "/tools/hash.html", "description": "Analyze hashes" },
     { "name": "OSINT Dashboard", "url": "/tools/osint.html", "description": "Domain intelligence" },
     { "name": "Payload Library", "url": "/tools/payloads.html", "description": "Security payloads" },
-    { "name": "Pentest Checklist", "url": "/tools/pentest.html", "description": "Pentest methodology" }
+    { "name": "Pentest Checklist", "url": "/tools/pentest.html", "description": "Pentest methodology" },
+    { "name": "LLM Top 10", "url": "/tools/llm-top10.html", "description": "OWASP LLM risk checklist" }
   ],
   "categories": ["security", "utilities", "developer tools"],
   "screenshots": []
