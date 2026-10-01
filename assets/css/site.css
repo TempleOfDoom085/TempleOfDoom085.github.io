@@ -1284,6 +1284,13 @@ section { position: relative; }
   transform: translateX(0);
 }
 .vr-warn { color: rgba(255,200,0,0.8); }
+.vr-privacy {
+  margin: 6px 0 0;
+  color: rgba(245,242,236,0.4);
+  font-size: 0.5rem;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+}
 @media (max-width: 600px) {
   #visitorRecon {
     width: 240px;
