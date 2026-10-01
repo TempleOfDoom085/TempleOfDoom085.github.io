@@ -16,7 +16,7 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 |---|---|
 | [`index.html`](index.html) | Main portfolio — about, experience, skills, projects, certifications, education, contact. Includes a Ctrl+K command palette, an interactive terminal (press `` ` ``), achievements and a few easter eggs. |
 | [`career.html`](career.html) | Career timeline — Cranium AI, Unblinded, and a decade of consultative sales. |
-| [`tools/`](tools/) | **Temple Tools** — 22 client-side security utilities (hash analyzer, OSINT dashboard, JWT decoder, CIDR calculator, header grader, CVE search, Bluetooth locator, and more). Zero server, zero tracking. Installable as a PWA. |
+| [`tools/`](tools/) | **Temple Tools** — 24 client-side security utilities (hash analyzer, OSINT dashboard, JWT decoder, CIDR calculator, header grader, CVE search, Bluetooth locator, and more). Zero server, zero tracking. Installable as a PWA. |
 | [`ctf-writeups.html`](ctf-writeups.html) | CTF challenge writeups with methodology. |
 | [`threat-globe.html`](threat-globe.html) | Live 3D threat globe (Three.js / WebGL). |
 | [`soc.html`](soc.html) | SOC dashboard — CVE feed, alerts, topology. |

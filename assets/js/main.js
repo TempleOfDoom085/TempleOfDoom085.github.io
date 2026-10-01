@@ -871,6 +871,8 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     { icon: '🔧', name: 'HTTP Builder',    desc: 'Craft and fire HTTP requests',        tag: 'tool', href: 'tools/http-builder.html' },
     { icon: '🏁', name: 'Password Cracker Race', desc: 'Brute force vs dictionary vs rainbow table', tag: 'tool', href: 'tools/cracker.html' },
     { icon: '📶', name: 'Bluetooth Locator', desc: 'Scan and range nearby BLE devices', tag: 'tool', href: 'tools/bluetooth-locator.html' },
+    { icon: '🧠', name: 'OWASP LLM Top 10', desc: 'AI security assessment checklist', tag: 'tool', href: 'tools/llm-top10.html' },
+    { icon: '🔎', name: 'System Prompt Analyzer', desc: 'Review an LLM system prompt for weaknesses', tag: 'tool', href: 'tools/sysprompt-analyzer.html' },
     { icon: '📡', name: 'Live Hacker Feed',desc: 'Real-time GitHub activity console',    tag: 'live',  href: 'hacker-feed.html' },
     { icon: '⚔',  name: 'Attack Visualizer',desc: 'SQL injection, XSS, buffer overflow', tag: 'edu',  href: 'attack-viz.html' },
     { icon: '🎯', name: 'Pentest Simulator', desc: 'Watch a full pentest unfold — recon, exploit, root shell, report.', tag: 'interactive', href: 'pentest-sim.html' },
@@ -1041,4 +1043,68 @@ if (window.innerWidth <= 768) {
       })(i);
     }
   });
+})();
+
+// ── ACCESSIBILITY: focus management for the terminal & command palette ──
+// Both overlays toggle a `.open` class and are display:none when closed, so they
+// already leave the a11y tree. This adds focus restore, a Tab focus-trap, Escape
+// to close the terminal, and live listbox state for the palette results.
+(function () {
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function manageOverlay(overlay, opts) {
+    if (!overlay) return;
+    let lastFocus = null;
+    const isOpen = () => overlay.classList.contains('open');
+
+    new MutationObserver(() => {
+      if (isOpen()) {
+        if (overlay.dataset.wasOpen === '1') return;
+        overlay.dataset.wasOpen = '1';
+        lastFocus = document.activeElement;
+      } else if (overlay.dataset.wasOpen === '1') {
+        overlay.dataset.wasOpen = '0';
+        // Return focus to whatever launched the overlay.
+        if (lastFocus && document.contains(lastFocus)) {
+          try { lastFocus.focus(); } catch (_) {}
+        }
+      }
+    }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+
+    overlay.addEventListener('keydown', e => {
+      if (!isOpen()) return;
+      if (e.key === 'Escape' && opts.escapeCloses) { e.preventDefault(); opts.close(); return; }
+      if (e.key !== 'Tab') return;
+      const items = Array.from(overlay.querySelectorAll(FOCUSABLE)).filter(el => el.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  }
+
+  const termOverlay = document.getElementById('terminal-overlay');
+  manageOverlay(termOverlay, { escapeCloses: true, close: () => window._closeTerminal && window._closeTerminal() });
+  manageOverlay(document.getElementById('cmd-palette-overlay'), { escapeCloses: false });
+
+  // Keep the command-palette results exposed as a listbox: give each result an id,
+  // mirror the visual `.selected` onto aria-selected, and point the input's
+  // aria-activedescendant at it so screen readers announce the highlighted row.
+  const results = document.getElementById('cmd-results');
+  const cmdInput = document.getElementById('cmd-input');
+  if (results && cmdInput) {
+    const sync = () => {
+      const items = results.querySelectorAll('.cmd-result-item');
+      let activeId = '';
+      items.forEach((el, i) => {
+        if (!el.id) el.id = 'cmd-opt-' + i;
+        el.setAttribute('role', 'option');
+        const sel = el.classList.contains('selected');
+        el.setAttribute('aria-selected', String(sel));
+        if (sel) activeId = el.id;
+      });
+      cmdInput.setAttribute('aria-activedescendant', activeId);
+    };
+    new MutationObserver(sync).observe(results, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
 })();

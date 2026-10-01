@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- SEO -->
-<meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises, plus 22 live security tools.">
+<meta name="description" content="Brian Temple — AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises, plus 24 live security tools.">
 <meta name="keywords" content="AI security, AI governance, AI red teaming, third-party AI risk, EU AI Act, NIST AI RMF, ISO 42001, AI automation, cybersecurity, voice AI, workflow automation, Brian Temple, NJ">
 <meta name="author" content="Brian Temple">
 <link rel="canonical" href="https://templeofdoom085.github.io/">
@@ -13,7 +13,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://templeofdoom085.github.io/">
 <meta property="og:title" content="Brian Temple — AI Security & Automation">
-<meta property="og:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises — plus 22 live security tools and an interactive portfolio.">
+<meta property="og:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security for regulated enterprises — plus 24 live security tools and an interactive portfolio.">
 <meta property="og:site_name" content="Brian Temple Portfolio">
 <meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <meta property="og:image:width" content="1200">
@@ -22,7 +22,7 @@
 <!-- Twitter / X -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Brian Temple — AI Security & Automation">
-<meta name="twitter:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security — 22 live security tools, interactive terminal, and a playable game built into the portfolio.">
+<meta name="twitter:description" content="AI Security Advisor at Cranium AI. AI visibility, governance and runtime security — 24 live security tools, interactive terminal, and a playable game built into the portfolio.">
 <meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
@@ -34,7 +34,7 @@
 <title>Brian Temple — AI Security & Automation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/site.css">
 <script type="application/ld+json">
 {
@@ -66,12 +66,12 @@
 
 <!-- COMMAND PALETTE -->
 <div id="cmd-palette-overlay">
-  <div class="cmd-palette">
+  <div class="cmd-palette" role="dialog" aria-modal="true" aria-label="Command palette — search sections and tools">
     <div class="cmd-input-row">
-      <span class="cmd-prompt-icon">⌘</span>
-      <input id="cmd-input" type="text" placeholder="Search sections and tools..." autocomplete="off" spellcheck="false">
+      <span class="cmd-prompt-icon" aria-hidden="true">⌘</span>
+      <input id="cmd-input" type="text" placeholder="Search sections and tools..." autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="cmd-results" aria-activedescendant="" aria-label="Search sections and tools">
     </div>
-    <div class="cmd-results" id="cmd-results"></div>
+    <div class="cmd-results" id="cmd-results" role="listbox" aria-label="Results"></div>
     <div class="cmd-footer">
       <span class="cmd-hint"><kbd>↵</kbd> go</span>
       <span class="cmd-hint"><kbd>↑↓</kbd> select</span>
@@ -83,14 +83,14 @@
   </div>
 </div>
 
-<!-- CUSTOM CURSOR -->
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
-<canvas id="clickCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:99997;width:100%;height:100%"></canvas>
+<!-- CUSTOM CURSOR (decorative) -->
+<div id="cursor" aria-hidden="true"></div>
+<div id="cursor-ring" aria-hidden="true"></div>
+<canvas id="clickCanvas" aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:99997;width:100%;height:100%"></canvas>
 
 <!-- CODE RAIN OVERLAY -->
 <canvas id="rain-canvas"></canvas>
-<div id="rain-indicator" onclick="toggleRain()">◈ RAIN</div>
+<button id="rain-indicator" type="button" onclick="toggleRain()" aria-pressed="false" title="Toggle code rain">◈ RAIN</button>
 
 <!-- STEALTH FLASH INDICATOR -->
 <div id="stealth-flash">STEALTH MODE</div>
@@ -105,16 +105,16 @@
 </div>
 
 <!-- TERMINAL OVERLAY -->
-<div id="terminal-overlay">
+<div id="terminal-overlay" role="dialog" aria-modal="true" aria-label="Interactive portfolio terminal">
   <div class="terminal-topbar">
     <div class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
     <span class="terminal-title-text">brian@fortress — interactive portfolio</span>
     <span class="terminal-hint">press ` to toggle</span>
   </div>
-  <div id="terminal-output"></div>
+  <div id="terminal-output" role="log" aria-live="polite" aria-label="Terminal output"></div>
   <div class="terminal-input-row">
     <span class="t-prompt-label">brian@fortress:~$&nbsp;</span>
-    <input id="terminal-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type 'help' for commands...">
+    <input id="terminal-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type 'help' for commands..." aria-label="Terminal command input">
   </div>
 </div>
 

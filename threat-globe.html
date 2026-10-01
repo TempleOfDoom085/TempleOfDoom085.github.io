@@ -2225,6 +2225,8 @@ function processGeoRing(ring, nameKey) {
 
 async function loadCountryBorders() {
   const URLS = [
+    // Vendored locally so the globe's borders work offline; remote copies are fallbacks.
+    '/vendor/geo/ne_110m_admin_0_countries.geojson',
     'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2/geojson/ne_110m_admin_0_countries.geojson',
     'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson',
   ];
