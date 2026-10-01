@@ -41,11 +41,15 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 │       ├── particles.js  # hero particle-text explosion
 │       └── visitor-intel.js
 ├── career.html, ctf-writeups.html, soc.html, ...   # standalone pages
-├── tools/                # Temple Tools (one self-contained HTML file per tool)
+├── tools/                # Temple Tools (one HTML file per tool)
+│   └── tools.css, tools.js  # shared cursor / click-burst chrome
 ├── src/                  # REALM open-world engine modules (ES modules)
-├── vendor/three/         # Three.js post-processing passes
+├── vendor/three/         # three.js r128 + post-processing + Earth textures (globe, SOC, engine)
+├── vendor/three-r158/    # three.js r158 ES modules for REALM
+├── scripts/              # site checks + sitemap updater (Python, stdlib only)
+├── .github/workflows/    # CI: runs the site checks on every PR and push to main
 ├── docs/                 # design notes (Knights Templar art guide)
-├── img/                  # optional .webp room art for game.html (auto-detected)
+├── img/                  # logos, social card, optional .webp room art for game.html
 ├── sw.js                 # service worker (offline cache for tools + portfolio)
 ├── manifest.json         # PWA manifest for Temple Tools
 ├── 404.html              # GitHub Pages not-found page
@@ -64,6 +68,24 @@ python -m http.server 8080
 ```
 
 Then open <http://localhost:8080>.
+
+---
+
+## Checks
+
+CI (`.github/workflows/site-checks.yml`) runs on every pull request and push to `main`. Run the same checks locally before pushing:
+
+```bash
+python3 scripts/check_site.py --base origin/main
+```
+
+It verifies that every local link and asset exists, every file the service worker precaches exists (one 404 breaks its install), `CACHE_VERSION` in `sw.js` was bumped when a precached file changed, every page is in `sitemap.xml` with an up-to-date `<lastmod>`, and every page has `lang`, a title, a meta description and a CSP.
+
+After editing pages, refresh the sitemap dates:
+
+```bash
+python3 scripts/update_sitemap.py
+```
 
 ---
 

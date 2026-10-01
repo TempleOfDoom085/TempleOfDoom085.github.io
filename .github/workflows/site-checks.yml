@@ -1,0 +1,38 @@
+name: Site checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: sitemap <lastmod> is checked against each page's last commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: JavaScript syntax
+        run: |
+          set -e
+          for f in sw.js assets/js/*.js tools/tools.js $(find src -name '*.js'); do
+            node --check "$f"
+          done
+
+      - name: Links, service worker, sitemap, page metadata
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python3 scripts/check_site.py --base "origin/${{ github.base_ref }}"
+          else
+            python3 scripts/check_site.py
+          fi
