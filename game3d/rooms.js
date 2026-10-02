@@ -491,10 +491,10 @@
     const chains = [[-3, -3], [3.5, -6], [-1, -9]];
     chains.forEach(([x, z], i) => { const c = P.chain(3.5, i); c.position.set(x, 8, z); g.add(c); });
     return spec({
-      group: g, fog: ['#020805', 0.03], bg: '#010302', vol: { light: 0.55 },
+      group: g, fog: ['#020805', 0.03], bg: '#010302', vol: { light: 0.32 },
       hemi: ['#1a3020', '#020302', 0.25],
       key: { type: 'spot', pos: [0.4, 7.6, 1], target: [0.4, 0, -1], color: '#7aff90', intensity: 1.3, angle: 0.45, penumbra: 0.8, distance: 20 },
-      grade: { exposure: 1.0, tint: [0.95, 1.05, 0.95], sat: 0.95, contrast: 1.15 },
+      grade: { exposure: 1.0, tint: [0.96, 1.03, 0.96], sat: 0.82, contrast: 1.15 },
       particles: [{ type: 'wisp', count: 50, box: [-3.5, 4.5, 0.2, 3, -5, 2], color: '#3ad04a' }, { type: 'fog', count: 22, box: [-7, 7, 0, 0.8, s.zB, 3], color: '#1a6a30', opacity: 0.06 }, { type: 'ember', count: 50, box: [-4.5, 5.3, 1.2, 2, -5.6, 3.6], color: '#4dff5a' }],
       cam: { pos: [0.8, 2.3, 6.4], look: [0.2, 1.4, -4], fovH: 84 },
       knight: { pos: [-1.5, 0, 1.6], rot: 0.55 }, enemy: { pos: [1.4, 0, -0.6], rot: -2.4 },
@@ -646,10 +646,106 @@
     });
   };
 
+
+  // ── 18–20. The Sunken Crypt (v14) ──────────────────────────────────────────
+  // Rising steps toward an arch in the back wall: the way back up.
+  function stairsUp(g, w, steps, zStart, tint) {
+    const sm = G3D.stoneMat(tint || 'cold', [1, 1], 'stepup');
+    for (let i = 0; i < steps; i++) { const st = mesh(new THREE.BoxGeometry(w, 0.25 * (i + 1), 0.55), sm); st.position.set(0, 0.125 * (i + 1), zStart - i * 0.55); g.add(st); }
+  }
+  function floatCandles(g, n, box, seed) {
+    const Rr = G3D.rng(seed);
+    for (let i = 0; i < n; i++) place(g, P.floatCandle(i + seed), box[0] + Rr() * (box[1] - box[0]), box[4], box[2] + Rr() * (box[3] - box[2]));
+  }
+
+  R.flooded = () => {
+    const s = shell({ w: 9, d: 18, h: 5.2, tint: 'cold', vault: 'barrel', ribSpacing: 3.5, pillars: { spacing: 3.6, r: 0.3, inset: 0.6 } });
+    const g = s.g;
+    // A dry landing in front, then black water to the stair at the back.
+    const land = mesh(new THREE.BoxGeometry(9, 0.3, 3.2), G3D.stoneMat('cold', [3, 1], 'landing')); land.position.set(0, 0.15, s.zF - 1.6); g.add(land);
+    const water = P.water(9, s.d - 3.2, '#06100f'); water.position.set(0, 0.24, s.zF - 3.2 - (s.d - 3.2) / 2); g.add(water);
+    stairsUp(g, 4.2, 8, s.zB + 4.6);
+    const arch = P.gothicArch(4.4, 2.6, 0.6, G3D.stoneMat('cold', [1, 1], 'fsarch')); arch.position.set(0, 2.0, s.zB + 0.35); g.add(arch);
+    const dark = mesh(new THREE.PlaneGeometry(3.6, 2.6), G3D.flatMat('void', '#010102', 1)); dark.position.set(0, 3.2, s.zB + 0.05); g.add(dark);
+    // Side arch on the right: the way on to the ossuary
+    const sideArch = P.gothicArch(2.4, 3.0, 0.5, G3D.stoneMat('cold', [1, 1], 'fsside')); sideArch.rotation.y = -Math.PI / 2; sideArch.position.set(s.w / 2 - 0.05, 0, -5); g.add(sideArch);
+    const sideDark = mesh(new THREE.PlaneGeometry(2.2, 3.0), G3D.flatMat('void', '#010102', 1)); sideDark.rotation.y = -Math.PI / 2; sideDark.position.set(s.w / 2 - 0.02, 1.5, -5); g.add(sideDark);
+    s.pillarZ.forEach((z, i) => { if (i % 2 === 0) { wallTorch(g, 'L', -s.w / 2 + 0.25, 2.6, z - 1.8, 0.9); } });
+    floatCandles(g, 16, [-3.6, 3.6, s.zB + 5, -1.2, 0.25], 7);
+    place(g, P.bonePile(12, 0.6, 41), -3.2, 0.24, -7.5);
+    const glow = G3D.glow('#6ad0ff', 5, 0.25); glow.position.set(0, 2.6, s.zB + 1.4); g.add(glow);
+    const top = new THREE.Object3D(); top.position.set(0, 3.4, s.zB + 1.2); g.add(top); G3D.anchor(top, '#6ad0ff', 2.4, 12, { flicker: 0.3, priority: 4 });
+    return spec({
+      group: g, fog: ['#061014', 0.055], bg: '#020506', vol: { wet: 1, puddles: 2, light: 1.4 },
+      hemi: ['#2a4a54', '#040606', 0.3],
+      key: { type: 'spot', pos: [0, 4.6, s.zB + 1.6], target: [0, 0, -2], color: '#8ad8ff', intensity: 1.6, angle: 0.75, penumbra: 0.9, distance: 22 },
+      grade: { exposure: 1.2, tint: [0.88, 1.0, 1.08], sat: 0.85, contrast: 1.1 },
+      particles: [{ type: 'fog', count: 30, box: [-4, 4, 0.2, 1.0, s.zB + 2, 3], color: '#2a8090', opacity: 0.09 }, { type: 'dust', count: 120, box: [-3.5, 3.5, 0.4, 4, s.zB, 4], color: '#a8e0ff' }],
+      knight: { pos: [-1.2, 0.3, 1.6], rot: 0.4 },
+      npc: { pos: [1.7, 0.24, -1.6], rot: -0.6 },
+      cam: { pos: [0.5, 1.95, 5.6], look: [-0.1, 1.5, -6], fovH: 76 },
+    });
+  };
+
+  R.ossuary = () => {
+    const s = shell({ w: 9, d: 18, h: 4.4, tint: 'cold', vault: 'pointed', rise: 3.2, ribSpacing: 3 });
+    const g = s.g;
+    const L = P.ossuaryWall(s.d - 0.5, 4.2, 5); L.rotation.y = Math.PI / 2; L.position.set(-4.45, 0, s.zF - s.d / 2); g.add(L);
+    const Rw = P.ossuaryWall(s.d - 0.5, 4.2, 6); Rw.rotation.y = -Math.PI / 2; Rw.position.set(4.45, 0, s.zF - s.d / 2); g.add(Rw);
+    const water = P.water(9, s.d, '#051010'); water.position.set(0, 0.26, s.zF - s.d / 2); g.add(water);
+    // Bone islands breaking the surface
+    place(g, P.bonePile(36, 1.1, 51), -2.4, 0.15, -6);
+    place(g, P.bonePile(28, 0.9, 52), 2.6, 0.15, -9.5);
+    place(g, P.bonePile(22, 0.8, 53), -1.0, 0.15, -12);
+    for (let i = 0; i < 4; i++) { const p = P.pillar(4.4, 0.34, 'cold'); p.position.set(i % 2 ? 2.2 : -2.2, 0, -3 - i * 3.2); g.add(p); }
+    // Skull candles in the alcoves
+    [[-3.9, -2.5], [3.9, -5], [-3.9, -8.5], [3.9, -12]].forEach(([x, z], i) => { const c = P.candles(3, 0.1, 140 + i); c.position.set(x, 1.6, z); g.add(c); });
+    floatCandles(g, 8, [-3, 3, -14, -2, 0.27], 19);
+    const eerie = new THREE.Object3D(); eerie.position.set(0.5, 1.6, -7); g.add(eerie); G3D.anchor(eerie, '#40ffd8', 2.2, 12, { flicker: 0.5, priority: 4 });
+    const eg = G3D.glow('#40ffd8', 6, 0.18); eg.position.set(0.5, 1.2, -7); g.add(eg);
+    return spec({
+      group: g, fog: ['#04100e', 0.07], bg: '#020606', vol: { wet: 1, puddles: 2, light: 1.2 },
+      hemi: ['#244a44', '#030505', 0.28],
+      key: { type: 'spot', pos: [1, 4.2, 2.5], target: [0, 0, -7], color: '#7affe0', intensity: 1.2, angle: 0.75, penumbra: 1, distance: 20 },
+      grade: { exposure: 1.25, tint: [0.86, 1.04, 1.02], sat: 0.8, contrast: 1.12 },
+      particles: [{ type: 'fog', count: 34, box: [-4, 4, 0.2, 1.0, s.zB, 3], color: '#1a8070', opacity: 0.1 }, { type: 'wisp', count: 40, box: [-3, 3, 0.4, 3, -12, -1], color: '#60ffd8' }],
+      knight: { pos: [-1.0, 0, 1.4], rot: 0.45 }, enemy: { pos: [1.3, 0, -1.4], rot: -2.4 },
+      cam: { pos: [0.6, 1.8, 5.4], look: [-0.1, 1.6, -6], fovH: 76 },
+    });
+  };
+
+  R.sanctum = () => {
+    const s = shell({ w: 12, d: 20, h: 9, tint: 'cold', vault: 'pointed', rise: 6, pillars: { spacing: 4.5, r: 0.42, inset: 1.0 } });
+    const g = s.g;
+    const water = P.water(12, s.d, '#060c12'); water.position.set(0, 0.25, s.zF - s.d / 2); g.add(water);
+    // The saint's tomb on a stepped island in a shaft of moonlight
+    const isle = mesh(new THREE.CylinderGeometry(2.4, 2.8, 0.5, 40), G3D.stoneMat('cold', [3, 1], 'isle')); isle.position.set(0, 0.25, -5.5); g.add(isle);
+    const isle2 = mesh(new THREE.CylinderGeometry(1.7, 1.9, 0.25, 36), G3D.stoneMat('cold', [2, 1], 'isle2')); isle2.position.set(0, 0.62, -5.5); g.add(isle2);
+    const tomb = P.sarcophagus('cold'); tomb.position.set(0, 0.74, -5.5); tomb.rotation.y = Math.PI / 2; g.add(tomb);
+    place(g, P.candles(10, 1.3, 77), 0, 0.74, -5.5);
+    const oculus = new THREE.Mesh(new THREE.CircleGeometry(1.2, 32), G3D.emissiveMat('oculus', '#b8d0ff', 3)); oculus.rotation.x = Math.PI / 2; oculus.position.set(0, 8.95 + 3.3, -5.5); g.add(oculus);
+    const shaft = P.lightShaft(1.0, 2.4, 11.5, '#b8d4ff', 0.22); shaft.position.set(0, 12, -5.5); shaft.lookAt(0, 0, -5.5); shaft.rotateX(-Math.PI / 2); g.add(shaft);
+    const rose = P.stainedWindow('rose', 4.0, '#9ab8ff'); rose.position.set(0, 6.4, s.zB + 0.06); g.add(rose);
+    // Half-drowned pews
+    for (let z = -1; z > -4; z -= 1.6) { place(g, P.pew(true, Math.floor(-z * 9)), -3.2, -0.15, z); place(g, P.pew(z < -2, Math.floor(-z * 4)), 3.2, -0.15, z); }
+    s.pillarZ.forEach((z, i) => { if (i % 2 === 0) { wallTorch(g, 'L', -s.w / 2 + 0.25, 3.0, z - 2, 0.9); wallTorch(g, 'R', s.w / 2 - 0.25, 3.0, z - 2, 0.9); } });
+    floatCandles(g, 18, [-4.5, 4.5, -12, -1, 0.26], 31);
+    return spec({
+      group: g, fog: ['#060a12', 0.04], bg: '#020306', vol: { wet: 1, puddles: 2, key: 3.5, density: 0.05, ambient: 0.3 },
+      hemi: ['#2a3450', '#040406', 0.45],
+      key: { type: 'spot', pos: [0, 12, -5.5], target: [0, 0, -5.5], color: '#c0d4ff', intensity: 3.4, angle: 0.24, penumbra: 0.6, distance: 30 },
+      grade: { exposure: 1.4, tint: [0.92, 0.98, 1.1], sat: 0.85, contrast: 1.1 },
+      particles: [{ type: 'dust', count: 220, box: [-1.6, 1.6, 0.5, 8, -7, -4], color: '#d8e4ff' }, { type: 'fog', count: 24, box: [-5, 5, 0.2, 1.0, s.zB, 3], color: '#304a70', opacity: 0.08 }],
+      knight: { pos: [-1.2, 0, 1.8], rot: 0.3 },
+      cam: { pos: [0.4, 2.0, 6.2], look: [0, 2.2, -6], fovH: 78 },
+    });
+  };
+
   // Map game room types to builders.
   G3D.roomTypeMap = {
     chapel: 'chapel', cloister: 'cloister', armory: 'armory', scriptorium: 'scriptorium', barracks: 'barracks',
     infirmary: 'infirmary', tower: 'tower', courtyard: 'courtyard', crypt: 'crypt', catacombs: 'catacombs',
     lair: 'lair', hall: 'hall', treasury: 'treasury', throne: 'throne', gallery: 'gallery', dungeon: 'dungeon', watchtower: 'watchtower',
+    flooded: 'flooded', ossuary: 'ossuary', sanctum: 'sanctum',
   };
 })();

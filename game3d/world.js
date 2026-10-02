@@ -114,7 +114,12 @@
   function targets() {
     const list = [];
     const room = ROOMS[C.roomId];
-    if (STATE.inCombat && C.enemy && C.enemy.alive !== false && !C.enemy.dissolve) {
+    const shadows = STATE.inCombat && G3D.boss ? G3D.boss.clones : [];
+    shadows.forEach(cl => {
+      const p = proxy('shadow' + cl.label, 1.3, 2.6, 1.3); p.position.copy(cl.R.root.position); p.position.y = 1.4;
+      p.userData.hit = { kind: 'shadow', label: cl.label }; list.push(p);
+    });
+    if (STATE.inCombat && !shadows.length && C.enemy && C.enemy.alive !== false && !C.enemy.dissolve) {
       const p = proxy('enemy', 1.3, 2.6, 1.3); p.position.copy(C.enemy.home).add(V(0, 1.3, 0));
       p.userData.hit = { kind: 'enemy' }; list.push(p);
     }
@@ -133,6 +138,7 @@
     if (hit.kind === 'scroll') return '📜 Read scroll<small>A sacred text lies here</small>';
     if (hit.kind === 'npc') return '💬 Speak<small>' + (hit.name || '') + '</small>';
     if (hit.kind === 'enemy') return strike ? '⚔ Strike!' : '⚔ Attack';
+    if (hit.kind === 'shadow') return '👤 Strike this shadow<small>' + hit.label + ' — is it really him?</small>';
     return '';
   }
 
@@ -143,6 +149,7 @@
     else if (hit.kind === 'scroll') window.readScroll();
     else if (hit.kind === 'npc') window.talkNPC();
     else if (hit.kind === 'enemy') window.combatAction('attack');
+    else if (hit.kind === 'shadow' && G3D.boss) G3D.boss.choose(hit.label);
   }
 
   // ── Pointer handling on the canvas (it moves between scene and combat view) ─
@@ -167,6 +174,8 @@
 
   function updateHover() {
     const host = C.canvas.parentElement;
+    // Targets can vanish under a still pointer (a shadow dispelled, a fight over).
+    if (hovered && (hovered.kind === 'shadow' ? !(G3D.boss && G3D.boss.clones.some(c => c.label === hovered.label)) : hovered.kind === 'enemy' ? !STATE.inCombat : !canAct())) hovered = null;
     if (label.parentElement !== host) host.appendChild(label);
     C.canvas.style.cursor = hovered ? 'pointer' : '';
     if (hovered && pointer) {
@@ -408,7 +417,7 @@
   function updateMusic() {
     const ctx = amb.ctx, t = ctx.currentTime;
     ensureMusic();
-    const inC = !!STATE.inCombat, boss = inC && STATE.currentEnemy && STATE.currentEnemy.type === 'necromancer';
+    const inC = !!STATE.inCombat, boss = inC && STATE.currentEnemy && STATE.currentEnemy.type === 'necromancer', berserk = boss && STATE.bossPhase === 3;
     if (inC) music.room = STATE.currentRoom;
     if (music.was && !inC) {
       const dead = C.knight && (C.knight.dead || (C.knight.anim && C.knight.anim.name === 'die')) || STATE.hp <= 0;
@@ -416,11 +425,11 @@
       if (dead) sting(false); else if (won) sting(true);
     }
     music.was = inC;
-    music.gain.gain.setTargetAtTime(inC ? (boss ? 0.6 : 0.45) : 0, t, inC ? 0.5 : 1.6);
+    music.gain.gain.setTargetAtTime(inC ? (berserk ? 0.7 : boss ? 0.6 : 0.45) : 0, t, inC ? 0.5 : 1.6);
     // The drone opens up as the foe weakens.
     const foe = inC && STATE.enemyMaxHp ? 1 - STATE.enemyHp / STATE.enemyMaxHp : 0;
     music.lp.frequency.setTargetAtTime(220 + foe * 700 + (boss ? 200 : 0), t, 0.4);
-    const bpm = boss ? 124 : 98, eighth = 60 / bpm / 2;
+    const bpm = berserk ? 142 : boss ? 124 : 98, eighth = 60 / bpm / 2;
     if (music.next < t) music.next = t + 0.05;
     while (music.next < t + 0.2) {
       if (inC) {
@@ -428,6 +437,7 @@
         const p = (bar % 4 === 3 ? FILL : PATTERN)[pos];
         if (p) hit(music.next, p[0], p[1]);
         if (boss && pos % 2 === 1) hit(music.next, 'rim', 0.35);
+        if (berserk && pos % 4 === 2) hit(music.next, 'low', 0.8);
         music.step++;
       } else music.step = 0;
       music.next += eighth;

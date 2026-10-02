@@ -1013,4 +1013,100 @@
     g.userData.noBatch = true;
     return g;
   };
+
+  // ── v14: the Sunken Crypt ─────────────────────────────────────────────────
+  // Rippling water: a tiling normal map built from a few interfering waves.
+  let rippleTex = null;
+  function ripples() {
+    if (rippleTex) return rippleTex;
+    const S = 256, c = G3D.canvas(S), ctx = c.getContext('2d'), img = ctx.createImageData(S, S);
+    const H = new Float32Array(S * S);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const u = x / S * Math.PI * 2, v = y / S * Math.PI * 2;
+      H[y * S + x] = Math.sin(u * 3 + Math.sin(v * 2) * 0.8) * 0.5 + Math.sin(v * 5 + u * 2) * 0.3 + Math.sin((u - v) * 7) * 0.15 + G3D.fbm(x / 32, y / 32, 8, 3, 5) * 0.6;
+    }
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const dx = H[y * S + (x + 1) % S] - H[y * S + (x + S - 1) % S], dy = H[((y + 1) % S) * S + x] - H[((y + S - 1) % S) * S + x];
+      const nx = -dx * 2.2, ny = -dy * 2.2, l = Math.hypot(nx, ny, 1), i = (y * S + x) * 4;
+      img.data[i] = (nx / l * 0.5 + 0.5) * 255; img.data[i + 1] = (ny / l * 0.5 + 0.5) * 255; img.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    rippleTex = new THREE.CanvasTexture(c); rippleTex.wrapS = rippleTex.wrapT = THREE.RepeatWrapping;
+    return rippleTex;
+  }
+  // Still black water; the engine drifts its ripples (userData.flow).
+  P.water = function (w, d, color) {
+    const nm = ripples().clone(); nm.needsUpdate = true; nm.repeat.set(w / 4, d / 4);
+    const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color || '#071014'), roughness: 0.06, metalness: 0.1, normalMap: nm,
+      normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.9, envMapIntensity: 1.6, depthWrite: true });
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d, 1, 1), m);
+    water.rotation.x = -Math.PI / 2; water.receiveShadow = true; water.renderOrder = 1;
+    water.userData.flow = [0.012, 0.007]; water.userData.noCollide = true;
+    return water;
+  };
+  // A lit candle drifting on the water.
+  P.floatCandle = function (seed) {
+    const g = new THREE.Group();
+    const disc = mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.02, 10), G3D.woodMat(true)); g.add(disc);
+    const c = P.candle(0.1 + (seed % 3) * 0.03); c.position.y = 0.01; g.add(c);
+    g.userData.bob = { seed: seed * 1.37, amp: 0.015 };
+    return g;
+  };
+
+  // The Drowned Wraith: a floating, tattered shape with a skull face and long bone hands.
+  G3D.makeWraith = function () {
+    const R = { root: new THREE.Group() };
+    R.body = new THREE.Group(); R.root.add(R.body);
+    R.hips = new THREE.Group(); R.hips.position.y = 1.0; R.body.add(R.hips);
+    const tex = G3D.clothTex('wraith', { base: [120, 140, 150], tattered: true, stain: 0.7 });
+    const robeMat = new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color('#b8d4dc'), roughness: 0.6, side: THREE.DoubleSide, alphaTest: 0.45,
+      transparent: true, opacity: 0.82, emissive: new THREE.Color('#2a6a7a'), emissiveIntensity: 0.35, depthWrite: true });
+    const prof = [[0.16, 0.85], [0.24, 0.6], [0.28, 0.3], [0.32, 0], [0.36, -0.5], [0.3, -1.0], [0.12, -1.35]].map(p => new THREE.Vector2(p[0], p[1]));
+    const robe = mesh(new THREE.LatheGeometry(prof, 28), robeMat); robe.scale.set(1.1, 1, 0.85); R.hips.add(robe);
+    robe.userData.sway = { base: robe.geometry.attributes.position.array.slice(), amp: 0.07, robe: true };
+    R.torso = new THREE.Group(); R.hips.add(R.torso);
+    R.neck = new THREE.Group(); R.neck.position.y = 0.92; R.torso.add(R.neck);
+    R.head = new THREE.Group(); R.neck.add(R.head);
+    const hood = mesh(new THREE.SphereGeometry(0.2, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), robeMat); hood.scale.set(1, 1.3, 1.15); hood.rotation.x = -0.45; R.head.add(hood);
+    const skull = P.skull(); skull.scale.setScalar(1.15); skull.position.set(0, -0.04, 0.05); R.head.add(skull);
+    [-1, 1].forEach(s => { const e = mesh(new THREE.SphereGeometry(0.016, 8, 6), G3D.emissiveMat('weye', '#7ff6ff', 12), false); e.position.set(s * 0.045, -0.04, 0.16); R.head.add(e); });
+    const eg = G3D.glow('#7ff6ff', 0.8, 0.9); eg.position.set(0, -0.03, 0.18); R.head.add(eg);
+    ['L', 'R'].forEach((side, i) => {
+      const s = i ? 1 : -1;
+      const arm = new THREE.Group(); arm.position.set(s * 0.28, 0.78, 0); R.torso.add(arm);
+      const sleeve = mesh(new THREE.CylinderGeometry(0.05, 0.14, 0.62, 10, 1, true), robeMat); sleeve.position.y = -0.31; arm.add(sleeve);
+      const fore = new THREE.Group(); fore.position.y = -0.6; arm.add(fore);
+      const radius = mesh(new THREE.CylinderGeometry(0.014, 0.012, 0.32, 6), bone()); radius.position.y = -0.16; fore.add(radius);
+      for (let f = 0; f < 4; f++) { const fi = mesh(new THREE.CylinderGeometry(0.006, 0.004, 0.16, 4), bone()); fi.position.set((f - 1.5) * 0.018, -0.38, 0.01); fi.rotation.x = 0.25; fore.add(fi); }
+      const grip = new THREE.Group(); grip.position.y = -0.36; fore.add(grip);
+      R['arm' + side] = arm; R['fore' + side] = fore; R['grip' + side] = grip;
+    });
+    const a = new THREE.Object3D(); a.position.set(0, 0.9, 0.3); R.torso.add(a); anchor(a, '#5ae0ff', 1.4, 6, { flicker: 0.6, priority: 5 });
+    const mist = G3D.glow('#6ad8e8', 2.2, 0.35); mist.position.y = -1.1; R.hips.add(mist);
+    R.root.scale.setScalar(1.12);
+    R.kind = 'wraith';
+    return R;
+  };
+
+  // Sister Aveline: the drowned saint's spirit, pale and luminous.
+  G3D.makeSaint = function () {
+    const R = { root: new THREE.Group() };
+    R.body = new THREE.Group(); R.root.add(R.body);
+    R.hips = new THREE.Group(); R.hips.position.y = 0.95; R.body.add(R.hips);
+    const habit = new THREE.MeshStandardMaterial({ map: G3D.clothTex('saint', { base: [190, 204, 220], stain: 0.25 }), color: new THREE.Color('#b8cadc'), roughness: 0.7,
+      side: THREE.DoubleSide, transparent: true, opacity: 0.55, emissive: new THREE.Color('#5a88b8'), emissiveIntensity: 0.3, depthWrite: false });
+    const prof = [[0.16, 0.72], [0.22, 0.55], [0.25, 0.25], [0.3, 0], [0.38, -0.5], [0.42, -0.95]].map(p => new THREE.Vector2(p[0], p[1]));
+    const robe = mesh(new THREE.LatheGeometry(prof, 28), habit); robe.scale.set(1.1, 1, 0.9); R.hips.add(robe);
+    R.torso = new THREE.Group(); R.hips.add(R.torso);
+    R.neck = new THREE.Group(); R.neck.position.y = 0.8; R.torso.add(R.neck);
+    R.head = new THREE.Group(); R.neck.add(R.head);
+    const face = mesh(new THREE.SphereGeometry(0.1, 16, 12), new THREE.MeshStandardMaterial({ color: '#e8eef2', emissive: new THREE.Color('#8ab0d0'), emissiveIntensity: 0.6, transparent: true, opacity: 0.8, roughness: 0.6 }));
+    face.scale.set(0.92, 1.1, 1); face.position.y = 0.05; R.head.add(face);
+    const veil = mesh(new THREE.SphereGeometry(0.15, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.68), habit); veil.scale.set(1, 1.2, 1.1); veil.rotation.x = -0.35; veil.position.y = 0.05; R.head.add(veil);
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.008, 6, 40), G3D.emissiveMat('shalo', '#cfe8ff', 4)); halo.position.set(0, 0.24, -0.08); R.head.add(halo);
+    const gl = G3D.glow('#bcd8ff', 1.6, 0.5); gl.position.y = 0.5; R.torso.add(gl);
+    const a = new THREE.Object3D(); a.position.set(0, 0.6, 0.4); R.torso.add(a); anchor(a, '#a8ccff', 1.2, 6, { flicker: 0.2, priority: 3 });
+    R.kind = 'npc';
+    return R;
+  };
 })();
