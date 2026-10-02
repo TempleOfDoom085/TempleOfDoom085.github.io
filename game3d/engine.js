@@ -877,6 +877,7 @@
       tmpLook.x += (Math.random() - 0.5) * s * 0.3;
     }
     cam.shake = Math.max(0, cam.shake - dt * 1.2);
+    if (E.camOverride) E.camOverride(tmpPos, tmpLook, dt);   // photo mode (game3d/world.js)
     camera.position.copy(tmpPos);
     camera.lookAt(tmpLook);
     // Field of view from the desired horizontal angle, clamped for tall screens.
@@ -1034,6 +1035,7 @@
     focusV.copy(knight.R.root.position).y += 1.3;
     if (cam.combat > 0.01 && enemy) { tmpV.copy(enemy.R.root.position).y += 1.3; focusV.lerp(tmpV, 0.5); ap = G3D.lerp(ap, 0.5, cam.combat); }
     if (knight.dead) ap = 0.7;
+    if (E.dofOverride) { focusV.copy(E.dofOverride.target); ap = E.dofOverride.aperture; }
     const fd = camera.position.distanceTo(focusV);
     fx.focus += (fd - fx.focus) * Math.min(1, dt * 4); fx.aperture += (ap - fx.aperture) * Math.min(1, dt * 2);
     d.focus.value = fx.focus; d.aperture.value = fx.aperture;
@@ -1103,7 +1105,7 @@
     size: renderer.getSize(new THREE.Vector2()).toArray(), pr: renderer.getPixelRatio(), room: roomId, time: +time.toFixed(2), parent: canvas.parentElement.id,
     gl2: renderer.capabilities.isWebGL2, rtType: composer.renderTarget1.texture.type, pending: E.pending,
     ultra: !!E.ultra, fx: Object.assign({}, fx) });
-  E.fx = fx; E.tune = null;
+  E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null;
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
 })();
