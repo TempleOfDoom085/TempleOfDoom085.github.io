@@ -1,6 +1,6 @@
 // Cache strategy: Cache First for assets, Network First for HTML.
 // Bump CACHE_VERSION whenever precached files change so old caches are purged.
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const STATIC_CACHE = `temple-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `temple-dynamic-${CACHE_VERSION}`;
 
@@ -44,6 +44,7 @@ const PRECACHE_URLS = [
   '/game3d/core.js',
   '/game3d/props.js',
   '/game3d/rooms.js',
+  '/game3d/fx.js',
   '/game3d/engine.js',
   '/game3d/world.js',
   // REALM (world.html) ES modules + three.js r158

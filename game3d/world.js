@@ -260,10 +260,11 @@
   const WINDY = { courtyard: 0.7, watchtower: 0.9, tower: 0.45, cloister: 0.35 };
   const DRIPS = { catacombs: 1, crypt: 0.7, dungeon: 0.9, lair: 0.4 };
   const RUMBLE = { lair: 0.9, throne: 0.6, catacombs: 0.35, crypt: 0.3 };
+  const RAIN = { courtyard: 1, watchtower: 0.85 };
   function profileFor(id) {
     const type = (ROOMS[id] && ROOMS[id].type) || '';
     const fires = (C.room && C.room.anchors) ? C.room.anchors.length : 0;
-    return { wind: WINDY[type] || 0, drip: DRIPS[type] || 0, rumble: RUMBLE[type] || 0, crackle: Math.min(1, fires / 6) };
+    return { wind: WINDY[type] || 0, drip: DRIPS[type] || 0, rumble: RUMBLE[type] || 0, rain: RAIN[type] || 0, crackle: Math.min(1, fires / 6) };
   }
   function ensureAudio() {
     if (amb.ctx) return true;
@@ -283,6 +284,12 @@
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 90;
     amb.rumbleGain = ctx.createGain(); amb.rumbleGain.gain.value = 0;
     rb.connect(lp).connect(amb.rumbleGain).connect(amb.master); rb.start();
+    // Rain: a steady hiss of high-passed noise
+    const rn = ctx.createBufferSource(); rn.buffer = buf; rn.loop = true; rn.playbackRate.value = 0.8;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1100;
+    const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 7500;
+    amb.rainGain = ctx.createGain(); amb.rainGain.gain.value = 0;
+    rn.connect(hp).connect(lp2).connect(amb.rainGain).connect(amb.master); rn.start();
     return true;
   }
   function blip(type) {
@@ -299,6 +306,11 @@
       o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.35, t + 0.09);
       const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
       o.connect(g).connect(amb.master); o.start(t); o.stop(t + 0.3);
+    } else if (type === 'thunder') {
+      const s = ctx.createBufferSource(); s.buffer = amb.noise; s.playbackRate.value = 0.3;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(90, t + 2.5);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
+      s.connect(lp).connect(g).connect(amb.master); s.start(t, Math.random(), 3.4);
     } else if (type === 'step') {
       const s = ctx.createBufferSource(); s.buffer = amb.noise;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380 + Math.random() * 120;
@@ -317,6 +329,11 @@
     amb.windGain.gain.setTargetAtTime(p.wind * (0.07 + 0.04 * Math.sin(C.time * 0.23)), t, 0.8);
     amb.windFilter.frequency.setTargetAtTime(320 + 260 * (0.5 + 0.5 * Math.sin(C.time * 0.17)) , t, 1.0);
     amb.rumbleGain.gain.setTargetAtTime(p.rumble * 0.12, t, 1.2);
+    amb.rainGain.gain.setTargetAtTime(p.rain * 0.16, t, 0.8);
+    // Thunder follows the lightning flash after a beat.
+    const ln = G3D.uniforms.lightning ? G3D.uniforms.lightning.value : 0;
+    if (ln > 0.8 && !amb.lnPrev) { const at = t + 0.5 + Math.random() * 1.2; setTimeout(() => { if (amb.on) blip('thunder'); }, (at - t) * 1000); }
+    amb.lnPrev = ln > 0.8;
     if (p.crackle > 0 && C.time > amb.nextCrackle) { blip('crackle'); amb.nextCrackle = C.time + (0.04 + Math.random() * 0.22) / p.crackle; }
     if (p.drip > 0 && C.time > amb.nextDrip) { blip('drip'); amb.nextDrip = C.time + (1.2 + Math.random() * 3.5) / p.drip; }
   }
