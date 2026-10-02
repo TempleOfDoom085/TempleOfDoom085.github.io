@@ -418,8 +418,12 @@
     peasant: { armR: [-1.15, 0, 0.1], foreR: [-0.3, 0, 0], armL: [-1.3, 0, -0.1], foreL: [-0.25, 0, 0], legL: [0.2, 0, 0], legR: [-0.15, 0, 0], torso: [0.45, 0, 0.08], neck: [0.15, 0, 0.35] },
     necromancer: { armR: [-0.25, 0, 0.2], foreR: [-0.2, 0, 0], armL: [-0.9, 0, -0.5], foreL: [-0.4, 0, 0], torso: [0, 0, 0], neck: [0.1, 0, 0] },
     npc: { torso: [0, 0, 0], neck: [0.1, 0, 0] },
+    cinder: { armR: [-0.15, 0, 0.18], foreR: [-0.5, 0, 0], armL: [-0.45, 0.2, -0.08], foreL: [-1.1, 0, 0.3], legL: [0.14, 0, -0.04], legR: [-0.16, 0, 0.04], torso: [0.12, 0, 0], neck: [0.1, 0, 0] },
+    // The Warden carries his greatsword two-handed, low across the body.
+    warden: { armR: [-0.55, 0.15, 0.25], foreR: [-0.95, 0, 0], armL: [-0.6, -0.25, -0.2], foreL: [-1.0, 0, 0.15], legL: [0.16, 0, -0.06], legR: [-0.18, 0, 0.06], torso: [0.08, 0, 0], neck: [0.12, 0, 0] },
   };
 
+  const JOINTS = ['armR', 'foreR', 'armL', 'foreL', 'legL', 'legR', 'torso', 'neck', 'shinL', 'shinR'];
   class Actor {
     constructor(R) {
       this.R = R; this.kind = R.kind; this.pose = POSES[R.kind] || {};
@@ -444,7 +448,8 @@
       this.walk = { from, to, t: 0, dur, endFacing, onDone, lastStep: 0 };
       if (from.distanceToSquared(to) > 1e-4) { this.facing = Math.atan2(to.x - from.x, to.z - from.z); this.rot = this.facing; }
     }
-    play(name, dur, onHit) { this.anim = { name, t: 0, dur, onHit, fired: false }; }
+    // opts.v picks a variant: attack 'overhead' | 'slash' | 'thrust' | 'cleave'; hit 'heavy'.
+    play(name, dur, onHit, opts) { this.anim = { name, t: 0, dur, onHit, fired: false, v: opts && opts.v, side: Math.random() < 0.5 ? -1 : 1 }; }
     get busy() { return !!this.anim; }
     update(dt) {
       const R = this.R, P0 = this.pose;
@@ -502,24 +507,68 @@
         A.t += dt; const u = clamp(A.t / A.dur, 0, 1);
         const fwd = V(Math.sin(this.rot), 0, Math.cos(this.rot));
         if (A.name === 'attack') {
-          const wind = u < 0.4 ? ease(u / 0.4) : u < 0.58 ? 1 - easeOut((u - 0.4) / 0.18) : 0;
-          const strike = u < 0.4 ? 0 : u < 0.58 ? easeOut((u - 0.4) / 0.18) : 1 - ease((u - 0.58) / 0.42);
-          const lunge = u < 0.35 ? -0.1 * ease(u / 0.35) : u < 0.58 ? G3D.lerp(-0.1, 0.65, easeOut((u - 0.35) / 0.23)) : 0.65 * (1 - ease((u - 0.58) / 0.42));
+          // Three beats: wind-up, strike, recover. Each variant shapes them differently.
+          const v = A.v || 'overhead';
+          const W = v === 'thrust' ? 0.32 : v === 'cleave' ? 0.5 : 0.38, S = W + (v === 'cleave' ? 0.14 : 0.17);
+          const wind = u < W ? ease(u / W) : u < S ? 1 - easeOut((u - W) / (S - W)) : 0;
+          const strike = u < W ? 0 : u < S ? easeOut((u - W) / (S - W)) : 1 - ease((u - S) / (1 - S));
+          const reach = v === 'thrust' ? 0.85 : v === 'cleave' ? 0.45 : v === 'slash' ? 0.55 : 0.65;
+          const lunge = u < W ? -0.12 * ease(u / W) : u < S ? G3D.lerp(-0.12, reach, easeOut((u - W) / (S - W))) : reach * (1 - ease((u - S) / (1 - S)));
           if (this.kind === 'necromancer' || this.kind === 'wraith') {
             R.armR.rotation.x -= wind * 1.6 + strike * 0.3; R.armL.rotation.x -= strike * 0.8;
+          } else if (v === 'slash') {
+            // Out to the side, then a flat cut across the body.
+            R.armR.rotation.x += -wind * 1.5 - strike * 0.9; R.armR.rotation.z += wind * 1.15 - strike * 0.7;
+            R.foreR.rotation.x += -wind * 0.4 + strike * 0.25;
+            R.torso.rotation.y += wind * 0.75 - strike * 0.9; R.torso.rotation.x += strike * 0.12;
+            if (R.legR) { R.legL.rotation.x += strike * 0.35; R.legR.rotation.x -= strike * 0.25; }
+          } else if (v === 'thrust') {
+            // Draw the blade back with the elbow bent, then drive it straight in.
+            R.armR.rotation.x += wind * 0.45 - strike * 1.5; R.foreR.rotation.x += -wind * 1.1 + strike * 0.5;
+            R.torso.rotation.y += wind * 0.4 - strike * 0.45; R.torso.rotation.x += strike * 0.18;
+            if (R.legR) { R.legR.rotation.x -= strike * 0.55; R.legL.rotation.x += strike * 0.45; R.shinL.rotation.x += strike * 0.5; }
+            bodyY -= strike * 0.06;
+          } else if (v === 'cleave') {
+            // Two hands, high over the head, and down with the whole body.
+            R.armR.rotation.x += -wind * 2.7 + strike * 1.6; R.armL.rotation.x += -wind * 2.5 + strike * 1.5;
+            R.foreR.rotation.x -= wind * 0.35; R.foreL.rotation.x -= wind * 0.35;
+            R.torso.rotation.x += -wind * 0.18 + strike * 0.38;
+            if (R.legR) { R.legL.rotation.x += strike * 0.3; R.legR.rotation.x -= strike * 0.4; R.shinR.rotation.x += strike * 0.4; }
+            bodyY -= strike * 0.09;
           } else {
             R.armR.rotation.x += -wind * 2.4 + strike * 1.2; R.foreR.rotation.x += wind * 0.6 + strike * 0.5;
             R.torso.rotation.y += wind * 0.45 - strike * 0.5; R.torso.rotation.x += strike * 0.2;
             if (R.legR) { R.legR.rotation.x -= strike * 0.4; R.legL.rotation.x += strike * 0.3; }
           }
           this.offset.addScaledVector(fwd, lunge);
-          if (!A.fired && u > 0.5) { A.fired = true; A.onHit && A.onHit(); }
+          if (!A.fired && u > S - 0.05) { A.fired = true; A.onHit && A.onHit(); }
         } else if (A.name === 'hit') {
-          const k = Math.sin(u * Math.PI) * (1 - u * 0.4);
-          if (R.torso) R.torso.rotation.x -= k * 0.35;
-          if (R.neck) R.neck.rotation.x -= k * 0.3;
+          const hv = A.v === 'heavy' ? 1.6 : 1;
+          const k = (u < 0.18 ? easeOut(u / 0.18) : 1 - ease((u - 0.18) / 0.82)) * hv;
+          if (R.torso) { R.torso.rotation.x -= k * 0.35; R.torso.rotation.z += k * 0.12 * A.side; }
+          if (R.neck) { R.neck.rotation.x -= k * 0.3; R.neck.rotation.z -= k * 0.15 * A.side; }
+          if (R.armL) { R.armL.rotation.z -= k * 0.25; R.armR.rotation.z += k * 0.25; }
           this.offset.addScaledVector(fwd, -k * 0.22);
           this.flash = Math.max(this.flash, 1 - u);
+        } else if (A.name === 'parry') {
+          // Shield up and forward, sword across: the blow glances off.
+          const k = u < 0.22 ? easeOut(u / 0.22) : 1 - ease((u - 0.22) / 0.78);
+          if (R.armL) { R.armL.rotation.x -= k * 0.95; R.foreL.rotation.x -= k * 0.35; }
+          if (R.shield) { R.shield.position.z += k * 0.22; R.shield.rotation.y += k * 0.6; }
+          if (R.armR) { R.armR.rotation.x -= k * 1.25; R.armR.rotation.z -= k * 0.45; }
+          if (R.torso) { R.torso.rotation.y += k * 0.28; R.torso.rotation.x -= k * 0.06; }
+          this.offset.addScaledVector(fwd, k * 0.12);
+        } else if (A.name === 'stagger') {
+          // Thrown off balance: reel back a step, arms flung wide, then recover.
+          const k = u < 0.2 ? easeOut(u / 0.2) : 1 - ease((u - 0.2) / 0.8);
+          if (R.torso) { R.torso.rotation.x -= k * 0.55; R.torso.rotation.z += k * 0.25 * A.side; }
+          if (R.neck) R.neck.rotation.x -= k * 0.4;
+          if (R.armR) { R.armR.rotation.x -= k * 0.9; R.armR.rotation.z += k * 0.6; }
+          if (R.armL) { R.armL.rotation.x -= k * 0.7; R.armL.rotation.z -= k * 0.5; }
+          if (R.legL) { R.legL.rotation.x -= k * 0.45; R.legR.rotation.x += k * 0.3; R.shinL.rotation.x += k * 0.5; }
+          this.offset.addScaledVector(fwd, -k * 0.5);
+          bodyY -= k * 0.05;
+          this.flash = Math.max(this.flash, (1 - u) * 0.7);
         } else if (A.name === 'block') {
           const k = Math.sin(u * Math.PI);
           if (R.armL) { R.armL.rotation.x -= k * 0.5; R.foreL.rotation.x -= k * 0.3; }
@@ -528,15 +577,33 @@
         } else if (A.name === 'die') {
           const k = easeOut(clamp(u / 0.45, 0, 1));
           const f = u > 0.45 ? ease((u - 0.45) / 0.55) : 0;
-          const knee = this.kind === 'knight' ? k * (1 - f) : k;   // the knight straightens as he falls
-          if (R.legL) { R.legL.rotation.x -= knee * 1.2; R.shinL.rotation.x += knee * 1.6; R.legR.rotation.x -= knee * 1.0; R.shinR.rotation.x += knee * 1.5; }
-          if (R.torso) R.torso.rotation.x += k * 0.6 * (1 - f * 0.7);
-          if (this.kind === 'necromancer' || this.kind === 'wraith') bodyY += k * 0.6;
-          else if (this.kind === 'knight') { bodyY += G3D.lerp(-0.38 * k, 0.12, f); R.body.rotation.x = f * 1.45; }
-          else bodyY -= k * 0.42;
+          const caster = this.kind === 'necromancer' || this.kind === 'wraith';
+          if (this.kind === 'knight') {
+            const knee = k * (1 - f);   // the knight straightens as he falls
+            if (R.legL) { R.legL.rotation.x -= knee * 1.2; R.shinL.rotation.x += knee * 1.6; R.legR.rotation.x -= knee * 1.0; R.shinR.rotation.x += knee * 1.5; }
+            if (R.torso) R.torso.rotation.x += k * 0.6 * (1 - f * 0.7);
+            bodyY += G3D.lerp(-0.38 * k, 0.12, f); R.body.rotation.x = f * 1.45;
+          } else if (caster) {
+            if (R.legL) { R.legL.rotation.x -= k * 1.2; R.shinL.rotation.x += k * 1.6; R.legR.rotation.x -= k * 1.0; R.shinR.rotation.x += k * 1.5; }
+            if (R.torso) R.torso.rotation.x += k * 0.6;
+            bodyY += k * 0.6;
+          } else if (this.kind === 'warden') {
+            // Down on one knee, the greatsword planted, head bowed — then ash.
+            R.legR.rotation.x -= k * 1.55; R.shinR.rotation.x += k * 1.65; R.legL.rotation.x += k * 0.15; R.shinL.rotation.x += k * 1.55;
+            R.armR.rotation.x -= k * 0.5; R.armL.rotation.x -= k * 0.4; R.torso.rotation.x += k * 0.35; R.neck.rotation.x += k * 0.45;
+            bodyY -= k * 0.42;
+          } else {
+            // Knees buckle, then a topple forward or back.
+            if (R.legL) { R.legL.rotation.x -= k * 1.2; R.shinL.rotation.x += k * 1.6; R.legR.rotation.x -= k * 1.0; R.shinR.rotation.x += k * 1.5; }
+            if (R.torso) R.torso.rotation.x += k * 0.6 * (1 - f * 0.5);
+            if (R.armR) { R.armR.rotation.z += f * 0.6; R.armL.rotation.z -= f * 0.6; }
+            bodyY -= k * 0.42 + f * 0.1;
+            R.body.rotation.x = (A.side > 0 ? -1.25 : 1.2) * f;
+          }
           if (u > 0.45 && this.kind !== 'knight') {
-            this.dissolve = f;
-            if (Math.random() < 0.6) burst('smoke', this.R.root.position.clone().add(V(0, 0.4 + Math.random() * 1.2, 0)), 1, this.kind === 'necromancer' ? '#4dff5a' : this.kind === 'wraith' ? '#7ad8e8' : '#8a8478', 0.6);
+            this.dissolve = this.kind === 'warden' ? Math.max(0, (f - 0.35) / 0.65) : f;
+            const sc = this.R.smoke || (this.kind === 'necromancer' ? '#4dff5a' : this.kind === 'wraith' ? '#7ad8e8' : '#8a8478');
+            if (Math.random() < 0.6) burst(this.R.smoke ? 'ember' : 'smoke', this.R.root.position.clone().add(V(0, 0.4 + Math.random() * 1.2, 0)), this.kind === 'warden' ? 3 : 1, sc, 0.6);
           }
           if (!A.fired && u > 0.45) { A.fired = true; A.onHit && A.onHit(); }
         } else if (A.name === 'divine') {
@@ -546,6 +613,18 @@
         if (u >= 1) { this.anim = null; if (A.name === 'die') { this.alive = false; this.dead = true; } }
       }
       if (this.dead && this.kind === 'knight') { R.body.rotation.x = 1.45; bodyY = 0.12; }
+      // Smooth every joint toward its target pose, so one motion flows into the next
+      // instead of snapping (and hit-stop, which slows dt, freezes the pose too).
+      const sm = 1 - Math.exp(-dt * 26);
+      if (!this._pose) this._pose = {};
+      JOINTS.forEach(k => {
+        const o = R[k]; if (!o) return;
+        const q = this._pose[k] || (this._pose[k] = o.rotation.clone());
+        q.x += (o.rotation.x - q.x) * sm; q.y += (o.rotation.y - q.y) * sm; q.z += (o.rotation.z - q.z) * sm;
+        o.rotation.copy(q);
+      });
+      if (!this._off) this._off = this.offset.clone();
+      this._off.lerp(this.offset, sm); this.offset.copy(this._off);
       R.body.position.y = bodyY;
       this.rot += shortAngle(this.rot, this.facing) * Math.min(1, dt * 6);
       R.root.rotation.y = this.rot;
@@ -574,7 +653,8 @@
 
   function spawnEnemy(type) {
     despawnEnemy();
-    const R = type === 'necromancer' ? G3D.makeNecromancer() : type === 'peasant' ? G3D.makePeasant() : type === 'wraith' && G3D.makeWraith ? G3D.makeWraith() : G3D.makeRisen();
+    const mk = (G3D.enemyBuilders || {})[type];
+    const R = mk ? mk() : type === 'necromancer' ? G3D.makeNecromancer() : type === 'peasant' ? G3D.makePeasant() : type === 'wraith' && G3D.makeWraith ? G3D.makeWraith() : G3D.makeRisen();
     enemy = new Actor(R); enemy.type = type;
     const sp = room.enemy;
     enemy.place(sp.pos, sp.rot);
@@ -772,7 +852,8 @@
     const r = ROOMS[id];
     if (r && r.npc) {
       const tints = { edmund: [120, 30, 30], aldric: [90, 84, 70], matthias: [70, 56, 40], ezra: [40, 46, 80] };
-      npc = new Actor(r.npc === 'aveline' && G3D.makeSaint ? G3D.makeSaint() : G3D.makeNPC(tints[r.npc] || [80, 64, 48]));
+      const mkN = (G3D.npcBuilders || {})[r.npc];
+      npc = new Actor(mkN ? mkN() : r.npc === 'aveline' && G3D.makeSaint ? G3D.makeSaint() : G3D.makeNPC(tints[r.npc] || [80, 64, 48]));
       npc.place(spec.npc.pos, spec.npc.rot); scene.add(npc.R.root);
     }
     if (relicObj) { scene.remove(relicObj); relicObj = null; }
@@ -828,7 +909,16 @@
     const q = queue.shift(); if (!q) return;
     q.fn(); queueT = q.dur;
   }
-  function hitPoint(a) { return a.R.root.position.clone().add(V(0, 1.3, 0)); }
+  function hitPoint(a) { return a.R.root.position.clone().add(V(0, 1.3 * (a.R.root.scale.y || 1), 0)); }
+  let lastEventT = null, swing = 0;
+  // How each foe swings: the Warden cleaves two-handed, knights mix their cuts.
+  function attackVariant(a) {
+    if (!a) return 'overhead';
+    if (a.kind === 'warden') return 'cleave';
+    if (a.kind === 'peasant') return Math.random() < 0.5 ? 'thrust' : 'overhead';   // the pitchfork
+    if (a.kind === 'risen' || a.kind === 'cinder') return ['overhead', 'slash', 'thrust'][Math.floor(Math.random() * 3)];
+    return 'overhead';
+  }
 
   function watchState() {
     if (E.pending) return;
@@ -843,26 +933,52 @@
       moveToCombatView(true);
       lastEnemyHp = STATE.enemyHp;
     }
+    // Combat events from the game (v18): a parry, or a blow that staggers the foe.
+    const ev = STATE.combatEvent, fresh = ev && ev.t !== lastEventT;
+    if (fresh) lastEventT = ev.t;
+    if (fresh && ev.type === 'parry' && enemy) {
+      // The foe swings; the knight turns it aside on the shield; the foe reels; the riposte goes in.
+      const e = enemy;
+      enqueue(() => e.play('attack', 0.72, () => {
+        knight.play('parry', 0.5);
+        burst('spark', knight.R.root.position.clone().add(V(Math.sin(knight.rot) * 0.5, 1.25, Math.cos(knight.rot) * 0.5)), 70, '#cfe8ff', 4);
+        if (E.onImpact) E.onImpact('parry', true, hitPoint(knight));
+        cam.shake = Math.max(cam.shake, 0.18); post.flash = 0.5; post.flashCol.set('#bfe0ff');
+        setTimeout(() => { if (enemy === e) e.play('stagger', 0.8); }, 90);
+      }, { v: attackVariant(e) }), 0.95);
+      enqueue(() => knight.play('attack', 0.55, () => {
+        if (!enemy) return;
+        burst('spark', hitPoint(enemy), 50, '#ffd27a', 3.5);
+        if (E.onImpact) E.onImpact('enemy', true, hitPoint(enemy));
+        cam.shake = Math.max(cam.shake, 0.24);
+      }, { v: 'thrust' }), 0.6);
+      lastEnemyHp = STATE.enemyHp;
+    }
     // Player strikes
     if (enemy && STATE.enemyHp < lastEnemyHp) {
       const crit = lastEnemyHp - STATE.enemyHp >= 20;
+      const stag = fresh && ev.type === 'stagger';
+      swing = (swing + 1) % 3;
+      const v = crit ? 'overhead' : ['slash', 'thrust', 'overhead'][swing];
       enqueue(() => knight.play('attack', 0.7, () => {
         if (!enemy) return;
-        enemy.play('hit', 0.4); burst('spark', hitPoint(enemy), crit ? 60 : 30, crit ? '#ffd27a' : '#ffb060', crit ? 4 : 3);
+        if (stag) enemy.play('stagger', 0.75); else enemy.play('hit', 0.45, null, { v: crit ? 'heavy' : null });
+        burst('spark', hitPoint(enemy), crit ? 60 : 30, crit ? '#ffd27a' : '#ffb060', crit ? 4 : 3);
         if (E.onImpact) E.onImpact('enemy', crit, hitPoint(enemy));
         cam.shake = Math.max(cam.shake, crit ? 0.3 : 0.14);
         if (crit) { post.flash = 0.6; post.flashCol.set('#ffcc66'); }
-      }), 0.75);
+      }, { v }), 0.75);
     }
     // Enemy strikes (or traps / events outside combat)
     if (STATE.hp < lastHp) {
       if (enemy && (inC || wasCombat)) {
-        enqueue(() => enemy && enemy.play('attack', 0.75, () => {
-          knight.play(STATE.defending ? 'block' : 'hit', 0.4);
+        const big = lastHp - STATE.hp >= 18;
+        enqueue(() => enemy && enemy.play('attack', enemy.kind === 'warden' ? 1.0 : 0.75, () => {
+          knight.play(STATE.defending ? 'block' : 'hit', 0.45, null, { v: big && !STATE.defending ? 'heavy' : null });
           burst('spark', hitPoint(knight), 24, STATE.defending ? '#a0c8ff' : '#ff5030', 2.5);
           if (E.onImpact) E.onImpact('knight', !!STATE.defending, hitPoint(knight));
-          cam.shake = Math.max(cam.shake, 0.22); post.flash = 0.5; post.flashCol.set('#ff2010');
-        }), 0.8);
+          cam.shake = Math.max(cam.shake, big ? 0.32 : 0.22); post.flash = 0.5; post.flashCol.set('#ff2010');
+        }, { v: attackVariant(enemy) }), enemy.kind === 'warden' ? 1.05 : 0.8);
       } else {
         knight.play('hit', 0.4); cam.shake = Math.max(cam.shake, 0.2);
       }
@@ -953,7 +1069,7 @@
       const axis = V(N[0] - K.x, 0, N[2] - K.z); const dist = axis.length(); axis.normalize();
       const side = V(-axis.z, 0, axis.x); if (side.z < 0) side.negate();
       // Tall foes (the Necromancer floats and towers) need a wider, higher two-shot.
-      const big = enemy && enemy.kind === 'necromancer' ? 1 : 0;
+      const big = enemy && (enemy.kind === 'necromancer' || enemy.kind === 'warden') ? 1 : 0;
       const cp = mid.clone().addScaledVector(side, 2.8 + dist * 0.6 + big * 1.8).add(V(0, 1.4 + big * 0.5, 0)).addScaledVector(axis, -0.4);
       const cl = mid.clone().add(V(0, 1.2 + big * 0.55, 0));
       const k = ease(cam.combat);

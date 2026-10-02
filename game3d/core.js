@@ -107,17 +107,51 @@
   G3D.textureSets = () => sets.map(s => ({ kind: s.kind, arg: s.arg, size: s.size }));
   // Per-material shader patches: UV scale (shares one program across all
   // scales) and, on the Ultra tier, parallax occlusion (G3D.pomOn, fx.js).
+  // Caustics (v18): light thrown by moving water dances on the stone around it.
+  // One shared uniform switches it on in flooded rooms; elsewhere a uniform
+  // branch skips the work.
+  const CAUSTIC_FN = `
+    uniform float causticAmt, causticY, time; varying vec3 vCW;
+    float ktCaustic(vec2 p, float t){
+      vec2 i = p; float c = 1.0, inten = 0.005;
+      for (int n = 0; n < 4; n++) {
+        float tt = t * (1.0 - (3.5 / float(n + 1)));
+        i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
+        c += 1.0 / length(vec2(p.x / (sin(i.x + tt) / inten), p.y / (cos(i.y + tt) / inten)));
+      }
+      c /= 4.0; c = 1.17 - pow(c, 1.4);
+      return pow(abs(c), 8.0);
+    }`;
   function patchStd(m) {
     const ud = m.userData;
-    if (!ud.uvScale && !ud.pom) return m;
+    if (!ud.uvScale && !ud.pom && !ud.caustic) return m;
     m.onBeforeCompile = sh => {
       if (ud.uvScale) {
         sh.uniforms.uvScale = { value: ud.uvScale };
         sh.vertexShader = 'uniform vec2 uvScale;\n' + sh.vertexShader.replace('#include <uv_vertex>', '#ifdef USE_UV\n\tvUv = ( uvTransform * vec3( uv * uvScale, 1 ) ).xy;\n#endif');
       }
       if (ud.pom && G3D.pomOn && m.roughnessMap && G3D.fx) G3D.fx.patchPOM(sh, ud.pom);
+      if (ud.caustic) {
+        const U = G3D.uniforms;
+        sh.uniforms.causticAmt = U.caustic || (U.caustic = { value: 0 });
+        sh.uniforms.causticY = U.causticY || (U.causticY = { value: 0 });
+        sh.uniforms.time = U.time;
+        sh.vertexShader = 'varying vec3 vCW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n\tvCW = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
+        sh.fragmentShader = sh.fragmentShader
+          .replace('void main() {', CAUSTIC_FN + '\nvoid main() {')
+          .replace('#include <aomap_fragment>', `#include <aomap_fragment>
+          if (causticAmt > 0.0) {
+            // Strongest just above and below the waterline, fading up the walls.
+            float band = 1.0 - smoothstep(causticY + 0.1, causticY + 2.6, vCW.y);
+            if (band > 0.0) {
+              vec2 cp = mod((vCW.xz + vec2(vCW.y * 0.7)) * 1.6, 6.2831853) - 250.0;   // the pattern tiles every 2π
+              float cs = ktCaustic(cp, time * 0.55 + 23.0);
+              reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.5, 0.9, 1.0) * min(cs, 1.5) * band * causticAmt * 3.0;
+            }
+          }`);
+      }
     };
-    m.customProgramCacheKey = () => (ud.uvScale ? 'uvScale' : '') + (ud.pom && G3D.pomOn ? 'pom' : '');
+    m.customProgramCacheKey = () => (ud.uvScale ? 'uvScale' : '') + (ud.pom && G3D.pomOn ? 'pom' : '') + (ud.caustic ? 'caus' : '');
     return m;
   }
   function withRepeat(m, repeat) {
@@ -133,6 +167,7 @@
     const su = src.userData;
     if (su.uvScale) m.userData.uvScale = new THREE.Vector2(su.uvScale.x, su.uvScale.y);
     if (su.pom) m.userData.pom = su.pom;
+    if (su.caustic) m.userData.caustic = true;
     return patchStd(m);
   };
   G3D.withRepeat = withRepeat;
@@ -344,11 +379,14 @@
   G3D.stoneMat = (tint, repeat, key) => G3D.mat('stone' + tint + (key || repeat.join('x')), () => {
     const s = texSet(G3D.stoneWallSet(tint));
     const m = withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.4, 1.4), roughness: 1, metalness: 0 }), repeat);
+    m.userData.caustic = true;
     return key === 'statue' ? m : withPOM(m, 0.03);
   });
   G3D.floorMat = (tint, repeat) => G3D.mat('floor' + tint + repeat.join('x'), () => {
     const s = texSet(G3D.floorSet(tint));
-    return withPOM(withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, metalness: 0 }), repeat), 0.018);
+    const m = withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, metalness: 0 }), repeat);
+    m.userData.caustic = true;
+    return withPOM(m, 0.018);
   });
   G3D.woodMat = (dark, repeat) => G3D.mat('wood' + dark + (repeat || [1, 1]).join('x'), () => {
     const s = texSet(G3D.woodSet(dark));

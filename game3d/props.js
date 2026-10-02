@@ -951,6 +951,9 @@
     return R;
   };
 
+  // Shared with later character modules (game3d/ember.js).
+  G3D.charKit = { rig, skirt, cape, makeGreatHelm, lathe, merged, swordBelt, bodyColliders, limb };
+
   G3D.makePeasant = function () {
     const skin = G3D.flatMat('zskin', '#6a7058', 0.75, 0, { emissive: new THREE.Color('#0a120a'), emissiveIntensity: 1 });
     const rag = new THREE.MeshStandardMaterial({ map: G3D.clothTex('rag', { base: [84, 66, 46], stain: 0.9, tattered: true }), roughness: 1, side: THREE.DoubleSide, alphaTest: 0.5 });
@@ -1049,8 +1052,8 @@
     const face = mesh(new THREE.SphereGeometry(0.11, 16, 12), G3D.flatMat('skin', '#b88a68', 0.65)); face.scale.set(0.95, 1.1, 1); face.position.y = 0.06; R.head.add(face);
     const beard = mesh(new THREE.ConeGeometry(0.08, 0.16, 10), G3D.flatMat('beard', '#6a6460', 1)); beard.rotation.x = Math.PI; beard.position.set(0, -0.04, 0.06); R.head.add(beard);
     const hood = mesh(new THREE.SphereGeometry(0.16, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), robeMat); hood.scale.set(1, 1.15, 1.1); hood.rotation.x = -0.6; hood.position.y = 0.05; R.head.add(hood);
-    const c = P.candle(0.16); c.position.set(0.12, 0.38, 0.28); R.torso.add(c);
-    const gl = G3D.glow('#ffb050', 0.9, 0.6); gl.position.set(0.12, 0.6, 0.28); R.torso.add(gl);
+    const c = P.candle(0.16); c.position.set(0.12, 0.38, 0.28); R.torso.add(c); c.userData.candle = true;
+    const gl = G3D.glow('#ffb050', 0.9, 0.6); gl.position.set(0.12, 0.6, 0.28); R.torso.add(gl); gl.userData.candle = true;
     R.kind = 'npc';
     return R;
   };
@@ -1158,9 +1161,35 @@
     const nm = ripples().clone(); nm.needsUpdate = true; nm.repeat.set(w / 4, d / 4);
     const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color || '#071014'), roughness: 0.06, metalness: 0.1, normalMap: nm,
       normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.9, envMapIntensity: 1.6, depthWrite: true });
+    // Ripple rings (v18): wakes where the knight wades, drips from the vault.
+    // Up to 8 sources share one uniform array, updated by game3d/elements.js.
+    const U = G3D.uniforms;
+    if (!U.ripples) U.ripples = { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, -100, 0)) };
+    m.onBeforeCompile = sh => {
+      sh.uniforms.ripples = U.ripples; sh.uniforms.time = U.time;
+      sh.vertexShader = 'varying vec3 vRW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n\tvRW = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
+      sh.fragmentShader = 'uniform vec4 ripples[8]; uniform float time; varying vec3 vRW;\n' + sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          // Expanding rings: x, z, start time, strength. Each ring is a damped wave train.
+          vec2 slope = vec2(0.0);
+          for (int i = 0; i < 8; i++) {
+            vec4 r = ripples[i];
+            float age = time - r.z;
+            if (age < 0.0 || age > 3.0 || r.w <= 0.0) continue;
+            vec2 d = vRW.xz - r.xy; float dist = length(d) + 1e-4;
+            float front = age * 0.9;
+            float x = dist - front;
+            float env = exp(-x * x * 18.0) * exp(-age * 1.3) * r.w / (1.0 + dist * 2.0);
+            slope += d / dist * cos(x * 26.0) * env;
+          }
+          vec3 nW = normalize(vec3(-slope.x, 1.0, -slope.y));
+          normal = normalize(normal + (viewMatrix * vec4(nW - vec3(0.0, 1.0, 0.0), 0.0)).xyz * 1.4);
+        }`);
+    };
+    m.customProgramCacheKey = () => 'ripples';
     const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d, 1, 1), m);
     water.rotation.x = -Math.PI / 2; water.receiveShadow = true; water.renderOrder = 1;
-    water.userData.flow = [0.012, 0.007]; water.userData.noCollide = true;
+    water.userData.flow = [0.012, 0.007]; water.userData.noCollide = true; water.userData.water = true;
     return water;
   };
   // A lit candle drifting on the water.
