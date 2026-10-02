@@ -82,7 +82,9 @@
       // Puddles: patches of standing water in the floor, the rest just damp.
       vec3 W = (viewInv * vec4(P, 1.0)).xyz;
       float pud = smoothstep(0.52, 0.7, vn2(W.xz * 0.55) * 0.7 + vn2(W.xz * 1.7 + 3.0) * 0.3);
-      float mask = wet * mix(0.35, 1.0, pud * puddles) * floorness;
+      if (puddles > 1.5) pud = 1.0;                      // a flooded floor is one mirror
+      float pp = min(pud * puddles, 1.0);
+      float mask = wet * mix(0.35, 1.0, pp) * floorness;
       vec3 Vd = normalize(P);
       vec3 R = reflect(Vd, N);
       float stepLen = 0.12 + hash12(gl_FragCoord.xy) * 0.08, t = stepLen;
@@ -110,7 +112,7 @@
       // Rays that leave the screen see the sky (outdoors) or the dark vault (indoors).
       hit = mix(missCol, hit, conf);
       float fres = mix(0.05, 1.0, pow(1.0 - max(dot(-Vd, N), 0.0), 3.0));
-      gl_FragColor = vec4(min(hit, vec3(6.0)), mask * fres * mix(0.5, 1.0, pud * puddles));
+      gl_FragColor = vec4(min(hit, vec3(6.0)), mask * fres * mix(0.5, 1.0, pp));
     }`;
 
   // ── Volumetric fog + light ─────────────────────────────────────────────────

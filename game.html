@@ -1005,7 +1005,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v13.0</span></div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v14.0</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -1064,7 +1064,7 @@ body {
       <div class="map-legend-item"><div class="map-legend-dot" style="background:#5ec4d4"></div>Visited</div>
       <div class="map-legend-item"><div class="map-legend-dot" style="background:#922"></div>Boss</div>
     </div>
-    <div class="map-room-count" id="mapRoomCount">Explored: 0 / 17</div>
+    <div class="map-room-count" id="mapRoomCount">Explored: 0 / 20</div>
   </div>
 
   <!-- LOG PANEL -->
@@ -1476,7 +1476,7 @@ const ROOMS = {
     name: 'Forgotten Catacombs',
     sub: 'Bones of the faithful line the walls...',
     lore: 'Thousands of skulls stare from alcoves carved into the stone. The catacombs stretch deeper than any map shows. Candles flicker in skull sconces — lit by no living hand. The dead here are restless.',
-    exits: { north: 'cryptEntrance', east: 'necromancerLair' },
+    exits: { north: 'cryptEntrance', east: 'necromancerLair', south: 'floodedStair' },
     relic: null, enemy: 'risen', hasScroll: false, npc: null,
     type: 'catacombs'
   },
@@ -1535,6 +1535,31 @@ const ROOMS = {
     exits: { west: 'bellTower' },
     relic: null, enemy: 'peasant', hasScroll: false, npc: null,
     type: 'watchtower'
+  },
+  // v14: the Sunken Crypt — an optional wing beneath the catacombs
+  floodedStair: {
+    name: 'Flooded Stair',
+    sub: 'Black water swallows the steps...',
+    lore: 'A broad stair descends beneath the catacombs and vanishes into still, black water. Cold seeps through your boots. Candles float on the surface, burning without wax. A pale woman in a drowned habit stands upon the water, as if it were stone.',
+    exits: { north: 'catacombs', east: 'drownedOssuary' },
+    relic: null, enemy: null, hasScroll: false, npc: 'aveline',
+    type: 'flooded'
+  },
+  drownedOssuary: {
+    name: 'Drowned Ossuary',
+    sub: 'The bones here never rest...',
+    lore: 'A flooded charnel vault. Skulls crowd the alcoves above the waterline; below it, more stare up through the black. Something pale drifts between the pillars, trailing water that falls upward.',
+    exits: { west: 'floodedStair', south: 'sunkenSanctum' },
+    relic: null, enemy: 'wraith', hasScroll: false, npc: null,
+    type: 'ossuary'
+  },
+  sunkenSanctum: {
+    name: 'Sunken Sanctum',
+    sub: 'A chapel the sea forgot...',
+    lore: 'A drowned chapel, older than the fortress above. Moonlight falls through a broken oculus onto a marble tomb rising from the water. Its effigy is a woman with folded hands — Saint Aveline, who held the crypt seals until the night they broke.',
+    exits: { north: 'drownedOssuary' },
+    relic: null, enemy: null, hasScroll: false, npc: null,
+    type: 'sanctum'
   }
 };
 
@@ -1556,7 +1581,10 @@ const ROOM_FX = {
   boneThrone:{particles:'dust',tint:'rgba(139,0,0,0.05)'},
   portraitGallery:{particles:'dust',tint:'rgba(201,168,76,0.04)'},
   dungeonDepths:{particles:'dust',tint:'rgba(139,0,0,0.04)'},
-  watchtower:{particles:'dust',tint:'rgba(150,170,200,0.04)'}
+  watchtower:{particles:'dust',tint:'rgba(150,170,200,0.04)'},
+  floodedStair:{particles:'fog',tint:'rgba(80,160,200,0.05)'},
+  drownedOssuary:{particles:'fog',tint:'rgba(80,200,200,0.05)'},
+  sunkenSanctum:{particles:'dust',tint:'rgba(180,200,255,0.05)'}
 };
 
 // ─── v6.0 PHOTOREALISTIC IMAGE SYSTEM ───
@@ -1685,6 +1713,7 @@ function combatLogMsg(text) {
 }
 
 function renderEnemySVG(type) {
+  if (type === 'wraith') return renderEnemySVG('risen').replace('<svg ', '<svg style="opacity:0.75;filter:hue-rotate(150deg) saturate(0.6)" ');
   const w = 140, h = 160;
   let art = '';
   if (type === 'risen') {
@@ -1888,14 +1917,18 @@ const MAP_POS = {
   boneThrone:     { x: 3, y: 3 },
   treasury:       { x: 1, y: 4 },
   catacombs:      { x: 2, y: 4 },
-  necromancerLair:{ x: 3, y: 4 }
+  necromancerLair:{ x: 3, y: 4 },
+  floodedStair:   { x: 2, y: 5 },
+  drownedOssuary: { x: 3, y: 5 },
+  sunkenSanctum:  { x: 3, y: 6 }
 };
 
 // ─── ENEMIES ───
 const ENEMIES = {
   risen: { name: 'Risen Knight', hp: 45, dmgMin: 6, dmgMax: 14, type: 'risen', xp: 25 },
   peasant: { name: 'Peasant Zombie', hp: 30, dmgMin: 4, dmgMax: 10, type: 'peasant', xp: 15 },
-  necromancer: { name: 'The Necromancer', hp: 180, dmgMin: 12, dmgMax: 25, type: 'necromancer', xp: 100 }
+  necromancer: { name: 'The Necromancer', hp: 180, dmgMin: 12, dmgMax: 25, type: 'necromancer', xp: 100 },
+  wraith: { name: 'Drowned Wraith', hp: 70, dmgMin: 8, dmgMax: 17, type: 'wraith', xp: 45 }
 };
 
 // ─── v6.2 RELIC EQUIPMENT SYSTEM ───
@@ -1995,6 +2028,7 @@ function getPlayerStats() {
   // Quest buffs
   if (STATE.questFlags.blessedBladeBuff) atk += 5;
   if (STATE.questFlags.edmundAllyBuff) def += 3;
+  if (STATE.questFlags.saintBlessingBuff) { atk += 2; def += 2; }
   // Merchant whetstone bonus
   if (STATE.questFlags._merchantAtkBonus) atk += STATE.questFlags._merchantAtkBonus;
   // Temporary ghost buff
@@ -2511,6 +2545,16 @@ const NPCS = {
       redemption: 'I cannot undo what I have done. But I can tell you this — the Necromancer fears faith more than steel. The scrolls, the relics, the prayers of the righteous... these are your true weapons. Steel alone will not be enough.',
       blindness: 'I was not always blind. When Alaric returned and I saw what he had become, I gouged out my own eyes so I would never have to witness his work again. Some things... are worse than darkness.'
     }
+  },
+  aveline: {
+    name: 'Sister Aveline',
+    greeting: 'Do not be afraid of me, knight. I was Sister Aveline, keeper of the crypt seals. When the seals broke, the water took me — and something worse took my sanctuary. I cannot rest while it walks there.',
+    topics: {
+      wraith: 'Beyond this stair lies the ossuary, and in it a drowned thing that wears the shape of a man. It was the Necromancer\'s first servant — the one who broke my seals. Destroy it, and my sanctum will be free.',
+      seals: 'Three seals held the crypt: iron, salt and prayer. Alaric melted the iron and poisoned the salt. Only prayer is left, and prayer is a weapon in the right hands.',
+      sanctum: 'My tomb lies in the sanctum below the ossuary, in moonlight. If you reach it with the wraith destroyed, kneel there. What strength I have left, I will give to you.',
+      water: 'This water fell from the river above when the walls cracked. It is cold, but it is clean. The dead cannot abide clean water — that is why the wraith hates it so.'
+    }
   }
 };
 
@@ -2581,6 +2625,19 @@ const QUESTS = {
     ],
     reward: { type: 'achievement', key: 'questmaster', text: 'You have completed the Final Stand! The fortress is saved.' },
     complete: ''
+  },
+  drownedSaint: {
+    id: 'drownedSaint',
+    name: 'The Drowned Saint',
+    giver: 'aveline',
+    icon: '🌊',
+    desc: 'Sister Aveline, the drowned keeper of the crypt seals, cannot rest while the wraith that broke them haunts her ossuary. Destroy it, then kneel at her tomb in the Sunken Sanctum.',
+    objectives: [
+      { id: 'slayWraith', text: 'Destroy the Drowned Wraith in the Ossuary', check: () => STATE.enemiesDefeated.has('drownedOssuary') },
+      { id: 'kneel', text: 'Kneel at Saint Aveline\'s tomb in the Sunken Sanctum', check: () => STATE.currentRoom === 'sunkenSanctum' && STATE.enemiesDefeated.has('drownedOssuary') }
+    ],
+    reward: { type: 'buff', key: 'saintBlessing', text: 'Blessing of the Drowned Saint — +20 max HP, +2 ATK, +2 DEF, and fully healed!' },
+    complete: 'You kneel in the moonlight before the tomb. The water around you stills, then shines. A cold hand rests on your shoulder — and is gone. "Thank you, knight. Take what I kept for this night. Go up, and end him."'
   }
 };
 
@@ -2631,6 +2688,12 @@ function completeQuest(questId) {
   if (q.reward.key === 'blessedBlade') STATE.questFlags.blessedBladeBuff = true;
   if (q.reward.key === 'edmundAlly') STATE.questFlags.edmundAllyBuff = true;
   if (q.reward.key === 'necroWeakness') STATE.questFlags.necroWeaknessBuff = true;
+  if (q.reward.key === 'saintBlessing') {
+    STATE.questFlags.saintBlessingBuff = true;
+    STATE.maxHp += 20; STATE.hp = STATE.maxHp;
+    damageFlash('healed'); floatDamage('+BLESSED', '#9fd8ff');
+    updateHP();
+  }
   if (q.reward.key === 'secretPassage') {
     // Open shortcut: dungeonDepths <-> necromancerLair
     ROOMS.dungeonDepths.exits.south = 'necromancerLair';
@@ -2717,10 +2780,14 @@ const ACHIEVEMENTS = {
   necroSlain:  { icon: '☠', name: 'Necromancer Slain — Destroy the final boss' },
   enlightened: { icon: '✝', name: 'Enlightened — Read all 8 sacred scrolls' },
   blessed:     { icon: '🌟', name: 'Blessed by Saint Michael — Earn the golden armor' },
-  lorekeeper:  { icon: '🗣', name: 'Lorekeeper — Speak with all 4 NPCs' },
+  lorekeeper:  { icon: '🗣', name: 'Lorekeeper — Speak with every soul who remains' },
   historian:   { icon: '🖼', name: 'Historian — Examine all three portraits' },
-  questmaster: { icon: '📋', name: 'Questmaster — Complete all 5 quests' }
+  questmaster: { icon: '📋', name: 'Questmaster — Complete every quest' }
 };
+
+// Totals derived from the data, so new rooms, quests and NPCs count automatically.
+function roomsTotal() { return Object.keys(ROOMS).length; }
+function roomsExplored() { let n = 0; STATE.visited.forEach(id => { if (ROOMS[id]) n++; }); return n; }
 
 // ─── COURTYARD EVENTS ───
 const COURTYARD_EVENTS = [
@@ -2777,7 +2844,7 @@ function initGame() {
       k === 'courtyard' ? 'peasant' : k === 'cryptEntrance' ? 'risen' :
       k === 'catacombs' ? 'risen' : k === 'boneThrone' ? 'risen' :
       k === 'dungeonDepths' ? 'risen' : k === 'watchtower' ? 'peasant' :
-      k === 'necromancerLair' ? 'necromancer' : null;
+      k === 'necromancerLair' ? 'necromancer' : k === 'drownedOssuary' ? 'wraith' : null;
     ROOMS[k].enemy = orig;
   });
 
@@ -2790,7 +2857,7 @@ function initGame() {
   ROOMS.treasury.relic = 'Rosary of Iron';
 
   // Reset secret passage (quest reward)
-  delete ROOMS.dungeonDepths.exits.south;
+  ROOMS.dungeonDepths.exits.south = 'catacombs';   // the secret passage reward reroutes it; restore the original way
   delete ROOMS.necromancerLair.exits.north;
 
   // Randomize scroll placement (8 scrolls in random rooms, no map indicator)
@@ -3156,7 +3223,7 @@ function endCombat(victory) {
     showSpecialScene('victory'); // v6.0: Show victory art if available
     checkAchievements();
     setTimeout(() => {
-      document.getElementById('winStats').innerHTML = 'Level: ' + STATE.level + '<br>XP: ' + STATE.xp + '<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + STATE.visited.size + '/17<br>Quests: ' + STATE.completedQuests.size + '/5<br>Achievements: ' + STATE.achievements.size + '/9';
+      document.getElementById('winStats').innerHTML = 'Level: ' + STATE.level + '<br>XP: ' + STATE.xp + '<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Scrolls: ' + STATE.scrollsFound.length + '/8<br>Rooms: ' + roomsExplored() + '/' + roomsTotal() + '<br>Quests: ' + STATE.completedQuests.size + '/' + Object.keys(QUESTS).length + '<br>Achievements: ' + STATE.achievements.size + '/' + Object.keys(ACHIEVEMENTS).length;
       document.getElementById('winScreen').classList.add('active');
     }, 2000);
     return;
@@ -3256,7 +3323,7 @@ function talkNPC() {
   addLog(`You speak with ${npc.name}.`, 'npc');
 
   // Offer quest if NPC has one
-  const npcQuests = { aldric: 'blessedBlade', edmund: 'prisonersFaith', matthias: 'lostScriptures', ezra: 'merchantsGuilt' };
+  const npcQuests = { aldric: 'blessedBlade', edmund: 'prisonersFaith', matthias: 'lostScriptures', ezra: 'merchantsGuilt', aveline: 'drownedSaint' };
   if (npcQuests[room.npc]) {
     giveQuest(npcQuests[room.npc]);
   }
@@ -3318,6 +3385,12 @@ function checkQuestCompletions() {
       && STATE.inventory.length >= 3) {
     STATE.questFlags.ezraReady = true;
     completeQuest('merchantsGuilt');
+  }
+
+  // The Drowned Saint: kneel at the tomb once the wraith is destroyed
+  if (STATE.currentRoom === 'sunkenSanctum' && STATE.enemiesDefeated.has('drownedOssuary') && !STATE.completedQuests.has('drownedSaint')) {
+    if (!STATE.activeQuests.includes('drownedSaint')) giveQuest('drownedSaint');
+    completeQuest('drownedSaint');
   }
 
   // Final Stand: auto-given when entering necromancer's lair area
@@ -3400,7 +3473,7 @@ function checkGoldenArmor() {
 
 // ═══ ACHIEVEMENTS ═══
 function checkAchievements() {
-  if (STATE.visited.size >= 17 && !STATE.achievements.has('explorer')) {
+  if (roomsExplored() >= roomsTotal() && !STATE.achievements.has('explorer')) {
     unlockAchieve('explorer');
   }
   if (STATE.inventory.length >= 6 && !STATE.achievements.has('relicHunter')) {
@@ -3418,13 +3491,13 @@ function checkAchievements() {
   if (STATE.hasGoldenArmor && !STATE.achievements.has('blessed')) {
     unlockAchieve('blessed');
   }
-  if (STATE.npcsSpoken.size >= 4 && !STATE.achievements.has('lorekeeper')) {
+  if (STATE.npcsSpoken.size >= Object.keys(NPCS).length && !STATE.achievements.has('lorekeeper')) {
     unlockAchieve('lorekeeper');
   }
   if (STATE.portraitsExamined.size >= 3 && !STATE.achievements.has('historian')) {
     unlockAchieve('historian');
   }
-  if (STATE.completedQuests.size >= 5 && !STATE.achievements.has('questmaster')) {
+  if (STATE.completedQuests.size >= Object.keys(QUESTS).length && !STATE.achievements.has('questmaster')) {
     unlockAchieve('questmaster');
   }
 }
@@ -3447,7 +3520,7 @@ function playerDeath() {
   playSound('death');
   showSpecialScene('death'); // v6.0: Show death art if available
   setTimeout(() => {
-    document.getElementById('deathStats').innerHTML = 'Level: ' + STATE.level + ' (XP: ' + STATE.xp + ')<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/5<br>Rooms: ' + STATE.visited.size + '/17';
+    document.getElementById('deathStats').innerHTML = 'Level: ' + STATE.level + ' (XP: ' + STATE.xp + ')<br>Battles Won: ' + STATE.battlesWon + '<br>Relics: ' + STATE.inventory.length + '/6<br>Quests: ' + STATE.completedQuests.size + '/' + Object.keys(QUESTS).length + '<br>Rooms: ' + roomsExplored() + '/' + roomsTotal();
     document.getElementById('deathScreen').classList.add('active');
   }, 1500);
 }
@@ -3753,7 +3826,7 @@ function renderMap() {
   svg += `</svg>`;
   document.getElementById('mapContainer').innerHTML = svg;
   const rcEl = document.getElementById('mapRoomCount');
-  if (rcEl) rcEl.textContent = 'Explored: ' + STATE.visited.size + ' / 17';
+  if (rcEl) rcEl.textContent = 'Explored: ' + roomsExplored() + ' / ' + roomsTotal();
 }
 
 // ═══ SCENE RENDERER — Rich SVG Art ═══
@@ -4365,7 +4438,7 @@ function getSceneSVG(type, roomId) {
       `;
       break;
 
-    case 'crypt':
+    case 'crypt': case 'sanctum':
       scene = `
         <rect width="${w}" height="${h}" fill="#080706"/>
         <!-- Glowing runes on archway -->
@@ -4385,7 +4458,7 @@ function getSceneSVG(type, roomId) {
       `;
       break;
 
-    case 'catacombs':
+    case 'catacombs': case 'flooded': case 'ossuary':
       scene = `
         <rect width="${w}" height="${h}" fill="#060504"/>
         <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
@@ -5155,5 +5228,6 @@ initGame();
 <script src="/game3d/nav.js"></script>
 <script src="/game3d/engine.js"></script>
 <script src="/game3d/world.js"></script>
+<script src="/game3d/boss.js"></script>
 </body>
 </html>

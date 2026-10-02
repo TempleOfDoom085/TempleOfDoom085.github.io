@@ -438,6 +438,7 @@
       if (this.kind === 'peasant' && this.alive) { R.torso.rotation.z += Math.sin(time * 1.4) * 0.08; R.neck.rotation.z += Math.sin(time * 0.9) * 0.15; if (R.jaw) R.jaw.rotation.x = 0.35 + Math.abs(Math.sin(time * 3)) * 0.25; R.armL.rotation.x += Math.sin(time * 2.1) * 0.12; R.armR.rotation.x += Math.cos(time * 1.8) * 0.12; }
       if (this.kind === 'risen' && this.alive) { R.neck.rotation.z += Math.sin(time * 0.7) * 0.1; R.body.rotation.z = Math.sin(time * 1.1) * 0.03; }
       if (this.kind === 'necromancer') { bodyY = 0.35 + Math.sin(time * 1.3) * 0.12; R.armL.rotation.z += Math.sin(time * 2) * 0.1; R.torso.rotation.y = Math.sin(time * 0.6) * 0.1; }
+      if (this.kind === 'wraith') { bodyY = 0.3 + Math.sin(time * 1.7) * 0.1; R.armL.rotation.x -= 0.5 + Math.sin(time * 1.3) * 0.15; R.armR.rotation.x -= 0.4 + Math.cos(time * 1.1) * 0.15; R.torso.rotation.z = Math.sin(time * 0.8) * 0.06; R.neck.rotation.z = Math.sin(time * 0.5) * 0.2; }
       if (this.kind === 'npc') { R.neck.rotation.y = Math.sin(time * 0.4) * 0.25; }
       // Animations layered on top
       const A = this.anim;
@@ -448,7 +449,7 @@
           const wind = u < 0.4 ? ease(u / 0.4) : u < 0.58 ? 1 - easeOut((u - 0.4) / 0.18) : 0;
           const strike = u < 0.4 ? 0 : u < 0.58 ? easeOut((u - 0.4) / 0.18) : 1 - ease((u - 0.58) / 0.42);
           const lunge = u < 0.35 ? -0.1 * ease(u / 0.35) : u < 0.58 ? G3D.lerp(-0.1, 0.65, easeOut((u - 0.35) / 0.23)) : 0.65 * (1 - ease((u - 0.58) / 0.42));
-          if (this.kind === 'necromancer') {
+          if (this.kind === 'necromancer' || this.kind === 'wraith') {
             R.armR.rotation.x -= wind * 1.6 + strike * 0.3; R.armL.rotation.x -= strike * 0.8;
           } else {
             R.armR.rotation.x += -wind * 2.4 + strike * 1.2; R.foreR.rotation.x += wind * 0.6 + strike * 0.5;
@@ -474,12 +475,12 @@
           const knee = this.kind === 'knight' ? k * (1 - f) : k;   // the knight straightens as he falls
           if (R.legL) { R.legL.rotation.x -= knee * 1.2; R.shinL.rotation.x += knee * 1.6; R.legR.rotation.x -= knee * 1.0; R.shinR.rotation.x += knee * 1.5; }
           if (R.torso) R.torso.rotation.x += k * 0.6 * (1 - f * 0.7);
-          if (this.kind === 'necromancer') bodyY += k * 0.6;
+          if (this.kind === 'necromancer' || this.kind === 'wraith') bodyY += k * 0.6;
           else if (this.kind === 'knight') { bodyY += G3D.lerp(-0.38 * k, 0.12, f); R.body.rotation.x = f * 1.45; }
           else bodyY -= k * 0.42;
           if (u > 0.45 && this.kind !== 'knight') {
             this.dissolve = f;
-            if (Math.random() < 0.6) burst('smoke', this.R.root.position.clone().add(V(0, 0.4 + Math.random() * 1.2, 0)), 1, this.kind === 'necromancer' ? '#4dff5a' : '#8a8478', 0.6);
+            if (Math.random() < 0.6) burst('smoke', this.R.root.position.clone().add(V(0, 0.4 + Math.random() * 1.2, 0)), 1, this.kind === 'necromancer' ? '#4dff5a' : this.kind === 'wraith' ? '#7ad8e8' : '#8a8478', 0.6);
           }
           if (!A.fired && u > 0.45) { A.fired = true; A.onHit && A.onHit(); }
         } else if (A.name === 'divine') {
@@ -517,7 +518,7 @@
 
   function spawnEnemy(type) {
     despawnEnemy();
-    const R = type === 'necromancer' ? G3D.makeNecromancer() : type === 'peasant' ? G3D.makePeasant() : G3D.makeRisen();
+    const R = type === 'necromancer' ? G3D.makeNecromancer() : type === 'peasant' ? G3D.makePeasant() : type === 'wraith' && G3D.makeWraith ? G3D.makeWraith() : G3D.makeRisen();
     enemy = new Actor(R); enemy.type = type;
     const sp = room.enemy;
     enemy.place(sp.pos, sp.rot);
@@ -566,9 +567,11 @@
     const spec = fn();
     batchStatic(spec.group);
     spec.group.updateMatrixWorld(true);
-    spec.anchors = []; spec.swing = [];
+    spec.anchors = []; spec.swing = []; spec.flows = []; spec.bobs = [];
     spec.group.traverse(o => {
       if (o.userData.light) spec.anchors.push(o);
+      if (o.userData.flow) spec.flows.push(o);
+      if (o.userData.bob) { o.userData.bob.y = o.position.y; spec.bobs.push(o); }
       if (o.userData.sway) { o.userData._room = id; swayList.push(o); }
       if (o.userData.swing) spec.swing.push(o);
     });
@@ -706,7 +709,7 @@
     const r = ROOMS[id];
     if (r && r.npc) {
       const tints = { edmund: [120, 30, 30], aldric: [90, 84, 70], matthias: [70, 56, 40], ezra: [40, 46, 80] };
-      npc = new Actor(G3D.makeNPC(tints[r.npc] || [80, 64, 48]));
+      npc = new Actor(r.npc === 'aveline' && G3D.makeSaint ? G3D.makeSaint() : G3D.makeNPC(tints[r.npc] || [80, 64, 48]));
       npc.place(spec.npc.pos, spec.npc.rot); scene.add(npc.R.root);
     }
     if (relicObj) { scene.remove(relicObj); relicObj = null; }
@@ -762,6 +765,7 @@
 
   function watchState() {
     if (E.pending) return;
+    if (E.onWatch) E.onWatch();   // game3d/boss.js reads boss state before reactions are queued
     const inC = !!STATE.inCombat;
     if (inC && !wasCombat) {
       enemyRoom = STATE.currentEnemy && STATE.currentEnemy.roomId;
@@ -968,6 +972,9 @@
       p.needsUpdate = true;
     });
     room.swing.forEach(o => { o.rotation.z = Math.sin(time * 1.1) * o.userData.swing; });
+    // Drifting water ripples and things floating on it
+    (room.flows || []).forEach(o => { const f = o.userData.flow, nm = o.material.normalMap; if (nm) nm.offset.set(time * f[0], time * f[1]); });
+    (room.bobs || []).forEach(o => { const b = o.userData.bob; o.position.y = b.y + Math.sin(time * 1.3 + b.seed) * b.amp; o.rotation.z = Math.sin(time * 0.9 + b.seed) * 0.05; });
     if (relicObj) relicObj.traverse(o => { if (o.userData.spin) { o.rotation.y += dt * 0.8; o.position.y = 1.45 + Math.sin(time * 1.6) * 0.06; } });
     if (scrollObj) scrollObj.position.y = room.scroll[1] + 0.05 + Math.sin(time * 2) * 0.04;
   }
@@ -1148,7 +1155,7 @@
     size: renderer.getSize(new THREE.Vector2()).toArray(), pr: renderer.getPixelRatio(), room: roomId, time: +time.toFixed(2), parent: canvas.parentElement.id,
     gl2: renderer.capabilities.isWebGL2, rtType: composer.renderTarget1.texture.type, pending: E.pending,
     ultra: !!E.ultra, fx: Object.assign({}, fx) });
-  E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null; E.roam = false;
+  E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null; E.roam = false; E.enqueue = enqueue;
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
 })();
