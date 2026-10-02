@@ -741,6 +741,80 @@
     });
   };
 
+
+  // ── Cinematic set: the whole fortress from outside (v15) ───────────────────
+  // '@exterior' (night, storm, the Necromancer's glow) for the opening and
+  // '@exteriorDawn' (sunrise, clear) for the ending. Centre of the bailey at 0,0.
+  function exterior(dawn) {
+    const g = new THREE.Group();
+    const earth = G3D.flatMat(dawn ? 'hillD' : 'hillN', dawn ? '#2a2420' : '#101216', 1);
+    const hill = mesh(new THREE.CylinderGeometry(30, 58, 9, 48, 1), earth); hill.position.y = -4.5; g.add(hill);
+    const valley = mesh(new THREE.PlaneGeometry(500, 500), G3D.flatMat('valley2', dawn ? '#1a1612' : '#05070a', 1), false, true); valley.rotation.x = -Math.PI / 2; valley.position.y = -9; g.add(valley);
+    const bailey = mesh(new THREE.PlaneGeometry(36, 36), G3D.floorMat('cold', [10, 10]), false, true); bailey.rotation.x = -Math.PI / 2; bailey.position.y = 0.02; g.add(bailey);
+    // Curtain walls with a gatehouse in the south wall
+    const H = 7, half = 18;
+    const wN = P.battlements(36, H, 'cold'); wN.position.set(0, 0, -half); g.add(wN);
+    const wW = P.battlements(36, H, 'cold'); wW.rotation.y = Math.PI / 2; wW.position.set(-half, 0, 0); g.add(wW);
+    const wE = P.battlements(36, H, 'cold'); wE.rotation.y = Math.PI / 2; wE.position.set(half, 0, 0); g.add(wE);
+    [-1, 1].forEach(sx => { const w = P.battlements(14, H, 'cold'); w.position.set(sx * 11, 0, half); g.add(w); });
+    const towerMat = G3D.stoneMat('cold', [6, 4], 'xtower'), slate = G3D.flatMat('slate', '#1a1c22', 0.8);
+    const tower = (x, z, r, h) => {
+      const t = mesh(new THREE.CylinderGeometry(r, r * 1.12, h, 20), towerMat); t.position.set(x, h / 2, z); g.add(t);
+      const roof = mesh(new THREE.ConeGeometry(r * 1.2, r * 1.9, 20), slate); roof.position.set(x, h + r * 0.95, z); g.add(roof);
+      return t;
+    };
+    [[-half, -half], [half, -half], [-half, half], [half, half]].forEach(([x, z]) => tower(x, z, 2.8, 12));
+    // Gatehouse
+    [-3, 3].forEach(x => tower(x, half, 2.0, 11));
+    const gate = mesh(new THREE.PlaneGeometry(3.6, 4.4), G3D.flatMat('void', '#010102', 1)); gate.position.set(0, 2.2, half + 0.62); g.add(gate);
+    const lintel = mesh(new THREE.BoxGeometry(6, 3, 1.6), towerMat); lintel.position.set(0, H - 1.0, half); g.add(lintel);
+    // The keep, its windows lit
+    tower(-8, -8, 4.2, 22);
+    const winMat = G3D.emissiveMat(dawn ? 'keepwinD' : 'keepwinN', '#ffaa50', dawn ? 0.6 : 2.4);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2, wv = mesh(new THREE.PlaneGeometry(0.6, 1.3), winMat, false, false); wv.position.set(-8 + Math.cos(a) * 4.25, 8 + (i % 3) * 4, -8 + Math.sin(a) * 4.25); wv.lookAt(-8 + Math.cos(a) * 9, wv.position.y, -8 + Math.sin(a) * 9); g.add(wv); }
+    // The chapel: nave, gabled roof, glowing rose window over the doors (doors face +z at z=5)
+    const cx = 5, cz0 = 5, len = 14, cw = 8, ch = 7;
+    const nave = mesh(new THREE.BoxGeometry(cw, ch, len), G3D.stoneMat('warm', [5, 3.5], 'xnave')); nave.position.set(cx, ch / 2, cz0 - len / 2); g.add(nave);
+    const gable = new THREE.Shape(); gable.moveTo(-cw / 2 - 0.3, 0); gable.lineTo(0, 4); gable.lineTo(cw / 2 + 0.3, 0); gable.closePath();
+    const roof = mesh(new THREE.ExtrudeGeometry(gable, { depth: len + 0.6, bevelEnabled: false }), slate); roof.position.set(cx, ch, cz0 + 0.3); roof.rotation.y = Math.PI; g.add(roof);
+    const rose = P.stainedWindow('rose', 3.0, dawn ? '#ffd8a0' : '#ffb070'); rose.position.set(cx, ch - 0.3, cz0 + 0.03); g.add(rose);
+    const door = mesh(new THREE.PlaneGeometry(2.2, 3.4), G3D.flatMat('void', '#010102', 1)); door.position.set(cx, 1.7, cz0 + 0.02); g.add(door);
+    const doorArch = P.gothicArch(2.6, 3.6, 0.5, G3D.stoneMat('warm', [1, 1], 'xdoor')); doorArch.position.set(cx, 0, cz0 + 0.15); g.add(doorArch);
+    const spire = mesh(new THREE.ConeGeometry(1.2, 6, 8), slate); spire.position.set(cx, ch + 6.5, cz0 - 2); g.add(spire);
+    const glowIn = new THREE.Object3D(); glowIn.position.set(cx, 3, cz0 + 1.5); g.add(glowIn); G3D.anchor(glowIn, '#ffb070', 2.2, 12, { flicker: 0.5, priority: 4 });
+    // Braziers along the walk to the chapel
+    [[cx - 2.6, cz0 + 4], [cx + 2.6, cz0 + 4]].forEach(([x, z]) => place(g, P.brazier('#ff8a30', 0.9), x, 0, z));
+    place(g, P.well(), -4, 0, 9);
+    place(g, P.deadTree(5), 10, 0, 10, 0, 1.3);
+    if (!dawn) {
+      // The Necromancer's corruption rising from the crypt
+      const pit = new THREE.Vector3(-6, 0, 6);
+      const beam = P.lightShaft(1.4, 3.2, 30, '#3aff5a', 0.32); beam.position.set(pit.x, 30, pit.z); beam.lookAt(pit.x, 0, pit.z); beam.rotateX(-Math.PI / 2); g.add(beam);
+      const rc = P.runeCircle(3.4, '#38ff5a'); rc.position.set(pit.x, 0.04, pit.z); g.add(rc);
+      const cg = G3D.glow('#3aff5a', 9, 0.45); cg.position.set(pit.x, 2, pit.z); g.add(cg);
+      const ca = new THREE.Object3D(); ca.position.set(pit.x, 2.5, pit.z); g.add(ca); G3D.anchor(ca, '#3aff5a', 4, 22, { flicker: 1.2, priority: 6 });
+      g.add(P.rain({ box: [-34, 34, -34, 40], top: 28, floor: 0, count: 5200, splashBox: [-14, 14, -10, 16], splashes: 300, wind: [1.6, 0.4] }));
+      sky(g, { moon: [0.35, 0.42, -0.85], horizon: '#141a2a', clouds: true });
+    } else {
+      sky(g, { top: '#2a4a7a', horizon: '#ffae6a', moon: [0.55, 0.12, -0.83], clouds: true });
+    }
+    hills(g, dawn ? '#1a1418' : '#06080c');
+    return spec({
+      group: g, outdoor: true, lightning: !dawn,
+      fog: dawn ? ['#3a2c30', 0.006] : ['#0a0e16', 0.012], bg: dawn ? '#2a2030' : '#06080e',
+      vol: dawn ? { key: 1.2, density: 0.012, ambient: 0.5 } : { density: 0.012, key: 0.6, wet: 1, puddles: 1 },
+      hemi: dawn ? ['#ffc8a0', '#3a2a28', 0.7] : ['#3a4a6a', '#0a0a0c', 0.4],
+      key: dawn ? { type: 'dir', dir: [0.55, 0.22, -0.8], color: '#ffc080', intensity: 2.4, area: 34, center: [0, 0, 0] }
+                : { type: 'dir', dir: [0.4, 0.55, -0.75], color: '#8ea8e0', intensity: 1.0, area: 34, center: [0, 0, 0] },
+      grade: dawn ? { exposure: 1.2, tint: [1.08, 0.98, 0.9], sat: 1.05 } : { exposure: 1.15, tint: [0.92, 0.98, 1.1], sat: 0.95 },
+      particles: dawn ? [{ type: 'dust', count: 160, box: [-14, 14, 1, 10, -10, 16], color: '#ffd8a0' }] : [{ type: 'ash', count: 200, box: [-16, 16, 0, 14, -14, 18], color: '#9aa0b0' }],
+      cam: { pos: [0, 8, 50], look: [0, 4, 0], fovH: 70 },
+      knight: { pos: [cx, 0, cz0 + 6], rot: Math.PI },
+    });
+  }
+  R.exterior = () => exterior(false);
+  R.exteriorDawn = () => exterior(true);
+
   // Map game room types to builders.
   G3D.roomTypeMap = {
     chapel: 'chapel', cloister: 'cloister', armory: 'armory', scriptorium: 'scriptorium', barracks: 'barracks',

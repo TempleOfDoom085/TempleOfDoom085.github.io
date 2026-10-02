@@ -587,6 +587,7 @@
     for (let i = 0; i < n; i++) im.setMatrixAt(i, mtx(Math.sin(i * 0.1) * sway, -i * 0.085, 0, 0, (i % 2) * Math.PI / 2, Math.PI / 2));
     const g = new THREE.Group(); g.add(im);
     const shackle = mesh(new THREE.TorusGeometry(0.08, 0.02, 6, 14), iron()); shackle.position.y = -n * 0.085 - 0.06; g.add(shackle);
+    g.userData.swing = 0.025; g.userData.chain = { len: n * 0.085 };   // game3d/life.js lets the knight brush them
     return g;
   };
 
@@ -1011,6 +1012,7 @@
     const splash = new THREE.Points(sg, smat); splash.frustumCulled = false; splash.renderOrder = 7;
     g.add(splash);
     g.userData.noBatch = true;
+    g.userData.rain = { mats: [m, smat], base: m.uniforms.opacity.value };
     return g;
   };
 
@@ -1108,5 +1110,87 @@
     const a = new THREE.Object3D(); a.position.set(0, 0.6, 0.4); R.torso.add(a); anchor(a, '#a8ccff', 1.2, 6, { flicker: 0.2, priority: 3 });
     R.kind = 'npc';
     return R;
+  };
+
+  // ── v15: Saint Michael and the creatures of the fortress ──────────────────
+  let featherTex = null;
+  function feather() {
+    if (featherTex) return featherTex;
+    const S = 64, c = G3D.canvas(S), x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, S); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.15, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0.85)');
+    x.fillStyle = g; x.beginPath(); x.ellipse(S / 2, S / 2, S * 0.2, S * 0.48, 0, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = 'rgba(200,170,110,0.6)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(S / 2, 2); x.lineTo(S / 2, S - 2); x.stroke();
+    featherTex = new THREE.CanvasTexture(c);
+    return featherTex;
+  }
+  function wing(side) {
+    const w = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ map: feather(), color: new THREE.Color('#f4e2c0').multiplyScalar(0.85), transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    const geo = new THREE.PlaneGeometry(0.22, 1.0);
+    for (let row = 0; row < 3; row++) for (let i = 0; i < 9; i++) {
+      const f = new THREE.Mesh(geo, mat);
+      const a = 0.2 + i * 0.16 + row * 0.05, len = (1.5 - row * 0.35) * (0.6 + i * 0.07);
+      f.scale.set(1, len, 1);
+      f.position.set(side * Math.cos(a) * (0.25 + i * 0.13 + row * 0.05), 0.2 + Math.sin(a) * 0.5 - row * 0.12, -row * 0.03);
+      f.rotation.z = side * (-Math.PI / 2 + a) * 0.9; f.renderOrder = 6;
+      w.add(f);
+    }
+    return w;
+  }
+  G3D.makeAngel = function () {
+    const R = { root: new THREE.Group() };
+    R.body = new THREE.Group(); R.root.add(R.body);
+    const robe = new THREE.MeshStandardMaterial({ color: new THREE.Color('#f2e8d4'), emissive: new THREE.Color('#ffd890'), emissiveIntensity: 0.25, roughness: 0.6, side: THREE.DoubleSide });
+    const gold = G3D.metalMat('gold', { extra: { emissive: new THREE.Color('#ffb040'), emissiveIntensity: 0.3 } });
+    const prof = [[0.16, 0.8], [0.24, 0.6], [0.27, 0.3], [0.3, 0], [0.38, -0.6], [0.46, -1.0]].map(p => new THREE.Vector2(p[0], p[1]));
+    const gown = mesh(new THREE.LatheGeometry(prof, 28), robe, false, false); gown.position.y = 1.0; R.body.add(gown);
+    const cuirass = mesh(new THREE.CylinderGeometry(0.21, 0.24, 0.42, 20), gold, false, false); cuirass.position.y = 1.55; R.body.add(cuirass);
+    const head = mesh(new THREE.SphereGeometry(0.12, 18, 14), new THREE.MeshStandardMaterial({ color: '#f6e6d0', emissive: new THREE.Color('#ffe0b0'), emissiveIntensity: 0.6 }), false, false); head.position.y = 2.0; R.body.add(head);
+    const hair = mesh(new THREE.SphereGeometry(0.13, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), G3D.emissiveMat('angelhair', '#ffd070', 1.6), false, false); hair.position.y = 2.02; R.body.add(hair);
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.014, 8, 48), G3D.emissiveMat('angelhalo', '#ffe6a0', 6)); halo.position.set(0, 2.28, -0.08); halo.rotation.x = -0.3; R.body.add(halo);
+    R.wingL = wing(-1); R.wingL.position.set(-0.08, 1.6, -0.18); R.body.add(R.wingL);
+    R.wingR = wing(1); R.wingR.position.set(0.08, 1.6, -0.18); R.body.add(R.wingR);
+    // Raised arm with a sword of flame
+    R.arm = new THREE.Group(); R.arm.position.set(0.26, 1.7, 0); R.body.add(R.arm);
+    const sleeve = mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.55, 10), robe, false, false); sleeve.position.y = 0.26; R.arm.add(sleeve);
+    const sword = P.sword(gold, 1.3); sword.position.y = 0.55; R.arm.add(sword);
+    const fl = G3D.flame('#ff9a30', 0.22, 1.5, 1.6); fl.position.y = 0.55 + 0.65; R.arm.add(fl);
+    R.arm.rotation.z = -0.25;
+    const gl = G3D.glow('#ffd890', 2.6, 0.3); gl.position.y = 1.5; R.body.add(gl);
+    return R;
+  };
+
+  // A bat: body plus two flapping wings (game3d/life.js flies them).
+  const batMat = () => G3D.flatMat('bat', '#120e10', 0.9);
+  const batWingGeo = (() => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.22, 0.02, -0.05, 0.16, 0, 0.08, 0, 0, 0, 0.16, 0, 0.08, 0.05, 0, 0.09], 3)); g.computeVertexNormals(); g.userData.shared = true; return g; })();
+  G3D.makeBat = function () {
+    const g = new THREE.Group();
+    const m = new THREE.MeshStandardMaterial({ color: '#141012', roughness: 0.9, side: THREE.DoubleSide });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), m); body.scale.set(1, 0.8, 1.6); g.add(body);
+    const L = new THREE.Mesh(batWingGeo, m); L.scale.x = -1; g.add(L);
+    const Rw = new THREE.Mesh(batWingGeo, m); g.add(Rw);
+    g.userData.wings = [L, Rw];
+    return g;
+  };
+  G3D.makeRat = function () {
+    const g = new THREE.Group(), fur = new THREE.MeshStandardMaterial({ color: '#3a3028', roughness: 1 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), fur); body.scale.set(0.85, 0.7, 1.6); body.position.y = 0.05; g.add(body);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.09, 8), fur); head.rotation.x = Math.PI / 2; head.position.set(0, 0.055, 0.12); g.add(head);
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.008, 0.2, 5), new THREE.MeshStandardMaterial({ color: '#8a6a60', roughness: 0.8 })); tail.rotation.x = Math.PI / 2 - 0.2; tail.position.set(0, 0.035, -0.17); g.add(tail);
+    [-1, 1].forEach(s => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), G3D.emissiveMat('rateye', '#ff4030', 2)); e.position.set(s * 0.022, 0.075, 0.13); g.add(e); });
+    g.userData.tail = tail;
+    return g;
+  };
+  G3D.makeRaven = function () {
+    const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.5, metalness: 0.2, side: THREE.DoubleSide });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), m); body.scale.set(0.8, 0.85, 1.5); g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), m); head.position.set(0, 0.06, 0.1); g.add(head);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.06, 6), G3D.flatMat('beak', '#1a1814', 0.4)); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.055, 0.16); g.add(beak);
+    const tailF = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.12), m); tailF.rotation.x = -Math.PI / 2 + 0.3; tailF.position.set(0, -0.01, -0.15); g.add(tailF);
+    const wg = new THREE.PlaneGeometry(0.28, 0.1); wg.translate(0.14, 0, 0);
+    const L = new THREE.Mesh(wg, m), Rw = new THREE.Mesh(wg, m); L.scale.x = -1; L.position.y = Rw.position.y = 0.03;
+    L.rotation.x = Rw.rotation.x = -Math.PI / 2; g.add(L, Rw);
+    g.userData.wings = [L, Rw];
+    return g;
   };
 })();

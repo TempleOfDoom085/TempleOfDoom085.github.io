@@ -563,7 +563,7 @@
   function buildRoom(id) {
     if (roomCache[id]) { touchRoom(id); return roomCache[id]; }
     const type = (ROOMS[id] && ROOMS[id].type) || 'chapel';
-    const fn = G3D.rooms[G3D.roomTypeMap[type]] || G3D.rooms.chapel;
+    const fn = (id[0] === '@' && G3D.rooms[id.slice(1)]) || G3D.rooms[G3D.roomTypeMap[type]] || G3D.rooms.chapel;
     const spec = fn();
     batchStatic(spec.group);
     spec.group.updateMatrixWorld(true);
@@ -693,7 +693,9 @@
     post.grade = spec.grade;
     // Cast
     const becameGolden = !!knight && !knight.golden && !!STATE.hasGoldenArmor;
-    if (!knight || knight.golden !== !!STATE.hasGoldenArmor || knight.dead) buildKnight();
+    // game3d/cinema.js stages Saint Michael first and calls transform() at the right moment.
+    const delayGold = becameGolden && !!E.onGolden && !reducedMotion;
+    if (!knight || (knight.golden !== !!STATE.hasGoldenArmor && !delayGold) || knight.dead) buildKnight();
     knight.anim = null; knight.alive = true; knight.dead = false; knight.R.body.rotation.x = 0;
     knight.place(spec.knight.pos, spec.knight.rot);
     track.set(0, 0, 0);
@@ -723,9 +725,13 @@
     if (changed) cam.intro = reducedMotion ? 1 : 0;
     lastHp = STATE.hp; lastEnemyHp = STATE.enemyHp; queue.length = 0; queueT = 0; cam.hold = 0;
     if (becameGolden) {
-      knight.play('divine', 2.2);
-      burst('holy', knight.R.root.position.clone().add(V(0, 1.5, 0)), 260, '#ffd36a', 5);
-      post.flash = 2.0; post.flashCol.set('#ffe0a0');
+      const transform = () => {
+        if (!knight.golden) { const h = knight.home.clone(), f = knight.facing; buildKnight(); knight.place([h.x, h.y, h.z], f); }
+        knight.play('divine', 2.2);
+        burst('holy', knight.R.root.position.clone().add(V(0, 1.5, 0)), 260, '#ffd36a', 5);
+        post.flash = 2.0; post.flashCol.set('#ffe0a0');
+      };
+      if (delayGold) E.onGolden(transform); else transform();
     }
     // Combat that began during the room fade starts here, in the right room.
     if (STATE.inCombat && STATE.currentEnemy) {
@@ -734,7 +740,7 @@
       knight.facing = Math.atan2(enemy.home.x - knight.home.x, enemy.home.z - knight.home.z);
       moveToCombatView(true); wasCombat = true;
     } else {
-      if (canvas.parentElement !== panel) moveToCombatView(false);
+      if (canvas.parentElement !== panel && !E.cinema) moveToCombatView(false);   // cinematics own the canvas
       wasCombat = false;
     }
     E.onRoom && E.onRoom(id, spec);
@@ -782,6 +788,7 @@
       enqueue(() => knight.play('attack', 0.7, () => {
         if (!enemy) return;
         enemy.play('hit', 0.4); burst('spark', hitPoint(enemy), crit ? 60 : 30, crit ? '#ffd27a' : '#ffb060', crit ? 4 : 3);
+        if (E.onImpact) E.onImpact('enemy', crit, hitPoint(enemy));
         cam.shake = Math.max(cam.shake, crit ? 0.3 : 0.14);
         if (crit) { post.flash = 0.6; post.flashCol.set('#ffcc66'); }
       }), 0.75);
@@ -792,6 +799,7 @@
         enqueue(() => enemy && enemy.play('attack', 0.75, () => {
           knight.play(STATE.defending ? 'block' : 'hit', 0.4);
           burst('spark', hitPoint(knight), 24, STATE.defending ? '#a0c8ff' : '#ff5030', 2.5);
+          if (E.onImpact) E.onImpact('knight', !!STATE.defending, hitPoint(knight));
           cam.shake = Math.max(cam.shake, 0.22); post.flash = 0.5; post.flashCol.set('#ff2010');
         }), 0.8);
       } else {
@@ -918,7 +926,8 @@
     // Field of view from the desired horizontal angle, clamped for tall screens.
     const fovH = G3D.lerp(cam.fovH, 70, cam.combat);
     const vf = 2 * Math.atan(Math.tan(fovH * Math.PI / 360) / aspect) * 180 / Math.PI;
-    camera.fov = clamp(vf, 26, 68); camera.aspect = aspect; camera.updateProjectionMatrix();
+    cam.punch = Math.max(0, (cam.punch || 0) - dt * 3);
+    camera.fov = clamp(vf, 26, 68) - (reducedMotion ? 0 : cam.punch * 4); camera.aspect = aspect; camera.updateProjectionMatrix();
   }
 
   function resize(w, h) {
@@ -944,9 +953,9 @@
     });
     if (spot.visible && room.key.flicker) spot.intensity = spot.userData.base * (1 + Math.sin(time * 7) * 0.08);
     // Lightning in the storm
-    if (room.lightning && !reducedMotion) {
+    if (room.lightning && !reducedMotion && E.storm > 0.05) {
       E._ln = (E._ln || 6) - dt;
-      if (E._ln <= 0) { E._ln = 6 + Math.random() * 9; E._lnT = 0; }
+      if (E._ln <= 0) { E._ln = (6 + Math.random() * 9) / Math.max(0.2, E.storm); E._lnT = 0; }
       if (E._lnT != null) {
         E._lnT += dt;
         const t = E._lnT, v = t < 0.08 ? 1 : t < 0.16 ? 0.2 : t < 0.26 ? 0.9 : Math.max(0, 1 - (t - 0.26) * 3);
@@ -985,6 +994,9 @@
     requestAnimationFrame(loop);
     let dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (document.hidden || !visible || !room || E.paused) return;
+    // Hit-stop and slow motion (game3d/juice.js); game logic is untouched.
+    if (E.stopT > 0) { E.stopT -= dt; dt *= 0.03; }
+    else if (E.slowT > 0) { E.slowT -= dt; dt *= 0.3; }
     try {
       frame(dt, true);
     } catch (e) {
@@ -1010,8 +1022,9 @@
       post.fade += (post.fadeTarget - post.fade) * Math.min(1, dt * 9);
       post.flash = Math.max(0, post.flash - dt * 2.2);
       const g = post.grade, u = finalPass.uniforms;
-      u.time.value = time; u.exposure.value = g.exposure; u.tint.value.set(g.tint[0], g.tint[1], g.tint[2]);
-      u.sat.value = g.sat; u.contrast.value = g.contrast; u.fade.value = post.fade;
+      const gm = E.gradeMul;
+      u.time.value = time; u.exposure.value = g.exposure * gm.exposure; u.tint.value.set(g.tint[0] * gm.tint[0], g.tint[1] * gm.tint[1], g.tint[2] * gm.tint[2]);
+      u.sat.value = g.sat * gm.sat; u.contrast.value = g.contrast; u.fade.value = post.fade;
       u.flashAmt.value = post.flash * 0.32; u.flashCol.value.copy(post.flashCol);
       post.deathGrade += ((knight.dead || (knight.anim && knight.anim.name === 'die') ? 1 : 0) - post.deathGrade) * Math.min(1, dt * 1.5);
       u.desat.value = post.deathGrade * 0.75;
@@ -1156,6 +1169,9 @@
     gl2: renderer.capabilities.isWebGL2, rtType: composer.renderTarget1.texture.type, pending: E.pending,
     ultra: !!E.ultra, fx: Object.assign({}, fx) });
   E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null; E.roam = false; E.enqueue = enqueue;
+  E.stopT = 0; E.slowT = 0; E.storm = 1; E.gradeMul = { exposure: 1, sat: 1, tint: [1, 1, 1] };
+  E.punch = k => { cam.punch = Math.max(cam.punch || 0, k); };
+  E.shake = k => { cam.shake = Math.max(cam.shake, k); };
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
 })();
