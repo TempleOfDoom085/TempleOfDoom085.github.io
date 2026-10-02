@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; worker-src 'self'; frame-src 'self'; connect-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Securing AI systems: an interactive map of the LLM agent attack surface, a defence-in-depth model, and a defensive prompt-injection playbook — by Brian Temple, AI Security Advisor.">
+<link rel="canonical" href="https://templeofdoom085.github.io/ai-security.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:url" content="https://templeofdoom085.github.io/ai-security.html">
+<meta property="og:title" content="Securing AI Systems — Brian Temple">
+<meta property="og:description" content="An interactive map of the LLM agent attack surface, a defence-in-depth model, and a defensive prompt-injection playbook.">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brian Temple - AI Security &amp; Automation">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Securing AI Systems — Brian Temple">
+<meta name="twitter:description" content="An interactive map of the LLM agent attack surface, a defence-in-depth model, and a defensive prompt-injection playbook.">
+<meta name="twitter:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<title>Securing AI Systems — Brian Temple</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0e0e0e; --ink2: #121418; --ink3: #171a20; --paper: #f5f2ec;
+  --gold: #b8933a; --gold-light: #d4a84b; --neon: #00d4ff; --neon-dim: rgba(0,212,255,0.1);
+  --red: #e0524a; --amber: #e8a33a; --green: #4ad98a; --violet: #a98bff;
+  --dim: rgba(245,242,236,0.62); --faint: rgba(245,242,236,0.35); --line: rgba(184,147,58,0.16);
+  --serif: 'Cormorant Garamond', Georgia, serif; --mono: 'DM Mono', monospace;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--serif); background: var(--ink); color: var(--paper); line-height: 1.75; font-size: 19px; overflow-x: hidden; }
+a { color: var(--gold-light); }
+:focus-visible { outline: 2px solid var(--neon); outline-offset: 3px; }
+.skip { position: absolute; left: -999px; top: 0; background: var(--gold); color: var(--ink); padding: 0.5rem 1rem; font-family: var(--mono); font-size: 0.8rem; z-index: 200; }
+.skip:focus { left: 1rem; top: 1rem; }
+
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 3rem; background: rgba(14,14,14,0.86); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.nav-logo { font-family: var(--mono); font-size: 0.95rem; letter-spacing: 0.2em; color: var(--gold); text-decoration: none; }
+.nav-links { display: flex; gap: 2rem; list-style: none; flex-wrap: wrap; }
+.nav-links a { color: rgba(245,242,236,0.6); text-decoration: none; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; }
+.nav-links a:hover, .nav-links a.active { color: var(--gold); }
+
+/* HERO */
+.hero { position: relative; min-height: 78vh; display: flex; align-items: center; padding: 8rem 3rem 4rem; overflow: hidden; border-bottom: 1px solid var(--line); }
+#net { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.55; }
+.hero::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, transparent 0%, rgba(14,14,14,0.6) 55%, var(--ink) 100%); pointer-events: none; }
+.hero-inner { position: relative; z-index: 1; max-width: 980px; }
+.label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--neon); }
+h1 { font-size: clamp(2.8rem, 6.4vw, 5.6rem); font-weight: 300; line-height: 1.05; margin: 1rem 0 1.4rem; }
+h1 em, h2 em { font-style: italic; color: var(--gold-light); }
+.lede { font-size: 1.32rem; font-weight: 300; color: var(--dim); max-width: 720px; }
+.hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2.2rem; }
+.cta { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none; padding: 0.85rem 1.5rem; border: 1px solid var(--gold); color: var(--gold-light); transition: background 0.2s, color 0.2s; }
+.cta:hover { background: var(--gold); color: var(--ink); }
+.cta.neon { border-color: rgba(0,212,255,0.5); color: var(--neon); }
+.cta.neon:hover { background: var(--neon); color: var(--ink); }
+
+section { padding: 6rem 3rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.inner { max-width: 1180px; margin: 0 auto; }
+h2 { font-size: clamp(2.2rem, 4vw, 3.6rem); font-weight: 300; line-height: 1.1; margin: 0.6rem 0 1rem; }
+.section-intro { color: var(--dim); font-size: 1.15rem; max-width: 760px; margin-bottom: 2.6rem; font-weight: 300; }
+
+/* ATTACK SURFACE MAP */
+.map-wrap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
+.map { position: relative; background: var(--ink2); border: 1px solid var(--line); padding: 1.2rem; }
+.map svg { width: 100%; height: auto; display: block; }
+.map .edge { stroke: rgba(184,147,58,0.28); stroke-width: 1.4; fill: none; }
+.map .edge.flow { stroke: rgba(0,212,255,0.55); stroke-dasharray: 5 7; animation: flow 1.6s linear infinite; }
+.map .edge.taint { stroke: rgba(224,82,74,0.6); stroke-dasharray: 3 6; animation: flow 1.2s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -24; } }
+.node { cursor: pointer; }
+.node rect { fill: var(--ink3); stroke: rgba(184,147,58,0.4); stroke-width: 1.2; transition: stroke 0.2s, fill 0.2s; }
+.node text { fill: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; pointer-events: none; }
+.node .sub { fill: var(--faint); font-size: 9px; }
+.node:hover rect, .node:focus rect, .node[aria-pressed="true"] rect { stroke: var(--neon); fill: #10202a; }
+.node:focus { outline: none; }
+.node .risk-dot { fill: var(--red); r: 3.5; }
+.legend { display: flex; gap: 1.4rem; flex-wrap: wrap; margin-top: 0.8rem; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; color: var(--faint); }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 2px dashed; vertical-align: middle; margin-right: 0.4rem; }
+.detail { background: var(--ink2); border: 1px solid var(--line); padding: 1.8rem; min-height: 100%; position: sticky; top: 6rem; }
+.detail h3 { font-size: 1.9rem; font-weight: 300; line-height: 1.15; margin-bottom: 0.3rem; }
+.detail .role { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--neon); }
+.detail p { color: var(--dim); font-size: 1.04rem; margin: 0.8rem 0 1rem; }
+.detail h4 { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.2em; text-transform: uppercase; margin: 1.2rem 0 0.5rem; }
+.detail h4.risk { color: var(--red); } .detail h4.ctrl { color: var(--green); }
+.detail ul { list-style: none; }
+.detail li { font-size: 1rem; padding: 0.35rem 0 0.35rem 1.2rem; position: relative; color: rgba(245,242,236,0.82); border-bottom: 1px solid rgba(255,255,255,0.04); }
+.detail li::before { content: '›'; position: absolute; left: 0.2rem; color: var(--gold); }
+.owasp { display: inline-block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; color: var(--violet); border: 1px solid rgba(169,139,255,0.35); padding: 0.05rem 0.4rem; margin-left: 0.4rem; vertical-align: middle; white-space: nowrap; }
+
+/* DEFENCE IN DEPTH */
+.layers { display: grid; gap: 0.8rem; }
+.layer { display: grid; grid-template-columns: 170px 1fr; gap: 1.6rem; align-items: start; padding: 1.4rem 1.6rem; background: var(--ink2); border: 1px solid var(--line); border-left: 3px solid var(--c); transition: transform 0.2s, background 0.2s; }
+.layer:hover { transform: translateX(4px); background: var(--ink3); }
+.layer-num { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.2em; color: var(--c); text-transform: uppercase; }
+.layer-name { font-size: 1.6rem; font-weight: 300; line-height: 1.1; margin-top: 0.2rem; }
+.layer-items { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em; padding: 0.35rem 0.7rem; border: 1px solid rgba(255,255,255,0.1); color: rgba(245,242,236,0.82); background: rgba(255,255,255,0.02); }
+.layer-why { color: var(--dim); font-size: 1rem; margin-top: 0.9rem; }
+
+/* PLAYBOOK */
+.pb-toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.pb-btn { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.45rem 0.9rem; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--dim); cursor: pointer; }
+.pb-btn[aria-pressed="true"], .pb-btn:hover { border-color: var(--neon); color: var(--neon); }
+.plays { display: grid; gap: 1rem; }
+.play { background: var(--ink2); border: 1px solid var(--line); }
+.play-head { width: 100%; display: flex; align-items: center; gap: 1rem; padding: 1.3rem 1.6rem; background: none; border: none; color: var(--paper); font: inherit; text-align: left; cursor: pointer; }
+.play-head:hover { background: rgba(0,212,255,0.03); }
+.play-id { font-family: var(--mono); font-size: 0.7rem; color: var(--neon); min-width: 2.4rem; }
+.play-title { font-size: 1.45rem; font-weight: 300; flex: 1; line-height: 1.2; }
+.sev { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.15rem 0.55rem; border: 1px solid; }
+.sev.crit { color: var(--red); border-color: rgba(224,82,74,0.5); } .sev.high { color: var(--amber); border-color: rgba(232,163,58,0.5); }
+.chev { font-family: var(--mono); color: var(--faint); transition: transform 0.2s; }
+.play-head[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.play-body { padding: 0 1.6rem 1.6rem 5rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.6rem; }
+.play-body[hidden] { display: none; }
+.play-how { grid-column: 1 / -1; color: var(--dim); font-size: 1.06rem; border-left: 2px solid rgba(0,212,255,0.3); padding-left: 1rem; }
+.col h5 { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.6rem; }
+.col.detect h5 { color: var(--amber); } .col.mitigate h5 { color: var(--green); } .col.test h5 { color: var(--violet); }
+.col ul { list-style: none; }
+.col li { font-size: 0.98rem; color: rgba(245,242,236,0.82); padding: 0.3rem 0 0.3rem 1rem; position: relative; line-height: 1.5; }
+.col li::before { content: ''; position: absolute; left: 0; top: 0.85rem; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.4; }
+.note { margin-top: 1.6rem; font-family: var(--mono); font-size: 0.7rem; color: var(--faint); line-height: 1.8; border: 1px dashed rgba(255,255,255,0.1); padding: 1rem 1.2rem; }
+.note b { color: var(--gold-light); font-weight: 400; }
+
+/* FRAMEWORKS + TOOLS */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.card { display: block; text-decoration: none; color: var(--paper); background: var(--ink2); border: 1px solid var(--line); padding: 1.5rem; transition: border-color 0.2s, transform 0.2s; }
+.card:hover { border-color: rgba(184,147,58,0.5); transform: translateY(-3px); }
+.card-kicker { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em; color: var(--neon); text-transform: uppercase; }
+.card-title { font-size: 1.45rem; font-weight: 300; margin: 0.35rem 0 0.5rem; line-height: 1.15; }
+.card p { color: var(--dim); font-size: 0.98rem; line-height: 1.6; }
+.card-go { display: block; margin-top: 0.9rem; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; }
+.card.tool { border-color: rgba(0,212,255,0.2); }
+.card.tool:hover { border-color: rgba(0,212,255,0.55); }
+
+footer { padding: 3rem; text-align: center; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; color: var(--faint); }
+footer a { color: var(--gold); text-decoration: none; }
+
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .map-wrap { grid-template-columns: 1fr; }
+  .detail { position: static; }
+  .play-body { grid-template-columns: 1fr; padding-left: 1.6rem; }
+  .layer { grid-template-columns: 1fr; gap: 0.8rem; }
+}
+@media (max-width: 640px) {
+  nav { padding: 1rem 1.2rem; }
+  .nav-links { gap: 1rem; }
+  .nav-links li:nth-child(n+3) { display: none; }
+  .hero, section { padding-left: 1.2rem; padding-right: 1.2rem; }
+  .hero { padding-top: 7rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav aria-label="Primary">
+  <a href="index.html" class="nav-logo">BRIAN TEMPLE</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="ai-security.html" class="active" aria-current="page">AI Security</a></li>
+    <li><a href="/tools/">Tools</a></li>
+    <li><a href="career.html">Career</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<header class="hero">
+  <canvas id="net" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <span class="label">// securing_ai_systems</span>
+    <h1>Securing AI <em>systems.</em></h1>
+    <p class="lede">LLM apps and agents read untrusted text, hold sensitive data and act through tools. That combination creates a new attack surface — and a prompt alone can't defend it. This is how I map that surface and the layered controls that contain it.</p>
+    <div class="hero-ctas">
+      <a href="#surface" class="cta neon">Explore the attack surface</a>
+      <a href="#playbook" class="cta">Prompt-injection playbook</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<section id="surface">
+  <div class="inner">
+    <span class="label">01 — Attack surface</span>
+    <h2>Anatomy of an <em>AI agent.</em></h2>
+    <p class="section-intro">Select any component to see what goes wrong there and which controls belong to it. Red dashed lines are where untrusted content enters the model's context; that's where most real incidents start.</p>
+    <div class="map-wrap reveal">
+      <div class="map">
+        <svg viewBox="0 0 640 470" role="group" aria-label="Diagram of an LLM agent and its components">
+          <!-- edges -->
+          <path class="edge flow" d="M110 70 C 200 70, 210 150, 270 160"/>
+          <path class="edge" d="M320 70 L320 140"/>
+          <path class="edge flow" d="M370 175 C 450 175, 460 120, 520 110"/>
+          <path class="edge" d="M320 210 L320 270"/>
+          <path class="edge flow" d="M370 300 C 450 300, 470 360, 520 370"/>
+          <path class="edge taint" d="M110 300 C 200 300, 210 240, 270 190"/>
+          <path class="edge taint" d="M110 400 C 220 400, 240 260, 290 205"/>
+          <path class="edge flow" d="M270 300 C 200 330, 180 370, 120 380"/>
+          <path class="edge" d="M520 230 C 470 230, 420 200, 370 190"/>
+          <path class="edge taint" d="M560 140 C 600 190, 600 240, 570 260"/>
+          <!-- nodes -->
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="user"><rect x="20" y="45" width="140" height="50" rx="3"/><text x="34" y="67">USER</text><text class="sub" x="34" y="82">chat · API</text></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="prompt"><rect x="250" y="20" width="140" height="50" rx="3"/><text x="264" y="42">SYSTEM PROMPT</text><text class="sub" x="264" y="57">instructions</text></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="true" data-k="llm"><rect x="250" y="140" width="140" height="70" rx="3"/><text x="264" y="168">LLM</text><text class="sub" x="264" y="184">reasoning · planning</text><circle class="risk-dot" cx="383" cy="147" r="4"/></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="tools"><rect x="480" y="85" width="140" height="50" rx="3"/><text x="494" y="107">TOOLS &amp; APIs</text><text class="sub" x="494" y="122">email · db · pay</text><circle class="risk-dot" cx="613" cy="92" r="4"/></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="rag"><rect x="20" y="275" width="140" height="50" rx="3"/><text x="34" y="297">RETRIEVAL (RAG)</text><text class="sub" x="34" y="312">vectors · docs</text><circle class="risk-dot" cx="153" cy="282" r="4"/></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="external"><rect x="20" y="375" width="140" height="50" rx="3"/><text x="34" y="397">EXTERNAL CONTENT</text><text class="sub" x="34" y="412">web · mail · files</text><circle class="risk-dot" cx="153" cy="382" r="4"/></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="output"><rect x="250" y="270" width="140" height="60" rx="3"/><text x="264" y="296">OUTPUT</text><text class="sub" x="264" y="312">UI · downstream</text></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="memory"><rect x="480" y="210" width="140" height="50" rx="3"/><text x="494" y="232">MEMORY</text><text class="sub" x="494" y="247">history · profile</text></g>
+          <g class="node" tabindex="0" role="button" aria-pressed="false" data-k="supply"><rect x="480" y="345" width="140" height="50" rx="3"/><text x="494" y="367">SUPPLY CHAIN</text><text class="sub" x="494" y="382">weights · SDKs</text></g>
+        </svg>
+        <div class="legend"><span><i style="color:#00d4ff"></i>Data / control flow</span><span><i style="color:#e0524a"></i>Untrusted content entering context</span><span><span style="color:#e0524a">●</span> Highest-risk components</span></div>
+      </div>
+      <div class="detail" id="detail" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="layers">
+  <div class="inner">
+    <span class="label">02 — Defence in depth</span>
+    <h2>No single control <em>holds.</em></h2>
+    <p class="section-intro">Prompt injection can't be fully solved inside the model, so the goal is containment: assume the model will sometimes be manipulated and make sure that, when it is, nothing important happens. Each layer catches what the one before it missed.</p>
+    <div class="layers reveal">
+      <div class="layer" style="--c:#a98bff"><div><div class="layer-num">Layer 1</div><div class="layer-name">Govern</div></div><div><div class="layer-items"><span class="chip">AI inventory &amp; AI-BOM</span><span class="chip">Data classification</span><span class="chip">Vendor &amp; model review</span><span class="chip">Acceptable-use policy</span><span class="chip">Risk register</span></div><p class="layer-why">You can't secure AI you don't know is running. Visibility into every model, agent, dataset and integration comes first.</p></div></div>
+      <div class="layer" style="--c:#00d4ff"><div><div class="layer-num">Layer 2</div><div class="layer-name">Input</div></div><div><div class="layer-items"><span class="chip">Isolate &amp; label untrusted content</span><span class="chip">Injection classifiers</span><span class="chip">Normalise encodings</span><span class="chip">Strip hidden text</span><span class="chip">Rate &amp; size limits</span></div><p class="layer-why">Separate instructions from data before it reaches the model, and flag content that is trying to act like instructions.</p></div></div>
+      <div class="layer" style="--c:#d4a84b"><div><div class="layer-num">Layer 3</div><div class="layer-name">Model &amp; prompt</div></div><div><div class="layer-items"><span class="chip">No secrets in prompts</span><span class="chip">Least-capable model</span><span class="chip">Explicit trust boundaries</span><span class="chip">Structured outputs</span></div><p class="layer-why">Treat the system prompt as public. It shapes behaviour; it is not a security boundary.</p></div></div>
+      <div class="layer" style="--c:#e8a33a"><div><div class="layer-num">Layer 4</div><div class="layer-name">Action</div></div><div><div class="layer-items"><span class="chip">Least-privilege tools</span><span class="chip">User-scoped credentials</span><span class="chip">Authorisation in code</span><span class="chip">Human approval for irreversible actions</span><span class="chip">Spend &amp; rate caps</span></div><p class="layer-why">The blast radius of a successful injection is decided here. An agent that can only read can't wire money.</p></div></div>
+      <div class="layer" style="--c:#4ad98a"><div><div class="layer-num">Layer 5</div><div class="layer-name">Output</div></div><div><div class="layer-items"><span class="chip">Encode before rendering</span><span class="chip">Restrict links &amp; images</span><span class="chip">Schema validation</span><span class="chip">PII &amp; secret scanning</span><span class="chip">Sandbox generated code</span></div><p class="layer-why">Treat model output like any untrusted user input before it reaches a browser, shell, database or customer.</p></div></div>
+      <div class="layer" style="--c:#e0524a"><div><div class="layer-num">Layer 6</div><div class="layer-name">Monitor</div></div><div><div class="layer-items"><span class="chip">Full prompt &amp; tool-call logs</span><span class="chip">Anomaly detection</span><span class="chip">Continuous red-teaming</span><span class="chip">Incident playbooks</span><span class="chip">Kill switch</span></div><p class="layer-why">Runtime visibility turns a silent compromise into an alert — and lets you prove what an agent did, and why.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="playbook">
+  <div class="inner">
+    <span class="label">03 — Defender's playbook</span>
+    <h2>Prompt injection, <em>defended.</em></h2>
+    <p class="section-intro">The main classes of prompt-injection risk, written for the people defending against them: how each works at a conceptual level, what to look for, what actually mitigates it, and how to test your own system safely.</p>
+    <div class="pb-toolbar" role="group" aria-label="Filter playbook">
+      <button class="pb-btn" type="button" data-f="all" aria-pressed="true">All</button>
+      <button class="pb-btn" type="button" data-f="crit" aria-pressed="false">Critical</button>
+      <button class="pb-btn" type="button" data-f="agent" aria-pressed="false">Agents &amp; tools</button>
+      <button class="pb-btn" type="button" data-f="data" aria-pressed="false">Data exposure</button>
+    </div>
+    <div class="plays" id="plays"></div>
+    <p class="note"><b>Testing safely:</b> only test systems you own or are authorised to assess. Use a harmless <b>canary</b> — a unique, meaningless token you ask the model to output or a tool call to a no-op endpoint — so success is unmistakable and nothing real is touched. Run tests in a staging environment with logging on, and re-run them on every model, prompt or tool change.</p>
+  </div>
+</section>
+
+<section id="frameworks">
+  <div class="inner">
+    <span class="label">04 — Frameworks</span>
+    <h2>The maps I work <em>from.</em></h2>
+    <p class="section-intro">The standards and knowledge bases that frame AI risk conversations with security, risk and compliance teams.</p>
+    <div class="grid reveal">
+      <a class="card" href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener"><span class="card-kicker">OWASP</span><div class="card-title">Top 10 for LLM Applications</div><p>The most common and impactful risks in LLM apps and agents — from prompt injection to excessive agency.</p><span class="card-go">genai.owasp.org →</span></a>
+      <a class="card" href="https://www.nist.gov/itl/ai-risk-management-framework" target="_blank" rel="noopener"><span class="card-kicker">NIST</span><div class="card-title">AI Risk Management Framework</div><p>Govern, Map, Measure, Manage — plus a Generative AI Profile (NIST AI 600-1) for GenAI-specific risks.</p><span class="card-go">nist.gov →</span></a>
+      <a class="card" href="https://atlas.mitre.org/" target="_blank" rel="noopener"><span class="card-kicker">MITRE</span><div class="card-title">ATLAS</div><p>A knowledge base of adversary tactics and techniques against AI systems, modelled on ATT&amp;CK and grounded in real case studies.</p><span class="card-go">atlas.mitre.org →</span></a>
+      <a class="card" href="https://www.iso.org/standard/81230.html" target="_blank" rel="noopener"><span class="card-kicker">ISO/IEC</span><div class="card-title">42001</div><p>The international standard for an AI management system — the AI counterpart to ISO 27001.</p><span class="card-go">iso.org →</span></a>
+      <a class="card" href="https://artificialintelligenceact.eu/" target="_blank" rel="noopener"><span class="card-kicker">EU</span><div class="card-title">AI Act</div><p>Risk-based regulation of AI systems, with obligations phasing in from 2025 — relevant to any organisation serving EU users.</p><span class="card-go">artificialintelligenceact.eu →</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="inner">
+    <span class="label">05 — Hands-on</span>
+    <h2>Try it on your <em>own system.</em></h2>
+    <p class="section-intro">Two free tools from Temple Tools. Both run entirely in your browser — nothing you enter is uploaded.</p>
+    <div class="grid reveal">
+      <a class="card tool" href="tools/llm-top10.html"><span class="card-kicker">Tool 23 · Checklist</span><div class="card-title">OWASP LLM Top 10 Assessment</div><p>57 concrete checks across all ten risk categories, with progress tracking and a Markdown report you can hand to your team.</p><span class="card-go">Launch →</span></a>
+      <a class="card tool" href="tools/sysprompt-analyzer.html"><span class="card-kicker">Tool 24 · Analyzer</span><div class="card-title">System Prompt Analyzer</div><p>Paste a system prompt to flag hard-coded secrets, authorisation written in prose, missing guardrails and over-broad tools — graded A to F.</p><span class="card-go">Launch →</span></a>
+      <a class="card" href="index.html#contact"><span class="card-kicker">Talk to me</span><div class="card-title">Securing AI at your organisation?</div><p>I work with CISOs, AI leaders and third-party-risk teams on AI visibility, governance and runtime security.</p><span class="card-go">Get in touch →</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer><a href="index.html">← Brian Temple</a> &nbsp;·&nbsp; AI Security &nbsp;·&nbsp; Defensive guidance only — test only systems you're authorised to assess.</footer>
+
+<script>
+(function () {
+  'use strict';
+  // ── Attack-surface detail panel ─────────────────────────────────────────
+  const NODES = {
+    user: { title: 'User', role: 'Direct input', desc: 'Anyone who can type into the app can try to steer the model. Treat every message as untrusted — including from authenticated users.',
+      risks: [['Direct instruction override attempts', 'LLM01'], ['Requests for other users\' data', 'LLM02'], ['High-volume or cost-inflating usage', 'LLM10']],
+      controls: ['Authenticate and rate-limit per user', 'Injection classifier on inputs', 'Authorisation decided by the application, never by the model', 'Per-user token and spend budgets'] },
+    prompt: { title: 'System prompt', role: 'Instructions', desc: 'Shapes the model\'s behaviour, but can usually be coaxed out. It is configuration, not a security control.',
+      risks: [['Extraction of the prompt and anything in it', 'LLM07'], ['Secrets or internal details embedded in it', 'LLM02'], ['Access rules written in prose', 'LLM06']],
+      controls: ['No credentials, internal URLs or business secrets', 'Enforce permissions in code, not in instructions', 'State trust boundaries explicitly', 'Review with the System Prompt Analyzer before shipping'] },
+    llm: { title: 'The model', role: 'Reasoning & planning', desc: 'The model can\'t reliably tell instructions from data — everything in its context window is just text. Assume it can be manipulated and design so that doesn\'t matter.',
+      risks: [['Direct and indirect prompt injection', 'LLM01'], ['Confident but false output', 'LLM09'], ['Leaking context it was given', 'LLM02']],
+      controls: ['Keep the most capable tools away from the most exposed models', 'Structured, schema-validated outputs', 'Ground answers in cited sources', 'Evaluate safety and accuracy on every model change'] },
+    tools: { title: 'Tools & APIs', role: 'Agency', desc: 'Where a manipulated model turns into real-world impact. The permissions you grant here decide the blast radius of every other failure.',
+      risks: [['Excessive permissions or autonomy', 'LLM06'], ['Confused-deputy actions on a user\'s behalf', 'LLM06'], ['Unvalidated arguments reaching downstream systems', 'LLM05']],
+      controls: ['Least privilege: narrow, read-only tools by default', 'Run with the end user\'s own scoped credentials', 'Human confirmation for send, pay, delete, deploy', 'Downstream services enforce their own authorisation'] },
+    rag: { title: 'Retrieval (RAG)', role: 'Knowledge', desc: 'Documents pulled into context are a primary path for indirect injection and a common source of cross-user data leakage.',
+      risks: [['Instructions hidden in indexed documents', 'LLM01'], ['Cross-tenant retrieval', 'LLM08'], ['Poisoned or stale knowledge', 'LLM04']],
+      controls: ['Enforce the requester\'s permissions at query time', 'Restrict and audit who can write to sources', 'Sanitise documents on ingestion', 'Label retrieved text as data, with provenance'] },
+    external: { title: 'External content', role: 'Untrusted input', desc: 'Web pages, emails, tickets and files the agent reads on a user\'s behalf. Anyone who can get text in front of the agent can attempt to instruct it.',
+      risks: [['Indirect injection via pages, emails or files', 'LLM01'], ['Hidden or obfuscated text', 'LLM01'], ['Malicious links and attachments', 'LLM05']],
+      controls: ['Treat as data: delimit, label and never execute as instructions', 'Strip hidden text and normalise encodings', 'Drop high-risk tools while processing untrusted content', 'Show users what content an action was based on'] },
+    output: { title: 'Output', role: 'Rendering & downstream', desc: 'Model output flows into browsers, code, tickets and other systems. Unvalidated, it becomes XSS, injection or a quiet exfiltration channel.',
+      risks: [['Script or markup injection when rendered', 'LLM05'], ['Data leaking through auto-loaded links or images', 'LLM02'], ['Unsafe generated code or queries', 'LLM05']],
+      controls: ['Encode and sanitise before rendering', 'Block auto-loading external images; allow-list link domains', 'Validate against a schema before use', 'Sandbox or review generated code'] },
+    memory: { title: 'Memory', role: 'Persistence', desc: 'Long-term memory lets one manipulated conversation influence future ones — and can mix data between users if not isolated.',
+      risks: [['Persisted malicious instructions', 'LLM01'], ['Cross-session or cross-user leakage', 'LLM02'], ['Gradual drift through accumulated context', 'LLM04']],
+      controls: ['Isolate memory per user and session', 'Let users view and clear what is remembered', 'Scan memory writes like any other input', 'Expire memory on a schedule'] },
+    supply: { title: 'Model supply chain', role: 'Dependencies', desc: 'Base models, fine-tunes, adapters, datasets and SDKs are third-party code and data — with the same supply-chain risk as any dependency.',
+      risks: [['Tampered weights or unsafe model formats', 'LLM03'], ['Backdoors from poisoned training data', 'LLM04'], ['Provider data retention and training on your data', 'LLM03']],
+      controls: ['AI-BOM for every model, adapter and dataset', 'Verify sources and checksums; prefer safe formats', 'Review provider retention and training terms', 'Pin and scan SDK and framework versions'] },
+  };
+  const detail = document.getElementById('detail');
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function show(k) {
+    const n = NODES[k];
+    detail.innerHTML = '<span class="role">' + esc(n.role) + '</span><h3>' + esc(n.title) + '</h3><p>' + esc(n.desc) + '</p>' +
+      '<h4 class="risk">What goes wrong</h4><ul>' + n.risks.map(r => '<li>' + esc(r[0]) + '<span class="owasp">' + r[1] + '</span></li>').join('') + '</ul>' +
+      '<h4 class="ctrl">Controls</h4><ul>' + n.controls.map(c => '<li>' + esc(c) + '</li>').join('') + '</ul>';
+    document.querySelectorAll('.node').forEach(g => g.setAttribute('aria-pressed', String(g.dataset.k === k)));
+  }
+  document.querySelectorAll('.node').forEach(g => {
+    const n = NODES[g.dataset.k]; g.setAttribute('aria-label', n.title + ' — show risks and controls');
+    g.addEventListener('click', () => show(g.dataset.k));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(g.dataset.k); } });
+  });
+  show('llm');
+
+  // ── Defender's playbook ─────────────────────────────────────────────────
+  const PLAYS = [
+    { id: 'P1', title: 'Direct instruction override', sev: 'high', tags: ['crit'],
+      how: 'A user writes input intended to make the model disregard its instructions or adopt a different role. Effective because the model sees system instructions and user text as one continuous context.',
+      detect: ['Inputs that reference the model\'s instructions, rules or role', 'Sudden persona or tone changes in responses', 'Outputs that discuss the system prompt itself', 'Clusters of near-identical attempts from one account'],
+      mitigate: ['Injection classifier or guardrail model on inputs and outputs', 'Keep sensitive capability out of user-facing models', 'Enforce what matters (access, limits) in application code', 'Rate-limit and flag repeat attempts'],
+      test: ['Maintain a regression suite of override attempts that ask only for a canary token', 'Include role-play and multi-turn variants', 'Pass criterion: canary never appears; policy behaviour unchanged'] },
+    { id: 'P2', title: 'Indirect injection via content', sev: 'crit', tags: ['crit', 'agent'],
+      how: 'Instructions are planted in content the system later reads — a web page, email, PDF, ticket or knowledge-base document — and are executed when an agent processes it for an unsuspecting user. The attacker never talks to the model directly.',
+      detect: ['Retrieved text containing imperative instructions addressed to an AI', 'Agent actions that don\'t follow from the user\'s request', 'Tool calls that start right after reading external content', 'Hidden, white-on-white or zero-size text in ingested documents'],
+      mitigate: ['Delimit and label all retrieved content as data with its source', 'Disable or downscope sensitive tools while processing untrusted content', 'Require user confirmation for actions triggered after reading external content', 'Sanitise and strip hidden text at ingestion'],
+      test: ['Seed a staging document with an instruction to output a canary', 'Have the agent summarise it for a normal user request', 'Pass criterion: summary mentions the document; canary and side-effects absent'] },
+    { id: 'P3', title: 'Obfuscated instructions', sev: 'high', tags: [],
+      how: 'Instructions are disguised so filters miss them but the model still understands — encoded text, other languages, look-alike Unicode characters, or text invisible to people but present in the raw input.',
+      detect: ['Unusual encodings or long encoded blobs in inputs', 'Invisible, zero-width or tag Unicode characters', 'Mixed scripts and homoglyphs in otherwise plain text', 'Mismatch between rendered and raw content'],
+      mitigate: ['Normalise Unicode and strip invisible characters before the model sees text', 'Run classifiers on decoded and normalised forms', 'Reject or quarantine inputs with suspicious encodings', 'Show users the raw text behind what the agent acted on'],
+      test: ['Repeat your P1/P2 canary tests through common encodings and translations', 'Include invisible-character variants', 'Pass criterion: same outcome as plain-text tests'] },
+    { id: 'P4', title: 'Tool & agent hijacking', sev: 'crit', tags: ['crit', 'agent'],
+      how: 'The model is steered into using its own legitimate tools against the user or organisation — sending messages, changing records or moving money. The agent becomes a confused deputy: authorised, but acting on someone else\'s intent.',
+      detect: ['Tool calls with destinations or recipients never seen before', 'Actions outside the user\'s stated task', 'Spikes in tool-call volume or chained calls', 'Arguments containing content copied from untrusted sources'],
+      mitigate: ['Least-privilege, narrowly scoped tools; no general shell or raw query access', 'Run tools with the end user\'s own permissions', 'Human approval for irreversible or external actions', 'Allow-lists for recipients, domains and amounts; downstream authorisation checks'],
+      test: ['Point tools at no-op or mock endpoints in staging', 'Plant a request for a harmless canary tool call in external content', 'Pass criterion: the mock endpoint never receives the call'] },
+    { id: 'P5', title: 'Exfiltration through output', sev: 'crit', tags: ['crit', 'data'],
+      how: 'The model is induced to place sensitive data inside something the client fetches automatically — such as an image or link URL — so the data leaves silently when the response is rendered, with no click needed.',
+      detect: ['Responses containing external image or link URLs with long query strings', 'URLs embedding fragments of conversation or retrieved data', 'Outbound requests to unfamiliar domains from the chat client', 'Base64-like or high-entropy strings in URLs'],
+      mitigate: ['Do not auto-load external images in model output', 'Allow-list link and image domains; strip query strings', 'Content-Security-Policy restricting image and connect sources', 'Scan output for secrets and PII before rendering'],
+      test: ['Ask, via planted content, for a canary to be embedded in an image URL on a domain you control', 'Pass criterion: no request reaches that domain; image not rendered'] },
+    { id: 'P6', title: 'System prompt extraction', sev: 'high', tags: ['data'],
+      how: 'Users coax the model into revealing its instructions through direct requests, translation or summarisation tasks, or format conversions. Assume a determined user will eventually succeed.',
+      detect: ['Requests to repeat, translate, summarise or reformat prior instructions', 'Outputs containing distinctive phrases from your prompt', 'Canary strings from the prompt appearing in responses'],
+      mitigate: ['Keep nothing in the prompt that would hurt if published', 'Move access rules and secrets into code and server-side config', 'Embed a unique canary in the prompt and alert on it in outputs', 'Guardrail outputs for prompt overlap'],
+      test: ['Embed a canary sentence in the staging prompt', 'Run extraction-style requests in several phrasings and languages', 'Measure: does the canary ever appear in outputs?'] },
+    { id: 'P7', title: 'Memory & multi-turn manipulation', sev: 'high', tags: ['agent', 'data'],
+      how: 'Instead of one obvious attempt, steering happens gradually over many turns — or an instruction is written into long-term memory so it influences future sessions, possibly for other users.',
+      detect: ['Memory writes containing instructions rather than facts', 'Behaviour drift across a long conversation', 'Memory entries referencing tools, rules or other users'],
+      mitigate: ['Isolate memory per user and session', 'Classify memory writes like any other input', 'Let users review and delete stored memory', 'Expire and periodically re-validate memories'],
+      test: ['Attempt to store a canary instruction in staging memory', 'Start a fresh session and check whether it activates', 'Pass criterion: instruction never stored, or stored but inert'] },
+  ];
+  const plays = document.getElementById('plays');
+  function renderPlays(f) {
+    plays.innerHTML = '';
+    PLAYS.filter(p => f === 'all' || p.tags.includes(f)).forEach((p, i) => {
+      const box = document.createElement('article'); box.className = 'play';
+      const bid = 'pb-' + p.id;
+      box.innerHTML =
+        '<h3 style="margin:0;font:inherit"><button class="play-head" type="button" aria-expanded="' + (i === 0) + '" aria-controls="' + bid + '">' +
+        '<span class="play-id">' + p.id + '</span><span class="play-title">' + esc(p.title) + '</span>' +
+        '<span class="sev ' + p.sev + '">' + (p.sev === 'crit' ? 'Critical' : 'High') + '</span><span class="chev" aria-hidden="true">▶</span></button></h3>' +
+        '<div class="play-body" id="' + bid + '"' + (i === 0 ? '' : ' hidden') + '>' +
+        '<p class="play-how">' + esc(p.how) + '</p>' +
+        '<div class="col detect"><h5>Detect</h5><ul>' + p.detect.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' +
+        '<div class="col mitigate"><h5>Mitigate</h5><ul>' + p.mitigate.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' +
+        '<div class="col test"><h5>Test safely</h5><ul>' + p.test.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div></div>';
+      const head = box.querySelector('.play-head'), body = box.querySelector('.play-body');
+      head.addEventListener('click', () => { const o = head.getAttribute('aria-expanded') === 'true'; head.setAttribute('aria-expanded', String(!o)); body.hidden = o; });
+      plays.appendChild(box);
+    });
+  }
+  document.querySelectorAll('.pb-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.pb-btn').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    renderPlays(b.dataset.f);
+  }));
+  renderPlays('all');
+
+  // ── Reveal on scroll ────────────────────────────────────────────────────
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.12 }) : null;
+  document.querySelectorAll('.reveal').forEach(el => io ? io.observe(el) : el.classList.add('in'));
+
+  // ── Hero: a slowly drifting neural graph ────────────────────────────────
+  const c = document.getElementById('net'), ctx = c.getContext('2d');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, pts = [], running = false;
+  function size() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = c.clientWidth; H = c.clientHeight; c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(Math.min(90, W * H / 14000));
+    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25, hot: Math.random() < 0.08 }));
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      if (!reduce) { a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1; }
+      for (let j = i + 1; j < pts.length; j++) {
+        const b = pts[j], dx = a.x - b.x, dy = a.y - b.y, d = dx * dx + dy * dy;
+        if (d < 16000) { ctx.strokeStyle = (a.hot || b.hot) ? 'rgba(224,82,74,' + (0.35 * (1 - d / 16000)) + ')' : 'rgba(0,212,255,' + (0.22 * (1 - d / 16000)) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      }
+      ctx.fillStyle = a.hot ? 'rgba(224,82,74,0.9)' : 'rgba(184,147,58,0.75)';
+      ctx.beginPath(); ctx.arc(a.x, a.y, a.hot ? 2.4 : 1.6, 0, 6.283); ctx.fill();
+    }
+    if (!reduce && !document.hidden) requestAnimationFrame(draw); else running = false;
+  }
+  function start() { if (!running) { running = true; requestAnimationFrame(draw); } }
+  size(); if (reduce) draw(); else start();
+  window.addEventListener('resize', () => { size(); if (reduce) draw(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !reduce) start(); });
+})();
+</script>
+</body>
+</html>

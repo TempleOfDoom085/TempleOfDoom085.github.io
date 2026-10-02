@@ -15,6 +15,7 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 | Page | What it is |
 |---|---|
 | [`index.html`](index.html) | Main portfolio — about, experience, skills, projects, certifications, education, contact. Includes a Ctrl+K command palette, an interactive terminal (press `` ` ``), achievements and a few easter eggs. |
+| [`ai-security.html`](ai-security.html) | **Securing AI systems** — interactive LLM-agent attack-surface map, six-layer defence-in-depth model, and a defender's prompt-injection playbook (detection, mitigation, safe testing). |
 | [`career.html`](career.html) | Career timeline — Cranium AI, Unblinded, and a decade of consultative sales. |
 | [`tools/`](tools/) | **Temple Tools** — 24 client-side security utilities (hash analyzer, OSINT dashboard, JWT decoder, CIDR calculator, header grader, CVE search, Bluetooth locator, and more). Zero server, zero tracking. Installable as a PWA. |
 | [`ctf-writeups.html`](ctf-writeups.html) | CTF challenge writeups with methodology. |
