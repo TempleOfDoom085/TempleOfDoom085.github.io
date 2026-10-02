@@ -7,7 +7,13 @@
      the room's torches and by the key light *through its shadow map*, so
      windows, arches and pillars cast real shafts of light into the mist
    • a depth-aware upsample that composites both onto the image
-   Then: depth of field (golden-angle bokeh), and FXAA after grading.
+   • temporal anti-aliasing: the camera is jittered by a sub-pixel Halton
+     offset every frame and the image is accumulated over time (history
+     reprojected through the depth buffer, clipped to the current
+     neighbourhood), which also smooths the noise of the fog and AO
+   Then: depth of field (golden-angle bokeh), and FXAA (or, under TAA, a light
+   sharpen) after grading. game3d/fx.js also carries the soft-shadow (PCSS) and
+   parallax-occlusion shader patches.
    The engine falls back to its standard pipeline without WebGL2. */
 (function () {
   'use strict';
@@ -18,7 +24,7 @@
   const VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
   const COMMON = `
     #include <packing>
-    uniform sampler2D tDepth; uniform mat4 projInv; uniform float cNear, cFar;
+    uniform sampler2D tDepth; uniform mat4 projInv; uniform float cNear, cFar, frameN;
     varying vec2 vUv;
     float rawDepth(vec2 uv){ return texture2D(tDepth, uv).x; }
     vec3 viewPos(vec2 uv, float d){ vec4 p = projInv * vec4(vec3(uv, d) * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
@@ -49,7 +55,7 @@
       vec3 Nn = viewNormal(vUv, P, px);
       float ssR = min(radius * projScale / -P.z, 90.0);
       if (ssR < 1.0) { gl_FragColor = vec4(1.0); return; }
-      float ang = hash12(gl_FragCoord.xy) * 6.2831853;
+      float ang = (hash12(gl_FragCoord.xy) + frameN * 0.618034) * 6.2831853;
       float r2 = radius * radius, occ = 0.0;
       for (int i = 0; i < N; i++) {
         float fi = float(i), a = (fi + 0.5) / float(N);
@@ -211,6 +217,58 @@
       gl_FragColor = vec4(c, 1.0);
     }`;
 
+
+  // ── Temporal anti-aliasing resolve ──────────────────────────────────────────
+  // History is reprojected with the camera's motion through this frame's depth
+  // (the nearest depth in a 3×3, so edges reproject with their foreground),
+  // sampled with a 5-tap Catmull-Rom, then clipped toward the current pixel's
+  // neighbourhood (mean ± σ in YCoCg) so moving characters don't smear.
+  // Blending happens in a reversible tonemapped space so a bright torch can't
+  // dominate its neighbours.
+  const TAA_FRAG = COMMON + `
+    uniform sampler2D tCur, tHist; uniform mat4 prevVP, viewInv; uniform vec2 res; uniform float reset, blend;
+    vec3 tm(vec3 c){ return c / (1.0 + max(c.r, max(c.g, c.b))); }
+    vec3 itm(vec3 c){ return c / max(1.0 - max(c.r, max(c.g, c.b)), 1e-4); }
+    vec3 toY(vec3 c){ return vec3(dot(c, vec3(0.25, 0.5, 0.25)), dot(c, vec3(0.5, 0.0, -0.5)), dot(c, vec3(-0.25, 0.5, -0.25))); }
+    vec3 fromY(vec3 y){ return vec3(y.x + y.y - y.z, y.x + y.z, y.x - y.y - y.z); }
+    vec3 histCR(vec2 uv){
+      vec2 sp = uv * res, t1 = floor(sp - 0.5) + 0.5, f = sp - t1;
+      vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f)), w1 = 1.0 + f * f * (-2.5 + 1.5 * f), w2 = f * (0.5 + f * (2.0 - 1.5 * f)), w3 = f * f * (-0.5 + 0.5 * f);
+      vec2 w12 = w1 + w2, c12 = (t1 + w2 / w12) / res, c0 = (t1 - 1.0) / res, c3 = (t1 + 2.0) / res;
+      vec3 r = texture2D(tHist, vec2(c12.x, c0.y)).rgb * (w12.x * w0.y) + texture2D(tHist, vec2(c0.x, c12.y)).rgb * (w0.x * w12.y)
+             + texture2D(tHist, c12).rgb * (w12.x * w12.y) + texture2D(tHist, vec2(c3.x, c12.y)).rgb * (w3.x * w12.y)
+             + texture2D(tHist, vec2(c12.x, c3.y)).rgb * (w12.x * w3.y);
+      float w = w12.x * w0.y + w0.x * w12.y + w12.x * w12.y + w3.x * w12.y + w12.x * w3.y;
+      return max(r / w, vec3(0.0));
+    }
+    void main(){
+      vec2 px = 1.0 / res;
+      vec3 cur = texture2D(tCur, vUv).rgb;
+      vec3 m1 = vec3(0.0), m2 = vec3(0.0); float dmin = 1.0;
+      for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+        vec2 uv = vUv + vec2(float(x), float(y)) * px;
+        vec3 c = toY(tm(texture2D(tCur, uv).rgb)); m1 += c; m2 += c * c;
+        dmin = min(dmin, rawDepth(uv));
+      }
+      vec4 W = viewInv * vec4(viewPos(vUv, dmin), 1.0);
+      vec4 pc = prevVP * W; vec2 puv = pc.xy / pc.w * 0.5 + 0.5;
+      if (reset > 0.5 || pc.w <= 0.0 || puv.x < 0.0 || puv.x > 1.0 || puv.y < 0.0 || puv.y > 1.0) { gl_FragColor = vec4(cur, 1.0); return; }
+      vec3 mean = m1 / 9.0, sig = sqrt(max(m2 / 9.0 - mean * mean, 0.0)) * 1.15;
+      vec3 h = toY(tm(histCR(puv)));
+      // Clip the history toward the mean, onto the neighbourhood box.
+      vec3 d = h - mean, ext = max(sig, vec3(1e-4)), u = abs(d / ext);
+      float m = max(u.x, max(u.y, u.z));
+      if (m > 1.0) h = mean + d / m;
+      float motion = length((puv - vUv) * res);
+      float a = mix(blend, 0.3, clamp(motion / 12.0, 0.0, 1.0));
+      vec3 o = mix(h, toY(tm(cur)), a);
+      gl_FragColor = vec4(itm(max(fromY(o), vec3(0.0))), 1.0);
+    }`;
+  const COPY_FRAG = 'uniform sampler2D tSrc; varying vec2 vUv; void main(){ gl_FragColor = texture2D(tSrc, vUv); }';
+  // 8-sample Halton(2,3) sub-pixel jitter.
+  const HALTON = [];
+  (function () { const h = (i, b) => { let f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; }; for (let i = 1; i <= 8; i++) HALTON.push([h(i, 2) - 0.5, h(i, 3) - 0.5]); })();
+
   // ── Depth of field: golden-angle gather weighted by each tap's own blur ────
   const DOF = {
     uniforms: { tDiffuse: { value: null }, tDepth: { value: null }, cNear: { value: 0.05 }, cFar: { value: 400 }, projInv: { value: new THREE.Matrix4() },
@@ -240,14 +298,25 @@
 
   // ── FXAA (after grading, on display-referred colour) + film grain ──────────
   const FXAA = {
-    uniforms: { tDiffuse: { value: null }, res: { value: new THREE.Vector2(1, 1) }, grain: { value: 0.03 }, time: { value: 0 } },
+    uniforms: { tDiffuse: { value: null }, res: { value: new THREE.Vector2(1, 1) }, grain: { value: 0.03 }, time: { value: 0 }, sharpen: { value: 0 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
-      uniform sampler2D tDiffuse; uniform vec2 res; uniform float grain, time; varying vec2 vUv;
+      uniform sampler2D tDiffuse; uniform vec2 res; uniform float grain, time, sharpen; varying vec2 vUv;
       float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       void main(){
         vec2 px = 1.0 / res;
+        if (sharpen > 0.0) {
+          // Temporal AA already resolved the edges: restore the crispness it softens.
+          vec3 m = texture2D(tDiffuse, vUv).rgb;
+          vec3 nb = texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb + texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb
+                  + texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb + texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb;
+          vec3 mn = min(m, min(min(texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb, texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb), min(texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb, texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb)));
+          vec3 mx = max(m, max(max(texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb, texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb), max(texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb, texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb)));
+          vec3 c = clamp(m + (m - nb * 0.25) * sharpen, mn, mx);
+          c += (hash(vUv * res + fract(time * 13.7) * 91.0) - 0.5) * grain;
+          gl_FragColor = vec4(c, 1.0); return;
+        }
         vec3 nw = texture2D(tDiffuse, vUv + vec2(-1.0, -1.0) * px).rgb, ne = texture2D(tDiffuse, vUv + vec2(1.0, -1.0) * px).rgb;
         vec3 sw = texture2D(tDiffuse, vUv + vec2(-1.0, 1.0) * px).rgb, se = texture2D(tDiffuse, vUv + vec2(1.0, 1.0) * px).rgb;
         vec3 m = texture2D(tDiffuse, vUv).rgb;
@@ -266,6 +335,108 @@
       }`,
   };
 
+
+  // ── Contact-hardening soft shadows (PCSS) ───────────────────────────────────
+  // Replaces three's PCF for the key light: a blocker search estimates how far
+  // the occluder is from the receiver, and the filter widens with that gap, so
+  // a pillar's shadow is crisp at its foot and soft far away. Per-light
+  // parameters ride in shadow.radius (see the engine's applyRoom):
+  //   directional (orthographic): radius = softness × 100 (uv per unit depth)
+  //   spot (perspective): radius = 1000 + far + c, c = light size / (2·tan(angle)),
+  //   with the spot shadow camera's near plane fixed at 0.5.
+  function installPCSS() {
+    const C = THREE.ShaderChunk;
+    if (C.shadowmap_pars_fragment.indexOf('ktPCSS') >= 0) return true;
+    const fn = `
+      // ktPCSS
+      vec2 ktVogel(int i, int n, float phi){ float r = sqrt((float(i) + 0.5) / float(n)); float t = float(i) * 2.39996323 + phi; return vec2(cos(t), sin(t)) * r; }
+      float ktLin(float d, float far){ return (0.5 * far) / (far - d * (far - 0.5)); }
+      float ktPCSS(sampler2D sm, vec2 size, float radius, vec4 sc){
+        bool persp = radius > 500.0;
+        float far = persp ? floor(radius - 1000.0) : 1.0;
+        float c = persp ? fract(radius) : radius * 0.01;
+        float phi = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+        float texel = 1.0 / size.x;
+        float zR = persp ? ktLin(sc.z, far) : sc.z;
+        float search = clamp(persp ? c * 0.5 / zR : c * 0.08, 3.0 * texel, 0.02);
+        float sumB = 0.0, nB = 0.0;
+        for (int i = 0; i < 12; i++) {
+          float d = unpackRGBAToDepth(texture2D(sm, sc.xy + ktVogel(i, 12, phi) * search));
+          if (d < sc.z) { sumB += persp ? ktLin(d, far) : d; nB += 1.0; }
+        }
+        if (nB < 0.5) return 1.0;
+        float zB = sumB / nB;
+        float pen = persp ? c * (zR - zB) / max(zB * zR, 1e-4) : c * (zR - zB);
+        float r = clamp(pen, 1.5 * texel, 0.012);
+        float s = 0.0;
+        for (int i = 0; i < 20; i++) s += texture2DCompare(sm, sc.xy + ktVogel(i, 20, phi + 1.7) * r, sc.z);
+        return s / 20.0;
+      }
+    `;
+    let src = C.shadowmap_pars_fragment;
+    const a = src.indexOf('float getShadow(');
+    if (a < 0) return false;
+    const b = src.indexOf('if ( frustumTest ) {', a);
+    if (b < 0) return false;
+    src = src.slice(0, a) + fn + src.slice(a, b) + 'if ( frustumTest ) {\n\t\t\treturn ktPCSS( shadowMap, shadowMapSize, shadowRadius, shadowCoord );' + src.slice(b + 'if ( frustumTest ) {'.length);
+    origShadowChunk = C.shadowmap_pars_fragment;
+    C.shadowmap_pars_fragment = src;
+    return true;
+  }
+  let origShadowChunk = null;
+  function uninstallPCSS() { if (origShadowChunk) { THREE.ShaderChunk.shadowmap_pars_fragment = origShadowChunk; origShadowChunk = null; } }
+
+  // ── Parallax occlusion mapping for MeshStandardMaterial ─────────────────────
+  // Marches the view ray into the height field (stored in the roughness map's
+  // red channel) so mortar joints and flagstone seams have real depth that
+  // shifts with the camera. The tangent frame comes from screen-space
+  // derivatives (no tangent attribute needed); `depth` is in metres.
+  function patchPOM(sh, depth) {
+    sh.uniforms.pomDepth = { value: depth };
+    sh.fragmentShader = sh.fragmentShader
+      .replace('void main() {', `uniform float pomDepth;
+      vec2 ktPOM(vec2 uv, vec2 dx, vec2 dy, out float cavity){
+        cavity = 0.0;
+        vec3 V = normalize(vViewPosition);
+        vec3 N = normalize(vNormal) * (gl_FrontFacing ? 1.0 : -1.0);
+        vec3 q0 = dFdx(-vViewPosition), q1 = dFdy(-vViewPosition);
+        vec3 q1p = cross(q1, N), q0p = cross(N, q0);
+        float D = dot(N, cross(q0, q1));
+        float dist = length(vViewPosition);
+        if (abs(D) < 1e-14 || dist > 16.0) return uv;
+        vec2 duv = vec2(dot(V, q1p * dx.x + q0p * dy.x), dot(V, q1p * dx.y + q0p * dy.y)) / D;
+        float vz = max(dot(V, N), 0.12);
+        float fade = 1.0 - smoothstep(10.0, 16.0, dist);
+        vec2 maxOff = -duv / vz * pomDepth * fade;
+        float n = mix(28.0, 8.0, vz), stepD = 1.0 / n;
+        vec2 cur = uv, prev = uv; float layer = 0.0, hPrev = 0.0, h = 1.0 - textureGrad(roughnessMap, uv, dx, dy).r;
+        for (int i = 0; i < 28; i++) {
+          if (layer >= h || float(i) >= n) break;
+          prev = cur; hPrev = h - layer;
+          cur += maxOff * stepD; layer += stepD;
+          h = 1.0 - textureGrad(roughnessMap, cur, dx, dy).r;
+        }
+        float after = h - layer, before = hPrev;
+        float w = after / (after - before + 1e-5);
+        vec2 o = mix(cur, prev, clamp(w, 0.0, 1.0));
+        cavity = clamp(layer, 0.0, 1.0) * fade;
+        return o;
+      }
+      void main() {`)
+      .replace('#include <map_fragment>', `vec2 pDx = dFdx(vUv), pDy = dFdy(vUv); float pCav;
+      vec2 pUv = ktPOM(vUv, pDx, pDy, pCav);
+      #ifdef USE_MAP
+        vec4 texelColor = mapTexelToLinear(textureGrad(map, pUv, pDx, pDy));
+        diffuseColor *= texelColor;
+      #endif
+      diffuseColor.rgb *= 1.0 - pCav * 0.45;`)
+      .replace('#include <roughnessmap_fragment>', `float roughnessFactor = roughness;
+      #ifdef USE_ROUGHNESSMAP
+        roughnessFactor *= textureGrad(roughnessMap, pUv, pDx, pDy).g;
+      #endif`)
+      .replace('#include <normal_fragment_maps>', THREE.ShaderChunk.normal_fragment_maps.split('texture2D( normalMap, vUv )').join('textureGrad( normalMap, pUv, pDx, pDy )'));
+  }
+
   function mat(frag, uniforms) {
     return new THREE.ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader: frag, depthTest: false, depthWrite: false });
   }
@@ -276,10 +447,10 @@
     constructor(scene, camera, opts) {
       super();
       this.scene = scene; this.camera = camera;
-      this.ao = opts.ao !== false; this.vol = opts.vol !== false; this.ssr = true;
+      this.ao = opts.ao !== false; this.vol = opts.vol !== false; this.ssr = true; this.taa = opts.taa !== false;
       this.type = opts.halfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
-      this.sceneRT = null; this.aoRT = null; this.volRT = null; this.ssrRT = null;
-      const shared = { tDepth: { value: null }, projInv: { value: new THREE.Matrix4() }, cNear: { value: 0.05 }, cFar: { value: 400 } };
+      this.sceneRT = null; this.aoRT = null; this.volRT = null; this.ssrRT = null; this.compRT = null; this.hist = [null, null];
+      const shared = { tDepth: { value: null }, projInv: { value: new THREE.Matrix4() }, cNear: { value: 0.05 }, cFar: { value: 400 }, frameN: { value: 0 } };
       this.shared = shared;
       this.aoMat = mat(AO_FRAG, Object.assign({ fullRes: { value: new THREE.Vector2(1, 1) }, radius: { value: 0.55 }, intensity: { value: 0.9 }, bias: { value: 0.02 }, projScale: { value: 300 } }, shared));
       const lp = [], lc = [], lr = [];
@@ -296,12 +467,18 @@
         fullRes: { value: new THREE.Vector2(1, 1) }, wet: { value: 0.3 }, puddles: { value: 0.5 }, missCol: { value: new THREE.Vector3() } }, shared));
       this.compMat = mat(COMP_FRAG, Object.assign({ tScene: { value: null }, tAO: { value: white }, tVol: { value: white }, tSSR: { value: white }, halfRes: { value: new THREE.Vector2(1, 1) },
         aoAmt: { value: 0.85 }, aoOn: { value: 1 }, volOn: { value: 1 }, ssrOn: { value: 1 }, ssrAmt: { value: 1.4 }, dbg: { value: 0 } }, shared));
+      this.taaMat = mat(TAA_FRAG, Object.assign({ tCur: { value: null }, tHist: { value: null }, prevVP: { value: new THREE.Matrix4() }, viewInv: { value: new THREE.Matrix4() },
+        res: { value: new THREE.Vector2(1, 1) }, reset: { value: 1 }, blend: { value: 0.1 } }, shared));
+      this.copyMat = mat(COPY_FRAG, { tSrc: { value: null } });
+      this.frame = 0; this.histIdx = 0; this.hasHist = false;
+      this.prevVP = new THREE.Matrix4(); this.prevPos = new THREE.Vector3(); this.prevDir = new THREE.Vector3();
+      this._P = new THREE.Matrix4(); this._v = new THREE.Vector3();
       this.quad = new THREE.FullScreenQuad(null);
       this.keyLight = null;
       this.needsSwap = true;
     }
     setSize(w, h) {
-      [this.sceneRT, this.aoRT, this.volRT, this.ssrRT].forEach(rt => rt && rt.dispose());
+      [this.sceneRT, this.aoRT, this.volRT, this.ssrRT, this.compRT, ...this.hist].forEach(rt => rt && rt.dispose());
       const o = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
       this.sceneRT = new THREE.WebGLRenderTarget(w, h, Object.assign({ type: this.type }, o));
       this.sceneRT.depthTexture = new THREE.DepthTexture(w, h, THREE.UnsignedIntType);
@@ -310,14 +487,27 @@
       this.aoRT = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ type: THREE.UnsignedByteType, depthBuffer: false }, o));
       this.volRT = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ type: this.type, depthBuffer: false }, o));
       this.ssrRT = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ type: this.type, depthBuffer: false }, o));
+      const full = () => new THREE.WebGLRenderTarget(w, h, Object.assign({ type: this.type, depthBuffer: false }, o));
+      this.compRT = full(); this.hist = [full(), full()]; this.hasHist = false;
+      this.taaMat.uniforms.res.value.set(w, h);
       this.ssrMat.uniforms.fullRes.value.set(w, h);
       this.aoMat.uniforms.fullRes.value.set(w, h);
       this.compMat.uniforms.halfRes.value.set(hw, hh);
       this.shared.tDepth.value = this.sceneRT.depthTexture;
     }
     get depthTexture() { return this.sceneRT && this.sceneRT.depthTexture; }
+    resetTAA() { this.hasHist = false; }
     render(renderer, writeBuffer) {
       const cam = this.camera, s = this.shared;
+      // Sub-pixel jitter for temporal AA (undone before anything else reads the camera).
+      const taa = this.taa && !!this.compRT;
+      this.frame++; s.frameN.value = taa ? this.frame % 64 : 0;
+      if (taa) {
+        this._P.copy(cam.projectionMatrix);
+        const j = HALTON[this.frame % 8], e = cam.projectionMatrix.elements;
+        e[8] += j[0] * 2 / this.sceneRT.width; e[9] += j[1] * 2 / this.sceneRT.height;
+        cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
+      }
       renderer.setRenderTarget(this.sceneRT);
       renderer.clear();
       renderer.render(this.scene, cam);
@@ -346,8 +536,25 @@
       c.aoOn.value = this.ao ? 1 : 0; c.volOn.value = this.vol ? 1 : 0;
       c.tSSR.value = doSSR ? this.ssrRT.texture : white; c.ssrOn.value = doSSR ? 1 : 0;
       this.quad.material = this.compMat;
-      renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+      renderer.setRenderTarget(taa ? this.compRT : (this.renderToScreen ? null : writeBuffer));
       this.quad.render(renderer);
+      if (!taa) { this.hasHist = false; return; }
+      // Resolve against history, then hand the result on.
+      const t = this.taaMat.uniforms, cur = this.hist[this.histIdx], prev = this.hist[1 - this.histIdx];
+      const pos = this._v.setFromMatrixPosition(cam.matrixWorld);
+      const dirNow = new THREE.Vector3(0, 0, -1).transformDirection(cam.matrixWorld);
+      const cut = pos.distanceTo(this.prevPos) > 0.8 || dirNow.dot(this.prevDir) < 0.96;
+      t.reset.value = (!this.hasHist || cut) ? 1 : 0;
+      t.tCur.value = this.compRT.texture; t.tHist.value = prev.texture;
+      t.viewInv.value.copy(cam.matrixWorld); t.prevVP.value.copy(this.prevVP);
+      this.quad.material = this.taaMat; renderer.setRenderTarget(cur); this.quad.render(renderer);
+      this.copyMat.uniforms.tSrc.value = cur.texture;
+      this.quad.material = this.copyMat; renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer); this.quad.render(renderer);
+      // Undo the jitter; remember this frame's (unjittered) view-projection.
+      cam.projectionMatrix.copy(this._P); cam.projectionMatrixInverse.copy(this._P).invert();
+      this.prevVP.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+      this.prevPos.copy(pos); this.prevDir.copy(dirNow);
+      this.histIdx = 1 - this.histIdx; this.hasHist = true;
     }
   }
 
@@ -369,5 +576,5 @@
     return t;
   }
 
-  G3D.fx = { CinematicPass, DOF, FXAA, lensDirt, NL };
+  G3D.fx = { CinematicPass, DOF, FXAA, lensDirt, NL, installPCSS, uninstallPCSS, patchPOM };
 })();

@@ -6,41 +6,10 @@
   'use strict';
   const G3D = window.G3D = window.G3D || {};
 
-  // ── Deterministic RNG + value noise ────────────────────────────────────────
-  function rng(seed) {
-    let s = (seed >>> 0) || 1;
-    return function () {
-      s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
-      return s / 4294967296;
-    };
-  }
+  // ── Deterministic RNG + value noise (shared with the texture worker) ───────
+  const T = window.KTTex;
+  const rng = T.rng, fbm = T.fbm;
   G3D.rng = rng;
-
-  function hash2(x, y, seed) {
-    let h = (x * 374761393 + y * 668265263 + seed * 2147483647) | 0;
-    h = (h ^ (h >>> 13)) * 1274126177 | 0;
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-  }
-  // Tileable value noise: lattice wraps every `period` cells.
-  function vnoise(x, y, period, seed) {
-    const xi = Math.floor(x), yi = Math.floor(y);
-    const xf = x - xi, yf = y - yi;
-    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-    const p = period;
-    const x0 = ((xi % p) + p) % p, y0 = ((yi % p) + p) % p;
-    const x1 = (x0 + 1) % p, y1 = (y0 + 1) % p;
-    const a = hash2(x0, y0, seed), b = hash2(x1, y0, seed);
-    const c = hash2(x0, y1, seed), d = hash2(x1, y1, seed);
-    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-  }
-  function fbm(x, y, period, oct, seed) {
-    let sum = 0, amp = 0.5, f = 1, norm = 0;
-    for (let i = 0; i < oct; i++) {
-      sum += vnoise(x * f, y * f, period * f, seed + i * 17) * amp;
-      norm += amp; amp *= 0.5; f *= 2;
-    }
-    return sum / norm;
-  }
   G3D.fbm = fbm;
 
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -69,45 +38,25 @@
   }
   G3D.toTex = toTex;
 
-  // Height field (Float32Array, 0..1) -> tangent-space normal map canvas.
-  function normalFromHeight(h, w, hgt, strength) {
-    const c = canvas(w, hgt), ctx = c.getContext('2d');
-    const img = ctx.createImageData(w, hgt), d = img.data;
-    for (let y = 0; y < hgt; y++) {
-      for (let x = 0; x < w; x++) {
-        const xl = h[y * w + ((x - 1 + w) % w)], xr = h[y * w + ((x + 1) % w)];
-        const yu = h[((y - 1 + hgt) % hgt) * w + x], yd = h[((y + 1) % hgt) * w + x];
-        let nx = (xl - xr) * strength, ny = (yu - yd) * strength, nz = 1;
-        const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
-        const i = (y * w + x) * 4;
-        d[i] = (nx * 0.5 + 0.5) * 255; d[i + 1] = (ny * 0.5 + 0.5) * 255;
-        d[i + 2] = (nz * 0.5 + 0.5) * 255; d[i + 3] = 255;
-      }
-    }
-    ctx.putImageData(img, 0, 0);
+  // Raw RGBA arrays (see texgen.js) -> canvases.
+  function paint(c, size, data) {
+    if (c.width !== size) { c.width = c.height = size; }
+    const ctx = c.getContext('2d'), img = ctx.createImageData(size, size);
+    img.data.set(data); ctx.putImageData(img, 0, 0);
     return c;
   }
-
-  // Build a PBR texture set from a per-pixel function returning
-  // [r,g,b (0..255), height 0..1, roughness 0..1].
-  function buildSet(size, fn, normalStrength) {
-    const cc = canvas(size), rc = canvas(size);
-    const cctx = cc.getContext('2d'), rctx = rc.getContext('2d');
-    const ci = cctx.createImageData(size, size), ri = rctx.createImageData(size, size);
-    const height = new Float32Array(size * size);
-    const out = [0, 0, 0, 0, 0];
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        fn(x, y, out);
-        const i = (y * size + x), j = i * 4;
-        ci.data[j] = out[0]; ci.data[j + 1] = out[1]; ci.data[j + 2] = out[2]; ci.data[j + 3] = 255;
-        const r = clamp(out[4], 0, 1) * 255;
-        ri.data[j] = r; ri.data[j + 1] = r; ri.data[j + 2] = r; ri.data[j + 3] = 255;
-        height[i] = out[3];
-      }
-    }
-    cctx.putImageData(ci, 0, 0); rctx.putImageData(ri, 0, 0);
-    return { color: cc, rough: rc, normal: normalFromHeight(height, size, size, normalStrength) };
+  function fromRaw(r) {
+    return { size: r.size, color: paint(canvas(r.size), r.size, r.color), rough: paint(canvas(r.size), r.size, r.rough), normal: paint(canvas(r.size), r.size, r.normal) };
+  }
+  // A PBR set (colour, roughness + height, normal), built now at the current
+  // texture size and remembered so the worker can rebuild it sharper later.
+  function genSet(kind, arg, size) {
+    const set = fromRaw(T.build(kind, arg, size));
+    set.kind = kind; set.arg = arg;
+    sets.push(set);
+    set.target = set.size * (hi || 1);
+    if (hi) upgrade(set);
+    return set;
   }
 
   const cache = {};
@@ -121,153 +70,82 @@
     if (!setTex.has(set)) setTex.set(set, { map: toTex(set.color, true), normalMap: toTex(set.normal, false), roughnessMap: toTex(set.rough, false) });
     return setTex.get(set);
   }
-  // Per-material UV scale (shares one shader program across all scales).
+
+  // ── High-resolution upgrade (Ultra): a Web Worker rebuilds every set in use
+  // at hi× size off the main thread; each arrives and swaps into its textures.
+  const sets = [];
+  let hi = 0, worker = null, nextId = 1;
+  const pending = new Map();
+  function upgrade(set) {
+    if (!worker || set.upgrading || set.size >= set.target) return;
+    const id = nextId++; set.upgrading = true;
+    pending.set(id, set);
+    worker.postMessage({ id, kind: set.kind, arg: set.arg, size: set.target });
+  }
+  function received(e) {
+    const r = e.data, set = pending.get(r.id);
+    pending.delete(r.id);
+    if (!set) return;
+    set.upgrading = false;
+    if (r.error) { console.warn('[3D] texture worker', r.error); return; }
+    paint(set.color, r.size, r.color); paint(set.rough, r.size, r.rough); paint(set.normal, r.size, r.normal);
+    set.size = r.size;
+    const t = setTex.get(set);
+    if (t) [t.map, t.normalMap, t.roughnessMap].forEach(x => { x.needsUpdate = true; });
+    G3D.texUpgrades = (G3D.texUpgrades || 0) + 1;
+  }
+  // factor: 2 → 512 stone becomes 1024, 256 metal becomes 512.
+  G3D.hiResTextures = function (factor) {
+    if (hi || !factor || typeof Worker === 'undefined') return false;
+    try { worker = new Worker('/game3d/texgen.js'); } catch (_) { return false; }
+    worker.onmessage = received;
+    worker.onerror = ev => { console.warn('[3D] texture worker unavailable'); worker = null; ev.preventDefault && ev.preventDefault(); };
+    hi = factor;
+    sets.forEach(s => { s.target = s.size * hi; upgrade(s); });
+    return true;
+  };
+  G3D.textureSets = () => sets.map(s => ({ kind: s.kind, arg: s.arg, size: s.size }));
+  // Per-material shader patches: UV scale (shares one program across all
+  // scales) and, on the Ultra tier, parallax occlusion (G3D.pomOn, fx.js).
+  function patchStd(m) {
+    const ud = m.userData;
+    if (!ud.uvScale && !ud.pom) return m;
+    m.onBeforeCompile = sh => {
+      if (ud.uvScale) {
+        sh.uniforms.uvScale = { value: ud.uvScale };
+        sh.vertexShader = 'uniform vec2 uvScale;\n' + sh.vertexShader.replace('#include <uv_vertex>', '#ifdef USE_UV\n\tvUv = ( uvTransform * vec3( uv * uvScale, 1 ) ).xy;\n#endif');
+      }
+      if (ud.pom && G3D.pomOn && m.roughnessMap && G3D.fx) G3D.fx.patchPOM(sh, ud.pom);
+    };
+    m.customProgramCacheKey = () => (ud.uvScale ? 'uvScale' : '') + (ud.pom && G3D.pomOn ? 'pom' : '');
+    return m;
+  }
   function withRepeat(m, repeat) {
     const rx = repeat ? repeat[0] : 1, ry = repeat ? repeat[1] : 1;
     if (rx === 1 && ry === 1) return m;
-    const scale = new THREE.Vector2(rx, ry);
-    m.userData.uvScale = scale;
-    m.onBeforeCompile = sh => {
-      sh.uniforms.uvScale = { value: scale };
-      sh.vertexShader = 'uniform vec2 uvScale;\n' + sh.vertexShader.replace('#include <uv_vertex>', '#ifdef USE_UV\n\tvUv = ( uvTransform * vec3( uv * uvScale, 1 ) ).xy;\n#endif');
-    };
-    m.customProgramCacheKey = () => 'uvScale';
-    return m;
+    m.userData.uvScale = new THREE.Vector2(rx, ry);
+    return patchStd(m);
   }
+  // Parallax depth in metres (mortar joints, flagstone seams).
+  function withPOM(m, depth) { m.userData.pom = depth; return patchStd(m); }
+  // A cloned material loses its onBeforeCompile; restore the patches from the source.
+  G3D.repatch = (m, src) => {
+    const su = src.userData;
+    if (su.uvScale) m.userData.uvScale = new THREE.Vector2(su.uvScale.x, su.uvScale.y);
+    if (su.pom) m.userData.pom = su.pom;
+    return patchStd(m);
+  };
   G3D.withRepeat = withRepeat;
 
   let TEX = 512;
   G3D.setTextureSize = n => { TEX = n; };
 
-  // ── Ashlar stone wall ──────────────────────────────────────────────────────
-  G3D.stoneWallSet = (tint) => cached('wall' + (tint || ''), () => {
-    const S = TEX, rows = 8, R = rng(11);
-    // Pre-compute course offsets and block widths so blocks tile horizontally.
-    const courses = [];
-    for (let r = 0; r < rows; r++) {
-      const edges = [0]; let x = 0;
-      while (x < 1) { x += 0.18 + R() * 0.16; edges.push(Math.min(x, 1)); }
-      if (1 - edges[edges.length - 2] < 0.08) edges.splice(edges.length - 2, 1);
-      courses.push({ edges, off: R(), shade: [] });
-      for (let b = 0; b < edges.length; b++) courses[r].shade.push(0.82 + R() * 0.3);
-    }
-    const base = tint === 'cold' ? [74, 80, 90] : tint === 'warm' ? [98, 86, 70] : tint === 'blood' ? [84, 62, 58] : [86, 82, 76];
-    return buildSet(S, (px, py, o) => {
-      const u = px / S, v = py / S;
-      const row = Math.floor(v * rows), c = courses[row];
-      let uu = (u + c.off) % 1, bi = 0;
-      while (bi < c.edges.length - 1 && uu > c.edges[bi + 1]) bi++;
-      const bx0 = c.edges[bi], bx1 = c.edges[bi + 1] || 1;
-      const ev = (v * rows) % 1;
-      const ex = Math.min(uu - bx0, bx1 - uu) * S / 1.0, ey = Math.min(ev, 1 - ev) * S / rows;
-      const edge = Math.min(ex, ey);
-      const mortar = clamp(1 - edge / 3.2, 0, 1);
-      const bevel = clamp(edge / 9, 0, 1);
-      const n = fbm(u * 8, v * 8, 8, 5, 3);
-      const n2 = fbm(u * 32, v * 32, 32, 3, 9);
-      const grime = fbm(u * 3, v * 3, 3, 4, 21);
-      const sh = c.shade[bi] * (0.78 + n * 0.45) * (1 - grime * 0.35);
-      const chip = n2 > 0.72 ? (n2 - 0.72) * 2 : 0;
-      let k = sh * (1 - mortar * 0.6) * (1 - chip * 0.6);
-      o[0] = clamp(base[0] * k + n2 * 10, 0, 255);
-      o[1] = clamp(base[1] * k + n2 * 9, 0, 255);
-      o[2] = clamp(base[2] * k + n2 * 8, 0, 255);
-      // Damp moss streaks low on the wall
-      const moss = clamp((v - 0.7) * 3, 0, 1) * clamp(grime * 1.6 - 0.5, 0, 1);
-      o[0] *= 1 - moss * 0.35; o[2] *= 1 - moss * 0.45;
-      o[3] = bevel * 0.7 + n * 0.25 + n2 * 0.08 - chip * 0.3 - mortar * 0.3;
-      o[4] = 0.78 + n2 * 0.2 + mortar * 0.1 - moss * 0.3;
-    }, 5);
-  });
-
-  // ── Flagstone floor ────────────────────────────────────────────────────────
-  G3D.floorSet = (tint) => cached('floor' + (tint || ''), () => {
-    const S = TEX, cells = 4, R = rng(77);
-    const shades = []; for (let i = 0; i < cells * cells * 4; i++) shades.push(0.75 + R() * 0.35);
-    const base = tint === 'cold' ? [62, 66, 74] : tint === 'warm' ? [92, 80, 64] : tint === 'blood' ? [72, 52, 48] : [76, 72, 66];
-    return buildSet(S, (px, py, o) => {
-      const u = px / S, v = py / S;
-      // Irregular grid: jitter the cell lines with low-frequency noise.
-      const ju = u * cells + (fbm(v * 4, u * 4, 4, 2, 5) - 0.5) * 0.35;
-      const jv = v * cells + (fbm(u * 4, v * 4, 4, 2, 6) - 0.5) * 0.35;
-      const cx = Math.floor(ju), cy = Math.floor(jv);
-      const fx = ju - cx, fy = jv - cy;
-      const edge = Math.min(fx, 1 - fx, fy, 1 - fy) * S / cells;
-      const grout = clamp(1 - edge / 3.5, 0, 1);
-      const n = fbm(u * 10, v * 10, 10, 5, 31), n2 = fbm(u * 40, v * 40, 40, 2, 41);
-      const crack = Math.abs(fbm(u * 6, v * 6, 6, 4, 51) - 0.5) < 0.012 ? 1 : 0;
-      const wet = clamp(fbm(u * 2, v * 2, 2, 3, 61) * 2.2 - 1.1, 0, 1);
-      const sh = shades[(((cx % cells) + cells) % cells) * cells + (((cy % cells) + cells) % cells)] * (0.75 + n * 0.45);
-      const k = sh * (1 - grout * 0.65) * (1 - crack * 0.5) * (1 - wet * 0.25);
-      o[0] = clamp(base[0] * k + n2 * 8, 0, 255); o[1] = clamp(base[1] * k + n2 * 7, 0, 255); o[2] = clamp(base[2] * k + n2 * 7, 0, 255);
-      o[3] = clamp(edge / 10, 0, 1) * 0.6 + n * 0.3 - crack * 0.4;
-      o[4] = 0.85 - wet * 0.6 + n2 * 0.1;
-    }, 4);
-  });
-
-  // ── Wood planks ────────────────────────────────────────────────────────────
-  G3D.woodSet = (dark) => cached('wood' + (dark ? 'd' : ''), () => {
-    const S = TEX / 2, planks = 4;
-    const base = dark ? [52, 34, 22] : [92, 62, 38];
-    return buildSet(S, (px, py, o) => {
-      const u = px / S, v = py / S;
-      const p = Math.floor(u * planks), fu = (u * planks) % 1;
-      const grain = fbm(u * 2 + p * 3.1, v * 24, 24, 4, 7 + p);
-      const rings = Math.sin((grain * 18 + fu * 2) * Math.PI) * 0.5 + 0.5;
-      const seam = clamp(1 - Math.min(fu, 1 - fu) * S / planks / 2, 0, 1);
-      const k = (0.7 + rings * 0.25 + grain * 0.3) * (1 - seam * 0.6) * (0.85 + (p % 2) * 0.12);
-      o[0] = clamp(base[0] * k, 0, 255); o[1] = clamp(base[1] * k, 0, 255); o[2] = clamp(base[2] * k, 0, 255);
-      o[3] = rings * 0.3 - seam * 0.6; o[4] = 0.7 + grain * 0.2;
-    }, 3);
-  });
-
-  // ── Metal (steel, gold, rust, bronze) ──────────────────────────────────────
-  G3D.metalSet = (kind) => cached('metal' + kind, () => {
-    const S = 256;
-    return buildSet(S, (px, py, o) => {
-      const u = px / S, v = py / S;
-      const brushed = fbm(u * 2, v * 60, 60, 3, 13);
-      const n = fbm(u * 8, v * 8, 8, 4, 17);
-      const scratch = Math.abs(fbm(u * 12 + v * 3, v * 12, 12, 3, 23) - 0.5) < 0.01 ? 1 : 0;
-      let col, rough;
-      if (kind === 'rust') {
-        const r = clamp(n * 1.8 - 0.4, 0, 1);
-        col = [G3D.lerp(90, 120, r) * (0.6 + n * 0.5), G3D.lerp(88, 58, r) * (0.6 + n * 0.5), G3D.lerp(86, 34, r) * (0.6 + n * 0.5)];
-        rough = 0.5 + r * 0.45;
-      } else if (kind === 'gold') {
-        col = [255 * (0.85 + brushed * 0.15), 196 * (0.85 + brushed * 0.15), 92 * (0.8 + brushed * 0.2)];
-        rough = 0.22 + brushed * 0.15 + scratch * 0.2;
-      } else if (kind === 'bronze') {
-        const pat = clamp(n * 1.6 - 0.75, 0, 1);
-        col = [G3D.lerp(176, 70, pat), G3D.lerp(120, 140, pat), G3D.lerp(70, 110, pat)];
-        rough = 0.35 + pat * 0.4;
-      } else {
-        col = [190 * (0.8 + brushed * 0.2), 192 * (0.8 + brushed * 0.2), 198 * (0.8 + brushed * 0.2)];
-        rough = 0.3 + brushed * 0.18 + n * 0.12 + scratch * 0.25;
-      }
-      o[0] = clamp(col[0] - scratch * 30, 0, 255); o[1] = clamp(col[1] - scratch * 30, 0, 255); o[2] = clamp(col[2] - scratch * 30, 0, 255);
-      o[3] = n * 0.4 - scratch * 0.3; o[4] = rough;
-    }, 2);
-  });
-
-  // ── Chainmail ──────────────────────────────────────────────────────────────
-  G3D.mailSet = (rusty) => cached('mail' + (rusty ? 'r' : ''), () => {
-    const S = 256, rings = 16;
-    return buildSet(S, (px, py, o) => {
-      const u = px / S * rings, v = py / S * rings * 1.4;
-      const row = Math.floor(v), off = (row % 2) * 0.5;
-      const fx = ((u + off) % 1) - 0.5, fy = (v % 1) - 0.5;
-      const r = Math.hypot(fx, fy * 1.1);
-      const ring = clamp(1 - Math.abs(r - 0.34) / 0.12, 0, 1);
-      const n = fbm(px / S * 6, py / S * 6, 6, 3, 5);
-      const rust = rusty ? clamp(n * 1.8 - 0.5, 0, 1) : 0;
-      const k = ring * (0.75 + n * 0.3);
-      o[0] = clamp(G3D.lerp(150, 110, rust) * k + 12, 0, 255);
-      o[1] = clamp(G3D.lerp(152, 70, rust) * k + 12, 0, 255);
-      o[2] = clamp(G3D.lerp(158, 40, rust) * k + 12, 0, 255);
-      o[3] = ring; o[4] = 0.4 + (1 - ring) * 0.5 + rust * 0.3;
-    }, 6);
-  });
+  // ── Stone, flagstones, wood, metal, chainmail (generators in texgen.js) ────
+  G3D.stoneWallSet = (tint) => cached('wall' + (tint || ''), () => genSet('wall', tint || '', TEX));
+  G3D.floorSet = (tint) => cached('floor' + (tint || ''), () => genSet('floor', tint || '', TEX));
+  G3D.woodSet = (dark) => cached('wood' + (dark ? 'd' : ''), () => genSet('wood', !!dark, TEX / 2));
+  G3D.metalSet = (kind) => cached('metal' + kind, () => genSet('metal', kind, 256));
+  G3D.mailSet = (rusty) => cached('mail' + (rusty ? 'r' : ''), () => genSet('mail', !!rusty, 256));
 
   // ── Cloth: plain or with a Templar cross ───────────────────────────────────
   // opts: { base:[r,g,b], cross:[r,g,b]|null, trim:[r,g,b]|null, tattered:bool, stain:0..1 }
@@ -465,11 +343,12 @@
 
   G3D.stoneMat = (tint, repeat, key) => G3D.mat('stone' + tint + (key || repeat.join('x')), () => {
     const s = texSet(G3D.stoneWallSet(tint));
-    return withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.4, 1.4), roughness: 1, metalness: 0 }), repeat);
+    const m = withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.4, 1.4), roughness: 1, metalness: 0 }), repeat);
+    return key === 'statue' ? m : withPOM(m, 0.03);
   });
   G3D.floorMat = (tint, repeat) => G3D.mat('floor' + tint + repeat.join('x'), () => {
     const s = texSet(G3D.floorSet(tint));
-    return withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, metalness: 0 }), repeat);
+    return withPOM(withRepeat(new THREE.MeshStandardMaterial({ ...s, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, metalness: 0 }), repeat), 0.018);
   });
   G3D.woodMat = (dark, repeat) => G3D.mat('wood' + dark + (repeat || [1, 1]).join('x'), () => {
     const s = texSet(G3D.woodSet(dark));

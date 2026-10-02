@@ -260,7 +260,7 @@
     setTimeout(() => wrap.remove(), 800);
   }
   window.combatAction = function (action) {
-    if (!E.active || action !== 'attack' || !STATE.inCombat || C.reducedMotion || (C.knight && C.knight.dead) ||
+    if (!E.active || action !== 'attack' || !STATE.inCombat || C.reducedMotion || E.simpleStrikes || (C.knight && C.knight.dead) ||
         (STATE.bossPhase === 2 && STATE.bossShadows && STATE.bossShadows.length)) return origCombat(action);
     if (strike) { resolveStrike(); return; }
     if (performance.now() < strikeLockUntil) return;
@@ -301,7 +301,8 @@
     const buf = ctx.createBuffer(1, sr * 2, sr), d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     amb.noise = buf;
-    amb.master = ctx.createGain(); amb.master.gain.value = 0; amb.master.connect(ctx.destination);
+    amb.bus = ctx.createGain(); amb.bus.gain.value = G3D.settings ? G3D.settings.get('ambience') : 1; amb.bus.connect(ctx.destination);
+    amb.master = ctx.createGain(); amb.master.gain.value = 0; amb.master.connect(amb.bus);
     // Wind: band-passed noise with a slow, wandering filter
     const w = ctx.createBufferSource(); w.buffer = buf; w.loop = true;
     amb.windFilter = ctx.createBiquadFilter(); amb.windFilter.type = 'bandpass'; amb.windFilter.frequency.value = 420; amb.windFilter.Q.value = 0.7;
@@ -686,6 +687,7 @@
       if (roam.keys.has('f')) iz += 1; if (roam.keys.has('b')) iz -= 1;
       if (roam.keys.has('l')) ix -= 1; if (roam.keys.has('r')) ix += 1;
       if (pad) { ix += pad.x; iz -= pad.y; }
+      if (stick.on) { ix += stick.x; iz -= stick.y; }
       if (ix || iz) {
         roam.target = null;
         C.camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
@@ -698,7 +700,7 @@
         if (d < 0.12) { roam.target = null; want.set(0, 0, 0); } else want.multiplyScalar(Math.min(1, d / 0.5) / d);
       }
     } else roam.target = null;
-    const speed = (roam.run || (pad && pad.run)) ? 4.2 : 2.5;
+    const speed = (roam.run || (pad && pad.run) || (stick.on && Math.hypot(stick.x, stick.y) > 0.92)) ? 4.2 : 2.5;
     roam.vel.lerp(want.multiplyScalar(speed), Math.min(1, dt * (want.lengthSq() ? 9 : 12)));
     if (!active) roam.vel.set(0, 0, 0);
     let moved = 0;
@@ -757,10 +759,55 @@
     }
   } catch (_) {}
 
+  // ── Touch controls: a virtual joystick and action buttons ─────────────────
+  // Shown on touch screens (or always/never from ⚙ Settings). The stick walks
+  // the knight; ✋ uses what's in reach; in combat the game's own buttons rule.
+  const stick = { on: false, x: 0, y: 0, id: null, cx: 0, cy: 0 };
+  let touchMode = 'auto';
+  const touchUI = document.createElement('div'); touchUI.className = 'g3d-touch';
+  touchUI.innerHTML = '<div class="g3d-stick" aria-hidden="true"><div class="g3d-knob"></div></div><button type="button" class="g3d-act" aria-label="Use (E)">✋</button><button type="button" class="g3d-photo-btn" aria-label="Photo mode">📷</button>';
+  const stickEl = touchUI.querySelector('.g3d-stick'), knob = touchUI.querySelector('.g3d-knob');
+  const tstyle = document.createElement('style');
+  tstyle.textContent = `
+    .g3d-touch { position:absolute; inset:0; pointer-events:none; z-index:6; display:none; }
+    .g3d-touch.on { display:block; }
+    .g3d-stick { position:absolute; left:18px; bottom:18px; width:112px; height:112px; border-radius:50%; pointer-events:auto; touch-action:none;
+      background:radial-gradient(circle, rgba(201,168,76,0.12), rgba(8,8,10,0.35)); border:1px solid rgba(201,168,76,0.4); }
+    .g3d-knob { position:absolute; left:50%; top:50%; width:48px; height:48px; margin:-24px 0 0 -24px; border-radius:50%;
+      background:rgba(240,213,138,0.35); border:1px solid rgba(240,213,138,0.7); box-shadow:0 0 14px rgba(240,213,138,0.3); }
+    .g3d-act, .g3d-photo-btn { position:absolute; right:20px; bottom:26px; width:64px; height:64px; border-radius:50%; pointer-events:auto; touch-action:manipulation;
+      background:rgba(8,8,10,0.55); border:1px solid rgba(201,168,76,0.55); color:#f0d58a; font-size:1.5rem; }
+    .g3d-photo-btn { bottom:104px; width:46px; height:46px; right:28px; font-size:1.1rem; }
+    .g3d-act.ready { box-shadow:0 0 18px rgba(240,213,138,0.6); border-color:#f0d58a; }
+  `;
+  document.head.appendChild(tstyle);
+  function placeStick(ev) {
+    const r = stickEl.getBoundingClientRect(), R = r.width / 2;
+    let dx = ev.clientX - (r.left + R), dy = ev.clientY - (r.top + R);
+    const d = Math.hypot(dx, dy); if (d > R) { dx *= R / d; dy *= R / d; }
+    stick.x = dx / R; stick.y = dy / R;
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+  stickEl.addEventListener('pointerdown', ev => { stick.on = true; stick.id = ev.pointerId; try { stickEl.setPointerCapture(ev.pointerId); } catch (_) {} placeStick(ev); roam.target = null; ev.preventDefault(); });
+  stickEl.addEventListener('pointermove', ev => { if (stick.on && ev.pointerId === stick.id) placeStick(ev); });
+  const release = ev => { if (ev.pointerId !== stick.id) return; stick.on = false; stick.x = stick.y = 0; knob.style.transform = ''; };
+  stickEl.addEventListener('pointerup', release); stickEl.addEventListener('pointercancel', release);
+  touchUI.querySelector('.g3d-act').addEventListener('click', () => { if (roam.lurk) engage(); else interact(); });
+  touchUI.querySelector('.g3d-photo-btn').addEventListener('click', () => setPhoto(!photo.on));
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  function updateTouch() {
+    const want = (touchMode === 'on' || (touchMode === 'auto' && coarse)) && roamOn() && !E.cinema && !STATE.inCombat;
+    const host = C.panel;
+    if (want && touchUI.parentElement !== host) host.appendChild(touchUI);
+    touchUI.classList.toggle('on', want);
+    touchUI.querySelector('.g3d-act').classList.toggle('ready', !!(roam.near || roam.lurk));
+    if (!want && stick.on) { stick.on = false; stick.x = stick.y = 0; knob.style.transform = ''; }
+  }
+
   // ── Wire into the engine ──────────────────────────────────────────────────
   E.onRoom = function (id, spec) { if (photo.on) setPhoto(false); buildExits(id, spec); roamRoom(); amb.profile = null; hovered = null; };
-  E.onFrame = function (dt) { updatePhoto(); updateRoam(dt); updateSigils(dt); updateHover(); updateStrike(); updateAudio(dt); };
+  E.onFrame = function (dt) { updatePhoto(); updateTouch(); updateRoam(dt); updateSigils(dt); updateHover(); updateStrike(); updateAudio(dt); };
   if (C.room && C.roomId) { buildExits(C.roomId, C.room); roamRoom(); }
-  G3D.world = { group: exitGroup, exits: () => exits.map(e => ({ dir: e.dir, to: e.to, pos: e.sigil.position.toArray() })), get strike() { return strike; }, get walking() { return walking; }, get hovered() { return hovered; }, amb, music, photo, setPhoto, roam, navGrid, engage };
+  G3D.world = { group: exitGroup, exits: () => exits.map(e => ({ dir: e.dir, to: e.to, pos: e.sigil.position.toArray() })), get strike() { return strike; }, get walking() { return walking; }, get hovered() { return hovered; }, amb, music, photo, setPhoto, roam, navGrid, engage, stick, setTouch: m => { touchMode = m || 'auto'; } };
   }
 })();
