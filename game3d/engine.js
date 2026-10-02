@@ -986,6 +986,7 @@
       if (E.ultra) updateFX(dt);
       if (!draw) return;
       composer.render();
+      if (E.ultra && (E._ultraChecks = (E._ultraChecks || 0) + 1) <= 3) checkUltra();
       if (!panel.classList.contains('g3d-active')) { panel.classList.add('g3d-active'); requestAnimationFrame(() => panel.classList.add('g3d-ready')); }
       adapt(dt);
     }
@@ -1042,6 +1043,17 @@
     d.maxBlur.value = Math.max(3, renderer.getSize(tmpSize).y * renderer.getPixelRatio() / 70);
   }
   const tmpSize = new THREE.Vector2();
+
+  // A GPU that can't compile the Ultra shaders gets the standard pipeline instead of a black screen.
+  function checkUltra() {
+    const bad = renderer.info.programs.some(p => p.diagnostics && p.diagnostics.runnable === false);
+    if (!bad) return;
+    console.warn('[3D] Ultra shaders failed to compile; using the standard renderer');
+    const i = composer.passes.indexOf(cine);
+    composer.passes.splice(i, 2, new THREE.RenderPass(scene, camera));
+    E.ultra = false; cine = null; dofPass = null;
+    if (scene.fog && room) scene.fog.density = room.fog[1];
+  }
 
   // If even the lowest resolution can't keep up, shed the costliest effects.
   function degrade() {
