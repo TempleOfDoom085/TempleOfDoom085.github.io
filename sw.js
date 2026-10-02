@@ -1,6 +1,6 @@
 // Cache strategy: Cache First for assets, Network First for HTML.
 // Bump CACHE_VERSION whenever precached files change so old caches are purged.
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const STATIC_CACHE = `temple-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `temple-dynamic-${CACHE_VERSION}`;
 
@@ -15,6 +15,7 @@ const PRECACHE_URLS = [
   '/assets/js/main.js',
   '/assets/js/particles.js',
   '/assets/js/visitor-intel.js',
+  '/assets/js/globe-engine.js',
   '/img/snhu-logo.webp',
   '/img/cu-boulder-logo.webp',
   '/img/game-3d-hall.webp',
