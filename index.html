@@ -131,7 +131,7 @@
     <div><div class="konami-stat-val">10+</div><div class="konami-stat-key">ATK — Years Sales</div></div>
     <div><div class="konami-stat-val">5</div><div class="konami-stat-key">DEF — Certs</div></div>
     <div><div class="konami-stat-val">∞</div><div class="konami-stat-key">Coffee Consumed</div></div>
-    <div><div class="konami-stat-val">v10.0</div><div class="konami-stat-key">Current Build</div></div>
+    <div><div class="konami-stat-val">v11.0</div><div class="konami-stat-key">Current Build</div></div>
   </div>
   <div class="konami-achievement">🏆 Achievement Unlocked — Lorekeeper: Read Every Patch Note</div>
   <button class="close-konami" onclick="closeKonami()">Return to Fortress</button>
@@ -366,7 +366,7 @@
           <span class="ptag neon">Procedural PBR</span>
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v10 Live · 3D</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v11 Live · 3D</span>
         </div>
         <a href="game.html" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play in 3D</a>
       </div>
@@ -926,6 +926,33 @@
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v11.0</span>
+        <span class="patch-version-name">The Living Fortress</span>
+        <span class="patch-date">October 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Play Inside the World</div>
+        <ul class="patch-list">
+          <li>Glowing exit sigils mark every passage — hover one to see where it leads (or "Unexplored"), click it and the knight strides out of the room and walks in through the next</li>
+          <li>Click the world itself: take relics from their pedestals, read scrolls off the floor, speak to NPCs and strike enemies directly in the 3D scene</li>
+        </ul>
+        <div class="patch-category">Timed Strikes</div>
+        <ul class="patch-list">
+          <li>Attacking now opens a closing ring around the foe — strike again (button, click or Space) as it meets the gold ring for a guaranteed critical hit</li>
+          <li>Miss the window or ignore it and the blow lands as a normal attack, so the old rhythm still works; reduced-motion players get instant attacks</li>
+        </ul>
+        <div class="patch-category">Ambient Soundscape</div>
+        <ul class="patch-list">
+          <li>Procedural wind, deep rumble, crackling torches, dripping water and footsteps — tuned per room and generated live with Web Audio, no sound files</li>
+          <li>Only plays while the ♪ music toggle is on</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">

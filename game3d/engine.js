@@ -16,6 +16,8 @@
   const easeOut = t => 1 - Math.pow(1 - t, 3);
   const clamp = G3D.clamp;
 
+  // Compass directions in room space (camera looks down -z).
+  const DIRV = { north: new THREE.Vector3(0, 0, -1), south: new THREE.Vector3(0, 0, 1), east: new THREE.Vector3(1, 0, 0), west: new THREE.Vector3(-1, 0, 0) };
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 600;
   const Q = isMobile
@@ -337,7 +339,13 @@
         if (o.userData && o.userData.sway) swayList.push(o);
       });
     }
-    place(pos, rot) { this.home.set(pos[0], pos[1], pos[2]); this.facing = rot; this.rot = rot; this.R.root.position.copy(this.home); this.R.root.rotation.y = rot; }
+    place(pos, rot) { this.walk = null; this.home.set(pos[0], pos[1], pos[2]); this.facing = rot; this.rot = rot; this.R.root.position.copy(this.home); this.R.root.rotation.y = rot; }
+    // Stride from the current spot to `target`, then face `endFacing`.
+    walkTo(target, dur, endFacing, onDone) {
+      const from = this.home.clone(), to = target.clone();
+      this.walk = { from, to, t: 0, dur, endFacing, onDone, lastStep: 0 };
+      if (from.distanceToSquared(to) > 1e-4) { this.facing = Math.atan2(to.x - from.x, to.z - from.z); this.rot = this.facing; }
+    }
     play(name, dur, onHit) { this.anim = { name, t: 0, dur, onHit, fired: false }; }
     get busy() { return !!this.anim; }
     update(dt) {
@@ -349,6 +357,23 @@
       if (R.shield) { const sb = R.shield.userData.base || (R.shield.userData.base = { z: R.shield.position.z, ry: R.shield.rotation.y }); R.shield.position.z = sb.z; R.shield.rotation.y = sb.ry; }
       this.offset.set(0, 0, 0);
       let bodyY = 0;
+      // Walking: move along the path with a stride cycle
+      if (this.walk) {
+        const W = this.walk; W.t += dt;
+        const u = clamp(W.t / W.dur, 0, 1), ph = W.t * 10.5;
+        this.home.lerpVectors(W.from, W.to, G3D.smooth(u));
+        const amp = clamp(Math.sin(u * Math.PI) * 3, 0, 1);   // ease the stride in and out
+        if (R.legL) {
+          R.legL.rotation.x += Math.sin(ph) * 0.55 * amp; R.legR.rotation.x -= Math.sin(ph) * 0.55 * amp;
+          R.shinL.rotation.x += Math.max(0, -Math.sin(ph)) * 0.7 * amp; R.shinR.rotation.x += Math.max(0, Math.sin(ph)) * 0.7 * amp;
+        }
+        if (R.armR) R.armR.rotation.x -= Math.sin(ph) * 0.3 * amp;
+        if (R.armL) R.armL.rotation.x += Math.sin(ph) * 0.15 * amp;
+        bodyY += Math.abs(Math.cos(ph)) * 0.035 * amp;
+        const step = Math.floor(ph / Math.PI);
+        if (step !== W.lastStep) { W.lastStep = step; E.onStep && E.onStep(this); }
+        if (u >= 1) { const done = W.onDone; this.home.copy(W.to); if (W.endFacing != null) this.facing = W.endFacing; this.walk = null; done && done(); }
+      }
       // Idle life
       const br = Math.sin(time * 1.8 + (this.kind === 'knight' ? 0 : 1.3));
       if (R.torso) R.torso.rotation.x += br * 0.015;
@@ -606,6 +631,13 @@
     if (!knight || knight.golden !== !!STATE.hasGoldenArmor || knight.dead) buildKnight();
     knight.anim = null; knight.alive = true; knight.dead = false; knight.R.body.rotation.x = 0;
     knight.place(spec.knight.pos, spec.knight.rot);
+    if (E.travelDir && !reducedMotion) {
+      const v = DIRV[E.travelDir], start = knight.home.clone().addScaledVector(v, -3.0);
+      const rest = knight.home.clone();
+      knight.home.copy(start); knight.R.root.position.copy(start);
+      knight.walkTo(rest, 1.05, spec.knight.rot);
+    }
+    E.travelDir = null;
     despawnEnemy();
     if (npc) { scene.remove(npc.R.root); npc = null; }
     const r = ROOMS[id];
@@ -639,6 +671,7 @@
       if (canvas.parentElement !== panel) moveToCombatView(false);
       wasCombat = false;
     }
+    E.onRoom && E.onRoom(id, spec);
     // Pre-build neighbouring rooms when the browser is idle.
     const ex = (r && r.exits) ? Object.values(r.exits) : [];
     const idle = window.requestIdleCallback || (f => setTimeout(f, 400));
@@ -751,6 +784,8 @@
   // ── Camera ─────────────────────────────────────────────────────────────────
   const tmpPos = V(), tmpLook = V();
   function updateCamera(dt) {
+    // The game rewrites the combat art box when a fight starts; never lose the canvas to it.
+    if (!canvas.parentElement) moveToCombatView(!!(STATE.inCombat && combatHost && !E.pending));
     const host = canvas.parentElement;
     const w = host.clientWidth || 1, h = host.clientHeight || 1;
     const size = renderer.getSize(new THREE.Vector2());
@@ -887,6 +922,7 @@
       updateSet(dt);
       updateParticles(dt);
       updateCamera(dt);
+      E.onFrame && E.onFrame(dt);
       // Post uniforms
       post.fade += (post.fadeTarget - post.fade) * Math.min(1, dt * 9);
       post.flash = Math.max(0, post.flash - dt * 2.2);
@@ -937,6 +973,15 @@
     // While 3D owns the combat view, don't let the SVG enemy overwrite the canvas.
     window.renderEnemySVG = function (type) { return E.active ? '' : orig.renderEnemySVG(type); };
   }
+
+  // Live view of engine state for game3d/world.js (interaction, walking, strikes, sound).
+  E.ctx = {
+    get knight() { return knight; }, get enemy() { return enemy; }, get npc() { return npc; },
+    get relicObj() { return relicObj; }, get scrollObj() { return scrollObj; }, get room() { return room; }, get roomId() { return roomId; },
+    get camera() { return camera; }, get scene() { return scene; }, get canvas() { return canvas; }, get panel() { return panel; },
+    get combatHost() { return combatHost; }, get time() { return time; }, get pending() { return E.pending; },
+    DIRV, reducedMotion, burst, post, hasScroll, orig,
+  };
 
   // Debug: advance the simulation n steps without drawing, then draw once.
   E.step = (n, dt) => { for (let i = 0; i < n; i++) frame(dt || 1 / 30, i === n - 1); };
