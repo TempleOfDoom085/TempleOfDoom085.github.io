@@ -963,13 +963,28 @@ body {
 .combat-log::-webkit-scrollbar { display:none; }
 .endscreen-stats { font-family:var(--ui); font-size:0.62rem; color:var(--gold-dim); letter-spacing:0.06em; text-align:center; line-height:2; }
 .map-room-count { font-family:var(--ui); font-size:0.48rem; color:var(--text-faint); text-align:center; padding:3px 0 5px; border-top:1px solid rgba(184,147,58,0.06); }
+
+/* ═══ v10 — REAL-TIME 3D RENDERER (game3d/) ═══ */
+.g3d-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; opacity:0; transition:opacity 0.6s ease; }
+.g3d-ready .g3d-canvas, .combat-enemy-art.g3d-combat .g3d-canvas { opacity:1; }
+.scene-panel.g3d-active { height: clamp(260px, 47vh, 600px); transition: height 0.4s ease; }
+.scene-panel.g3d-active .scene-svg, .scene-panel.g3d-active .scene-bg-img, .scene-panel.g3d-active .particle-layer,
+.scene-panel.g3d-active .ambient-tint, .scene-panel.g3d-active .scene-vignette, .scene-panel.g3d-active .damage-flash { display:none; }
+.scene-panel.g3d-active .scene-overlay { background: linear-gradient(transparent, rgba(6,6,8,0.75)); }
+.combat-enemy-art.g3d-combat { width:min(880px, 94%); height:clamp(200px, 42vh, 400px); margin:2px 0 4px; position:relative; overflow:hidden;
+  border:1px solid rgba(180,40,40,0.28); border-radius:3px; box-shadow:0 0 50px rgba(0,0,0,0.9), 0 0 24px rgba(140,20,20,0.18); background:#000; }
+.combat-overlay:has(.g3d-combat) { gap:6px; background:rgba(4,4,6,0.9); }
+@media (max-width: 700px) {
+  .scene-panel.g3d-active { height: clamp(200px, 34vh, 320px); }
+  .combat-enemy-art.g3d-combat { height: clamp(170px, 30vh, 260px); }
+}
 </style>
 </head>
 <body>
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v9.1</span></div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v10.0</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -5104,5 +5119,17 @@ document.addEventListener('keydown', (e) => {
 // ═══ START ═══
 initGame();
 </script>
+<!-- v10: real-time 3D scenes (falls back to the SVG art if WebGL is unavailable) -->
+<script src="/vendor/three/three.min.js"></script>
+<script src="/vendor/three/CopyShader.js"></script>
+<script src="/vendor/three/LuminosityHighPassShader.js"></script>
+<script src="/vendor/three/EffectComposer.js"></script>
+<script src="/vendor/three/RenderPass.js"></script>
+<script src="/vendor/three/ShaderPass.js"></script>
+<script src="/vendor/three/UnrealBloomPass.js"></script>
+<script src="/game3d/core.js"></script>
+<script src="/game3d/props.js"></script>
+<script src="/game3d/rooms.js"></script>
+<script src="/game3d/engine.js"></script>
 </body>
 </html>

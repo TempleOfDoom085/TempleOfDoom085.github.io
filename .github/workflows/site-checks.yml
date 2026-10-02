@@ -25,7 +25,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           set -e
-          for f in sw.js assets/js/*.js tools/tools.js $(find src -name '*.js'); do
+          for f in sw.js assets/js/*.js tools/tools.js game3d/*.js $(find src -name '*.js'); do
             node --check "$f"
           done
 

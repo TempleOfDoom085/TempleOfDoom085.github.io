@@ -24,7 +24,7 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 | [`pentest-sim.html`](pentest-sim.html) | Pentest simulator. |
 | [`hacker-feed.html`](hacker-feed.html) | Live GitHub activity rendered as a security ops console. |
 | [`insane-engine.html`](insane-engine.html) | GPU cinematic demo — fluid ink, particles, bloom. |
-| [`game.html`](game.html) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. |
+| [`game.html`](game.html) + [`game3d/`](game3d/) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. Every room is rendered in real-time 3D (three.js): procedural PBR textures, torchlight and shadows, fog, bloom and film grading, and animated combat. Falls back to the original SVG art without WebGL; a ◆ 3D / ◇ 2D toggle sits in the top bar. |
 | [`world.html`](world.html) + [`src/`](src/) | **REALM** — modular open-world 3D sandbox (procedural terrain, day/night, weather, vehicles, quests). |
 
 ---
@@ -44,7 +44,8 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 ├── tools/                # Temple Tools (one HTML file per tool)
 │   └── tools.css, tools.js  # shared cursor / click-burst chrome
 ├── src/                  # REALM open-world engine modules (ES modules)
-├── vendor/three/         # three.js r128 + post-processing + Earth textures (globe, SOC, engine)
+├── game3d/               # real-time 3D renderer for game.html (textures, props, rooms, engine)
+├── vendor/three/         # three.js r128 + post-processing + Earth textures (globe, SOC, engine, game)
 ├── vendor/three-r158/    # three.js r158 ES modules for REALM
 ├── scripts/              # site checks + sitemap updater (Python, stdlib only)
 ├── .github/workflows/    # CI: runs the site checks on every PR and push to main
