@@ -169,6 +169,17 @@ section { padding: 7.5rem 4rem; }
 .project-name { font-size: 1.6rem; font-weight: 300; margin-bottom: 0.6rem; }
 .project-desc { font-size: 1.05rem; color: rgba(245,242,236,0.55); line-height: 1.85; margin-bottom: 1.2rem; max-width: 700px; }
 .project-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem; }
+.ai-feature { display: block; margin: 2.5rem 0 1rem; padding: 2rem 2.2rem; text-decoration: none; color: var(--paper); border: 1px solid rgba(0,212,255,0.22); background: linear-gradient(120deg, rgba(0,212,255,0.06), rgba(184,147,58,0.04) 60%, transparent); transition: border-color 0.3s, transform 0.3s; }
+.ai-feature:hover { border-color: rgba(0,212,255,0.55); transform: translateY(-3px); }
+.ai-feature-kicker { display: block; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--neon); }
+.ai-feature-title { display: block; font-size: 2.2rem; font-weight: 300; margin: 0.3rem 0 0.5rem; }
+.ai-feature-title em { font-style: italic; color: var(--gold-light); }
+.ai-feature-desc { display: block; max-width: 760px; color: rgba(245,242,236,0.6); font-size: 1.05rem; line-height: 1.8; }
+.ai-feature-cta { display: inline-block; margin-top: 1rem; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
+.project-shot { display: grid; grid-template-columns: 1.6fr 1fr; gap: 0.6rem; margin: 0.4rem 0 1.4rem; max-width: 900px; }
+.project-shot img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 2.07; border: 1px solid rgba(184,147,58,0.18); transition: transform 0.4s ease, border-color 0.4s ease; display: block; }
+.project-shot:hover img { border-color: rgba(184,147,58,0.45); transform: translateY(-2px); }
+@media (max-width: 700px) { .project-shot { grid-template-columns: 1fr; } }
 .ptag { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; padding: 0.3rem 0.75rem; border: 1px solid rgba(184,147,58,0.3); color: rgba(184,147,58,0.7); }
 .ptag.neon { border-color: rgba(0,212,255,0.25); color: rgba(0,212,255,0.6); }
 

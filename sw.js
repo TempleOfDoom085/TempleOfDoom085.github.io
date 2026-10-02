@@ -1,6 +1,6 @@
 // Cache strategy: Cache First for assets, Network First for HTML.
 // Bump CACHE_VERSION whenever precached files change so old caches are purged.
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const STATIC_CACHE = `temple-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `temple-dynamic-${CACHE_VERSION}`;
 
@@ -17,8 +17,11 @@ const PRECACHE_URLS = [
   '/assets/js/visitor-intel.js',
   '/img/snhu-logo.webp',
   '/img/cu-boulder-logo.webp',
+  '/img/game-3d-hall.webp',
+  '/img/game-3d-combat.webp',
   // Standalone content pages (self-contained, usable offline)
   '/career.html',
+  '/ai-security.html',
   '/ctf-writeups.html',
   '/attack-viz.html',
   '/pentest-sim.html',

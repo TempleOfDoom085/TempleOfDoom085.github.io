@@ -131,7 +131,7 @@
     <div><div class="konami-stat-val">10+</div><div class="konami-stat-key">ATK — Years Sales</div></div>
     <div><div class="konami-stat-val">5</div><div class="konami-stat-key">DEF — Certs</div></div>
     <div><div class="konami-stat-val">∞</div><div class="konami-stat-key">Coffee Consumed</div></div>
-    <div><div class="konami-stat-val">v9.1</div><div class="konami-stat-key">Current Build</div></div>
+    <div><div class="konami-stat-val">v10.0</div><div class="konami-stat-key">Current Build</div></div>
   </div>
   <div class="konami-achievement">🏆 Achievement Unlocked — Lorekeeper: Read Every Patch Note</div>
   <button class="close-konami" onclick="closeKonami()">Return to Fortress</button>
@@ -146,6 +146,7 @@
     <li><a href="#about">About</a></li>
     <li><a href="#experience">Experience</a></li>
     <li><a href="#projects">Projects</a></li>
+    <li><a href="ai-security.html">AI Security</a></li>
     <li><a href="tools/index.html">Tools</a></li>
     <li><a href="threat-globe.html">Globe</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -352,20 +353,31 @@
     <h2 class="section-title">Things I've <em>built.</em></h2>
     <div class="project-list stagger-children fade-in">
       <div class="project-item">
-        <div class="project-type">Python / Game Dev / JavaScript</div>
+        <div class="project-type">Python / Game Dev / WebGL</div>
         <div class="project-name">Knights Templar: The Siege of the Undead</div>
-        <div class="project-desc">A fully original text adventure game — started as a Python assignment for IT 140 at SNHU, expanded into a feature-rich browser game with combat, NPCs, achievements, procedural audio, and SVG artwork. Now in active development toward an open-world 3D experience. Play it below.</div>
+        <div class="project-desc">Started as a Python text adventure for IT 140 at SNHU and grew into a full browser RPG — combat, NPCs, quests, achievements and procedural audio — now rendered in real-time 3D. Every room is its own torchlit set built from procedural textures, with shadows, fog, bloom and animated sword fights against undead knights and a necromancer boss.</div>
+        <a href="game.html" class="project-shot" aria-label="Play Knights Templar in 3D">
+          <img src="/img/game-3d-hall.webp" alt="The Grand Hall in Knights Templar: a Templar knight beside a candlelit feast table, banners and a roaring hearth" width="1200" height="580" loading="lazy" decoding="async">
+          <img src="/img/game-3d-combat.webp" alt="Combat in Knights Templar: the knight faces a Risen Knight with glowing eyes in a moonlit cloister" width="880" height="400" loading="lazy" decoding="async">
+        </a>
         <div class="project-tags">
-          <span class="ptag neon">Python</span>
           <span class="ptag neon">JavaScript</span>
+          <span class="ptag neon">three.js / WebGL</span>
+          <span class="ptag neon">Procedural PBR</span>
           <span class="ptag neon">Web Audio API</span>
-          <span class="ptag neon">SVG Art</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v9.1 Live</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v10 Live · 3D</span>
         </div>
-        <a href="#game-section" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play the Game</a>
+        <a href="game.html" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play in 3D</a>
       </div>
     </div>
+
+    <a href="ai-security.html" class="ai-feature fade-in">
+      <span class="ai-feature-kicker">New · AI Security</span>
+      <span class="ai-feature-title">Securing AI <em>systems.</em></span>
+      <span class="ai-feature-desc">An interactive map of the LLM agent attack surface, a six-layer defence-in-depth model, and a defender's playbook for prompt injection — detection signals, mitigations and safe testing.</span>
+      <span class="ai-feature-cta">Explore →</span>
+    </a>
 
     <!-- CYBER TOOLS GRID -->
     <div class="tools-label fade-in">
@@ -917,6 +929,38 @@
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v10.0</span>
+        <span class="patch-version-name">Into the Third Dimension</span>
+        <span class="patch-date">October 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Real-Time 3D Renderer</div>
+        <ul class="patch-list">
+          <li>Every one of the 17 rooms rebuilt as a real-time 3D set (three.js / WebGL) — pointed vaults, clustered gothic pillars, stained glass, banners, bone piles and set dressing unique to each room</li>
+          <li>Procedural PBR materials — stone, flagstone, wood, steel, gold, bronze, rust, chainmail and cloth are all generated in code with their own normal and roughness maps; nothing is downloaded</li>
+          <li>Cinematic lighting — flickering torch light, key-light shadows, god-rays through windows, volumetric fog, drifting dust and embers, bloom, ACES tone mapping and a colour grade per room</li>
+          <li>The storm-lit courtyard has a burning cart, drifting ash and lightning; the necromancer's lair glows with a rotating rune circle and green braziers</li>
+        </ul>
+        <div class="patch-category">Combat &amp; Story Moments</div>
+        <ul class="patch-list">
+          <li>Battles play out in a 3D two-shot — enemies rise from the floor in smoke, the knight lunges and strikes, sparks fly, foes stagger, counter-attack, then crumble and dissolve</li>
+          <li>3D Templar knight, Risen Knight, peasant zombie and the floating Necromancer boss, plus candle-bearing NPCs</li>
+          <li>Golden armour transformation with a halo and holy light; death desaturates the world as the camera cranes over the fallen knight</li>
+          <li>Relics glow on pedestals beneath shafts of light; hidden scrolls shimmer on the floor</li>
+        </ul>
+        <div class="patch-category">Performance &amp; Access</div>
+        <ul class="patch-list">
+          <li>Static batching, an LRU room cache, dynamic resolution and a lighter mobile tier keep it smooth</li>
+          <li>◆ 3D / ◇ 2D toggle in the top bar — the original SVG art remains available, and is used automatically without WebGL</li>
+          <li>Respects reduced-motion settings</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
         <span class="patch-version-tag">v13.0</span>
         <span class="patch-version-name">REALM — Open World 3D Game</span>
         <span class="patch-date">April 2026</span>
@@ -1094,7 +1138,7 @@
         <span class="patch-status live">LIVE</span>
         <span class="patch-toggle">▼</span>
       </div>
-      <div class="patch-body open">
+      <div class="patch-body">
         <div class="patch-category">Version Bump</div>
         <ul class="patch-list">
           <li>Game version display updated to v9.1 across all UI elements</li>
@@ -1665,9 +1709,9 @@
   <div id="tab-about-game" class="tab-content" style="padding:2rem 3rem 4rem;max-width:800px;">
     <div style="font-size:1.1rem;font-weight:300;color:rgba(245,242,236,0.75);line-height:1.95;">
       <p>Knights Templar: The Siege of the Undead started as a Python assignment for IT 140 at Southern New Hampshire University. The brief was simple: build a text-based adventure with rooms, items, and win/lose conditions.</p>
-      <p style="margin-top:1.2rem;">What it became is something much larger. Over seven major versions, the game grew from a terminal script into a full RPG with hand-coded SVG artwork, procedural Web Audio music, stat-based combat with equippable relics and special abilities, a quest system with NPC missions, a 3-phase cinematic boss fight, random world events with a wandering merchant, XP and leveling, and an achievement system culminating in a Saint Michael the Archangel divine armor cutscene.</p>
-      <p style="margin-top:1.2rem;">The game is built entirely without external libraries — no game engine, no asset files, no audio downloads. Every sound is synthesized live using the Web Audio API. Every piece of artwork is hand-written SVG code following a strict cinematic dark-fantasy art direction. The hybrid image engine allows AI-generated photorealistic backgrounds to be layered in seamlessly.</p>
-      <p style="margin-top:1.2rem;">The long-term goal is a full open-world 3D game. This browser version is the foundation — the design document, the lore, the combat mechanics, and the vision are all already built and battle-tested.</p>
+      <p style="margin-top:1.2rem;">What it became is something much larger. Over ten major versions, the game grew from a terminal script into a full RPG with real-time 3D graphics, procedural Web Audio music, stat-based combat with equippable relics and special abilities, a quest system with NPC missions, a 3-phase cinematic boss fight, random world events with a wandering merchant, XP and leveling, and an achievement system culminating in a Saint Michael the Archangel divine armor cutscene.</p>
+      <p style="margin-top:1.2rem;">Version 10 rebuilt every room in real-time 3D with three.js — but still with no asset files and no downloads. Every stone, plank, chainmail ring and banner texture is generated in code; every sound is synthesized live with the Web Audio API. Torchlight, shadows, fog, bloom and film grading give each room its own mood, and battles play out as animated 3D sword fights. The original hand-written SVG art lives on as a fallback for devices without WebGL.</p>
+      <p style="margin-top:1.2rem;">The long-term goal is a full open-world game. With the 3D engine in place, the lore, combat mechanics and world of this browser version are the foundation — already built and battle-tested.</p>
     </div>
     <div style="margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;">
       <div style="border:1px solid rgba(184,147,58,0.2);padding:1.2rem 1.5rem;flex:1;min-width:140px;">
