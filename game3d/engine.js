@@ -416,6 +416,21 @@
         if (step !== W.lastStep) { W.lastStep = step; E.onStep && E.onStep(this); }
         if (u >= 1) { const done = W.onDone; this.home.copy(W.to); if (W.endFacing != null) this.facing = W.endFacing; this.walk = null; done && done(); }
       }
+      // Free movement (game3d/world.js drives loco.amt and loco.phase from real distance travelled)
+      const L = this.loco;
+      if (L && !this.walk && L.amt > 0.01 && !this.anim) {
+        const amp = clamp(L.amt, 0, 1.25), ph = L.phase;
+        if (R.legL) {
+          R.legL.rotation.x += Math.sin(ph) * 0.55 * amp; R.legR.rotation.x -= Math.sin(ph) * 0.55 * amp;
+          R.shinL.rotation.x += Math.max(0, -Math.sin(ph)) * 0.7 * amp; R.shinR.rotation.x += Math.max(0, Math.sin(ph)) * 0.7 * amp;
+        }
+        if (R.armR) R.armR.rotation.x -= Math.sin(ph) * 0.3 * amp;
+        if (R.armL) R.armL.rotation.x += Math.sin(ph) * 0.15 * amp;
+        if (R.torso) R.torso.rotation.x += 0.05 * amp;   // lean into the stride
+        bodyY += Math.abs(Math.cos(ph)) * 0.035 * amp;
+        const step = Math.floor(ph / Math.PI);
+        if (step !== L.lastStep) { L.lastStep = step; E.onStep && E.onStep(this); }
+      }
       // Idle life
       const br = Math.sin(time * 1.8 + (this.kind === 'knight' ? 0 : 1.3));
       if (R.torso) R.torso.rotation.x += br * 0.015;
@@ -517,6 +532,11 @@
     if (type === 'necromancer') burst('holy', V(sp.pos[0], 1.2, sp.pos[2]), 60, '#3aff5a', 3);
     assignLights();
   }
+  // Free-roam: the room's foe appears and watches before the fight begins.
+  E.lurk = function (type) {
+    if (!E.active || !room || STATE.inCombat) return;
+    spawnEnemy(type); enemy.lurking = true;
+  };
   function despawnEnemy() {
     if (!enemy) return;
     scene.remove(enemy.R.root); removeSway(enemy.R.root); enemy = null;
@@ -673,6 +693,7 @@
     if (!knight || knight.golden !== !!STATE.hasGoldenArmor || knight.dead) buildKnight();
     knight.anim = null; knight.alive = true; knight.dead = false; knight.R.body.rotation.x = 0;
     knight.place(spec.knight.pos, spec.knight.rot);
+    track.set(0, 0, 0);
     if (E.travelDir && !reducedMotion) {
       const v = DIRV[E.travelDir], start = knight.home.clone().addScaledVector(v, -3.0);
       const rest = knight.home.clone();
@@ -744,7 +765,9 @@
     const inC = !!STATE.inCombat;
     if (inC && !wasCombat) {
       enemyRoom = STATE.currentEnemy && STATE.currentEnemy.roomId;
-      spawnEnemy(STATE.currentEnemy.type);
+      // A foe already standing in the room (free-roam) just turns to fight.
+      if (enemy && enemy.lurking && enemy.type === STATE.currentEnemy.type) enemy.lurking = false;
+      else spawnEnemy(STATE.currentEnemy.type);
       knight.facing = Math.atan2(enemy.home.x - knight.home.x, enemy.home.z - knight.home.z);
       moveToCombatView(true);
       lastEnemyHp = STATE.enemyHp;
@@ -824,7 +847,7 @@
   }
 
   // ── Camera ─────────────────────────────────────────────────────────────────
-  const tmpPos = V(), tmpLook = V();
+  const tmpPos = V(), tmpLook = V(), track = V(), trackT = V();
   function updateCamera(dt) {
     // The game rewrites the combat art box when a fight starts; never lose the canvas to it.
     if (!canvas.parentElement) moveToCombatView(!!(STATE.inCombat && combatHost && !E.pending));
@@ -842,6 +865,14 @@
     const c = room.cam;
     tmpPos.set(c.pos[0], c.pos[1], c.pos[2]).add(V(-0.6 * (1 - ip), 0.35 * (1 - ip), 2.2 * (1 - ip)));
     tmpLook.set(c.look[0], c.look[1], c.look[2]);
+    // Free-roam: dolly the set camera after the knight, keeping the room's composition.
+    const kr = room.knight.pos;
+    trackT.set(knight.home.x - kr[0], 0, knight.home.z - kr[2]);
+    if (!E.roam) trackT.set(0, 0, 0);
+    if (trackT.length() > 5) trackT.setLength(5);
+    track.lerp(trackT, Math.min(1, dt * 2.6));
+    tmpPos.x += track.x * 0.7; tmpPos.z += track.z * 0.75;
+    tmpLook.x += track.x * 0.85; tmpLook.z += track.z * 0.85;
     // Combat framing: side-on two-shot of knight and foe
     if (cam.combat > 0.001) {
       const K = knight.home, N = room.enemy.pos;
@@ -1117,7 +1148,7 @@
     size: renderer.getSize(new THREE.Vector2()).toArray(), pr: renderer.getPixelRatio(), room: roomId, time: +time.toFixed(2), parent: canvas.parentElement.id,
     gl2: renderer.capabilities.isWebGL2, rtType: composer.renderTarget1.texture.type, pending: E.pending,
     ultra: !!E.ultra, fx: Object.assign({}, fx) });
-  E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null;
+  E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null; E.roam = false;
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
 })();

@@ -44,6 +44,12 @@
     .g3d-photo-hint kbd { font-family:inherit; border:1px solid rgba(240,230,210,0.35); padding:0 4px; border-radius:2px; }
     #btnPhoto[aria-pressed="true"] { color:#f0d58a; border-color:rgba(201,168,76,0.7); }
     @media (max-width: 700px) { .g3d-photo-hint { font-size:0.58rem; white-space:normal; width:90%; text-align:center; } }
+    .g3d-prompt { position:absolute; z-index:6; transform:translate(-50%,-100%); white-space:nowrap; cursor:pointer;
+      font-family:var(--ui, monospace); font-size:0.74rem; letter-spacing:0.1em; text-transform:uppercase; color:#f0d58a;
+      background:rgba(8,8,10,0.8); border:1px solid rgba(201,168,76,0.5); padding:4px 10px; border-radius:2px;
+      opacity:0; pointer-events:none; transition:opacity 0.15s ease; }
+    .g3d-prompt.on { opacity:1; pointer-events:auto; }
+    .g3d-prompt kbd { font-family:inherit; border:1px solid rgba(240,213,138,0.5); padding:0 5px; margin-right:4px; border-radius:2px; }
     @keyframes g3dPop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.6)} 25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)} 100%{opacity:0;transform:translate(-50%,-70%) scale(1)} }
   `;
   document.head.appendChild(style);
@@ -131,6 +137,7 @@
   }
 
   function act(hit) {
+    if (roam.lurk && hit.kind !== 'enemy') { engage(); return; }
     if (hit.kind === 'exit') window.go(hit.dir);
     else if (hit.kind === 'relic') window.grabRelic();
     else if (hit.kind === 'scroll') window.readScroll();
@@ -155,7 +162,7 @@
     if (photo.on) return;
     if (strike) { resolveStrike(); return; }
     const hit = pick(ev);
-    if (hit) act(hit);
+    if (hit) act(hit); else roamClick(ev);
   });
 
   function updateHover() {
@@ -190,6 +197,7 @@
   let walking = false;
   const origGo = window.go;
   window.go = function (dir) {
+    if (roam.lurk) { engage(); return; }   // the foe blocks the way
     if (walking || photo.on) return;
     const room = ROOMS[STATE.currentRoom];
     if (!E.active || STATE.inCombat || C.pending || !room || !room.exits[dir] || C.reducedMotion || !C.knight || C.knight.dead) return origGo(dir);
@@ -336,6 +344,7 @@
     const ctx = amb.ctx, t = ctx.currentTime;
     if (want !== amb.on) { amb.on = want; amb.master.gain.cancelScheduledValues(t); amb.master.gain.setTargetAtTime(want ? 0.9 : 0, t, 0.6); }
     if (!amb.on) return;
+    updateMusic();
     const p = amb.profile || (amb.profile = profileFor(C.roomId));
     amb.windGain.gain.setTargetAtTime(p.wind * (0.07 + 0.04 * Math.sin(C.time * 0.23)), t, 0.8);
     amb.windFilter.frequency.setTargetAtTime(320 + 260 * (0.5 + 0.5 * Math.sin(C.time * 0.17)) , t, 1.0);
@@ -347,6 +356,88 @@
     amb.lnPrev = ln > 0.8;
     if (p.crackle > 0 && C.time > amb.nextCrackle) { blip('crackle'); amb.nextCrackle = C.time + (0.04 + Math.random() * 0.22) / p.crackle; }
     if (p.drip > 0 && C.time > amb.nextDrip) { blip('drip'); amb.nextDrip = C.time + (1.2 + Math.random() * 3.5) / p.drip; }
+  }
+  // ── Combat music ──────────────────────────────────────────────────────────
+  // War drums and a low drone swell in when a fight starts (faster for the
+  // Necromancer), a heartbeat when HP runs low, and a sting when it ends.
+  const music = { gain: null, lp: null, next: 0, step: 0, level: 0, hb: 0, was: false, room: null };
+  function ensureMusic() {
+    if (music.gain) return;
+    const ctx = amb.ctx;
+    music.gain = ctx.createGain(); music.gain.gain.value = 0; music.gain.connect(amb.master);
+    music.lp = ctx.createBiquadFilter(); music.lp.type = 'lowpass'; music.lp.frequency.value = 240; music.lp.Q.value = 3;
+    const dg = ctx.createGain(); dg.gain.value = 0.8; music.lp.connect(dg).connect(music.gain);
+    [[55, 'sawtooth', 0.05], [55.35, 'sawtooth', 0.05], [82.4, 'triangle', 0.035], [41.2, 'sine', 0.08]].forEach(([f, type, v]) => {
+      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
+      const g = ctx.createGain(); g.gain.value = v; o.connect(g).connect(music.lp); o.start();
+    });
+  }
+  function hit(t, kind, vel, out) {
+    const ctx = amb.ctx, dest = out || music.gain;
+    if (kind === 'low' || kind === 'tom' || kind === 'heart') {
+      const o = ctx.createOscillator(); o.type = 'sine';
+      const f0 = kind === 'tom' ? 190 : kind === 'heart' ? 70 : 115, f1 = kind === 'tom' ? 85 : kind === 'heart' ? 38 : 40;
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + 0.22);
+      const g = ctx.createGain(), dur = kind === 'tom' ? 0.35 : 0.6;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.75 * vel, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(dest); o.start(t); o.stop(t + dur + 0.05);
+    }
+    if (kind !== 'heart') {
+      const n = ctx.createBufferSource(); n.buffer = amb.noise;
+      const f = ctx.createBiquadFilter(); f.type = kind === 'rim' ? 'bandpass' : 'lowpass'; f.frequency.value = kind === 'rim' ? 2200 : 700;
+      const g = ctx.createGain(), dur = kind === 'rim' ? 0.06 : 0.14;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime((kind === 'rim' ? 0.18 : 0.3) * vel, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      n.connect(f).connect(g).connect(dest); n.start(t, Math.random() * 1.5, dur + 0.05);
+    }
+  }
+  // Eight eighth-notes per bar; a fill every fourth bar.
+  const PATTERN = [['low', 1], null, ['rim', 0.6], ['low', 0.7], ['tom', 0.8], null, ['rim', 0.6], ['low', 0.5]];
+  const FILL = [['low', 1], ['tom', 0.7], ['tom', 0.8], ['tom', 0.9], ['low', 1], ['tom', 0.9], ['low', 1], ['low', 1]];
+  function sting(win) {
+    const ctx = amb.ctx, t = ctx.currentTime + 0.05;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(win ? 500 : 300, t); lp.frequency.exponentialRampToValueAtTime(win ? 2600 : 160, t + (win ? 0.6 : 2.5));
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(win ? 0.16 : 0.22, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + (win ? 2.4 : 4));
+    lp.connect(g).connect(amb.master);
+    (win ? [130.8, 164.8, 196.0, 261.6, 329.6] : [41.2, 43.65, 61.7]).forEach((f, i) => {
+      const o = ctx.createOscillator(); o.type = win ? 'sawtooth' : 'triangle'; o.frequency.value = f; o.detune.value = (i % 2 ? 6 : -6);
+      o.connect(lp); o.start(t + (win ? i * 0.03 : 0)); o.stop(t + 4.2);
+    });
+    if (win) { hit(t, 'low', 1, amb.master); hit(t + 0.2, 'low', 0.8, amb.master); }
+  }
+  function updateMusic() {
+    const ctx = amb.ctx, t = ctx.currentTime;
+    ensureMusic();
+    const inC = !!STATE.inCombat, boss = inC && STATE.currentEnemy && STATE.currentEnemy.type === 'necromancer';
+    if (inC) music.room = STATE.currentRoom;
+    if (music.was && !inC) {
+      const dead = C.knight && (C.knight.dead || (C.knight.anim && C.knight.anim.name === 'die')) || STATE.hp <= 0;
+      const won = music.room && STATE.enemiesDefeated && STATE.enemiesDefeated.has(music.room);
+      if (dead) sting(false); else if (won) sting(true);
+    }
+    music.was = inC;
+    music.gain.gain.setTargetAtTime(inC ? (boss ? 0.6 : 0.45) : 0, t, inC ? 0.5 : 1.6);
+    // The drone opens up as the foe weakens.
+    const foe = inC && STATE.enemyMaxHp ? 1 - STATE.enemyHp / STATE.enemyMaxHp : 0;
+    music.lp.frequency.setTargetAtTime(220 + foe * 700 + (boss ? 200 : 0), t, 0.4);
+    const bpm = boss ? 124 : 98, eighth = 60 / bpm / 2;
+    if (music.next < t) music.next = t + 0.05;
+    while (music.next < t + 0.2) {
+      if (inC) {
+        const bar = Math.floor(music.step / 8), pos = music.step % 8;
+        const p = (bar % 4 === 3 ? FILL : PATTERN)[pos];
+        if (p) hit(music.next, p[0], p[1]);
+        if (boss && pos % 2 === 1) hit(music.next, 'rim', 0.35);
+        music.step++;
+      } else music.step = 0;
+      music.next += eighth;
+    }
+    // Heartbeat when badly hurt, in or out of combat.
+    const hp = STATE.maxHp ? STATE.hp / STATE.maxHp : 1;
+    if (hp > 0 && hp < 0.3 && t > music.hb) {
+      hit(t + 0.02, 'heart', 0.9, amb.master); hit(t + 0.26, 'heart', 0.6, amb.master);
+      music.hb = t + (hp < 0.15 ? 0.75 : 1.0);
+    }
   }
   E.onStep = () => { if (amb.on) blip('step'); };
 
@@ -418,10 +509,247 @@
   }, true);
   function updatePhoto() { if (photo.on && !photoAllowed()) setPhoto(false); }
 
+  // ── Free roam ─────────────────────────────────────────────────────────────
+  // WASD / arrows / left stick / tap-to-move walk the knight around the room
+  // (game3d/nav.js keeps him on the floor). Walking into a glowing ring takes an
+  // exit; E (or gamepad A) uses whatever is close. Foes appear and watch, and the
+  // fight starts when you get close — or try to slip past.
+  const roam = { keys: new Set(), run: false, vel: V(), target: null, grid: null, gridSpec: null, zones: [], entered: 0, lurk: null, near: null, wasCombat: false, pad: {} };
+  const MOVE_KEYS = { w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r' };
+  const promptEl = document.createElement('div'); promptEl.className = 'g3d-prompt';
+  const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffcf6a').multiplyScalar(1.4), toneMapped: false, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
+  function roamOn() { return E.active && !!G3D.nav; }
+  function canRoam() { return roamOn() && canAct() && !strike; }
+  function navGrid() {
+    const sp = C.room;
+    if (!sp || !G3D.nav) return null;
+    if (roam.gridSpec !== sp) {
+      roam.gridSpec = sp;
+      try { roam.grid = G3D.nav.build(sp.group, sp.knight.pos, { maxZ: sp.cam.pos[2] - 1.0 }); } catch (e) { roam.grid = null; }
+      if (roam.grid && roam.grid.cells < 40) roam.grid = null;   // no usable floor: stay on rails
+      buildZones();
+    }
+    return roam.grid;
+  }
+  // An exit's trigger is the floor nearest its sigil, marked with a ring of light.
+  function buildZones() {
+    roam.zones.forEach(z => z.ring.parent && z.ring.parent.remove(z.ring));
+    roam.zones = [];
+    const g = roam.grid; if (!g) return;
+    exits.forEach(e => {
+      const c = g.nearest(e.sigil.position.x, e.sigil.position.z, 5);
+      if (!c) return;
+      c.y = g.floorY(c.x, c.z) + 0.03;
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 40), ringMat); ring.rotation.x = -Math.PI / 2; ring.position.copy(c);
+      ring.userData.noCollide = true; exitGroup.add(ring);
+      roam.zones.push({ dir: e.dir, c, ring });
+    });
+  }
+  function blocked(x, z) {
+    const g = roam.grid;
+    if (g && !g.walkable(x, z)) return true;
+    if (C.npc && Math.hypot(C.npc.home.x - x, C.npc.home.z - z) < 0.65) return true;
+    if (C.enemy && Math.hypot(C.enemy.home.x - x, C.enemy.home.z - z) < 0.95) return true;
+    return false;
+  }
+  function nearestThing() {
+    const k = C.knight, room = ROOMS[C.roomId]; if (!k || !room) return null;
+    const cands = [];
+    if (C.relicObj && room.relic) cands.push({ kind: 'relic', name: room.relic, p: C.relicObj.position, h: 2.1 });
+    if (C.scrollObj && C.hasScroll(C.roomId)) cands.push({ kind: 'scroll', p: C.scrollObj.position, h: 0.8 });
+    if (C.npc && room.npc) cands.push({ kind: 'npc', name: (NPCS[room.npc] || {}).name, p: C.npc.home, h: 2.2 });
+    let best = null, bd = 1.9;
+    cands.forEach(c => { const d = Math.hypot(c.p.x - k.home.x, c.p.z - k.home.z); if (d < bd) { bd = d; best = c; } });
+    return best;
+  }
+  function interact() { const t = roam.near; if (t) { act({ kind: t.kind, name: t.name }); return true; } return false; }
+  function roamClick(ev) {
+    if (!canRoam() || !navGrid()) return;
+    const r = C.canvas.getBoundingClientRect();
+    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, C.camera);
+    const t = -ray.ray.origin.y / ray.ray.direction.y;
+    if (!(t > 0) || t > 40) return;
+    const p = ray.ray.origin.clone().addScaledVector(ray.ray.direction, t);
+    const q = roam.grid.walkable(p.x, p.z) ? p : roam.grid.nearest(p.x, p.z, 1.2);
+    if (q) { roam.target = q; marker(q); }
+  }
+  // A brief ripple where you tapped.
+  const tapRing = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 32), ringMat.clone()); tapRing.rotation.x = -Math.PI / 2; tapRing.visible = false; C.scene.add(tapRing);
+  function marker(p) { tapRing.position.set(p.x, roam.grid.floorY(p.x, p.z) + 0.03, p.z); tapRing.userData.t = 0; tapRing.visible = true; }
+
+  // Foes wait in the room instead of ambushing on the threshold.
+  const origStart = window.startCombat;
+  window.startCombat = function (roomId, type) {
+    if (!roamOn() || C.reducedMotion || roam.lurk || roomId !== STATE.currentRoom) return origStart(roomId, type);
+    roam.lurk = { roomId, type, t: 0, shown: false };
+    if (typeof updateButtons === 'function') updateButtons();
+    if (C.roomId === roomId && !C.pending) showLurk();
+  };
+  function showLurk() { const L = roam.lurk; if (L && !L.shown && C.roomId === L.roomId) { L.shown = true; L.t = 0; E.lurk(L.type); } }
+  function engage() {
+    const L = roam.lurk; if (!L) return;
+    roam.lurk = null; roam.target = null; roam.vel.set(0, 0, 0);
+    if (STATE.currentRoom === L.roomId && !STATE.inCombat) origStart(L.roomId, L.type);
+  }
+  ['grabRelic', 'readScroll', 'talkNPC', 'examinePortrait'].forEach(fn => {
+    const orig = window[fn]; if (typeof orig !== 'function') return;
+    window[fn] = function () { if (roam.lurk) { engage(); return; } return orig.apply(this, arguments); };
+  });
+
+  window.addEventListener('keydown', ev => {
+    const t = ev.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (!roamOn() || STATE.inCombat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const k = ev.key.toLowerCase();
+    roam.run = ev.shiftKey;
+    if (MOVE_KEYS[k]) {
+      if (!navGrid()) return;              // no floor map: the old keys still change rooms
+      ev.stopImmediatePropagation(); ev.preventDefault();
+      if (roam.lurk) { roam.keys.add(MOVE_KEYS[k]); return; }
+      roam.keys.add(MOVE_KEYS[k]); roam.target = null;
+    } else if (k === 'e') {
+      if (!navGrid()) return;
+      ev.stopImmediatePropagation(); ev.preventDefault();
+      if (roam.lurk) engage(); else interact();
+    }
+  }, true);
+  window.addEventListener('keyup', ev => { const k = MOVE_KEYS[ev.key.toLowerCase()]; if (k) roam.keys.delete(k); roam.run = ev.shiftKey; });
+  window.addEventListener('blur', () => roam.keys.clear());
+
+  // Gamepad: left stick / d-pad move, A acts (attack in combat), X defends, B flees.
+  function readPad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = pads && Array.from(pads).find(p => p && p.connected);
+    if (!gp) return null;
+    const btn = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    const was = roam.pad, now = { a: btn(0), b: btn(1), x: btn(2) };
+    const edge = k => now[k] && !was[k];
+    roam.pad = now;
+    if (STATE.inCombat) {
+      if (edge('a')) window.combatAction('attack');
+      if (edge('x')) window.combatAction('defend');
+      if (edge('b')) window.combatAction('flee');
+    } else if (edge('a')) { if (roam.lurk) engage(); else interact(); }
+    let x = gp.axes[0] || 0, y = gp.axes[1] || 0;
+    if (Math.hypot(x, y) < 0.22) { x = 0; y = 0; }
+    if (btn(14)) x = -1; if (btn(15)) x = 1; if (btn(12)) y = -1; if (btn(13)) y = 1;
+    return { x, y, run: btn(5) || btn(7) };
+  }
+
+  const fwd = V(), rgt = V(), want = V();
+  function updateRoam(dt) {
+    const k = C.knight; if (!k) return;
+    E.roam = roamOn();
+    if (!k.loco) k.loco = { amt: 0, phase: 0, lastStep: 0 };
+    const pad = readPad();
+    // Combat began: step to the duelling spot so the fight is framed as before.
+    if (STATE.inCombat && !roam.wasCombat) {
+      roam.vel.set(0, 0, 0); roam.target = null; roam.keys.clear();
+      const rest = V(...C.room.knight.pos);
+      const d = Math.hypot(rest.x - k.home.x, rest.z - k.home.z);
+      if (E.roam && d > 0.35 && !C.reducedMotion && !k.dead) {
+        const ep = C.enemy ? C.enemy.home : V(...C.room.enemy.pos);
+        k.walkTo(rest, clamp(d / 3.2, 0.35, 1.1), Math.atan2(ep.x - rest.x, ep.z - rest.z));
+      }
+    }
+    roam.wasCombat = !!STATE.inCombat;
+    // A waiting foe turns to watch you, and attacks when you come near.
+    const L = roam.lurk;
+    if (L) {
+      if (!L.shown) showLurk();
+      else if (C.enemy) {
+        L.t += dt;
+        const d = Math.hypot(C.enemy.home.x - k.home.x, C.enemy.home.z - k.home.z);
+        C.enemy.facing = Math.atan2(k.home.x - C.enemy.home.x, k.home.z - C.enemy.home.z);
+        // Rooms are framed for a duel, so "close" means closer than where you came in.
+        const sp = C.room, duel = Math.hypot(sp.knight.pos[0] - sp.enemy.pos[0], sp.knight.pos[2] - sp.enemy.pos[2]);
+        if ((d < Math.min(3.3, duel - 0.6) || L.t > 6.5) && !k.walk && !C.pending) engage();
+      }
+    }
+    // Input → desired velocity, relative to the camera.
+    const active = canRoam() && !!navGrid();
+    want.set(0, 0, 0);
+    if (active) {
+      let ix = 0, iz = 0;
+      if (roam.keys.has('f')) iz += 1; if (roam.keys.has('b')) iz -= 1;
+      if (roam.keys.has('l')) ix -= 1; if (roam.keys.has('r')) ix += 1;
+      if (pad) { ix += pad.x; iz -= pad.y; }
+      if (ix || iz) {
+        roam.target = null;
+        C.camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+        rgt.set(-fwd.z, 0, fwd.x);
+        want.copy(fwd).multiplyScalar(iz).addScaledVector(rgt, ix);
+        if (want.length() > 1) want.normalize();
+      } else if (roam.target) {
+        want.set(roam.target.x - k.home.x, 0, roam.target.z - k.home.z);
+        const d = want.length();
+        if (d < 0.12) { roam.target = null; want.set(0, 0, 0); } else want.multiplyScalar(Math.min(1, d / 0.5) / d);
+      }
+    } else roam.target = null;
+    const speed = (roam.run || (pad && pad.run)) ? 4.2 : 2.5;
+    roam.vel.lerp(want.multiplyScalar(speed), Math.min(1, dt * (want.lengthSq() ? 9 : 12)));
+    if (!active) roam.vel.set(0, 0, 0);
+    let moved = 0;
+    const sp = roam.vel.length();
+    if (sp > 0.02) {
+      const ox = k.home.x, oz = k.home.z, nx = ox + roam.vel.x * dt, nz = oz + roam.vel.z * dt;
+      if (!blocked(nx, nz)) k.home.set(nx, k.home.y, nz);
+      else if (!blocked(nx, oz)) { k.home.x = nx; roam.vel.z *= 0.5; }
+      else if (!blocked(ox, nz)) { k.home.z = nz; roam.vel.x *= 0.5; }
+      else { roam.vel.set(0, 0, 0); roam.target = null; }
+      moved = Math.hypot(k.home.x - ox, k.home.z - oz);
+      if (moved > 0.0005) k.facing = Math.atan2(roam.vel.x, roam.vel.z);
+      k.home.y += (roam.grid.floorY(k.home.x, k.home.z) - k.home.y) * Math.min(1, dt * 12);
+      roam.entered += moved;
+    }
+    k.loco.phase += moved * 4.4;
+    k.loco.amt += ((active ? moved / Math.max(dt, 1e-3) / 2.5 : 0) - k.loco.amt) * Math.min(1, dt * 10);
+    // Walk into a ring to take that exit.
+    if (active && moved > 0 && roam.entered > 0.5) {
+      for (const z of roam.zones) {
+        if (Math.hypot(z.c.x - k.home.x, z.c.z - k.home.z) < 0.5) { roam.keys.clear(); roam.vel.set(0, 0, 0); window.go(z.dir); break; }
+      }
+    }
+    roam.zones.forEach((z, i) => { const t = C.time * 2 + i; z.ring.material.opacity = 0.35 + 0.2 * Math.sin(t); z.ring.scale.setScalar(1 + 0.06 * Math.sin(t * 1.3)); });
+    if (tapRing.visible) { const u = (tapRing.userData.t += dt) / 0.6; tapRing.scale.setScalar(1 + u * 1.6); tapRing.material.opacity = 0.6 * (1 - u); if (u >= 1) tapRing.visible = false; }
+    // Context prompt over whatever is in reach.
+    roam.near = active ? nearestThing() : null;
+    const host = C.canvas.parentElement;
+    if (roam.near) {
+      if (promptEl.parentElement !== host) host.appendChild(promptEl);
+      const n = roam.near, v = n.p.clone(); v.y += n.h; v.project(C.camera);
+      const cr = C.canvas.getBoundingClientRect(), hr = host.getBoundingClientRect();
+      promptEl.style.left = ((v.x * 0.5 + 0.5) * cr.width + cr.left - hr.left) + 'px';
+      promptEl.style.top = ((-v.y * 0.5 + 0.5) * cr.height + cr.top - hr.top) + 'px';
+      const verb = n.kind === 'relic' ? 'Take relic' : n.kind === 'scroll' ? 'Read scroll' : 'Speak';
+      const html = '<kbd>E</kbd> ' + verb;
+      if (promptEl.innerHTML !== html) promptEl.innerHTML = html;
+      promptEl.classList.add('on');
+    } else promptEl.classList.remove('on');
+  }
+  function roamRoom() {
+    roam.entered = 0; roam.target = null; roam.vel.set(0, 0, 0); roam.near = null;
+    roam.gridSpec = null; roam.grid = null; roam.zones = [];
+    if (roam.lurk && roam.lurk.roomId !== C.roomId) roam.lurk = null;
+    // Build the floor map once the room has settled in.
+    setTimeout(() => { if (E.active) navGrid(); }, 60);
+  }
+  promptEl.addEventListener('click', () => interact());
+  // One-time hint
+  try {
+    if (!localStorage.getItem('kt_roam_hint')) {
+      localStorage.setItem('kt_roam_hint', '1');
+      setTimeout(() => {
+        if (typeof addLog === 'function') addLog('🛡 New: walk the knight with WASD / arrow keys (or tap the floor). Press E beside relics, scrolls and people. Step into a ring of light to leave the room. P for photo mode.', 'system');
+      }, 1500);
+    }
+  } catch (_) {}
+
   // ── Wire into the engine ──────────────────────────────────────────────────
-  E.onRoom = function (id, spec) { if (photo.on) setPhoto(false); buildExits(id, spec); amb.profile = null; hovered = null; };
-  E.onFrame = function (dt) { updatePhoto(); updateSigils(dt); updateHover(); updateStrike(); updateAudio(dt); };
-  if (C.room && C.roomId) buildExits(C.roomId, C.room);
-  G3D.world = { group: exitGroup, exits: () => exits.map(e => ({ dir: e.dir, to: e.to, pos: e.sigil.position.toArray() })), get strike() { return strike; }, get walking() { return walking; }, get hovered() { return hovered; }, amb, photo, setPhoto };
+  E.onRoom = function (id, spec) { if (photo.on) setPhoto(false); buildExits(id, spec); roamRoom(); amb.profile = null; hovered = null; };
+  E.onFrame = function (dt) { updatePhoto(); updateRoam(dt); updateSigils(dt); updateHover(); updateStrike(); updateAudio(dt); };
+  if (C.room && C.roomId) { buildExits(C.roomId, C.room); roamRoom(); }
+  G3D.world = { group: exitGroup, exits: () => exits.map(e => ({ dir: e.dir, to: e.to, pos: e.sigil.position.toArray() })), get strike() { return strike; }, get walking() { return walking; }, get hovered() { return hovered; }, amb, music, photo, setPhoto, roam, navGrid, engage };
   }
 })();

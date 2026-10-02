@@ -25,7 +25,7 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 | [`pentest-sim.html`](pentest-sim.html) | Pentest simulator. |
 | [`hacker-feed.html`](hacker-feed.html) | Live GitHub activity rendered as a security ops console. |
 | [`insane-engine.html`](insane-engine.html) | GPU cinematic demo — fluid ink, particles, bloom. |
-| [`game.html`](game.html) + [`game3d/`](game3d/) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. Every room is rendered in real-time 3D (three.js): procedural PBR textures, torchlight and shadows, bloom and film grading, and animated combat. On desktop the **Ultra** tier adds a cinematic pipeline: volumetric light shafts through shadow-mapped fog, ambient occlusion, screen-space reflections, depth of field, lens effects and a rainstorm — and a photo mode (press **P**) to orbit the camera. You play inside the scene: click glowing exit sigils to walk between rooms, click relics, scrolls and NPCs, land timed strikes for critical hits, and hear a procedural ambient soundscape. Falls back to the original SVG art without WebGL; a ◆ 3D / ◇ 2D toggle sits in the top bar. |
+| [`game.html`](game.html) + [`game3d/`](game3d/) | **Knights Templar: The Siege of the Undead** — browser RPG that grew out of an SNHU IT 140 Python assignment. Every room is rendered in real-time 3D (three.js): procedural PBR textures, torchlight and shadows, bloom and film grading, and animated combat. On desktop the **Ultra** tier adds a cinematic pipeline: volumetric light shafts through shadow-mapped fog, ambient occlusion, screen-space reflections, depth of field, lens effects and a rainstorm — and a photo mode (press **P**) to orbit the camera. Since v13 you walk the knight freely (WASD, gamepad or tap-to-move) over a walkable-floor map computed from each room's geometry, foes wait and close in, and combat has its own generated music. You play inside the scene: click glowing exit sigils to walk between rooms, click relics, scrolls and NPCs, land timed strikes for critical hits, and hear a procedural ambient soundscape. Falls back to the original SVG art without WebGL; a ◆ 3D / ◇ 2D toggle sits in the top bar. |
 | [`world.html`](world.html) + [`src/`](src/) | **REALM** — modular open-world 3D sandbox (procedural terrain, day/night, weather, vehicles, quests). |
 
 ---
@@ -45,7 +45,7 @@ Built from scratch in vanilla HTML, CSS and JavaScript. No framework, no build s
 ├── tools/                # Temple Tools (one HTML file per tool)
 │   └── tools.css, tools.js  # shared cursor / click-burst chrome
 ├── src/                  # REALM open-world engine modules (ES modules)
-├── game3d/               # real-time 3D renderer for game.html (textures, props, rooms, cinematic post-processing, engine, world interaction)
+├── game3d/               # real-time 3D renderer for game.html (textures, props, rooms, cinematic post-processing, navigation, engine, world interaction)
 ├── vendor/three/         # three.js r128 + post-processing + Earth textures (globe, SOC, engine, game)
 ├── vendor/three-r158/    # three.js r158 ES modules for REALM
 ├── scripts/              # site checks + sitemap updater (Python, stdlib only)

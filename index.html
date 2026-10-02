@@ -131,7 +131,7 @@
     <div><div class="konami-stat-val">10+</div><div class="konami-stat-key">ATK — Years Sales</div></div>
     <div><div class="konami-stat-val">5</div><div class="konami-stat-key">DEF — Certs</div></div>
     <div><div class="konami-stat-val">∞</div><div class="konami-stat-key">Coffee Consumed</div></div>
-    <div><div class="konami-stat-val">v12.0</div><div class="konami-stat-key">Current Build</div></div>
+    <div><div class="konami-stat-val">v13.0</div><div class="konami-stat-key">Current Build</div></div>
   </div>
   <div class="konami-achievement">🏆 Achievement Unlocked — Lorekeeper: Read Every Patch Note</div>
   <button class="close-konami" onclick="closeKonami()">Return to Fortress</button>
@@ -366,7 +366,7 @@
           <span class="ptag neon">Procedural PBR</span>
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v12 Live · 3D</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v13 Live · 3D</span>
         </div>
         <a href="game.html" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play in 3D</a>
       </div>
@@ -926,6 +926,38 @@
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v13.0</span>
+        <span class="patch-version-name">Free Roam</span>
+        <span class="patch-date">October 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">Walk the Fortress</div>
+        <ul class="patch-list">
+          <li>Move the knight yourself — WASD or arrow keys (Shift to run), a gamepad's left stick, or tap/click the floor to walk there</li>
+          <li>Walls, pillars, pews, tables and shelves block your path — every room's walkable floor is worked out from its actual 3D geometry</li>
+          <li>The camera dollies after you while keeping each room's composition</li>
+          <li>Step into a glowing ring on the floor to take that exit; the compass buttons still work too</li>
+          <li>Walk up to relics, scrolls and people and press <strong>E</strong> (or gamepad A) — a prompt shows what's in reach</li>
+        </ul>
+        <div class="patch-category">Encounters</div>
+        <ul class="patch-list">
+          <li>Foes now rise and stand watching when you enter — the fight starts when you close in, try to slip past, reach for a relic, or after a few tense seconds</li>
+          <li>The knight squares up on his duelling spot as combat begins</li>
+          <li>Gamepad in combat: A attacks (and lands timed strikes), X defends, B flees</li>
+        </ul>
+        <div class="patch-category">Combat Music</div>
+        <ul class="patch-list">
+          <li>War drums and a low drone swell in when a fight starts — faster and harder against the Necromancer — and the drone opens up as your foe weakens</li>
+          <li>A heartbeat when your HP runs low, a victory chord when you win, a deep toll when you fall</li>
+          <li>All generated live with Web Audio; plays with the ♪ Music toggle</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
