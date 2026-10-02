@@ -18,13 +18,19 @@
 
   // Compass directions in room space (camera looks down -z).
   const DIRV = { north: new THREE.Vector3(0, 0, -1), south: new THREE.Vector3(0, 0, 1), east: new THREE.Vector3(1, 0, 0), west: new THREE.Vector3(-1, 0, 0) };
+  function pref() { try { return localStorage.getItem('kt3d'); } catch (_) { return null; } }
+  function setPref(v) { try { localStorage.setItem('kt3d', v); } catch (_) {} }
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 600;
+  // Graphics tiers: 'ultra' (cinematic pipeline, desktop WebGL2), 'std', or 'off' (the 2D art).
+  const wantUltra = !isMobile && pref() !== 'std' && !!G3D.fx;
   const Q = isMobile
-    ? { pr: Math.min(window.devicePixelRatio || 1, 1.25), shadows: false, lights: 4, particles: 0.5, tex: 256, bloomRes: 0.5 }
-    : { pr: Math.min(window.devicePixelRatio || 1, 1.5), shadows: true, lights: 6, particles: 1, tex: 512, bloomRes: 0.5 };
+    ? { pr: Math.min(window.devicePixelRatio || 1, 1.25), shadows: false, lights: 4, particles: 0.5, tex: 256, bloomRes: 0.5, shadowRes: 1024, lens: false }
+    : { pr: Math.min(window.devicePixelRatio || 1, 1.5), shadows: true, lights: 6, particles: 1, tex: 512, bloomRes: 0.5, shadowRes: wantUltra ? 2048 : 1024, lens: true };
 
   let renderer, scene, camera, composer, bloom, finalPass, pmrem;
+  let cine = null, dofPass = null, fxaaPass = null;   // Ultra pipeline passes
+  const fx = { ao: true, vol: true, ssr: true, dof: true, focus: 5, aperture: 0 };
   let panel, canvas, combatHost;
   let spot, dir, hemi, pool = [];
   let roomId = null, room = null, roomCache = {};
@@ -37,15 +43,13 @@
 
   // Camera state
   const cam = { pos: V(0, 1.7, 4), look: V(0, 1.7, -4), fovH: 76, intro: 0, shake: 0, mx: 0, my: 0, combat: 0 };
-  const post = { fade: 1, fadeTarget: 0, flash: 0, flashCol: new THREE.Color(), grade: null, deathGrade: 0 };
+  const post = { fade: 1, fadeTarget: 0, flash: 0, flashCol: new THREE.Color(), grade: null, deathGrade: 0, bars: 0, barsHold: 0 };
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   function supportsWebGL() {
     try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (_) { return false; }
   }
 
-  function pref() { try { return localStorage.getItem('kt3d'); } catch (_) { return null; } }
-  function setPref(v) { try { localStorage.setItem('kt3d', v); } catch (_) {} }
 
   E.boot = function () {
     panel = document.getElementById('scenePanel');
@@ -81,11 +85,11 @@
 
     hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.3); scene.add(hemi);
     spot = new THREE.SpotLight(0xffffff, 1, 30, 0.6, 0.8, 2);
-    spot.castShadow = Q.shadows; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0004; spot.shadow.normalBias = 0.03;
+    spot.castShadow = Q.shadows; spot.shadow.mapSize.set(Q.shadowRes, Q.shadowRes); spot.shadow.bias = -0.0004; spot.shadow.normalBias = 0.03;
     spot.shadow.camera.near = 0.5; spot.shadow.camera.far = 40;
     scene.add(spot); scene.add(spot.target);
     dir = new THREE.DirectionalLight(0xffffff, 1);
-    dir.castShadow = Q.shadows; dir.shadow.mapSize.set(1024, 1024); dir.shadow.bias = -0.0005; dir.shadow.normalBias = 0.03;
+    dir.castShadow = Q.shadows; dir.shadow.mapSize.set(Q.shadowRes, Q.shadowRes); dir.shadow.bias = -0.0005; dir.shadow.normalBias = 0.03;
     scene.add(dir); scene.add(dir.target);
     for (let i = 0; i < Q.lights; i++) {
       const l = new THREE.PointLight(0xffffff, 0, 10, 2);
@@ -98,7 +102,14 @@
     const hf = isGL2 || renderer.extensions.has('OES_texture_half_float') && renderer.extensions.has('EXT_color_buffer_half_float');
     const rt = new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: hf ? THREE.HalfFloatType : THREE.UnsignedByteType });
     composer = new THREE.EffectComposer(renderer, rt);
-    composer.addPass(new THREE.RenderPass(scene, camera));
+    E.ultra = wantUltra && isGL2 && hf;
+    if (E.ultra) {
+      // Scene + depth → AO + volumetric light → depth of field (see game3d/fx.js)
+      cine = new G3D.fx.CinematicPass(scene, camera, { halfFloat: true });
+      composer.addPass(cine);
+      dofPass = new THREE.ShaderPass(G3D.fx.DOF);
+      composer.addPass(dofPass);
+    } else composer.addPass(new THREE.RenderPass(scene, camera));
     bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.9, 0.6, 0.82);
     if (hf) [bloom.renderTargetBright, ...bloom.renderTargetsHorizontal, ...bloom.renderTargetsVertical].forEach(t => { t.texture.type = THREE.HalfFloatType; });
     // Clamp very hot pixels before blurring: unclamped HDR spikes turn the bloom kernel into visible squares.
@@ -106,8 +117,17 @@
     bloom.materialHighPassFilter.needsUpdate = true;
     composer.addPass(bloom);
     finalPass = new THREE.ShaderPass(FINAL_SHADER);
-    finalPass.renderToScreen = true;
     composer.addPass(finalPass);
+    const fu = finalPass.uniforms;
+    fu.tBright.value = bloom.renderTargetsVertical[1].texture;   // a soft, blurred bloom level feeds the streaks
+    fu.tBloom.value = bloom.renderTargetsHorizontal[0].texture;
+    if (Q.lens && G3D.fx) { fu.tDirt.value = G3D.fx.lensDirt(); fu.streak.value = 0.012; fu.dirt.value = 0.9; fu.haze.value = reducedMotion ? 0 : 1; }
+    if (G3D.fx) {
+      // Anti-aliasing on the graded image; grain moves here so FXAA doesn't smear it.
+      fxaaPass = new THREE.ShaderPass(G3D.fx.FXAA);
+      composer.addPass(fxaaPass);
+      fu.grain.value = 0;
+    }
 
     createParticles();
     panel.addEventListener('pointermove', e => {
@@ -138,9 +158,14 @@
     if (!bar || document.getElementById('btn3d')) return;
     const b = document.createElement('button');
     b.id = 'btn3d'; b.className = 'btn-audio'; b.type = 'button';
-    b.title = 'Toggle real-time 3D graphics';
-    b.textContent = pref() === 'off' ? '◇ 2D' : '◆ 3D';
-    b.addEventListener('click', () => { setPref(pref() === 'off' ? 'on' : 'off'); location.reload(); });
+    // Cycle: Ultra (cinematic) → 3D (standard) → 2D art. Phones skip Ultra.
+    const cur = pref() === 'off' ? 'off' : (pref() === 'std' || isMobile || !G3D.fx) ? 'std' : 'ultra';
+    b.title = 'Graphics: ' + ({ ultra: 'Ultra — volumetric light, ambient occlusion, depth of field', std: 'standard 3D', off: 'classic 2D art' })[cur] + ' (click to change)';
+    b.textContent = ({ ultra: '◆ Ultra', std: '◆ 3D', off: '◇ 2D' })[cur];
+    b.addEventListener('click', () => {
+      const next = cur === 'ultra' ? 'std' : cur === 'std' ? 'off' : (isMobile || !G3D.fx ? 'std' : 'ultra');
+      setPref(next === 'ultra' ? 'on' : next); location.reload();
+    });
     const fs = bar.querySelector('.btn-fullscreen');
     bar.insertBefore(b, fs || null);
   }
@@ -152,17 +177,31 @@
       exposure: { value: 1 }, tint: { value: new THREE.Vector3(1, 1, 1) }, sat: { value: 1 }, contrast: { value: 1 },
       vignette: { value: 0.95 }, grain: { value: 0.03 }, aberration: { value: 0.0022 },
       fade: { value: 1 }, flashAmt: { value: 0 }, flashCol: { value: new THREE.Color() }, desat: { value: 0 },
+      tBright: { value: null }, tBloom: { value: null }, tDirt: { value: null }, streak: { value: 0 }, dirt: { value: 0 }, haze: { value: 0 }, bars: { value: 0 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
-      uniform sampler2D tDiffuse; uniform float time, exposure, sat, contrast, vignette, grain, aberration, fade, flashAmt, desat;
+      uniform sampler2D tDiffuse, tBright, tBloom, tDirt; uniform float time, exposure, sat, contrast, vignette, grain, aberration, fade, flashAmt, desat, streak, dirt, haze, bars;
       uniform vec3 tint, flashCol; uniform vec2 res; varying vec2 vUv;
       vec3 aces(vec3 x){ return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       void main(){
         vec2 d = vUv - 0.5; float r2 = dot(d, d);
         vec2 off = d * aberration * (0.3 + r2 * 3.0);
-        vec3 c = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+        // Heat shimmer: air above flames (bright light just below this pixel) ripples.
+        vec2 uv = vUv;
+        if (haze > 0.0) {
+          float heat = clamp(dot(texture2D(tBright, vUv - vec2(0.0, 0.04)).rgb, vec3(0.3)) - 0.05, 0.0, 1.0);
+          uv += vec2(sin(vUv.y * 95.0 - time * 6.5 + sin(vUv.x * 37.0) * 2.0), cos(vUv.x * 71.0 + time * 4.3)) * 0.0024 * heat * haze;
+        }
+        vec3 c = vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
+        // Anamorphic streaks from the brightest lights, and lens dirt lit by the bloom.
+        if (streak > 0.0) {
+          vec3 st = vec3(0.0);
+          for (int i = -14; i <= 14; i++) { float fi = float(i); st += texture2D(tBright, vUv + vec2(fi * 0.017, 0.0)).rgb * exp(-abs(fi) * 0.2); }
+          c += st * streak * vec3(0.5, 0.68, 1.0);
+        }
+        if (dirt > 0.0) c += texture2D(tBloom, vUv).rgb * texture2D(tDirt, vUv).rgb * dirt;
         c *= exposure * tint;
         c += flashCol * flashAmt;
         c = aces(c);
@@ -173,6 +212,9 @@
         c = pow(c, vec3(1.0 / 2.2));
         c += (hash(vUv * res + fract(time * 13.7) * 91.0) - 0.5) * grain;
         c *= 1.0 - fade;
+        // Cinematic letterbox for the big moments.
+        float bh = bars * 0.105;
+        if (bars > 0.001) c *= smoothstep(bh - 0.002, bh + 0.002, vUv.y) * smoothstep(bh - 0.002, bh + 0.002, 1.0 - vUv.y);
         gl_FragColor = vec4(c, 1.0);
       }`,
   };
@@ -608,7 +650,7 @@
     roomId = id; room = spec;
     scene.add(room.group);
     scene.background = new THREE.Color(spec.bg || '#000');
-    scene.fog = new THREE.FogExp2(new THREE.Color(spec.fog[0]), spec.fog[1]);
+    scene.fog = new THREE.FogExp2(new THREE.Color(spec.fog[0]), spec.fog[1] * (E.ultra && fx.vol ? 0.6 : 1));
     scene.environment = spec.env;
     // Lights
     hemi.color.set(spec.hemi[0]); hemi.groundColor.set(spec.hemi[1]); hemi.intensity = spec.hemi[2] * 0.45;
@@ -835,6 +877,7 @@
       tmpLook.x += (Math.random() - 0.5) * s * 0.3;
     }
     cam.shake = Math.max(0, cam.shake - dt * 1.2);
+    if (E.camOverride) E.camOverride(tmpPos, tmpLook, dt);   // photo mode (game3d/world.js)
     camera.position.copy(tmpPos);
     camera.lookAt(tmpLook);
     // Field of view from the desired horizontal angle, clamped for tall screens.
@@ -849,6 +892,8 @@
     composer.setSize(Math.floor(w * pr), Math.floor(h * pr));
     bloom.resolution.set(w * pr * Q.bloomRes, h * pr * Q.bloomRes);
     finalPass.uniforms.res.value.set(w * pr, h * pr);
+    if (fxaaPass) fxaaPass.uniforms.res.value.set(w * pr, h * pr);
+    if (dofPass) dofPass.uniforms.res.value.set(w * pr, h * pr);
   }
 
   // ── Per-frame animation of the set ─────────────────────────────────────────
@@ -932,13 +977,93 @@
       u.flashAmt.value = post.flash * 0.32; u.flashCol.value.copy(post.flashCol);
       post.deathGrade += ((knight.dead || (knight.anim && knight.anim.name === 'die') ? 1 : 0) - post.deathGrade) * Math.min(1, dt * 1.5);
       u.desat.value = post.deathGrade * 0.75;
+      const ka = knight.anim && knight.anim.name, ea = enemy && enemy.anim && enemy.anim.name;
+      post.barsHold = Math.max(0, post.barsHold - dt);
+      const barsOn = knight.dead || ka === 'die' || ka === 'divine' || (ea === 'die' && enemy.type === 'necromancer') || post.barsHold > 0;
+      post.bars += ((barsOn ? 1 : 0) - post.bars) * Math.min(1, dt * 2.5);
+      u.bars.value = post.bars;
+      if (fxaaPass) { fxaaPass.uniforms.time.value = time; fxaaPass.uniforms.grain.value = 0.03; }
+      if (E.ultra) updateFX(dt);
       if (!draw) return;
       composer.render();
+      if (E.ultra && (E._ultraChecks = (E._ultraChecks || 0) + 1) <= 3) checkUltra();
       if (!panel.classList.contains('g3d-active')) { panel.classList.add('g3d-active'); requestAnimationFrame(() => panel.classList.add('g3d-ready')); }
       adapt(dt);
     }
   }
   function shortAngle(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
+
+  // ── Ultra pipeline: feed the fog its lights, aim the depth of field ───────
+  const tmpV = V(), focusV = V();
+  function updateFX(dt) {
+    const vs = Object.assign({}, room.vol, E.tune), fog = room.fog, u = cine.volMat.uniforms;
+    const fc = scene.fog.color;
+    cine.ao = fx.ao; cine.vol = fx.vol; cine.ssr = fx.ssr; dofPass.enabled = fx.dof;
+    const r = cine.ssrMat.uniforms;
+    r.wet.value = vs.wet != null ? vs.wet : 0.3; r.puddles.value = vs.puddles != null ? vs.puddles : 0.35;
+    const bgc = scene.background, sk = room.outdoor ? 1.6 : 0.3;
+    r.missCol.value.set(bgc.r * sk + fc.r * 0.5, bgc.g * sk + fc.g * 0.5, bgc.b * sk + fc.b * 0.5);
+    u.time.value = reducedMotion ? 0 : time;
+    u.fogCol.value.set(fc.r, fc.g, fc.b).multiplyScalar(vs.ambient != null ? vs.ambient : 0.15);
+    u.density.value = vs.density != null ? vs.density : fog[1] * 0.8;
+    u.heightFall.value = vs.height != null ? vs.height : 0.32;
+    u.noiseAmt.value = vs.noise != null ? vs.noise : 0.75;
+    u.ambient.value = 1; u.lightAmt.value = vs.light != null ? vs.light : 1.3;
+    u.keyAmt.value = vs.key != null ? vs.key : 0.35;
+    for (let i = 0; i < G3D.fx.NL; i++) {
+      const p = pool[i];
+      if (!p || !p.anchor || p.light.intensity <= 0) { u.lCol.value[i].set(0, 0, 0); continue; }
+      u.lPos.value[i].copy(p.light.position);
+      const c = p.light.color, k = p.light.intensity * 0.55;
+      u.lCol.value[i].set(c.r * k, c.g * k, c.b * k);
+      u.lRange.value[i] = p.light.distance || 8;
+    }
+    const key = spot.visible ? spot : dir.visible ? dir : null;
+    cine.keyLight = key;
+    if (!key) u.keyType.value = 0;
+    else {
+      const kc = key.color, ki = key.intensity * (key === spot ? 0.5 : 0.35);
+      u.keyCol.value.set(kc.r * ki, kc.g * ki, kc.b * ki);
+      u.keyDir.value.subVectors(key.target.position, key.position).normalize();
+      u.keyPos.value.copy(key.position);
+      if (key === spot) { u.keyType.value = 1; u.keyCos.value = Math.cos(spot.angle); u.keyCosInner.value = Math.cos(spot.angle * (1 - spot.penumbra * 0.8)); }
+      else u.keyType.value = 2;
+    }
+    // Depth of field: the knight in exploration, the duel in combat, the fallen knight in death.
+    const d = dofPass.uniforms;
+    d.tDepth.value = cine.depthTexture; d.projInv.value.copy(camera.projectionMatrixInverse); d.cNear.value = camera.near; d.cFar.value = camera.far;
+    let ap = vs.dof != null ? vs.dof : 0.22;
+    focusV.copy(knight.R.root.position).y += 1.3;
+    if (cam.combat > 0.01 && enemy) { tmpV.copy(enemy.R.root.position).y += 1.3; focusV.lerp(tmpV, 0.5); ap = G3D.lerp(ap, 0.5, cam.combat); }
+    if (knight.dead) ap = 0.7;
+    if (E.dofOverride) { focusV.copy(E.dofOverride.target); ap = E.dofOverride.aperture; }
+    const fd = camera.position.distanceTo(focusV);
+    fx.focus += (fd - fx.focus) * Math.min(1, dt * 4); fx.aperture += (ap - fx.aperture) * Math.min(1, dt * 2);
+    d.focus.value = fx.focus; d.aperture.value = fx.aperture;
+    d.maxBlur.value = Math.max(3, renderer.getSize(tmpSize).y * renderer.getPixelRatio() / 70);
+  }
+  const tmpSize = new THREE.Vector2();
+
+  // A GPU that can't compile the Ultra shaders gets the standard pipeline instead of a black screen.
+  function checkUltra() {
+    const bad = renderer.info.programs.some(p => p.diagnostics && p.diagnostics.runnable === false);
+    if (!bad) return;
+    console.warn('[3D] Ultra shaders failed to compile; using the standard renderer');
+    const i = composer.passes.indexOf(cine);
+    composer.passes.splice(i, 2, new THREE.RenderPass(scene, camera));
+    E.ultra = false; cine = null; dofPass = null;
+    if (scene.fog && room) scene.fog.density = room.fog[1];
+  }
+
+  // If even the lowest resolution can't keep up, shed the costliest effects.
+  function degrade() {
+    if (!E.ultra) return false;
+    if (fx.vol) { fx.vol = false; if (scene.fog && room) scene.fog.density = room.fog[1]; return true; }
+    if (fx.ssr) { fx.ssr = false; return true; }
+    if (fx.dof) { fx.dof = false; return true; }
+    if (fx.ao) { fx.ao = false; return true; }
+    return false;
+  }
 
   // Dynamic resolution: keep it smooth on slower GPUs.
   function adapt(dt) {
@@ -946,6 +1071,7 @@
     if (fps.acc < 2.5) return;
     const avg = fps.acc / fps.n; fps.acc = 0; fps.n = 0;
     const pr = renderer.getPixelRatio();
+    if (avg > 1 / 30 && pr <= 0.6 + 1e-3 && degrade()) return;
     if (avg > 1 / 38 && pr > 0.6) { renderer.setPixelRatio(Math.max(0.6, pr - 0.15)); resize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight); }
     else if (avg < 1 / 58 && pr < Q.pr) { renderer.setPixelRatio(Math.min(Q.pr, pr + 0.1)); resize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight); }
   }
@@ -965,7 +1091,7 @@
     window.showSpecialScene = function (key) {
       if (E.active) {
         if (key === 'death') { queue.length = 0; knight.play('die', 2.2); cam.shake = 0.4; }
-        if (key === 'victory') { post.flash = 1.6; post.flashCol.set('#fff0c0'); }
+        if (key === 'victory') { post.flash = 1.6; post.flashCol.set('#fff0c0'); post.barsHold = 5; }
         return true;
       }
       return orig.showSpecialScene(key);
@@ -985,11 +1111,13 @@
 
   // Debug: advance the simulation n steps without drawing, then draw once.
   E.step = (n, dt) => { for (let i = 0; i < n; i++) frame(dt || 1 / 30, i === n - 1); };
-  E.internals = () => ({ scene, renderer, camera, pool, spot, dir, hemi });
+  E.internals = () => ({ scene, renderer, camera, pool, spot, dir, hemi, cine, dofPass, fxaaPass, finalPass, bloom });
   E.debug = () => ({ fade: post.fade, fadeT: post.fadeTarget, calls: renderer.info.render.calls, tris: renderer.info.render.triangles,
     progs: renderer.info.programs.length, cam: camera.position.toArray().map(v => +v.toFixed(2)), fov: +camera.fov.toFixed(1),
     size: renderer.getSize(new THREE.Vector2()).toArray(), pr: renderer.getPixelRatio(), room: roomId, time: +time.toFixed(2), parent: canvas.parentElement.id,
-    gl2: renderer.capabilities.isWebGL2, rtType: composer.renderTarget1.texture.type, pending: E.pending });
+    gl2: renderer.capabilities.isWebGL2, rtType: composer.renderTarget1.texture.type, pending: E.pending,
+    ultra: !!E.ultra, fx: Object.assign({}, fx) });
+  E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null;
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
 })();

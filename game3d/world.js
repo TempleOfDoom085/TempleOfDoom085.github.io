@@ -34,6 +34,16 @@
       font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:rgba(240,213,138,0.85); text-shadow:0 0 8px #000; white-space:nowrap; }
     .g3d-strike .verdict { position:absolute; transform:translate(-50%,-50%); font-family:var(--heading, serif); font-size:1.6rem;
       letter-spacing:0.12em; color:#ffd36a; text-shadow:0 0 18px rgba(255,200,80,0.8); animation:g3dPop 0.7s ease-out forwards; }
+    .scene-panel.g3d-photo .scene-overlay { opacity:0; transition:opacity 0.3s ease; }
+    .scene-panel.g3d-photo .g3d-canvas { cursor:grab; touch-action:none; }
+    .scene-panel.g3d-photo .g3d-canvas:active { cursor:grabbing; }
+    .g3d-photo-hint { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:6; pointer-events:none; white-space:nowrap;
+      font-family:var(--ui, monospace); font-size:0.68rem; letter-spacing:0.1em; color:rgba(240,230,210,0.85);
+      background:rgba(8,8,10,0.7); border:1px solid rgba(201,168,76,0.35); padding:5px 12px; border-radius:2px; }
+    .g3d-photo-hint b { color:#f0d58a; font-weight:normal; text-transform:uppercase; margin-right:6px; }
+    .g3d-photo-hint kbd { font-family:inherit; border:1px solid rgba(240,230,210,0.35); padding:0 4px; border-radius:2px; }
+    #btnPhoto[aria-pressed="true"] { color:#f0d58a; border-color:rgba(201,168,76,0.7); }
+    @media (max-width: 700px) { .g3d-photo-hint { font-size:0.58rem; white-space:normal; width:90%; text-align:center; } }
     @keyframes g3dPop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.6)} 25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)} 100%{opacity:0;transform:translate(-50%,-70%) scale(1)} }
   `;
   document.head.appendChild(style);
@@ -94,7 +104,7 @@
     if (!proxyFor[key]) { proxyFor[key] = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), proxyMat); proxies.add(proxyFor[key]); }
     return proxyFor[key];
   }
-  function canAct() { return !STATE.inCombat && !walking && !C.pending && !(C.knight && (C.knight.dead || C.knight.walk)); }
+  function canAct() { return !photo.on && !STATE.inCombat && !walking && !C.pending && !(C.knight && (C.knight.dead || C.knight.walk)); }
   function targets() {
     const list = [];
     const room = ROOMS[C.roomId];
@@ -142,6 +152,7 @@
   C.canvas.addEventListener('pointermove', ev => { pointer = { x: ev.clientX, y: ev.clientY }; hovered = pick(ev); });
   C.canvas.addEventListener('pointerleave', () => { pointer = null; hovered = null; });
   C.canvas.addEventListener('click', ev => {
+    if (photo.on) return;
     if (strike) { resolveStrike(); return; }
     const hit = pick(ev);
     if (hit) act(hit);
@@ -179,7 +190,7 @@
   let walking = false;
   const origGo = window.go;
   window.go = function (dir) {
-    if (walking) return;
+    if (walking || photo.on) return;
     const room = ROOMS[STATE.currentRoom];
     if (!E.active || STATE.inCombat || C.pending || !room || !room.exits[dir] || C.reducedMotion || !C.knight || C.knight.dead) return origGo(dir);
     walking = true; hovered = null;
@@ -260,10 +271,11 @@
   const WINDY = { courtyard: 0.7, watchtower: 0.9, tower: 0.45, cloister: 0.35 };
   const DRIPS = { catacombs: 1, crypt: 0.7, dungeon: 0.9, lair: 0.4 };
   const RUMBLE = { lair: 0.9, throne: 0.6, catacombs: 0.35, crypt: 0.3 };
+  const RAIN = { courtyard: 1, watchtower: 0.85 };
   function profileFor(id) {
     const type = (ROOMS[id] && ROOMS[id].type) || '';
     const fires = (C.room && C.room.anchors) ? C.room.anchors.length : 0;
-    return { wind: WINDY[type] || 0, drip: DRIPS[type] || 0, rumble: RUMBLE[type] || 0, crackle: Math.min(1, fires / 6) };
+    return { wind: WINDY[type] || 0, drip: DRIPS[type] || 0, rumble: RUMBLE[type] || 0, rain: RAIN[type] || 0, crackle: Math.min(1, fires / 6) };
   }
   function ensureAudio() {
     if (amb.ctx) return true;
@@ -283,6 +295,12 @@
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 90;
     amb.rumbleGain = ctx.createGain(); amb.rumbleGain.gain.value = 0;
     rb.connect(lp).connect(amb.rumbleGain).connect(amb.master); rb.start();
+    // Rain: a steady hiss of high-passed noise
+    const rn = ctx.createBufferSource(); rn.buffer = buf; rn.loop = true; rn.playbackRate.value = 0.8;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1100;
+    const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 7500;
+    amb.rainGain = ctx.createGain(); amb.rainGain.gain.value = 0;
+    rn.connect(hp).connect(lp2).connect(amb.rainGain).connect(amb.master); rn.start();
     return true;
   }
   function blip(type) {
@@ -299,6 +317,11 @@
       o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.35, t + 0.09);
       const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
       o.connect(g).connect(amb.master); o.start(t); o.stop(t + 0.3);
+    } else if (type === 'thunder') {
+      const s = ctx.createBufferSource(); s.buffer = amb.noise; s.playbackRate.value = 0.3;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(90, t + 2.5);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
+      s.connect(lp).connect(g).connect(amb.master); s.start(t, Math.random(), 3.4);
     } else if (type === 'step') {
       const s = ctx.createBufferSource(); s.buffer = amb.noise;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380 + Math.random() * 120;
@@ -317,15 +340,88 @@
     amb.windGain.gain.setTargetAtTime(p.wind * (0.07 + 0.04 * Math.sin(C.time * 0.23)), t, 0.8);
     amb.windFilter.frequency.setTargetAtTime(320 + 260 * (0.5 + 0.5 * Math.sin(C.time * 0.17)) , t, 1.0);
     amb.rumbleGain.gain.setTargetAtTime(p.rumble * 0.12, t, 1.2);
+    amb.rainGain.gain.setTargetAtTime(p.rain * 0.16, t, 0.8);
+    // Thunder follows the lightning flash after a beat.
+    const ln = G3D.uniforms.lightning ? G3D.uniforms.lightning.value : 0;
+    if (ln > 0.8 && !amb.lnPrev) { const at = t + 0.5 + Math.random() * 1.2; setTimeout(() => { if (amb.on) blip('thunder'); }, (at - t) * 1000); }
+    amb.lnPrev = ln > 0.8;
     if (p.crackle > 0 && C.time > amb.nextCrackle) { blip('crackle'); amb.nextCrackle = C.time + (0.04 + Math.random() * 0.22) / p.crackle; }
     if (p.drip > 0 && C.time > amb.nextDrip) { blip('drip'); amb.nextDrip = C.time + (1.2 + Math.random() * 3.5) / p.drip; }
   }
   E.onStep = () => { if (amb.on) blip('step'); };
 
+  // ── Photo mode ────────────────────────────────────────────────────────────
+  // P (or the 📷 button) frees the camera: drag to orbit the knight, scroll to
+  // zoom, [ and ] to change the depth-of-field blur, P or Esc to return.
+  const photo = { on: false, yaw: 0, pitch: 0.2, dist: 4.5, target: V(0, 1, 0), ap: 0.45, drag: null };
+  const photoHint = document.createElement('div'); photoHint.className = 'g3d-photo-hint';
+  photoHint.innerHTML = '<b>Photo mode</b> drag to orbit · scroll to zoom · [ ] focus blur · <kbd>P</kbd> / <kbd>Esc</kbd> exit';
+  const photoBtn = document.createElement('button');
+  photoBtn.type = 'button'; photoBtn.className = 'btn-audio'; photoBtn.id = 'btnPhoto';
+  photoBtn.title = 'Photo mode (P): orbit the camera freely'; photoBtn.setAttribute('aria-pressed', 'false');
+  photoBtn.textContent = '📷'; photoBtn.setAttribute('aria-label', 'Photo mode');
+  const b3 = document.getElementById('btn3d');
+  if (b3 && b3.parentElement) b3.parentElement.insertBefore(photoBtn, b3.nextSibling);
+  photoBtn.addEventListener('click', () => setPhoto(!photo.on));
+  function photoAllowed() { return E.active && !STATE.inCombat && !C.pending && !walking && C.knight && !C.knight.dead && !C.knight.walk && !strike; }
+  function setPhoto(on) {
+    if (on && !photoAllowed()) return;
+    photo.on = on; hovered = null;
+    C.panel.classList.toggle('g3d-photo', on);
+    photoBtn.setAttribute('aria-pressed', String(on));
+    if (on) {
+      // Start exactly where the camera is, so the switch is seamless.
+      photo.target.copy(C.knight.home); photo.target.y += 1.1;
+      const off = C.camera.position.clone().sub(photo.target), d = off.length();
+      photo.dist = clamp(d, 1.6, 10); photo.yaw = Math.atan2(off.x, off.z); photo.pitch = clamp(Math.asin(off.y / d), -0.12, 1.3);
+      if (photoHint.parentElement !== C.panel) C.panel.appendChild(photoHint);
+      E.camOverride = (pos, look) => {
+        const cp = Math.cos(photo.pitch);
+        pos.set(photo.target.x + Math.sin(photo.yaw) * cp * photo.dist, Math.max(0.25, photo.target.y + Math.sin(photo.pitch) * photo.dist), photo.target.z + Math.cos(photo.yaw) * cp * photo.dist);
+        look.copy(photo.target);
+      };
+      E.dofOverride = { target: photo.target, aperture: photo.ap };
+    } else {
+      photoHint.remove(); E.camOverride = null; E.dofOverride = null; photo.drag = null;
+    }
+  }
+  C.canvas.addEventListener('pointerdown', ev => {
+    if (!photo.on) return;
+    photo.drag = { x: ev.clientX, y: ev.clientY, id: ev.pointerId };
+    try { C.canvas.setPointerCapture(ev.pointerId); } catch (_) {}
+  });
+  C.canvas.addEventListener('pointermove', ev => {
+    if (!photo.on || !photo.drag || photo.drag.id !== ev.pointerId) return;
+    photo.yaw -= (ev.clientX - photo.drag.x) * 0.008;
+    photo.pitch = clamp(photo.pitch + (ev.clientY - photo.drag.y) * 0.006, -0.12, 1.3);
+    photo.drag.x = ev.clientX; photo.drag.y = ev.clientY;
+  });
+  const endDrag = () => { photo.drag = null; };
+  C.canvas.addEventListener('pointerup', endDrag); C.canvas.addEventListener('pointercancel', endDrag);
+  C.canvas.addEventListener('wheel', ev => {
+    if (!photo.on) return;
+    ev.preventDefault();
+    photo.dist = clamp(photo.dist * Math.exp(ev.deltaY * 0.0012), 1.6, 10);
+  }, { passive: false });
+  // Capture phase, so photo mode can keep the game's own shortcuts from firing.
+  window.addEventListener('keydown', ev => {
+    const t = ev.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    const k = ev.key;
+    if (!photo.on) { if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) setPhoto(true); return; }
+    ev.stopImmediatePropagation();
+    if (k === 'p' || k === 'P' || k === 'Escape') { setPhoto(false); return; }
+    if (k === '[' || k === ']') { photo.ap = clamp(photo.ap + (k === ']' ? 0.1 : -0.1), 0, 1.2); E.dofOverride.aperture = photo.ap; }
+    if (k === 'ArrowLeft' || k === 'ArrowRight') { ev.preventDefault(); photo.yaw += k === 'ArrowLeft' ? 0.08 : -0.08; }
+    if (k === 'ArrowUp' || k === 'ArrowDown') { ev.preventDefault(); photo.pitch = clamp(photo.pitch + (k === 'ArrowUp' ? 0.05 : -0.05), -0.12, 1.3); }
+    if (k === '+' || k === '=' || k === '-') photo.dist = clamp(photo.dist * (k === '-' ? 1.1 : 0.9), 1.6, 10);
+  }, true);
+  function updatePhoto() { if (photo.on && !photoAllowed()) setPhoto(false); }
+
   // ── Wire into the engine ──────────────────────────────────────────────────
-  E.onRoom = function (id, spec) { buildExits(id, spec); amb.profile = null; hovered = null; };
-  E.onFrame = function (dt) { updateSigils(dt); updateHover(); updateStrike(); updateAudio(dt); };
+  E.onRoom = function (id, spec) { if (photo.on) setPhoto(false); buildExits(id, spec); amb.profile = null; hovered = null; };
+  E.onFrame = function (dt) { updatePhoto(); updateSigils(dt); updateHover(); updateStrike(); updateAudio(dt); };
   if (C.room && C.roomId) buildExits(C.roomId, C.room);
-  G3D.world = { exits: () => exits.map(e => ({ dir: e.dir, to: e.to, pos: e.sigil.position.toArray() })), get strike() { return strike; }, get walking() { return walking; }, get hovered() { return hovered; }, amb };
+  G3D.world = { group: exitGroup, exits: () => exits.map(e => ({ dir: e.dir, to: e.to, pos: e.sigil.position.toArray() })), get strike() { return strike; }, get walking() { return walking; }, get hovered() { return hovered; }, amb, photo, setPhoto };
   }
 })();

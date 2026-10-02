@@ -241,6 +241,7 @@
     for (let i = 0; i < 3; i++) { const b = P.banner(0.9, 2.2, 'white'); b.position.set(s.w / 2 - 0.15, 3.8, -2 - i * 6); b.rotation.y = -Math.PI / 2; g.add(b); }
     return spec({
       group: g, fog: ['#0c1220', 0.04], bg: '#070a12',
+      vol: { key: 1.0 },   // Ultra: moonlight shafts between the arches
       hemi: ['#40506e', '#0a0c10', 0.4],
       key: { type: 'dir', dir: [-0.75, 0.55, -0.35], color: '#a8c0ff', intensity: 1.5, area: 14, center: [0, 0, -4] },
       grade: { exposure: 1.15, tint: [0.9, 0.98, 1.12], sat: 0.85 },
@@ -411,8 +412,9 @@
     place(g, P.brazier('#ff7a20'), -6, 0, -14);
     sky(g, { moon: [0.35, 0.42, -0.85], horizon: '#141a2a', clouds: true });
     hills(g);
+    g.add(P.rain({ box: [-14, 14, -22, 5], top: 12, count: 2200, splashBox: [-5, 7, -9, 2.5], splashes: 320, wind: [1.4, 0.4] }));
     return spec({
-      group: g, fog: ['#0a0e16', 0.022], bg: '#06080e', outdoor: true, lightning: true,
+      group: g, fog: ['#0a0e16', 0.022], bg: '#06080e', outdoor: true, lightning: true, vol: { wet: 1, puddles: 1 },
       hemi: ['#3a4a6a', '#0a0a0c', 0.4],
       key: { type: 'dir', dir: [0.4, 0.55, -0.75], color: '#8ea8e0', intensity: 1.1, area: 20, center: [0, 0, -6] },
       grade: { exposure: 1.15, tint: [0.92, 0.98, 1.1], sat: 0.95 },
@@ -459,7 +461,7 @@
     // Skull candles in niches
     [[-1.9, -1.5], [1.9, -5.5], [-1.9, -9.5], [1.9, -13]].forEach(([x, z], i) => { const c = P.candles(3, 0.08, 90 + i); c.position.set(x, 1.0, z); g.add(c); });
     return spec({
-      group: g, fog: ['#081014', 0.085], bg: '#030607',
+      group: g, fog: ['#081014', 0.085], bg: '#030607', vol: { wet: 0.55, puddles: 0.8 },
       hemi: ['#2a3a44', '#040606', 0.3],
       key: { type: 'spot', pos: [0.5, 3.0, 2.5], target: [0, 0, -6], color: '#88d0ff', intensity: 1.1, angle: 0.7, penumbra: 1, distance: 18 },
       grade: { exposure: 1.25, tint: [0.88, 1.0, 1.08], sat: 0.85 },
@@ -489,7 +491,7 @@
     const chains = [[-3, -3], [3.5, -6], [-1, -9]];
     chains.forEach(([x, z], i) => { const c = P.chain(3.5, i); c.position.set(x, 8, z); g.add(c); });
     return spec({
-      group: g, fog: ['#020805', 0.03], bg: '#010302',
+      group: g, fog: ['#020805', 0.03], bg: '#010302', vol: { light: 0.55 },
       hemi: ['#1a3020', '#020302', 0.25],
       key: { type: 'spot', pos: [0.4, 7.6, 1], target: [0.4, 0, -1], color: '#7aff90', intensity: 1.3, angle: 0.45, penumbra: 0.8, distance: 20 },
       grade: { exposure: 1.0, tint: [0.95, 1.05, 0.95], sat: 0.95, contrast: 1.15 },
@@ -512,7 +514,7 @@
     [-4, -12].forEach(z => { const c = P.chandelier(1.3); c.position.set(0, 5.4, z); g.add(c); });
     [-3.5, 3.5].forEach(x => { const l = P.stainedWindow('lancet', 4, '#ffd8b0'); l.position.set(x, 5.8, s.zB + 0.06); g.add(l); });
     return spec({
-      group: g, fog: ['#140c08', 0.035], bg: '#0a0604',
+      group: g, fog: ['#140c08', 0.035], bg: '#0a0604', vol: { wet: 0.45, puddles: 0 },
       hemi: ['#4a3426', '#100806', 0.35],
       key: { type: 'spot', pos: [0, 3.5, s.zB + 3], target: [0, 0, -2], color: '#ff9a50', intensity: 2.2, angle: 0.9, penumbra: 1, distance: 30 },
       grade: { exposure: 1.1, tint: [1.08, 0.98, 0.88], sat: 1.05 },
@@ -533,7 +535,7 @@
     for (let i = 0; i < 6; i++) { const gob = mesh(new THREE.CylinderGeometry(0.06, 0.035, 0.22, 10), G3D.metalMat('gold')); gob.position.set(-1 + i * 0.5, 0.11, -2.4 - (i % 2) * 0.6); if (i % 3 === 0) { gob.rotation.z = 1.4; gob.position.y = 0.06; } g.add(gob); }
     s.pillarZ.forEach(z => { wallTorch(g, 'L', -s.w / 2 + 0.25, 2.6, z - 2); wallTorch(g, 'R', s.w / 2 - 0.25, 2.6, z - 2); });
     return spec({
-      group: g, fog: ['#140e04', 0.045], bg: '#0a0702',
+      group: g, fog: ['#140e04', 0.045], bg: '#0a0702', vol: { wet: 0.5, puddles: 0 },
       hemi: ['#5a4520', '#100a04', 0.35],
       key: { type: 'spot', pos: [0, 4.8, 0], target: [0, 0, -4], color: '#ffd080', intensity: 1.4, angle: 0.7, penumbra: 0.9, distance: 16 },
       grade: { exposure: 0.88, tint: [1.06, 1.0, 0.86], sat: 1.05, contrast: 1.1 },
@@ -553,7 +555,7 @@
     s.pillarZ.forEach((z, i) => { const b = P.banner(1.0, 3.2, 'black'); b.position.set((i % 2 ? -1 : 1) * (s.w / 2 - 1.5), 6, z - 2.2); b.rotation.y = (i % 2 ? 1 : -1) * Math.PI / 2; g.add(b); });
     const carpet = mesh(new THREE.PlaneGeometry(2.2, 12), redCarpet()); carpet.rotation.x = -Math.PI / 2; carpet.position.set(0, 0.01, -3); g.add(carpet);
     return spec({
-      group: g, fog: ['#160406', 0.05], bg: '#0a0203',
+      group: g, fog: ['#160406', 0.05], bg: '#0a0203', vol: { wet: 0.6, puddles: 0 },
       hemi: ['#5a2a2a', '#100606', 0.45],
       key: { type: 'spot', pos: [0, 7.2, -1], target: [0, 1.8, s.zB + 2], color: '#ff4a32', intensity: 2.0, angle: 0.42, penumbra: 0.7, distance: 22 },
       grade: { exposure: 1.2, tint: [1.08, 0.94, 0.92], sat: 0.95, contrast: 1.12 },
@@ -604,7 +606,7 @@
     s.pillarZ.forEach(z => { wallTorch(g, 'L', -s.w / 2 + 0.25, 2.4, z - 2); });
     wallTorch(g, 'B', 0, 2.4, s.zB + 0.25);
     return spec({
-      group: g, fog: ['#120406', 0.06], bg: '#080203',
+      group: g, fog: ['#120406', 0.06], bg: '#080203', vol: { wet: 0.8, puddles: 0.9 },
       hemi: ['#3a1a1a', '#080303', 0.28],
       key: { type: 'spot', pos: [1.5, 4.0, 2.5], target: [-0.5, 0, -4], color: '#ff6a40', intensity: 1.2, angle: 0.9, penumbra: 1, distance: 16 },
       grade: { exposure: 1.2, tint: [1.1, 0.92, 0.9], sat: 0.95, contrast: 1.1 },
@@ -631,8 +633,9 @@
     const valley = mesh(new THREE.PlaneGeometry(300, 300), G3D.flatMat('valley', '#05070a', 1), false, true); valley.rotation.x = -Math.PI / 2; valley.position.y = -16; g.add(valley);
     sky(g, { moon: [-0.25, 0.32, -0.92], horizon: '#1c2640', clouds: true });
     hills(g, '#070a10');
+    g.add(P.rain({ box: [-12, 12, -16, 5], top: 11, count: 1800, splashBox: [-4.5, 4.5, -6.5, 2.5], splashes: 220, wind: [2.2, 0.2] }));
     return spec({
-      group: g, fog: ['#0c1424', 0.018], bg: '#080c18', outdoor: true,
+      group: g, fog: ['#0c1424', 0.018], bg: '#080c18', outdoor: true, vol: { wet: 0.7, puddles: 0.8 },
       hemi: ['#3a4a6e', '#08080c', 0.42],
       key: { type: 'dir', dir: [-0.3, 0.45, -0.85], color: '#9ab4f0', intensity: 1.2, area: 10, center: [0, 0, -2] },
       grade: { exposure: 1.25, tint: [0.92, 0.98, 1.1], sat: 0.9 },

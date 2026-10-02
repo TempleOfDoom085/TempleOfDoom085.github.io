@@ -936,4 +936,81 @@
     R.kind = 'npc';
     return R;
   };
+
+  // ── Rain: GPU-animated streaks plus splash rings on the ground ────────────
+  // o = { box: [x0, x1, z0, z1], top, floor, count, splashes, wind: [x, z] }
+  P.rain = function (o) {
+    const g = new THREE.Group();
+    const [x0, x1, z0, z1] = o.box, top = o.top || 10, floor = o.floor || 0;
+    const U = G3D.uniforms;
+    if (!U.lightning) U.lightning = { value: 0 };
+    const rnd = G3D.rng ? G3D.rng(91) : Math.random;
+    const n = o.count || 1600;
+    const pos = new Float32Array(n * 6), seed = new Float32Array(n * 2), tail = new Float32Array(n * 2);
+    for (let i = 0; i < n; i++) {
+      const x = x0 + rnd() * (x1 - x0), z = z0 + rnd() * (z1 - z0), s = rnd();
+      for (let k = 0; k < 2; k++) { pos[i * 6 + k * 3] = x; pos[i * 6 + k * 3 + 1] = 0; pos[i * 6 + k * 3 + 2] = z; seed[i * 2 + k] = s; tail[i * 2 + k] = k; }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('seed', new THREE.BufferAttribute(seed, 1));
+    geo.setAttribute('tail', new THREE.BufferAttribute(tail, 1));
+    const wind = o.wind || [1.2, 0.3];
+    const m = new THREE.ShaderMaterial({
+      uniforms: { time: U.time, flash: U.lightning, top: { value: top }, floor: { value: floor }, wind: { value: new THREE.Vector2(wind[0], wind[1]) },
+        color: { value: new THREE.Color(o.color || '#9fb4d8') }, opacity: { value: o.opacity || 0.4 } },
+      vertexShader: `attribute float seed; attribute float tail; uniform float time, top, floor; uniform vec2 wind;
+        varying float vA;
+        void main(){
+          float h = top - floor, speed = 11.0 + seed * 5.0, len = 0.35 + seed * 0.35;
+          float y = top - mod(time * speed + seed * h * 13.0, h);
+          vec3 p = position; p.y = y;
+          p.xz += wind * (top - y) / speed;
+          p += vec3(-wind.x / speed, 1.0, -wind.y / speed) * len * tail;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          vA = (1.0 - tail) * smoothstep(34.0, 6.0, -mv.z) * smoothstep(0.4, 1.6, -mv.z) * smoothstep(floor, floor + 0.3, y);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `uniform vec3 color; uniform float opacity, flash; varying float vA;
+        void main(){ gl_FragColor = vec4(color * vA * opacity * (1.0 + flash * 4.0), 1.0); }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    });
+    const lines = new THREE.LineSegments(geo, m); lines.frustumCulled = false; lines.renderOrder = 7;
+    g.add(lines);
+    // Splashes: rings that bloom and fade where drops land, near the camera.
+    const sn = o.splashes || 260, sb = o.splashBox || o.box;
+    const sp = new Float32Array(sn * 3), ss = new Float32Array(sn);
+    for (let i = 0; i < sn; i++) { sp[i * 3 + 1] = floor + 0.02; ss[i] = rnd(); }
+    const sg = new THREE.BufferGeometry();
+    sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+    sg.setAttribute('seed', new THREE.BufferAttribute(ss, 1));
+    const smat = new THREE.ShaderMaterial({
+      uniforms: { time: U.time, flash: U.lightning, box: { value: new THREE.Vector4(sb[0], sb[1], sb[2], sb[3]) }, color: { value: new THREE.Color(o.color || '#9fb4d8') } },
+      vertexShader: `attribute float seed; uniform float time; uniform vec4 box; varying float vPh; varying float vF;
+        float h1(float n){ return fract(sin(n * 127.1) * 43758.5453); }
+        void main(){
+          float rate = 1.6 + seed * 1.4, c = time * rate + seed * 17.0, cyc = floor(c);
+          vPh = fract(c);
+          vec3 p = position;
+          p.x = mix(box.x, box.y, h1(cyc + seed * 31.7)); p.z = mix(box.z, box.w, h1(cyc * 1.37 + seed * 7.3));
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          vF = smoothstep(18.0, 4.0, -mv.z);
+          gl_PointSize = clamp((0.25 + vPh * 0.35) * 420.0 / -mv.z, 1.0, 48.0);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `uniform vec3 color; uniform float flash; varying float vPh; varying float vF;
+        void main(){
+          vec2 d = gl_PointCoord - 0.5; d.y *= 3.2;
+          float r = length(d) * 2.0;
+          float ring = smoothstep(0.18, 0.0, abs(r - vPh)) * (1.0 - vPh) * vF;
+          if (ring < 0.01) discard;
+          gl_FragColor = vec4(color * ring * 0.55 * (1.0 + flash * 3.0), 1.0);
+        }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    });
+    const splash = new THREE.Points(sg, smat); splash.frustumCulled = false; splash.renderOrder = 7;
+    g.add(splash);
+    g.userData.noBatch = true;
+    return g;
+  };
 })();

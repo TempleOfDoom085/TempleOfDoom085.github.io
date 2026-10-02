@@ -131,7 +131,7 @@
     <div><div class="konami-stat-val">10+</div><div class="konami-stat-key">ATK — Years Sales</div></div>
     <div><div class="konami-stat-val">5</div><div class="konami-stat-key">DEF — Certs</div></div>
     <div><div class="konami-stat-val">∞</div><div class="konami-stat-key">Coffee Consumed</div></div>
-    <div><div class="konami-stat-val">v11.0</div><div class="konami-stat-key">Current Build</div></div>
+    <div><div class="konami-stat-val">v12.0</div><div class="konami-stat-key">Current Build</div></div>
   </div>
   <div class="konami-achievement">🏆 Achievement Unlocked — Lorekeeper: Read Every Patch Note</div>
   <button class="close-konami" onclick="closeKonami()">Return to Fortress</button>
@@ -366,7 +366,7 @@
           <span class="ptag neon">Procedural PBR</span>
           <span class="ptag neon">Web Audio API</span>
           <span class="ptag">SNHU IT 140</span>
-          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v11 Live · 3D</span>
+          <span class="ptag" style="border-color:rgba(139,0,0,0.4);color:rgba(200,80,80,0.7)">v12 Live · 3D</span>
         </div>
         <a href="game.html" class="hero-cta cta-gold" style="margin-top:0;display:inline-block">▶ Play in 3D</a>
       </div>
@@ -926,6 +926,42 @@
 
   <!-- PATCH NOTES TAB -->
   <div id="tab-patches" class="tab-content">
+
+    <div class="patch-version">
+      <div class="patch-header" onclick="togglePatch(this)">
+        <span class="patch-version-tag">v12.0</span>
+        <span class="patch-version-name">Cathedral of Light</span>
+        <span class="patch-date">October 2026</span>
+        <span class="patch-status live">LIVE</span>
+        <span class="patch-toggle">▼</span>
+      </div>
+      <div class="patch-body open">
+        <div class="patch-category">New "Ultra" Cinematic Renderer</div>
+        <ul class="patch-list">
+          <li>Volumetric lighting — a ray-marched fog of drifting mist that every torch glows through, lit by the moon and sun <em>through their shadow maps</em>, so arches, pillars and windows cut real shafts of light into the air</li>
+          <li>Ambient occlusion — soft contact shadows in corners, under tables and around every stone</li>
+          <li>Screen-space reflections — wet flagstones, rain puddles and polished floors mirror torchlight, fire and the figures above them</li>
+          <li>Depth of field — the camera focuses on the knight, pulls focus to the duel in combat, and softens the world as he falls</li>
+          <li>Lens work — anamorphic streaks from bright lights, lens dirt that catches the bloom, heat shimmer above flames, and FXAA anti-aliasing on every tier</li>
+        </ul>
+        <div class="patch-category">Storm &amp; Spectacle</div>
+        <ul class="patch-list">
+          <li>A real rainstorm over the courtyard and watchtower — thousands of wind-blown streaks, splash rings on the stone, lightning that lights the rain and the fog, rolling thunder and rain on the soundscape</li>
+          <li>Cinematic letterbox bars sweep in for the big moments: the golden armour, the knight's fall, the Necromancer's end and victory</li>
+          <li>Sharper 2048px shadows</li>
+        </ul>
+        <div class="patch-category">Photo Mode</div>
+        <ul class="patch-list">
+          <li>Press <strong>P</strong> (or 📷 in the top bar) to free the camera: drag to orbit the knight, scroll to zoom, <strong>[ ]</strong> to set the depth-of-field blur, P or Esc to return</li>
+        </ul>
+        <div class="patch-category">Scales to Your Machine</div>
+        <ul class="patch-list">
+          <li>Top-bar toggle now cycles ◆ Ultra → ◆ 3D → ◇ 2D; Ultra is the default on desktop browsers with WebGL2</li>
+          <li>If a GPU can't keep up even at reduced resolution, Ultra sheds effects one at a time (fog, reflections, depth of field, occlusion) instead of stuttering</li>
+          <li>Phones keep the lighter standard renderer; reduced-motion players get still fog and no shimmer</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="patch-version">
       <div class="patch-header" onclick="togglePatch(this)">
