@@ -13,6 +13,7 @@
   const E = G3D.engine, C = E.ctx;
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
   const clamp = G3D.clamp, calm = C.reducedMotion;
+  const fxOK = () => !calm && E.impactOn !== false;   // ⚙ Settings: hit-stop & slow motion
 
   // ── Sword trail: a ribbon between hilt and tip, sampled while swinging ─────
   const N = 22, LIFE = 0.22;
@@ -80,7 +81,7 @@
   E.onImpact = function (who, flag, pos) {
     if (who === 'enemy') {
       const crit = flag, final = STATE.enemyHp <= 0 || !STATE.inCombat;
-      if (!calm) {
+      if (fxOK()) {
         E.stopT = Math.max(E.stopT, final ? 0.12 : crit ? 0.09 : 0.055);
         if (crit || final || power > 0) E.slowT = Math.max(E.slowT, final ? 0.9 : 0.5);
         E.punch(final ? 1.4 : crit ? 1 : 0.5);
@@ -93,7 +94,7 @@
       if (light > 0) light = 0;
     } else {
       const blocked = flag || STATE.questFlags._ironWallActive || dome.visible;
-      if (!calm) { E.stopT = Math.max(E.stopT, 0.05); E.punch(blocked ? 0.3 : 0.6); }
+      if (fxOK()) { E.stopT = Math.max(E.stopT, 0.05); E.punch(blocked ? 0.3 : 0.6); }
       if (blocked) shockwave(pos, '#8ac8ff', 1.2, true);
       else E.burst('smoke', pos, 10, '#5a0808', 1.2);
     }
@@ -139,12 +140,12 @@
       C.post.flash = Math.max(C.post.flash, 1.6); C.post.flashCol.set('#ffffff');
       E.burst('holy', at.clone().setY(1.5), 220, '#ffffff', 5);
       shockwave(at.clone().setY(1.3), '#ffffff', 3.5, true);
-      if (!calm) E.slowT = Math.max(E.slowT, 0.4);
+      if (fxOK()) E.slowT = Math.max(E.slowT, 0.4);
     } else if (key === 'martyr') {
       C.post.flash = 1.8; C.post.flashCol.set('#ffd36a');
       E.burst('holy', at.clone().setY(1.2), 260, '#ffd36a', 4);
       shockwave(at.clone().setY(0.05), '#ffd36a', 4);
-      if (!calm) E.slowT = Math.max(E.slowT, 1.0);
+      if (fxOK()) E.slowT = Math.max(E.slowT, 1.0);
     }
   }
   const origUse = window.useAbility;

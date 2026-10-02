@@ -20,7 +20,9 @@
   const DIRV = { north: new THREE.Vector3(0, 0, -1), south: new THREE.Vector3(0, 0, 1), east: new THREE.Vector3(1, 0, 0), west: new THREE.Vector3(-1, 0, 0) };
   function pref() { try { return localStorage.getItem('kt3d'); } catch (_) { return null; } }
   function setPref(v) { try { localStorage.setItem('kt3d', v); } catch (_) {} }
-  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Motion: the player's choice in ⚙ Settings, else the system preference.
+  const motionPref = (() => { try { return JSON.parse(localStorage.getItem('kt_settings') || '{}').motion; } catch (_) { return null; } })();
+  const reducedMotion = motionPref === 'reduce' || (motionPref !== 'full' && !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches));
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 600;
   // Graphics tiers: 'ultra' (cinematic pipeline, desktop WebGL2), 'std', or 'off' (the 2D art).
   const wantUltra = !isMobile && pref() !== 'std' && !!G3D.fx;
@@ -914,7 +916,7 @@
       tmpLook.x += Math.sin(time * 0.09) * 0.15 + cam.mx * 0.3;
     }
     // Shake
-    if (cam.shake > 0 && !reducedMotion) {
+    if (cam.shake > 0 && !reducedMotion && E.shakeOn !== false) {
       const s = cam.shake;
       tmpPos.x += (Math.random() - 0.5) * s * 0.4; tmpPos.y += (Math.random() - 0.5) * s * 0.3;
       tmpLook.x += (Math.random() - 0.5) * s * 0.3;
@@ -927,7 +929,7 @@
     const fovH = G3D.lerp(cam.fovH, 70, cam.combat);
     const vf = 2 * Math.atan(Math.tan(fovH * Math.PI / 360) / aspect) * 180 / Math.PI;
     cam.punch = Math.max(0, (cam.punch || 0) - dt * 3);
-    camera.fov = clamp(vf, 26, 68) - (reducedMotion ? 0 : cam.punch * 4); camera.aspect = aspect; camera.updateProjectionMatrix();
+    camera.fov = clamp(vf, 26, 68) - (reducedMotion || E.shakeOn === false ? 0 : cam.punch * 4); camera.aspect = aspect; camera.updateProjectionMatrix();
   }
 
   function resize(w, h) {
@@ -1033,7 +1035,7 @@
       const barsOn = knight.dead || ka === 'die' || ka === 'divine' || (ea === 'die' && enemy.type === 'necromancer') || post.barsHold > 0;
       post.bars += ((barsOn ? 1 : 0) - post.bars) * Math.min(1, dt * 2.5);
       u.bars.value = post.bars;
-      if (fxaaPass) { fxaaPass.uniforms.time.value = time; fxaaPass.uniforms.grain.value = 0.03; }
+      if (fxaaPass) { fxaaPass.uniforms.time.value = time; fxaaPass.uniforms.grain.value = E.grain != null ? E.grain : 0.03; }
       if (E.ultra) updateFX(dt);
       if (!draw) return;
       composer.render();
@@ -1124,7 +1126,7 @@
     const pr = renderer.getPixelRatio();
     if (avg > 1 / 30 && pr <= 0.6 + 1e-3 && degrade()) return;
     if (avg > 1 / 38 && pr > 0.6) { renderer.setPixelRatio(Math.max(0.6, pr - 0.15)); resize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight); }
-    else if (avg < 1 / 58 && pr < Q.pr) { renderer.setPixelRatio(Math.min(Q.pr, pr + 0.1)); resize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight); }
+    else if (avg < 1 / 58 && pr < prCap()) { renderer.setPixelRatio(Math.min(prCap(), pr + 0.1)); resize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight); }
   }
 
   // ── Hooks into the game ────────────────────────────────────────────────────
@@ -1171,6 +1173,22 @@
   E.fx = fx; E.tune = null; E.camOverride = null; E.dofOverride = null; E.roam = false; E.enqueue = enqueue;
   E.stopT = 0; E.slowT = 0; E.storm = 1; E.gradeMul = { exposure: 1, sat: 1, tint: [1, 1, 1] };
   E.punch = k => { cam.punch = Math.max(cam.punch || 0, k); };
+  // ⚙ Settings: render-resolution cap and lens effects
+  let resScale = 1;
+  function prCap() { return Math.max(0.5, Q.pr * resScale); }
+  E.setResScale = v => {
+    resScale = clamp(v || 1, 0.5, 1);
+    if (!renderer || !canvas.parentElement) return;
+    const pr = renderer.getPixelRatio(), cap = prCap();
+    if (Math.abs(pr - cap) > 0.01) { renderer.setPixelRatio(cap); resize(canvas.parentElement.clientWidth || 1, canvas.parentElement.clientHeight || 1); }
+  };
+  let lensBase = null;
+  E.setLens = on => {
+    if (!finalPass) return;
+    const u = finalPass.uniforms;
+    if (!lensBase) lensBase = { streak: u.streak.value, dirt: u.dirt.value, haze: u.haze.value };
+    u.streak.value = on ? lensBase.streak : 0; u.dirt.value = on ? lensBase.dirt : 0; u.haze.value = on ? lensBase.haze : 0;
+  };
   E.shake = k => { cam.shake = Math.max(cam.shake, k); };
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
