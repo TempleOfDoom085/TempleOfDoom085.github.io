@@ -110,7 +110,7 @@
     if (!proxyFor[key]) { proxyFor[key] = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), proxyMat); proxies.add(proxyFor[key]); }
     return proxyFor[key];
   }
-  function canAct() { return !photo.on && !STATE.inCombat && !walking && !C.pending && !(C.knight && (C.knight.dead || C.knight.walk)); }
+  function canAct() { return !E.cinema && !photo.on && !STATE.inCombat && !walking && !C.pending && !(C.knight && (C.knight.dead || C.knight.walk)); }
   function targets() {
     const list = [];
     const room = ROOMS[C.roomId];
@@ -166,7 +166,7 @@
   C.canvas.addEventListener('pointermove', ev => { pointer = { x: ev.clientX, y: ev.clientY }; hovered = pick(ev); });
   C.canvas.addEventListener('pointerleave', () => { pointer = null; hovered = null; });
   C.canvas.addEventListener('click', ev => {
-    if (photo.on) return;
+    if (photo.on || E.cinema) return;
     if (strike) { resolveStrike(); return; }
     const hit = pick(ev);
     if (hit) act(hit); else roamClick(ev);
@@ -509,6 +509,7 @@
     const t = ev.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const k = ev.key;
+    if (E.cinema) return;
     if (!photo.on) { if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) setPhoto(true); return; }
     ev.stopImmediatePropagation();
     if (k === 'p' || k === 'P' || k === 'Escape') { setPhoto(false); return; }
@@ -610,7 +611,7 @@
   window.addEventListener('keydown', ev => {
     const t = ev.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-    if (!roamOn() || STATE.inCombat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (!roamOn() || E.cinema || STATE.inCombat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const k = ev.key.toLowerCase();
     roam.run = ev.shiftKey;
     if (MOVE_KEYS[k]) {
