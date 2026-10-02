@@ -627,7 +627,7 @@
     const tower = mesh(new THREE.CylinderGeometry(6.2, 7, 30, 32, 1, true), G3D.stoneMat('cold', [12, 10], 'tw')); tower.position.set(0, -15.4, -2); g.add(tower);
     place(g, P.brazier('#ff7a20', 1.2), 2.6, 0, -4.4);
     const pole = mesh(new THREE.CylinderGeometry(0.06, 0.08, 6, 8), G3D.woodMat(true)); pole.position.set(-3, 3, -5); g.add(pole);
-    const flag = P.banner(1.8, 1.2, 'white'); flag.position.set(-2.1, 5.6, -5); flag.rotation.z = Math.PI / 2; flag.children[0].userData.sway.amp = 0.18; g.add(flag);
+    const flag = P.banner(1.8, 1.2, 'white'); flag.position.set(-3, 5.05, -5); flag.rotation.z = Math.PI / 2; flag.children[0].userData.sway.amp = 0.18; g.add(flag);
     // Distant fortress silhouettes and the valley
     for (let i = 0; i < 5; i++) { const t = mesh(new THREE.CylinderGeometry(1.5, 1.8, 12 + i * 2, 10), G3D.flatMat('far', '#0a0c12', 1)); t.position.set(-30 + i * 14, -6, -46 - (i % 2) * 8); g.add(t); }
     const valley = mesh(new THREE.PlaneGeometry(300, 300), G3D.flatMat('valley', '#05070a', 1), false, true); valley.rotation.x = -Math.PI / 2; valley.position.y = -16; g.add(valley);

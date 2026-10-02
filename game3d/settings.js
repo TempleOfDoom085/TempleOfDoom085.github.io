@@ -12,7 +12,7 @@
   function init() {
   const KEY = 'kt_settings';
   const DEFAULTS = {
-    resScale: 1, vol: true, ssr: true, ao: true, dof: true, lens: true, grain: true,
+    resScale: 1, vol: true, ssr: true, ao: true, dof: true, lens: true, grain: true, taa: true, pom: true, pcss: true, hires: true,
     master: 1, ambience: 1,
     shake: true, impact: true, motion: 'system', strikes: 'timed', text: 'normal', touch: 'auto',
   };
@@ -44,7 +44,7 @@
     const amb = G3D.world && G3D.world.amb;
     if (amb && amb.bus) amb.bus.gain.value = S.ambience;
     if (E) {
-      Object.assign(E.fx, { vol: S.vol, ssr: S.ssr, ao: S.ao, dof: S.dof });
+      Object.assign(E.fx, { vol: S.vol, ssr: S.ssr, ao: S.ao, dof: S.dof, taa: S.taa });
       E.shakeOn = S.shake; E.impactOn = S.impact; E.simpleStrikes = S.strikes === 'simple';
       E.grain = S.grain ? 0.03 : 0;
       if (E.setLens) E.setLens(S.lens);
@@ -92,7 +92,11 @@
     ${row('Reflections', '', check('ssr'), !ultra)}
     ${row('Ambient occlusion', '', check('ao'), !ultra)}
     ${row('Depth of field', '', check('dof'), !ultra)}
-    ${row('Lens streaks, dirt & heat shimmer', '', check('lens'), !E)}
+    ${row('Temporal anti-aliasing', 'Steadier edges and smoother fog', check('taa'), !ultra)}
+    ${row('Parallax stone', 'Mortar and flagstones with real depth', check('pom'), !ultra)}
+    ${row('Soft shadows', 'Sharp at the foot, soft far away', check('pcss'), !ultra)}
+    ${row('High-resolution textures', 'Rebuilt in the background after loading', check('hires'), !ultra)}
+    ${row('Lens flares, streaks, dirt & heat shimmer', '', check('lens'), !E)}
     ${row('Film grain', '', check('grain'), !E)}
     <h3>Audio</h3>
     ${row('Master volume', 'All sound', range('master', 0, 1, 0.05))}
@@ -127,7 +131,7 @@
     if (k === 'tier') { try { localStorage.setItem('kt3d', el.value === 'ultra' ? 'on' : el.value); } catch (_) {} needsReload = el.value !== tier; }
     else {
       S[k] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? parseFloat(el.value) : el.value;
-      if (k === 'motion') needsReload = true;
+      if (k === 'motion' || k === 'pom' || k === 'pcss' || k === 'hires') needsReload = true;
       save(); apply();
     }
     note.textContent = needsReload ? 'Some changes apply when the page reloads — it will reload when you press Done.' : '';

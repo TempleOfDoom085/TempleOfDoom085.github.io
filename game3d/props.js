@@ -196,7 +196,7 @@
     const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92, side: THREE.DoubleSide, alphaTest: 0.5 });
     const geo = new THREE.PlaneGeometry(w, h, 6, 12); geo.translate(0, -h / 2, 0);
     const cloth = mesh(geo, m); g.add(cloth);
-    cloth.userData.sway = { base: geo.attributes.position.array.slice(), amp: 0.06, h };
+    cloth.userData.sway = { base: geo.attributes.position.array.slice(), amp: 0.06, h, banner: true };
     const rod = mesh(new THREE.CylinderGeometry(0.025, 0.025, w + 0.2, 8), G3D.metalMat('gold')); rod.rotation.z = Math.PI / 2; g.add(rod);
     return g;
   };
@@ -726,28 +726,49 @@
   };
 
   // ── Characters ─────────────────────────────────────────────────────────────
+  // Lathe a profile given bottom → top as [radius, y] pairs (outward normals).
+  // phi0 = π puts the texture seam at the back (u = 0.5 faces front).
+  const lathe = (pts, seg, phi0) => new THREE.LatheGeometry(pts.map(p => new THREE.Vector2(p[0], p[1])), seg || 24, phi0 || 0);
+  // Merge pieces that share a material into one mesh: [[geometry, matrix], …].
+  const merged = (parts, matl, cast) => mesh(merge(parts), matl, cast);
+  // A rib: a torus arc laid flat around the chest, swung `ry` round from the side.
+  const ribAt = (y, z, ry, s) => new THREE.Matrix4().makeTranslation(0, y, z)
+    .multiply(new THREE.Matrix4().makeScale(1.22 * s, 1, 0.8 * s))
+    .multiply(new THREE.Matrix4().makeRotationY(ry)).multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+
+  // Templar great helm: flat-topped barrel, a brass cross on the face (brow
+  // band and nasal strip), eye slits and a cross of breaths on the right cheek.
   function makeGreatHelm(metal, eyeColor) {
     const g = new THREE.Group();
-    const body = mesh(new THREE.CylinderGeometry(0.128, 0.142, 0.3, 28), metal); g.add(body);
-    const top = mesh(new THREE.SphereGeometry(0.128, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2), metal); top.scale.y = 0.62; top.position.y = 0.15; g.add(top);
+    const shell = mesh(lathe([[0.146, -0.152], [0.144, -0.09], [0.14, 0.0], [0.136, 0.08], [0.131, 0.13], [0.118, 0.158], [0.07, 0.17], [0.0, 0.172]], 36), metal);
+    shell.scale.set(1, 1, 1.04); g.add(shell);
     const brass = eyeColor ? metal : G3D.metalMat('bronze');
-    const crest = mesh(new THREE.BoxGeometry(0.02, 0.07, 0.24), brass); crest.position.y = 0.22; g.add(crest);
     const dark = eyeColor ? G3D.emissiveMat('eyes' + eyeColor, eyeColor, 6) : G3D.flatMat('slit', '#020202', 1);
-    [-1, 1].forEach(s => { const slit = mesh(new THREE.BoxGeometry(0.085, 0.018, 0.04), dark, false); slit.position.set(s * 0.055, 0.04, 0.125); slit.rotation.y = s * 0.3; g.add(slit); });
-    const strip = mesh(new THREE.BoxGeometry(0.035, 0.29, 0.02), brass); strip.position.set(0, -0.005, 0.138); g.add(strip);
-    const brow = mesh(new THREE.TorusGeometry(0.138, 0.012, 6, 28), brass); brow.rotation.x = Math.PI / 2; brow.position.y = 0.065; g.add(brow);
-    const rim = mesh(new THREE.TorusGeometry(0.143, 0.01, 6, 28), metal); rim.rotation.x = Math.PI / 2; rim.position.y = -0.148; g.add(rim);
-    for (let i = 0; i < 6; i++) { const h = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.03, 4), G3D.flatMat('slit', '#020202', 1), false); h.rotation.x = Math.PI / 2; h.position.set(0.07 + (i % 2) * 0.02, -0.04 - Math.floor(i / 2) * 0.025, 0.122); g.add(h); }
+    // Eye slits either side of the nasal, slightly swept back.
+    [-1, 1].forEach(s => { const slit = mesh(new THREE.BoxGeometry(0.09, 0.016, 0.04), dark, false); slit.position.set(s * 0.058, 0.045, 0.13); slit.rotation.y = s * 0.32; g.add(slit); });
+    const trim = [];
+    trim.push([new THREE.BoxGeometry(0.032, 0.3, 0.018), mtx(0, -0.004, 0.148)]);                       // nasal / face strip
+    trim.push([new THREE.TorusGeometry(0.143, 0.011, 6, 36), mtx(0, 0.066, 0, Math.PI / 2, 0, 0, 1, 1.04, 1)]); // brow band
+    trim.push([new THREE.TorusGeometry(0.149, 0.009, 6, 36), mtx(0, -0.15, 0, Math.PI / 2, 0, 0, 1, 1.04, 1)]); // rim
+    trim.push([new THREE.TorusGeometry(0.12, 0.008, 6, 32), mtx(0, 0.158, 0, Math.PI / 2)]);                   // crown edge
+    for (let i = 0; i < 10; i++) { const a = (i / 10 - 0.5) * 2.2; trim.push([new THREE.SphereGeometry(0.008, 6, 4), mtx(Math.sin(a) * 0.148, 0.066, Math.cos(a) * 0.154)]); }
+    const t = merged(trim, brass); g.add(t);
+    // Breaths in a cross on the right cheek.
+    const holes = [];
+    [[0, 0], [0, 1], [0, -1], [0, 2], [1, 0], [-1, 0]].forEach(([a, b]) => holes.push([new THREE.CylinderGeometry(0.0055, 0.0055, 0.03, 5), mtx(0.075 + a * 0.019, -0.045 + b * 0.019, 0.122, Math.PI / 2, 0, -0.5)]));
+    g.add(merged(holes, G3D.flatMat('slit', '#020202', 1), false));
     return g;
   }
 
+  // A tapered limb with a little muscle swell, hanging from its joint.
   function limb(len, r0, r1, matl) {
-    const m = mesh(new THREE.CylinderGeometry(r0, r1, len, 12), matl);
-    m.position.y = -len / 2;
+    const m = mesh(lathe([[r1 * 0.88, -len], [r1, -len * 0.94], [r1 * 1.02, -len * 0.75], [(r0 + r1) * 0.53, -len * 0.45], [r0 * 1.05, -len * 0.18], [r0 * 0.96, -len * 0.04], [r0 * 0.7, 0]], 16), matl);
     return m;
   }
 
-  // Generic humanoid rig: root at the feet; hips at 0.95.
+  // Generic humanoid rig: root at the feet; hips at 0.95. o: materials and
+  // options { leg, shin?, boot, greave, torso, arm, fore, hand, pauldron,
+  // joint (knee and elbow cops), gauntlet, sabaton }.
   function rig(o) {
     const R = {};
     R.root = new THREE.Group();
@@ -756,24 +777,49 @@
     ['L', 'R'].forEach((side, i) => {
       const s = i ? 1 : -1;
       const leg = new THREE.Group(); leg.position.set(s * 0.1, 0, 0); R.hips.add(leg);
-      leg.add(limb(0.46, 0.085, 0.07, o.leg));
+      leg.add(limb(0.46, 0.088, 0.066, o.leg));
       const shin = new THREE.Group(); shin.position.y = -0.46; leg.add(shin);
-      shin.add(limb(0.44, 0.068, 0.05, o.leg));
-      if (o.greave) { const gr = limb(0.32, 0.075, 0.058, o.greave); gr.position.y = -0.2; gr.position.z = 0.01; shin.add(gr); }
-      const foot = mesh(new THREE.BoxGeometry(0.11, 0.07, 0.26), o.boot); foot.position.set(0, -0.47, 0.05); shin.add(foot);
+      shin.add(limb(0.44, 0.066, 0.048, o.shin || o.leg));
+      shin.add(mesh(new THREE.SphereGeometry(0.066, 14, 10), o.leg));                                   // knee
+      if (o.greave) { const gr = mesh(lathe([[0.058, -0.32], [0.068, -0.2], [0.076, -0.08], [0.07, 0]], 16), o.greave); gr.position.set(0, -0.06, 0.012); shin.add(gr); }
+      if (o.joint) {
+        // Poleyn: a domed knee cop with a side fan.
+        const cop = mesh(new THREE.SphereGeometry(0.075, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), o.joint); cop.rotation.x = Math.PI / 2; cop.scale.set(1, 0.7, 1); cop.position.set(0, 0, 0.03); shin.add(cop);
+        const fan = mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.012, 14), o.joint); fan.rotation.z = Math.PI / 2; fan.position.set(s * 0.065, 0, 0.01); shin.add(fan);
+      }
+      // Foot: a sabaton with a pointed toe for armour, a plain shoe otherwise.
+      const foot = new THREE.Group(); foot.position.set(0, -0.47, 0.03); shin.add(foot);
+      foot.add(mesh(new THREE.BoxGeometry(0.1, 0.07, 0.17), o.boot));
+      const toe = mesh(new THREE.ConeGeometry(0.052, o.sabaton ? 0.16 : 0.1, 10), o.boot); toe.rotation.x = Math.PI / 2; toe.scale.set(1, 1, 0.62); toe.position.set(0, -0.008, 0.12); foot.add(toe);
+      if (o.sabaton) for (let k = 0; k < 3; k++) { const l = mesh(new THREE.CylinderGeometry(0.056, 0.058, 0.02, 12, 1, false, -Math.PI / 2, Math.PI), o.boot); l.rotation.z = Math.PI / 2; l.rotation.y = Math.PI / 2; l.position.set(0, 0.03, 0.02 + k * 0.035); foot.add(l); }
       R['leg' + side] = leg; R['shin' + side] = shin;
     });
     R.torso = new THREE.Group(); R.hips.add(R.torso);
-    const chest = mesh(new THREE.CylinderGeometry(0.2, 0.165, 0.6, 18), o.torso); chest.position.y = 0.3; chest.scale.set(1.25, 1, 0.78); R.torso.add(chest);
+    // Torso: waist, ribcage and chest, rounding into the shoulders.
+    const chest = mesh(lathe([[0.16, 0], [0.172, 0.08], [0.198, 0.22], [0.222, 0.37], [0.226, 0.46], [0.206, 0.54], [0.15, 0.6], [0.07, 0.645], [0.0, 0.65]], 28), o.torso);
+    chest.scale.set(1.22, 1, 0.76); R.torso.add(chest);
     R.chest = chest;
     ['L', 'R'].forEach((side, i) => {
       const s = i ? 1 : -1;
       const arm = new THREE.Group(); arm.position.set(s * 0.29, 0.54, 0); R.torso.add(arm);
-      arm.add(limb(0.3, 0.06, 0.052, o.arm));
-      if (o.pauldron) { const p = mesh(new THREE.SphereGeometry(0.095, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), o.pauldron); p.scale.set(1.1, 0.8, 1.1); p.position.set(s * 0.01, 0.02, 0); arm.add(p); }
+      arm.add(mesh(new THREE.SphereGeometry(0.068, 14, 10), o.arm));                                       // shoulder
+      arm.add(limb(0.3, 0.062, 0.05, o.arm));
+      if (o.pauldron) {
+        // Layered pauldron: three overlapping lames.
+        const lames = [];
+        for (let k = 0; k < 3; k++) lames.push([new THREE.SphereGeometry(0.1 - k * 0.008, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mtx(s * (0.012 + k * 0.006), 0.035 - k * 0.04, 0, 0, 0, s * (0.25 + k * 0.12), 1.12, 0.7, 1.1)]);
+        arm.add(merged(lames, o.pauldron));
+      }
       const fore = new THREE.Group(); fore.position.y = -0.3; arm.add(fore);
-      fore.add(limb(0.27, 0.05, 0.042, o.fore || o.arm));
-      const hand = mesh(new THREE.BoxGeometry(0.07, 0.1, 0.06), o.hand); hand.position.y = -0.31; fore.add(hand);
+      fore.add(mesh(new THREE.SphereGeometry(0.05, 12, 8), o.arm));                                       // elbow
+      fore.add(limb(0.27, 0.05, 0.04, o.fore || o.arm));
+      if (o.joint) { const cop = mesh(new THREE.SphereGeometry(0.058, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), o.joint); cop.rotation.x = -Math.PI / 2; cop.scale.set(1, 0.6, 1); cop.position.z = -0.02; fore.add(cop); }
+      // Hand: a gauntlet with a flared cuff, or a bare hand.
+      const hand = new THREE.Group(); hand.position.y = -0.3; fore.add(hand);
+      if (o.gauntlet) { const cuff = mesh(new THREE.CylinderGeometry(0.062, 0.044, 0.09, 14, 1, true), o.hand); cuff.position.y = 0.02; hand.add(cuff); }
+      const palm = mesh(new THREE.BoxGeometry(0.072, 0.075, 0.05), o.hand); palm.position.y = -0.03; hand.add(palm);
+      const fingers = mesh(new THREE.BoxGeometry(0.068, 0.06, 0.042), o.hand); fingers.position.set(0, -0.08, 0.012); fingers.rotation.x = 0.5; hand.add(fingers);
+      const thumb = mesh(new THREE.CylinderGeometry(0.014, 0.012, 0.055, 6), o.hand); thumb.position.set(-s * 0.04, -0.04, 0.025); thumb.rotation.set(0.6, 0, -s * 0.5); hand.add(thumb);
       const grip = new THREE.Group(); grip.position.y = -0.31; fore.add(grip);
       R['arm' + side] = arm; R['fore' + side] = fore; R['grip' + side] = grip;
     });
@@ -800,9 +846,34 @@
     for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, -Math.cos(x / w * Math.PI) * 0.12); }
     const m = mesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92, side: THREE.DoubleSide, alphaTest: 0.5 }));
     m.position.set(0, 0.6, -0.17);
-    m.userData.sway = { base: p.array.slice(), amp: 0.05, h, cape: true };
+    m.userData.sway = { base: p.array.slice(), amp: 0.05, h, cape: true, colliders: bodyColliders(R) };
     R.torso.add(m);
     return m;
+  }
+  // Ellipsoids the cape drapes over (game3d/cloth.js): chest and back, the
+  // skirt, thighs and shins.
+  function bodyColliders(R) {
+    const c = [
+      { obj: R.torso, c: [0, 0.32, 0], r: [0.28, 0.44, 0.21] },
+      { obj: R.hips, c: [0, -0.22, 0], r: [0.36, 0.5, 0.29] },
+    ];
+    ['L', 'R'].forEach(s => {
+      if (R['leg' + s]) c.push({ obj: R['leg' + s], c: [0, -0.23, 0], r: [0.12, 0.3, 0.12] });
+      if (R['shin' + s]) c.push({ obj: R['shin' + s], c: [0, -0.24, 0], r: [0.1, 0.3, 0.11] });
+    });
+    return c;
+  }
+
+  // Sword belt with a buckle, and the empty scabbard on the left hip.
+  function swordBelt(R, beltMat, buckleMat, leather, chape) {
+    const belt = mesh(new THREE.TorusGeometry(0.2, 0.02, 6, 28), beltMat);
+    belt.rotation.x = Math.PI / 2; belt.scale.set(1.24, 0.79, 1); belt.position.y = 0.03; R.torso.add(belt);
+    const buckle = mesh(new THREE.BoxGeometry(0.06, 0.05, 0.02), buckleMat); buckle.position.set(0, 0.03, 0.16); R.torso.add(buckle);
+    const tongue = mesh(new THREE.BoxGeometry(0.04, 0.12, 0.012), beltMat); tongue.position.set(0.015, -0.04, 0.165); tongue.rotation.z = 0.15; R.torso.add(tongue);
+    const sc = new THREE.Group(); sc.position.set(-0.25, -0.02, -0.02); sc.rotation.set(0.45, 0, 0.12); R.hips.add(sc);
+    const sh = mesh(new THREE.CylinderGeometry(0.024, 0.018, 0.78, 10), leather); sh.scale.set(1.7, 1, 0.6); sh.position.y = -0.39; sc.add(sh);
+    const tip = mesh(new THREE.ConeGeometry(0.03, 0.08, 10), chape); tip.rotation.x = Math.PI; tip.scale.set(1.4, 1, 0.6); tip.position.y = -0.8; sc.add(tip);
+    const locket = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 10), chape); locket.scale.set(1.5, 1, 0.65); locket.position.y = -0.03; sc.add(locket);
   }
 
   G3D.makeKnight = function (o) {
@@ -811,23 +882,30 @@
     const stone = statue ? G3D.stoneMat(o.tint || 'cold', [1, 1], 'statue') : null;
     const steel = stone || (golden ? G3D.metalMat('gold', { extra: { emissive: new THREE.Color('#5a3a00'), emissiveIntensity: 0.4 } }) : G3D.metalMat('steel'));
     const mail = stone || (golden ? steel : G3D.mailMat(false));
-    const R = rig({ leg: mail, boot: steel, greave: steel, torso: mail, arm: mail, fore: steel, hand: steel, pauldron: steel });
+    const R = rig({ leg: mail, boot: steel, greave: steel, torso: mail, arm: mail, fore: mail, hand: steel, pauldron: steel, joint: steel, gauntlet: true, sabaton: true });
     const surTex = statue ? null : golden
       ? G3D.clothTex('surgold', { base: [240, 234, 220], cross: [190, 140, 40], crossSize: 0.12, crossY: 0.3, trim: [200, 160, 60] })
       : G3D.clothTex('sur', { base: [196, 188, 172], cross: [150, 12, 18], crossSize: 0.12, crossY: 0.3, stain: 0.35 });
-    // Surcoat over the chest
-    const sc = mesh(new THREE.CylinderGeometry(0.215, 0.2, 0.52, 28, 1, true, Math.PI, Math.PI * 2),
+    // Sleeveless surcoat over the mail, following the chest.
+    const sc = mesh(lathe([[0.19, 0.02], [0.2, 0.1], [0.215, 0.24], [0.236, 0.38], [0.238, 0.46], [0.222, 0.54], [0.18, 0.585]], 28, Math.PI),
       stone || new THREE.MeshStandardMaterial({ map: surTex, roughness: 0.9, side: THREE.DoubleSide }));
-    sc.position.y = 0.28; sc.scale.set(1.25, 1, 0.8); R.torso.add(sc);
+    sc.scale.set(1.22, 1, 0.78); R.torso.add(sc);
     const skirtTex = statue ? null : golden
       ? G3D.clothTex('skgold', { base: [240, 234, 220], trim: [200, 160, 60] })
       : G3D.clothTex('sk', { base: [190, 182, 166], trim: null, stain: 0.45 });
     if (statue) { const s = mesh(new THREE.CylinderGeometry(0.255, 0.33, 0.58, 20), stone); s.position.y = -0.22; s.scale.set(1.15, 1, 0.82); R.hips.add(s); }
     else skirt(R, skirtTex, 0.6, 0.34, false);
-    const belt = mesh(new THREE.TorusGeometry(0.205, 0.022, 6, 24), stone || G3D.flatMat('belt', '#3a2416', 0.7));
-    belt.rotation.x = Math.PI / 2; belt.scale.set(1.25, 0.8, 1); belt.position.y = 0.02; R.torso.add(belt);
-    if (!statue) cape(R, golden ? G3D.clothTex('capegold', { base: [235, 228, 210], trim: [200, 160, 60] })
-      : G3D.clothTex('cape', { base: [182, 176, 162], tattered: true, stain: 0.5 }), 0.62, 1.25);
+    const leather = stone || G3D.flatMat('belt', '#3a2416', 0.7);
+    swordBelt(R, leather, stone || G3D.metalMat(golden ? 'gold' : 'bronze'), stone || G3D.flatMat('scabbard', '#24160e', 0.55), steel);
+    // Mail aventail from the helm to the shoulders.
+    const av = mesh(new THREE.CylinderGeometry(0.13, 0.25, 0.15, 26, 1, true), mail); av.position.y = -0.03; av.scale.set(1, 1, 0.86); R.neck.add(av);
+    if (!statue) {
+      R.cape = cape(R, golden ? G3D.clothTex('capegold', { base: [235, 228, 210], trim: [200, 160, 60] })
+        : G3D.clothTex('cape', { base: [182, 176, 162], tattered: true, stain: 0.5 }), 0.62, 1.25);
+      // Ailettes: shoulder boards with the red cross.
+      const ail = new THREE.MeshStandardMaterial({ map: G3D.clothTex('ailette', { base: [214, 206, 190], cross: [160, 14, 20], crossSize: 0.34, crossY: 0.5, stain: 0.2 }), roughness: 0.85, side: THREE.DoubleSide });
+      [-1, 1].forEach(s => { const a = mesh(new THREE.BoxGeometry(0.15, 0.17, 0.008), ail); a.position.set(s * 0.33, 0.67, -0.02); a.rotation.set(-0.15, s * 0.12, s * 0.62); R.torso.add(a); });
+    }
     const helm = makeGreatHelm(steel); helm.position.y = 0.06; R.head.add(helm);
     if (golden) { // Halo
       const halo = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.012, 8, 40), G3D.emissiveMat('halo', '#ffd36a', 5));
@@ -844,15 +922,29 @@
   };
 
   G3D.makeRisen = function () {
-    const rust = G3D.metalMat('rust'), mail = G3D.mailMat(true);
-    const R = rig({ leg: mail, boot: rust, greave: rust, torso: mail, arm: mail, fore: rust, hand: G3D.flatMat('rothand', '#4a4636', 0.8), pauldron: rust });
-    const sc = mesh(new THREE.CylinderGeometry(0.215, 0.2, 0.52, 28, 1, true, Math.PI, Math.PI * 2),
+    const rust = G3D.metalMat('rust'), mail = G3D.mailMat(true), rot = G3D.flatMat('rothand', '#4a4636', 0.8);
+    const R = rig({ leg: mail, boot: rust, greave: rust, torso: mail, arm: mail, fore: rot, hand: rot, pauldron: rust, joint: rust, sabaton: true });
+    const sc = mesh(lathe([[0.19, 0.02], [0.2, 0.1], [0.215, 0.24], [0.236, 0.38], [0.238, 0.46], [0.222, 0.54], [0.18, 0.585]], 28, Math.PI),
       new THREE.MeshStandardMaterial({ map: G3D.clothTex('risensur', { base: [68, 60, 50], cross: [86, 18, 18], crossSize: 0.12, crossY: 0.3, stain: 0.95, tattered: true }), roughness: 0.95, side: THREE.DoubleSide, alphaTest: 0.5 }));
-    sc.position.y = 0.28; sc.scale.set(1.25, 1, 0.8); R.torso.add(sc);
+    sc.scale.set(1.22, 1, 0.78); R.torso.add(sc);
     skirt(R, G3D.clothTex('risensk', { base: [60, 54, 46], stain: 0.9, tattered: true }), 0.62, 0.36, true);
-    cape(R, G3D.clothTex('risencape', { base: [40, 36, 34], tattered: true, stain: 0.8 }), 0.62, 1.15);
-    const helm = makeGreatHelm(rust, '#5ef0ff'); helm.position.y = 0.06; R.head.add(helm);
+    R.cape = cape(R, G3D.clothTex('risencape', { base: [40, 36, 34], tattered: true, stain: 0.8 }), 0.62, 1.15);
+    const belt = mesh(new THREE.TorusGeometry(0.2, 0.02, 6, 28), G3D.flatMat('rotbelt', '#2a1e14', 0.9)); belt.rotation.x = Math.PI / 2; belt.scale.set(1.24, 0.79, 1); belt.position.y = 0.03; R.torso.add(belt);
+    const helm = makeGreatHelm(rust, '#5ef0ff'); helm.position.y = 0.06; helm.rotation.z = 0.12; R.head.add(helm);
     const eg = G3D.glow('#5ef0ff', 0.45, 0.8); eg.position.set(0, 0.1, 0.16); R.head.add(eg);
+    const av = mesh(new THREE.CylinderGeometry(0.13, 0.25, 0.15, 26, 1, true), mail); av.position.y = -0.03; av.scale.set(1, 1, 0.86); R.neck.add(av);
+    // A rent in the mail on the left of the chest: ribs show through.
+    const ribs = [];
+    for (let k = 0; k < 4; k++) ribs.push([new THREE.TorusGeometry(0.248, 0.01, 5, 14, 0.75), ribAt(0.42 - k * 0.055, 0, -0.5, 1 - k * 0.025)]);
+    R.torso.add(merged(ribs, bone()));
+    const gash = mesh(new THREE.CircleGeometry(0.11, 10), G3D.flatMat('gash', '#0a0806', 1), false); gash.scale.set(0.8, 1.25, 1); gash.position.set(0.205, 0.34, 0.14); gash.rotation.y = 0.6; R.torso.add(gash);
+    // Arrows from a battle long past: one in the back, one in the left shoulder.
+    const shaftM = G3D.woodMat(true), fl = G3D.flatMat('fletch', '#6a6258', 1, 0, { side: THREE.DoubleSide });
+    [[0.08, 0.42, -0.16, -0.5, 0.2, 0], [-0.24, 0.6, 0.02, 0.2, 0, 0.9]].forEach(a => {
+      const ar = new THREE.Group(); ar.position.set(a[0], a[1], a[2]); ar.rotation.set(a[3], a[4], a[5]); R.torso.add(ar);
+      const s = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.42, 5), shaftM); s.rotation.x = Math.PI / 2; s.position.z = -0.17; ar.add(s);
+      for (let k = 0; k < 3; k++) { const f = mesh(new THREE.PlaneGeometry(0.03, 0.08), fl, false); f.position.z = -0.34; f.rotation.set(Math.PI / 2, 0, k * 2.09); f.translateX(0.012); ar.add(f); }
+    });
     const sword = P.sword(rust, 1.0); sword.rotation.x = 2.2; R.gripR.add(sword); R.weapon = sword;
     const sh = P.shieldMesh('risen'); sh.position.set(-0.3, 0.2, 0.24); sh.rotation.set(0.3, -0.7, 0.2); R.torso.add(sh);
     R.kind = 'risen';
@@ -872,6 +964,19 @@
       const e = mesh(new THREE.SphereGeometry(0.012, 6, 5), G3D.emissiveMat('zeye', '#d8ff7a', 8), false); e.position.set(s * 0.045, 0.1, 0.122); R.head.add(e);
     });
     const hair = mesh(new THREE.SphereGeometry(0.125, 12, 8, 0, Math.PI * 2, 0, 1.2), G3D.flatMat('hair', '#1a1612', 1)); hair.position.y = 0.1; hair.rotation.x = -0.4; R.head.add(hair);
+    // A gaunt face: heavy brow, hollow nose, ears, and a jaw of broken teeth.
+    const face = [];
+    face.push([new THREE.BoxGeometry(0.15, 0.025, 0.04), mtx(0, 0.135, 0.095, 0.2)]);
+    face.push([new THREE.ConeGeometry(0.018, 0.05, 6), mtx(0, 0.075, 0.125, 1.35)]);
+    [-1, 1].forEach(e => face.push([new THREE.SphereGeometry(0.03, 8, 6), mtx(e * 0.112, 0.08, 0, 0, 0, 0, 0.35, 1, 0.75)]));
+    R.head.add(merged(face, skin));
+    const teeth = [];
+    for (let k = 0; k < 7; k++) if (k !== 2 && k !== 5) teeth.push([new THREE.BoxGeometry(0.012, 0.018 + (k % 3) * 0.004, 0.01), mtx((k - 3) * 0.015, 0.035, 0.045)]);
+    jaw.add(merged(teeth, bone()));
+    // Ribs through the torn shirt.
+    const ribs = [];
+    for (let k = 0; k < 4; k++) ribs.push([new THREE.TorusGeometry(0.236, 0.009, 5, 14, 0.8), ribAt(0.44 - k * 0.05, 0.005, -1.95, 1 - k * 0.025)]);
+    R.torso.add(merged(ribs, bone()));
     // A rusted pitchfork
     const fork = new THREE.Group();
     fork.add(mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.5, 6), G3D.woodMat(true)));
@@ -897,6 +1002,18 @@
     const skull = P.skull(); skull.scale.setScalar(1.25); skull.position.set(0, -0.03, 0.06); R.head.add(skull);
     [-1, 1].forEach(s => { const e = mesh(new THREE.SphereGeometry(0.018, 8, 6), G3D.emissiveMat('neye', '#4dff5a', 10), false); e.position.set(s * 0.048, -0.03, 0.17); R.head.add(e); });
     const eg = G3D.glow('#4dff5a', 0.7, 0.9); eg.position.set(0, -0.02, 0.2); R.head.add(eg);
+    // A mantle of bones about the shoulders, fastened with a skull.
+    const mantle = [];
+    for (let k = 0; k < 11; k++) {
+      const ang = (k / 10 - 0.5) * 3.4;
+      mantle.push([new THREE.ConeGeometry(0.022, 0.2 + (k % 2) * 0.08, 6), mtx(Math.sin(ang) * 0.27, 0.8 + (k % 2) * 0.02, Math.cos(ang) * 0.2 - 0.02, -0.25 + Math.cos(ang) * 0.1, 0, -Math.sin(ang) * 0.9)]);
+      mantle.push([new THREE.SphereGeometry(0.03, 8, 6), mtx(Math.sin(ang) * 0.25, 0.74, Math.cos(ang) * 0.19 - 0.02)]);
+    }
+    R.torso.add(merged(mantle, bone()));
+    const clasp = P.skull(); clasp.scale.setScalar(0.55); clasp.position.set(0, 0.66, 0.2); R.torso.add(clasp);
+    const chain = [];
+    for (let k = 0; k < 9; k++) chain.push([new THREE.TorusGeometry(0.018, 0.005, 5, 10), mtx(-0.16 + k * 0.035, 0.28 - Math.sin(k / 8 * Math.PI) * 0.1, 0.27, 0, k % 2 ? Math.PI / 2 : 0, 0)]);
+    R.torso.add(merged(chain, iron()));
     ['L', 'R'].forEach((side, i) => {
       const s = i ? 1 : -1;
       const arm = new THREE.Group(); arm.position.set(s * 0.3, 0.72, 0); R.torso.add(arm);

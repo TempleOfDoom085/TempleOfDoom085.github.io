@@ -23,6 +23,8 @@
   // Motion: the player's choice in ⚙ Settings, else the system preference.
   const motionPref = (() => { try { return JSON.parse(localStorage.getItem('kt_settings') || '{}').motion; } catch (_) { return null; } })();
   const reducedMotion = motionPref === 'reduce' || (motionPref !== 'full' && !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches));
+  // Effects that need a shader rebuild are read once at boot (⚙ Settings reloads for them).
+  const userFx = (() => { try { return JSON.parse(localStorage.getItem('kt_settings') || '{}'); } catch (_) { return {}; } })();
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 600;
   // Graphics tiers: 'ultra' (cinematic pipeline, desktop WebGL2), 'std', or 'off' (the 2D art).
   const wantUltra = !isMobile && pref() !== 'std' && !!G3D.fx;
@@ -32,7 +34,7 @@
 
   let renderer, scene, camera, composer, bloom, finalPass, pmrem;
   let cine = null, dofPass = null, fxaaPass = null;   // Ultra pipeline passes
-  const fx = { ao: true, vol: true, ssr: true, dof: true, focus: 5, aperture: 0 };
+  const fx = { ao: true, vol: true, ssr: true, dof: true, taa: userFx.taa !== false, pom: userFx.pom !== false, pcss: userFx.pcss !== false, hires: userFx.hires !== false, focus: 5, aperture: 0 };
   let panel, canvas, combatHost;
   let spot, dir, hemi, pool = [];
   let roomId = null, room = null, roomCache = {};
@@ -63,6 +65,8 @@
     installHooks();
     E.setRoom(STATE.currentRoom, true);
     requestAnimationFrame(loop);
+    // Ultra: rebuild the stone, wood and metal at twice the resolution in a worker.
+    if (E.ultra && fx.hires) setTimeout(() => { if (E.active && E.ultra) G3D.hiResTextures(2); }, 2500);
     return true;
   };
 
@@ -106,6 +110,9 @@
     composer = new THREE.EffectComposer(renderer, rt);
     E.ultra = wantUltra && isGL2 && hf;
     if (E.ultra) {
+      // Soft contact-hardening shadows and parallax stone (shader patches in fx.js).
+      E.pcss = fx.pcss && Q.shadows && G3D.fx.installPCSS();
+      G3D.pomOn = !!fx.pom;
       // Scene + depth → AO + volumetric light → depth of field (see game3d/fx.js)
       cine = new G3D.fx.CinematicPass(scene, camera, { halfFloat: true });
       composer.addPass(cine);
@@ -180,11 +187,57 @@
       vignette: { value: 0.95 }, grain: { value: 0.03 }, aberration: { value: 0.0022 },
       fade: { value: 1 }, flashAmt: { value: 0 }, flashCol: { value: new THREE.Color() }, desat: { value: 0 },
       tBright: { value: null }, tBloom: { value: null }, tDirt: { value: null }, streak: { value: 0 }, dirt: { value: 0 }, haze: { value: 0 }, bars: { value: 0 },
+      tDepth: { value: null }, fN: { value: 0 }, fPos: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, fCol: { value: [0, 1, 2, 3].map(() => new THREE.Vector3()) },
+      cNear: { value: 0.05 }, cFar: { value: 400 }, aspect: { value: 1 },
     },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    // Lens flares: each source's visibility is tested against the depth buffer
+    // here, once per vertex of the full-screen quad, not once per pixel.
+    vertexShader: `uniform sampler2D tDepth; uniform vec4 fPos[4]; uniform float fN, cNear, cFar; varying vec2 vUv; varying vec4 vVis;
+      float lz(float d){ return cNear * cFar / ((cFar - cNear) * d - cFar) * -1.0; }
+      void main(){ vUv = uv; vVis = vec4(0.0);
+        for (int i = 0; i < 4; i++) {
+          if (float(i) >= fN) break;
+          float v = 0.0;
+          for (int k = 0; k < 9; k++) {
+            vec2 o = k == 0 ? vec2(0.0) : vec2(cos(float(k) * 0.785), sin(float(k) * 0.785)) * 0.004 * (1.0 + float(k / 5));
+            v += step(fPos[i].z * 0.96 - 0.25, lz(texture2D(tDepth, fPos[i].xy + o).x));
+          }
+          vVis[i] = v / 9.0;
+        }
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `
       uniform sampler2D tDiffuse, tBright, tBloom, tDirt; uniform float time, exposure, sat, contrast, vignette, grain, aberration, fade, flashAmt, desat, streak, dirt, haze, bars;
       uniform vec3 tint, flashCol; uniform vec2 res; varying vec2 vUv;
+      uniform vec4 fPos[4]; uniform vec3 fCol[4]; uniform float fN, aspect; varying vec4 vVis;
+      // Glow and starburst at the light, hexagonal aperture ghosts along the
+      // line through the centre of the frame, and a faint rainbow halo.
+      vec3 flares(){
+        vec3 acc = vec3(0.0); vec2 asp = vec2(aspect, 1.0);
+        for (int i = 0; i < 4; i++) {
+          if (float(i) >= fN) break;
+          float I = fPos[i].w * vVis[i];
+          if (I < 0.001) continue;
+          vec2 p = fPos[i].xy, ax = vec2(0.5) - p;
+          vec2 q = (vUv - p) * asp; float r = length(q), an = atan(q.y, q.x);
+          float core = exp(-r * r * 1400.0) * 2.0 + exp(-r * 14.0) * 0.1;
+          float rays = (pow(abs(cos(an * 3.0 + 0.35)), 80.0) + pow(abs(cos(an * 2.0 + 1.1)), 120.0) * 0.6) * exp(-r * 6.5) * 0.35;
+          acc += fCol[i] * (core + rays) * I;
+          for (int j = 0; j < 5; j++) {
+            float fj = float(j);
+            float t = fj == 0.0 ? 0.42 : fj == 1.0 ? 0.78 : fj == 2.0 ? 1.15 : fj == 3.0 ? 1.45 : 1.9;
+            float gr = fj == 0.0 ? 0.035 : fj == 1.0 ? 0.07 : fj == 2.0 ? 0.022 : fj == 3.0 ? 0.11 : 0.05;
+            vec2 a = abs((vUv - (p + ax * t)) * asp);
+            float hd = max(a.x * 0.866 + a.y * 0.5, a.y);
+            float disc = smoothstep(gr, gr * 0.72, hd) * (0.6 + 0.4 * smoothstep(gr * 0.3, gr, hd));
+            vec3 tintG = 0.55 + 0.45 * cos(6.2831 * (fj * 0.23 + vec3(0.0, 0.33, 0.67)));
+            acc += fCol[i] * tintG * disc * I * 0.05;
+          }
+          float hr = length((vUv - mix(vec2(0.5), p, 0.2)) * asp);
+          float ring = smoothstep(0.035, 0.0, abs(hr - 0.4)) * smoothstep(0.7, 0.15, length(ax));
+          acc += (0.5 + 0.5 * cos(6.2831 * (hr * 4.0 + vec3(0.0, 0.33, 0.67)))) * fCol[i] * ring * I * 0.025;
+        }
+        return acc;
+      }
       vec3 aces(vec3 x){ return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       void main(){
@@ -204,6 +257,7 @@
           c += st * streak * vec3(0.5, 0.68, 1.0);
         }
         if (dirt > 0.0) c += texture2D(tBloom, vUv).rgb * texture2D(tDirt, vUv).rgb * dirt;
+        if (fN > 0.0) c += flares();
         c *= exposure * tint;
         c += flashCol * flashAmt;
         c = aces(c);
@@ -376,7 +430,7 @@
       R.root.traverse(o => {
         if (o.isMesh && o.material && !(o.material instanceof THREE.ShaderMaterial) && o.material.isMeshStandardMaterial) {
           const src = o.material; o.material = src.clone(); this.mats.push(o.material);
-          if (src.userData.uvScale) G3D.withRepeat(o.material, [src.userData.uvScale.x, src.userData.uvScale.y]);
+          G3D.repatch(o.material, src);
           o.material.userData.baseEmissive = o.material.emissive.clone();
           o.material.userData.baseEI = o.material.emissiveIntensity;
         }
@@ -685,13 +739,18 @@
       spot.position.set(...k.pos); spot.target.position.set(...k.target); spot.color.set(k.color);
       spot.intensity = k.intensity; spot.angle = k.angle; spot.penumbra = k.penumbra; spot.distance = k.distance;
       spot.userData.base = k.intensity;
+      // PCSS (fx.js): far plane + light size over the cone's width, packed into shadow.radius.
+      spot.shadow.radius = 1000 + Math.round(k.distance || 40) + Math.min(0.99, 0.5 / (2 * Math.tan(k.angle)));
     } else {
       const c = V(...(k.center || [0, 0, 0])), d = V(...k.dir).normalize();
       dir.position.copy(c).addScaledVector(d, 20); dir.target.position.copy(c);
       dir.color.set(k.color); dir.intensity = k.intensity; dir.userData.base = k.intensity;
       const a = k.area || 12, sc = dir.shadow.camera;
       sc.left = -a; sc.right = a; sc.top = a; sc.bottom = -a; sc.near = 1; sc.far = 60; sc.updateProjectionMatrix();
+      // PCSS: penumbra widens ~3 cm per metre between occluder and ground.
+      dir.shadow.radius = (sc.far - sc.near) * 0.03 / (2 * a) * 100;
     }
+    if (cine) cine.resetTAA();
     post.grade = spec.grade;
     // Cast
     const becameGolden = !!knight && !knight.golden && !!STATE.hasGoldenArmor;
@@ -967,9 +1026,19 @@
       }
     }
     // Cloth
+    // Capes and banners are simulated (game3d/cloth.js); skirts and robes sway.
+    const windK = room.outdoor ? 3.2 * (0.5 + 0.5 * (E.storm == null ? 1 : E.storm)) : 0.6;
+    clothEnv.wind.set(0.8, 0, 0.6).multiplyScalar(windK); clothEnv.time = time;
     swayList.forEach(o => {
       if (o.userData._room && o.userData._room !== roomId) return;
-      const s = o.userData.sway, p = o.geometry.attributes.position, b = s.base;
+      const s = o.userData.sway;
+      if ((s.cape || s.banner) && G3D.cloth && !(o.parent && !o.parent.visible)) {
+        clothEnv.wind.multiplyScalar(s.banner ? s.amp / 0.06 : 1);
+        const ok = G3D.cloth.step(o, dt, clothEnv);
+        clothEnv.wind.set(0.8, 0, 0.6).multiplyScalar(windK);
+        if (ok) return;
+      }
+      const p = o.geometry.attributes.position, b = s.base;
       for (let i = 0; i < p.count; i++) {
         const x = b[i * 3], y = b[i * 3 + 1], z = b[i * 3 + 2];
         if (s.skirt || s.robe) {
@@ -989,6 +1058,8 @@
     if (relicObj) relicObj.traverse(o => { if (o.userData.spin) { o.rotation.y += dt * 0.8; o.position.y = 1.45 + Math.sin(time * 1.6) * 0.06; } });
     if (scrollObj) scrollObj.position.y = room.scroll[1] + 0.05 + Math.sin(time * 2) * 0.04;
   }
+
+  const clothEnv = { wind: V(), time: 0 };
 
   // ── Main loop ──────────────────────────────────────────────────────────────
   function loop(now) {
@@ -1051,7 +1122,9 @@
   function updateFX(dt) {
     const vs = Object.assign({}, room.vol, E.tune), fog = room.fog, u = cine.volMat.uniforms;
     const fc = scene.fog.color;
-    cine.ao = fx.ao; cine.vol = fx.vol; cine.ssr = fx.ssr; dofPass.enabled = fx.dof;
+    cine.ao = fx.ao; cine.vol = fx.vol; cine.ssr = fx.ssr; cine.taa = fx.taa; dofPass.enabled = fx.dof;
+    if (fxaaPass) fxaaPass.uniforms.sharpen.value = fx.taa ? 0.45 : 0;
+    updateFlares();
     const r = cine.ssrMat.uniforms;
     r.wet.value = vs.wet != null ? vs.wet : 0.3; r.puddles.value = vs.puddles != null ? vs.puddles : 0.35;
     const bgc = scene.background, sk = room.outdoor ? 1.6 : 0.3;
@@ -1097,6 +1170,45 @@
   }
   const tmpSize = new THREE.Vector2();
 
+  // Lens flares: the key light (sun or moon through the sky, or the window
+  // light) and the brightest torches on screen, up to four.
+  const flareSrc = [], fV = V(), fW = V();
+  function updateFlares() {
+    const u = finalPass.uniforms;
+    u.fN.value = 0;
+    if (!E.flaresOn || !cine) return;
+    flareSrc.length = 0;
+    const consider = (pos, col, I) => {
+      fV.copy(pos).project(camera);
+      if (fV.z > 1 || Math.abs(fV.x) > 1.02 || Math.abs(fV.y) > 1.02) return;
+      const edge = clamp((1.02 - Math.max(Math.abs(fV.x), Math.abs(fV.y))) / 0.2, 0, 1);
+      const z = -fW.copy(pos).applyMatrix4(camera.matrixWorldInverse).z;
+      if (z < 0.3) return;
+      const score = I * edge * (col.r * 0.3 + col.g * 0.6 + col.b * 0.1);
+      if (score > 0.02) flareSrc.push({ x: fV.x * 0.5 + 0.5, y: fV.y * 0.5 + 0.5, z, I: I * edge, col, score });
+    };
+    if (dir.visible && dir.intensity > 0) {
+      fW.subVectors(dir.position, dir.target.position).normalize();
+      consider(fW.multiplyScalar(150).add(camera.position).clone(), dir.color, Math.min(2.5, dir.intensity * 0.45));
+    }
+    if (spot.visible && spot.intensity > 0) consider(spot.position, spot.color, Math.min(1.5, spot.intensity * 0.05));
+    pool.forEach(p => {
+      if (!p.anchor || p.light.intensity <= 0) return;
+      const d = p.light.position.distanceTo(camera.position);
+      consider(p.light.position, p.light.color, p.light.intensity * 0.22 / (1 + d * d * 0.012));
+    });
+    flareSrc.sort((a, b) => b.score - a.score);
+    const n = Math.min(4, flareSrc.length);
+    for (let i = 0; i < n; i++) {
+      const f = flareSrc[i];
+      u.fPos.value[i].set(f.x, f.y, f.z, f.I);
+      u.fCol.value[i].set(f.col.r, f.col.g, f.col.b);
+    }
+    u.fN.value = n;
+    u.tDepth.value = cine.depthTexture; u.cNear.value = camera.near; u.cFar.value = camera.far;
+    u.aspect.value = camera.aspect;
+  }
+
   // A GPU that can't compile the Ultra shaders gets the standard pipeline instead of a black screen.
   function checkUltra() {
     const bad = renderer.info.programs.some(p => p.diagnostics && p.diagnostics.runnable === false);
@@ -1104,7 +1216,13 @@
     console.warn('[3D] Ultra shaders failed to compile; using the standard renderer');
     const i = composer.passes.indexOf(cine);
     composer.passes.splice(i, 2, new THREE.RenderPass(scene, camera));
-    E.ultra = false; cine = null; dofPass = null;
+    E.ultra = false; cine = null; dofPass = null; finalPass.uniforms.fN.value = 0;
+    if (fxaaPass) fxaaPass.uniforms.sharpen.value = 0;
+    if (G3D.pomOn || E.pcss) {
+      G3D.pomOn = false; if (E.pcss) G3D.fx.uninstallPCSS(); E.pcss = false;
+      const redo = o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); };
+      scene.traverse(redo); Object.values(roomCache).forEach(r => r.group.traverse(redo));
+    }
     if (scene.fog && room) scene.fog.density = room.fog[1];
   }
 
@@ -1115,6 +1233,12 @@
     if (fx.ssr) { fx.ssr = false; return true; }
     if (fx.dof) { fx.dof = false; return true; }
     if (fx.ao) { fx.ao = false; return true; }
+    if (G3D.pomOn) {
+      G3D.pomOn = false;
+      const redo = o => { if (o.material) [].concat(o.material).forEach(m => { if (m.userData.pom) m.needsUpdate = true; }); };
+      scene.traverse(redo); Object.values(roomCache).forEach(r => r.group.traverse(redo));
+      return true;
+    }
     return false;
   }
 
@@ -1188,7 +1312,9 @@
     const u = finalPass.uniforms;
     if (!lensBase) lensBase = { streak: u.streak.value, dirt: u.dirt.value, haze: u.haze.value };
     u.streak.value = on ? lensBase.streak : 0; u.dirt.value = on ? lensBase.dirt : 0; u.haze.value = on ? lensBase.haze : 0;
+    E.flaresOn = !!on && Q.lens;
   };
+  E.flaresOn = Q.lens;
   E.shake = k => { cam.shake = Math.max(cam.shake, k); };
   // Boot after the game has initialised.
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', E.boot); else E.boot();
