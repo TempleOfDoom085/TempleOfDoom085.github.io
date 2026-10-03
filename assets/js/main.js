@@ -222,9 +222,8 @@ window.addEventListener('scroll', () => {
   draw();
 })();
 
-// ── v12.0: 3D CARD TILT + SPECULAR ──
+// ── Card specular highlight (the cards themselves don't move) ──
 (function() {
-  const MAX_TILT = 14;
   document.querySelectorAll('.skill-card, .project-item, .cert-card-full').forEach(card => {
     // Ensure position:relative for shine overlay
     const cs = getComputedStyle(card);
@@ -236,12 +235,10 @@ window.addEventListener('scroll', () => {
       const cy = rect.top  + rect.height / 2;
       const dx = (e.clientX - cx) / (rect.width  / 2);
       const dy = (e.clientY - cy) / (rect.height / 2);
-      const rotX = -dy * MAX_TILT;
-      const rotY =  dx * MAX_TILT;
 
-      card.style.transform = `perspective(700px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-4px) scale(1.01)`;
-      card.style.boxShadow = `0 ${16 + Math.abs(rotX)}px ${40 + Math.abs(rotY) * 2}px rgba(0,0,0,0.45), 0 0 0 1px rgba(184,147,58,0.12)`;
-      card.style.transition = 'box-shadow 0.1s';
+      // Cards stay put; only the light on them follows the cursor.
+      card.style.boxShadow = '0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(184,147,58,0.12)';
+      card.style.transition = 'box-shadow 0.2s';
 
       // Specular highlight follows surface normal
       const shine = card.querySelector('.card-shine');
@@ -263,9 +260,8 @@ window.addEventListener('scroll', () => {
     });
 
     card.addEventListener('mouseleave', () => {
-      card.style.transform = '';
       card.style.boxShadow = '';
-      card.style.transition = 'transform 0.5s cubic-bezier(0.23,1,0.32,1), box-shadow 0.5s ease';
+      card.style.transition = 'box-shadow 0.5s ease';
       const shine = card.querySelector('.card-shine');
       if (shine) shine.style.background = '';
     });
@@ -636,29 +632,6 @@ function closeKonami() {
     });
   }, { threshold: 0.6 });
   counters.forEach(el => observer.observe(el));
-})();
-
-// ── v9.1: HERO PARALLAX ──
-(function() {
-  const hero = document.querySelector('.hero');
-  if (!hero) return;
-  const leftText  = hero.querySelector('.hero-left  .hero-name');
-  const leftDesc  = hero.querySelector('.hero-left  .hero-desc');
-  const rightText = hero.querySelector('.hero-right .hero-name');
-  const rightDesc = hero.querySelector('.hero-right .hero-desc');
-
-  hero.addEventListener('mousemove', e => {
-    const rect = hero.getBoundingClientRect();
-    const x = (e.clientX - rect.left)  / rect.width  - 0.5;
-    const y = (e.clientY - rect.top)   / rect.height - 0.5;
-    if (leftText)  leftText.style.transform  = `translate(${x * 14}px, ${y * 10}px)`;
-    if (leftDesc)  leftDesc.style.transform  = `translate(${x *  7}px, ${y *  5}px)`;
-    if (rightText) rightText.style.transform = `translate(${x * -10}px, ${y * 8}px)`;
-    if (rightDesc) rightDesc.style.transform = `translate(${x * -5}px, ${y * 4}px)`;
-  });
-  hero.addEventListener('mouseleave', () => {
-    [leftText, leftDesc, rightText, rightDesc].forEach(el => { if (el) el.style.transform = ''; });
-  });
 })();
 
 // ── v10.0: TERMINAL ──

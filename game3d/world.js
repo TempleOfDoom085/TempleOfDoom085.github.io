@@ -286,13 +286,20 @@
   // Plays only while the player has sound switched on (the ♪ Music button).
   const amb = { ctx: null, master: null, noise: null, wind: null, windGain: null, windFilter: null, rumbleGain: null, profile: null, nextCrackle: 0, nextDrip: 0, on: false };
   const WINDY = { courtyard: 0.7, watchtower: 0.9, tower: 0.45, cloister: 0.35 };
-  const DRIPS = { catacombs: 1, crypt: 0.7, dungeon: 0.9, lair: 0.4 };
-  const RUMBLE = { lair: 0.9, throne: 0.6, catacombs: 0.35, crypt: 0.3 };
+  const DRIPS = { catacombs: 1, crypt: 0.7, dungeon: 0.9, lair: 0.4, flooded: 1.3, ossuary: 1.1, sanctum: 0.8 };
+  const RUMBLE = { lair: 0.9, throne: 0.6, catacombs: 0.35, crypt: 0.3, emberstair: 0.5, forge: 0.6, vault: 0.9 };
   const RAIN = { courtyard: 1, watchtower: 0.85 };
+  // v19: rain heard through the windows in a storm, water lapping, fire and the forge
+  const WINDOWED = { chapel: 1, cloister: 1, hall: 0.8, scriptorium: 0.7, infirmary: 0.7, tower: 0.9, gallery: 0.6, barracks: 0.5, sanctum: 0.8 };
+  const LAPS = { flooded: 1, ossuary: 0.9, sanctum: 0.7 };
+  const ROAR = { emberstair: 0.4, forge: 0.9, vault: 1 };
+  const LAVA = { emberstair: 0.5, forge: 0.8, vault: 1 };
+  const ANVIL = { forge: 1, emberstair: 0.35 };
   function profileFor(id) {
     const type = (ROOMS[id] && ROOMS[id].type) || '';
     const fires = (C.room && C.room.anchors) ? C.room.anchors.length : 0;
-    return { wind: WINDY[type] || 0, drip: DRIPS[type] || 0, rumble: RUMBLE[type] || 0, rain: RAIN[type] || 0, crackle: Math.min(1, fires / 6) };
+    return { wind: WINDY[type] || 0, drip: DRIPS[type] || 0, rumble: RUMBLE[type] || 0, rain: RAIN[type] || 0, crackle: Math.min(1, fires / 6),
+      window: WINDOWED[type] || 0, lap: LAPS[type] || 0, roar: ROAR[type] || 0, lava: LAVA[type] || 0, anvil: ANVIL[type] || 0 };
   }
   function ensureAudio() {
     if (amb.ctx) return true;
@@ -317,8 +324,20 @@
     const rn = ctx.createBufferSource(); rn.buffer = buf; rn.loop = true; rn.playbackRate.value = 0.8;
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1100;
     const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 7500;
-    amb.rainGain = ctx.createGain(); amb.rainGain.gain.value = 0;
+    amb.rainGain = ctx.createGain(); amb.rainGain.gain.value = 0; amb.rainLP = lp2;
     rn.connect(hp).connect(lp2).connect(amb.rainGain).connect(amb.master); rn.start();
+    // Fire roar: low, breathy band of noise
+    const fr = ctx.createBufferSource(); fr.buffer = buf; fr.loop = true; fr.playbackRate.value = 0.6;
+    const fb = ctx.createBiquadFilter(); fb.type = 'bandpass'; fb.frequency.value = 260; fb.Q.value = 0.6;
+    amb.roarGain = ctx.createGain(); amb.roarGain.gain.value = 0;
+    fr.connect(fb).connect(amb.roarGain).connect(amb.master); fr.start();
+    // Water lapping against stone: low noise that swells and ebbs
+    const wl = ctx.createBufferSource(); wl.buffer = buf; wl.loop = true; wl.playbackRate.value = 0.45;
+    const wb = ctx.createBiquadFilter(); wb.type = 'lowpass'; wb.frequency.value = 520; wb.Q.value = 2;
+    amb.lapGain = ctx.createGain(); amb.lapGain.gain.value = 0;
+    wl.connect(wb).connect(amb.lapGain).connect(amb.master); wl.start();
+    // A little of the cathedral reverb for thunder (game3d/music.js)
+    amb.verb = window.KTMusic && KTMusic.reverb ? KTMusic.reverb() : null;
     return true;
   }
   function blip(type) {
@@ -335,11 +354,49 @@
       o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.35, t + 0.09);
       const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
       o.connect(g).connect(amb.master); o.start(t); o.stop(t + 0.3);
-    } else if (type === 'thunder') {
-      const s = ctx.createBufferSource(); s.buffer = amb.noise; s.playbackRate.value = 0.3;
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(90, t + 2.5);
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
-      s.connect(lp).connect(g).connect(amb.master); s.start(t, Math.random(), 3.4);
+    } else if (type === 'thunder' || type === 'thunderIn') {
+      // A crack, then a long roll: grains of low noise, each a wall of the sky echoing.
+      const inside = type === 'thunderIn', near = Math.random();
+      const out = ctx.createGain(); out.gain.value = inside ? 0.55 : 0.9; out.connect(amb.master);
+      if (amb.verb) { const send = ctx.createGain(); send.gain.value = inside ? 0.25 : 0.5; out.connect(send).connect(amb.verb); }
+      if (!inside && near > 0.45) {
+        const s = ctx.createBufferSource(); s.buffer = amb.noise;
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5 * near, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+        s.connect(hp).connect(g).connect(out); s.start(t, Math.random(), 0.5);
+      }
+      const n = 5 + Math.floor(Math.random() * 4), cut = inside ? 260 : 520;
+      for (let i = 0; i < n; i++) {
+        const t0 = t + (i === 0 ? 0.02 : 0.15 + Math.random() * 3.2), len = 1.4 + Math.random() * 2.2, a = (i === 0 ? 0.55 : 0.18 + Math.random() * 0.4) * (inside ? 0.7 : 1);
+        const s = ctx.createBufferSource(); s.buffer = amb.noise; s.playbackRate.value = 0.22 + Math.random() * 0.12;
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(cut, t0); lp.frequency.exponentialRampToValueAtTime(70, t0 + len);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(a, t0 + 0.06 + Math.random() * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+        s.connect(lp).connect(g).connect(out); s.start(t0, Math.random() * 1.2, len + 0.1);
+      }
+    } else if (type === 'lava') {
+      // A thick bubble: a low plop rising in pitch, and a hiss
+      const o = ctx.createOscillator(); o.type = 'sine'; const f = 70 + Math.random() * 60;
+      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 2.4, t + 0.12);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(g).connect(amb.master); o.start(t); o.stop(t + 0.25);
+      const s = ctx.createBufferSource(); s.buffer = amb.noise;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000;
+      const h = ctx.createGain(); h.gain.setValueAtTime(0.0001, t + 0.1); h.gain.exponentialRampToValueAtTime(0.025, t + 0.15); h.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      s.connect(hp).connect(h).connect(amb.master); s.start(t + 0.1, Math.random(), 0.7);
+    } else if (type === 'anvil') {
+      // A distant hammer on an anvil: bright inharmonic ring, far off in the reverb
+      const f = 620 + Math.random() * 80, out = ctx.createGain(); out.gain.value = 0.06; out.connect(amb.master);
+      if (amb.verb) { const send = ctx.createGain(); send.gain.value = 1.2; out.connect(send).connect(amb.verb); }
+      [[1, 1, 1.4], [2.76, 0.5, 0.8], [5.4, 0.3, 0.4], [8.9, 0.15, 0.25]].forEach(([r, a, d]) => {
+        const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f * r;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(a, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        o.connect(g).connect(out); o.start(t); o.stop(t + d + 0.05);
+      });
+    } else if (type === 'splash') {
+      const s = ctx.createBufferSource(); s.buffer = amb.noise;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900 + Math.random() * 700; bp.Q.value = 0.8;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      s.connect(bp).connect(g).connect(amb.master); s.start(t, Math.random() * 1.5, 0.4);
     } else if (type === 'step') {
       const s = ctx.createBufferSource(); s.buffer = amb.noise;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380 + Math.random() * 120;
@@ -359,11 +416,26 @@
     amb.windGain.gain.setTargetAtTime(p.wind * (0.07 + 0.04 * Math.sin(C.time * 0.23)), t, 0.8);
     amb.windFilter.frequency.setTargetAtTime(320 + 260 * (0.5 + 0.5 * Math.sin(C.time * 0.17)) , t, 1.0);
     amb.rumbleGain.gain.setTargetAtTime(p.rumble * 0.12, t, 1.2);
-    amb.rainGain.gain.setTargetAtTime(p.rain * 0.16, t, 0.8);
-    // Thunder follows the lightning flash after a beat.
+    // Rain follows the weather: full outdoors, muffled against the windows indoors.
+    const storm = E.storm == null ? 1 : E.storm;
+    const indoorRain = p.rain ? 0 : p.window * Math.max(0, storm - 0.45) / 0.55;
+    amb.rainGain.gain.setTargetAtTime(p.rain * 0.16 * (0.15 + 0.85 * storm) + indoorRain * 0.1, t, 1.2);
+    amb.rainLP.frequency.setTargetAtTime(p.rain ? 7500 : 1300, t, 0.5);
+    amb.roarGain.gain.setTargetAtTime(p.roar * (0.09 + 0.03 * Math.sin(C.time * 0.7)), t, 0.6);
+    amb.lapGain.gain.setTargetAtTime(p.lap * (0.05 + 0.05 * Math.max(0, Math.sin(C.time * 0.9) * Math.sin(C.time * 0.37 + 1))), t, 0.4);
+    // Thunder follows the lightning flash after a beat — outdoors from the sky,
+    // indoors from the flicker through the windows (game3d/life.js).
     const ln = G3D.uniforms.lightning ? G3D.uniforms.lightning.value : 0;
     if (ln > 0.8 && !amb.lnPrev) { const at = t + 0.5 + Math.random() * 1.2; setTimeout(() => { if (amb.on) blip('thunder'); }, (at - t) * 1000); }
     amb.lnPrev = ln > 0.8;
+    const wf = G3D.life && G3D.life.weather ? G3D.life.weather.flash : 0;
+    if (wf > 0.9 && !amb.wfPrev) setTimeout(() => { if (amb.on) blip('thunderIn'); }, 900 + Math.random() * 1400);
+    amb.wfPrev = wf > 0.9;
+    if (p.lava > 0 && C.time > (amb.nextLava || 0)) { blip('lava'); amb.nextLava = C.time + (0.25 + Math.random() * 1.4) / p.lava; }
+    if (p.anvil > 0 && C.time > (amb.nextAnvil || 0)) {
+      if (amb.nextAnvil) { blip('anvil'); if (Math.random() < 0.6) setTimeout(() => { if (amb.on) blip('anvil'); }, 420); }
+      amb.nextAnvil = C.time + (7 + Math.random() * 12) / p.anvil;
+    }
     if (p.crackle > 0 && C.time > amb.nextCrackle) { blip('crackle'); amb.nextCrackle = C.time + (0.04 + Math.random() * 0.22) / p.crackle; }
     if (p.drip > 0 && C.time > amb.nextDrip) { blip('drip'); amb.nextDrip = C.time + (1.2 + Math.random() * 3.5) / p.drip; }
   }
@@ -415,10 +487,12 @@
     });
     if (win) { hit(t, 'low', 1, amb.master); hit(t + 0.2, 'low', 0.8, amb.master); }
   }
+  const inC0 = () => !!STATE.inCombat;
   function updateMusic() {
     const ctx = amb.ctx, t = ctx.currentTime;
     ensureMusic();
-    const inC = !!STATE.inCombat, boss = inC && STATE.currentEnemy && STATE.currentEnemy.type === 'necromancer', berserk = boss && STATE.bossPhase === 3;
+    const foeType = inC0() && STATE.currentEnemy && STATE.currentEnemy.type;
+    const inC = !!STATE.inCombat, boss = inC && (foeType === 'necromancer' || foeType === 'warden'), berserk = boss && (STATE.bossPhase === 3 || STATE.wardenPhase === 3);
     if (inC) music.room = STATE.currentRoom;
     if (music.was && !inC) {
       const dead = C.knight && (C.knight.dead || (C.knight.anim && C.knight.anim.name === 'die')) || STATE.hp <= 0;
@@ -450,7 +524,13 @@
       music.hb = t + (hp < 0.15 ? 0.75 : 1.0);
     }
   }
-  E.onStep = () => { if (amb.on) blip('step'); };
+  // Footsteps — splashing when the knight wades.
+  E.onStep = actor => {
+    if (!amb.on) return;
+    const el = G3D.elements && G3D.elements.state, p = actor && actor.R.root.position;
+    const wet = el && el.water && el.box && p && p.x > el.box.min.x && p.x < el.box.max.x && p.z > el.box.min.z && p.z < el.box.max.z && p.y < el.waterY + 0.35;
+    blip(wet ? 'splash' : 'step');
+  };
 
   // ── Photo mode ────────────────────────────────────────────────────────────
   // P (or the 📷 button) frees the camera: drag to orbit the knight, scroll to

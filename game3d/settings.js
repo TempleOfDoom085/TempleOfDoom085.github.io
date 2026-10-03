@@ -13,7 +13,7 @@
   const KEY = 'kt_settings';
   const DEFAULTS = {
     resScale: 1, vol: true, ssr: true, ao: true, dof: true, lens: true, grain: true, taa: true, pom: true, pcss: true, hires: true,
-    master: 1, ambience: 1,
+    master: 1, music: 0.8, ambience: 1,
     shake: true, impact: true, motion: 'system', strikes: 'timed', text: 'normal', touch: 'auto',
   };
   const load = () => { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { return Object.assign({}, DEFAULTS); } };
@@ -43,6 +43,7 @@
     if (bus) bus.gain.value = S.master;
     const amb = G3D.world && G3D.world.amb;
     if (amb && amb.bus) amb.bus.gain.value = S.ambience;
+    if (window.KTMusic) KTMusic.setVolume(S.music);
     if (E) {
       Object.assign(E.fx, { vol: S.vol, ssr: S.ssr, ao: S.ao, dof: S.dof, taa: S.taa });
       E.shakeOn = S.shake; E.impactOn = S.impact; E.simpleStrikes = S.strikes === 'simple';
@@ -100,7 +101,8 @@
     ${row('Film grain', '', check('grain'), !E)}
     <h3>Audio</h3>
     ${row('Master volume', 'All sound', range('master', 0, 1, 0.05))}
-    ${row('Ambience & combat music', 'Wind, rain, drums', range('ambience', 0, 1, 0.05))}
+    ${row('Music', 'Choir, chant and bells', range('music', 0, 1, 0.05))}
+    ${row('Ambience & combat music', 'Wind, rain, thunder, fire, war drums', range('ambience', 0, 1, 0.05))}
     <h3>Comfort &amp; accessibility</h3>
     ${row('Camera shake', '', check('shake'), !E)}
     ${row('Hit-stop & slow motion', 'The freeze-frame on impacts', check('impact'), !E)}
