@@ -112,11 +112,12 @@
     <div class="kt-keys">
       <kbd>W A S D / ←↑→↓</kbd><span>Walk (hold Shift to run) · tap the floor to walk there</span>
       <kbd>E</kbd><span>Use what's in reach: relics, scrolls, people</span>
-      <kbd>A · D · F</kbd><span>In combat: attack · defend · flee (1 · 2 · 3)</span>
+      <kbd>A · D · F</kbd><span>In combat: attack · defend · flee (1 · 2 · 3). Defending can parry a blow and riposte</span>
       <kbd>Space</kbd><span>Land a timed strike on the gold ring</span>
       <kbd>G · R · T · X</kbd><span>Take relic · read scroll · talk · examine portrait</span>
       <kbd>P</kbd><span>Photo mode</span>
       <kbd>F5 · F9</kbd><span>Quick save · quick load</span>
+      <kbd>C</kbd><span>Codex: skills, bestiary and achievements</span>
       <kbd>F10</kbd><span>Settings</span>
       <kbd>Gamepad</kbd><span>Stick moves · A acts / attacks · X defends · B flees</span>
     </div>

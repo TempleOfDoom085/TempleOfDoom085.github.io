@@ -58,8 +58,10 @@
     const g = new THREE.Group();
     const w = o.w, d = o.d, h = o.h, zF = o.zFront == null ? 6 : o.zFront, zB = zF - d;
     const tint = o.tint || '';
-    const floor = mesh(new THREE.PlaneGeometry(w, d), G3D.floorMat(o.floorTint || tint, [w / 3.5, d / 3.5]), false, true);
-    floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, zF - d / 2); g.add(floor);
+    if (!o.noFloor) {
+      const floor = mesh(new THREE.PlaneGeometry(w, d), G3D.floorMat(o.floorTint || tint, [w / 3.5, d / 3.5]), false, true);
+      floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, zF - d / 2); g.add(floor);
+    }
     const wallMat = (len) => G3D.stoneMat(tint, [len / 3, h / 3], 'w' + len + 'h' + h);
     if (!o.noBack) { const b = mesh(new THREE.PlaneGeometry(w, h), wallMat(w), false, true); b.position.set(0, h / 2, zB); g.add(b); }
     if (!o.openLeft) { const l = mesh(new THREE.PlaneGeometry(d, h), wallMat(d), false, true); l.rotation.y = Math.PI / 2; l.position.set(-w / 2, h / 2, zF - d / 2); g.add(l); }
@@ -140,10 +142,11 @@
           col += vec3(1.0, 0.95, 0.85) * smoothstep(0.9993, 0.9996, md) * 6.0;
           col += vec3(0.5, 0.6, 0.8) * pow(max(md, 0.0), 60.0) * 0.6 + vec3(0.25, 0.3, 0.45) * pow(max(md, 0.0), 8.0) * 0.25;
           // Drifting clouds
-          if (clouds > 0.5) {
-            vec2 cp = vDir.xz / (vDir.y + 0.15) * 1.6 + vec2(time * 0.02, 0.0);
+          // clouds = cover, 0..1 (the weather drives it: a storm closes the sky).
+          if (clouds > 0.01) {
+            vec2 cp = vDir.xz / (vDir.y + 0.15) * 1.6 + vec2(time * (0.012 + clouds * 0.012), 0.0);
             float c = n(cp) * 0.55 + n(cp * 2.3) * 0.3 + n(cp * 5.1) * 0.15;
-            c = smoothstep(0.45, 0.85, c) * smoothstep(0.0, 0.25, y);
+            c = smoothstep(0.66 - clouds * 0.21, 0.97 - clouds * 0.12, c) * smoothstep(0.0, 0.25, y);
             vec3 cc = mix(vec3(0.03, 0.035, 0.05), vec3(0.18, 0.2, 0.28), pow(max(md, 0.0), 6.0));
             col = mix(col, cc + flash * vec3(0.6, 0.65, 0.8), c * 0.9);
           }
@@ -812,6 +815,9 @@
       knight: { pos: [cx, 0, cz0 + 6], rot: Math.PI },
     });
   }
+  // Shared with later room modules (game3d/ember.js).
+  G3D.roomKit = { shell, wallTorch, spec, place, stairsUp, floatCandles, vaultGeo };
+
   R.exterior = () => exterior(false);
   R.exteriorDawn = () => exterior(true);
 

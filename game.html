@@ -634,6 +634,8 @@ body {
 .stat-atk { color: var(--crimson-bright); border-color: rgba(180,40,40,0.2); }
 .stat-def { color: var(--neon); border-color: rgba(94,196,212,0.2); }
 .stat-xp { color: #c4a0ee; border-color: rgba(160,120,255,0.2); }
+.stat-sp { color: #ffd76a; border-color: rgba(255,200,80,0.45); animation: spGlow 1.6s ease-in-out infinite; cursor: pointer; }
+@keyframes spGlow { 50% { box-shadow: 0 0 10px rgba(255,200,80,0.45); } }
 /* ─── Ability Buttons ─── */
 .combat-abilities {
   display: flex;
@@ -1005,7 +1007,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v17.0</span></div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v18.0</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -1207,7 +1209,14 @@ const STATE = {
   comboCount: 0,        // consecutive hits without taking damage
   bestCombo: 0,
   totalDamageDealt: 0,
-  saveSlot: null
+  saveSlot: null,
+  // v18: progression
+  skills: new Set(),
+  skillPoints: 0,
+  bestiary: {},          // type → { seen, slain }
+  feats: { parries: 0, flawless: 0 },
+  wardenPhase: 0,        // the Ashen Warden's phase (1-3)
+  combatEvent: null      // { type: 'parry' | 'stagger', t } for the 3D animation layer
 };
 
 // ─── v8.0 DIFFICULTY SYSTEM ───
@@ -1219,6 +1228,51 @@ const DIFFICULTY = {
 };
 
 function getDifficulty() { return DIFFICULTY[STATE.difficulty] || DIFFICULTY.normal; }
+
+// ─── v18 SKILL TREE ───
+// One point per level gained (and one from the Ashen Warden): enough for every skill by the end.
+const SKILLS = {
+  keenEdge:    { tree: 'Sword',  tier: 1, icon: '⚔', name: 'Keen Edge',    desc: '+3 ATK' },
+  riposte:     { tree: 'Sword',  tier: 2, req: 'keenEdge',    icon: '↩', name: 'Riposte',      desc: 'Counter-strikes after a parry hit 50% harder' },
+  executioner: { tree: 'Sword',  tier: 3, req: 'riposte',     icon: '☠', name: 'Executioner',  desc: '+10% critical chance, and criticals deal 2.2× damage' },
+  bulwark:     { tree: 'Shield', tier: 1, icon: '🛡', name: 'Bulwark',      desc: '+3 DEF' },
+  parryMaster: { tree: 'Shield', tier: 2, req: 'bulwark',     icon: '✦', name: 'Parry Master', desc: '+25% chance to parry while defending' },
+  unbreakable: { tree: 'Shield', tier: 3, req: 'parryMaster', icon: '🏰', name: 'Unbreakable',  desc: 'Defending takes only 15% damage and restores 3 HP' },
+  vigor:       { tree: 'Faith',  tier: 1, icon: '❤', name: 'Vigor',        desc: '+15 max HP' },
+  grace:       { tree: 'Faith',  tier: 2, req: 'vigor',       icon: '✚', name: 'Grace',        desc: 'Relic abilities recharge one turn faster' },
+  zeal:        { tree: 'Faith',  tier: 3, req: 'grace',       icon: '☀', name: 'Zeal',         desc: 'Every victory restores 12 HP' }
+};
+function hasSkill(id) { return STATE.skills && STATE.skills.has(id); }
+function canLearn(id) {
+  const sk = SKILLS[id];
+  return !!sk && !hasSkill(id) && STATE.skillPoints > 0 && (!sk.req || hasSkill(sk.req));
+}
+function learnSkill(id) {
+  if (!canLearn(id)) return false;
+  const sk = SKILLS[id];
+  STATE.skills.add(id);
+  STATE.skillPoints--;
+  if (id === 'vigor') { STATE.maxHp += 15; STATE.hp += 15; updateHP(); }
+  addLog(`${sk.icon} SKILL LEARNED: ${sk.name} — ${sk.desc}`, 'level');
+  playSound('achieve');
+  updateStatsDisplay();
+  checkAchievements();
+  return true;
+}
+
+// ─── v18 BESTIARY ───
+const BESTIARY = {
+  peasant:     { icon: '🧟', lore: 'Farmers and servants of the fortress, raised in the first hour. Slow, but they never tire, and they come in numbers.', tip: 'Weak alone — strike first and keep striking.' },
+  risen:       { icon: '💀', lore: 'Templar brothers dragged from their tombs in their own armour. Their bodies remember the drill: guard, cut, guard.', tip: 'Defend against their heavy blows and parry for an opening.' },
+  wraith:      { icon: '👻', lore: 'The Necromancer\'s first servant, drowned when the seals broke. It drifts above the black water, trailing rain that falls upward.', tip: 'Holy water and steady blows; it cannot abide the clean flood.' },
+  cinder:      { icon: '🔥', lore: 'Knights of the forge-watch, burned at their posts when the vault fires were lit. The fire never went out of them.', tip: 'They hit hard and often — a parry turns their reckless swings against them.' },
+  warden:      { icon: '🜂', lore: 'The Ashen Warden kept the Ember Vaults for the Order. The Necromancer gave him back his oath and took his soul. He still guards the forge.', tip: 'Crack his molten plate with a parry, weather the inferno, and defend when he raises the greatsword.' },
+  necromancer: { icon: '☠', lore: 'Alaric the scholar, who bought forbidden books from Ezra and broke the crypt seals. He commands every dead thing in the fortress.', tip: 'Break the bone shields, find the true shadow, then finish him before his rage does.' }
+};
+function noteBestiary(type, slain) {
+  if (!STATE.bestiary[type]) STATE.bestiary[type] = { seen: 0, slain: 0 };
+  if (slain) STATE.bestiary[type].slain++; else STATE.bestiary[type].seen++;
+}
 
 // ─── v8.0 SAVE/LOAD SYSTEM ───
 function saveGame(slot) {
@@ -1248,7 +1302,11 @@ function saveGame(slot) {
       comboCount: STATE.comboCount,
       bestCombo: STATE.bestCombo,
       totalDamageDealt: STATE.totalDamageDealt,
-      revealedRooms: STATE.revealedRooms
+      revealedRooms: STATE.revealedRooms,
+      skills: [...STATE.skills],
+      skillPoints: STATE.skillPoints,
+      bestiary: STATE.bestiary,
+      feats: STATE.feats
     },
     scrollPlacements: Object.fromEntries(
       Object.entries(scrollPlacements).map(([k,v]) => [k, v ? v.ref : null])
@@ -1296,6 +1354,12 @@ function loadGame(slot) {
     STATE.bestCombo = s.bestCombo || 0;
     STATE.totalDamageDealt = s.totalDamageDealt || 0;
     STATE.revealedRooms = s.revealedRooms || false;
+    STATE.skills = new Set(s.skills || []);
+    // Older saves predate skills: grant the points their level has earned.
+    STATE.skillPoints = s.skillPoints != null ? s.skillPoints : Math.max(0, (s.level || 1) - 1);
+    STATE.bestiary = s.bestiary || {};
+    STATE.feats = Object.assign({ parries: 0, flawless: 0 }, s.feats || {});
+    STATE.wardenPhase = 0;
     STATE.inCombat = false;
     STATE.abilityCooldowns = {};
     STATE.rosaryUsed = false;
@@ -1500,7 +1564,7 @@ const ROOMS = {
     name: 'Treasury',
     sub: 'Gold shelves and locked chests...',
     lore: 'A reinforced vault — gold-plated shelves hold coins, jeweled chalices, and locked iron chests. The Templar Seal sits atop a stone pedestal, glowing faintly. A blind man sits cross-legged before it, as if guarding something only he can see.',
-    exits: { north: 'grandHall', east: 'boneThrone' },
+    exits: { north: 'grandHall', east: 'boneThrone', south: 'emberStair' },
     relic: 'Rosary of Iron', enemy: null, hasScroll: false, npc: 'ezra',
     type: 'treasury'
   },
@@ -1560,6 +1624,31 @@ const ROOMS = {
     exits: { north: 'drownedOssuary' },
     relic: null, enemy: null, hasScroll: false, npc: null,
     type: 'sanctum'
+  },
+  // v18: the Ember Vaults — the Order's forge, beneath the treasury
+  emberStair: {
+    name: 'Ember Stair',
+    sub: 'The stone is warm underfoot...',
+    lore: 'A stair cut down through the bedrock beneath the treasury. The walls sweat in the heat and a red glow climbs from below. A broad-shouldered ghost in a leather apron stands at the landing, hammer in hand, as if waiting to be told the forge is lit.',
+    exits: { north: 'treasury', west: 'cinderForge' },
+    relic: null, enemy: null, hasScroll: false, npc: 'godfrey',
+    type: 'emberstair'
+  },
+  cinderForge: {
+    name: 'Cinder Forge',
+    sub: 'The fires were never banked...',
+    lore: 'The Order\'s great forge: anvils the size of altars, chains, bellows and a river of molten iron running in a stone channel across the floor. Half-finished blades glow in the coals. A knight in blackened armour stands among them, smoke pouring from the seams of his plate.',
+    exits: { east: 'emberStair', south: 'wardenVault' },
+    relic: null, enemy: 'cinder', hasScroll: false, npc: null,
+    type: 'forge'
+  },
+  wardenVault: {
+    name: "Warden's Vault",
+    sub: 'Where the Order kept its fire...',
+    lore: 'A round vault of black basalt over a lake of fire. A bridge of stone leads to a dais where the Order\'s war-blades once hung. Upon it waits a giant in molten plate, a greatsword of living flame across his knees. He rises as you enter.',
+    exits: { north: 'cinderForge' },
+    relic: null, enemy: 'warden', hasScroll: false, npc: null,
+    type: 'vault'
   }
 };
 
@@ -1584,7 +1673,10 @@ const ROOM_FX = {
   watchtower:{particles:'dust',tint:'rgba(150,170,200,0.04)'},
   floodedStair:{particles:'fog',tint:'rgba(80,160,200,0.05)'},
   drownedOssuary:{particles:'fog',tint:'rgba(80,200,200,0.05)'},
-  sunkenSanctum:{particles:'dust',tint:'rgba(180,200,255,0.05)'}
+  sunkenSanctum:{particles:'dust',tint:'rgba(180,200,255,0.05)'},
+  emberStair:{particles:'ember',tint:'rgba(255,110,40,0.05)'},
+  cinderForge:{particles:'ember',tint:'rgba(255,90,30,0.07)'},
+  wardenVault:{particles:'ember',tint:'rgba(255,70,20,0.08)'}
 };
 
 // ─── v6.0 PHOTOREALISTIC IMAGE SYSTEM ───
@@ -1714,6 +1806,8 @@ function combatLogMsg(text) {
 
 function renderEnemySVG(type) {
   if (type === 'wraith') return renderEnemySVG('risen').replace('<svg ', '<svg style="opacity:0.75;filter:hue-rotate(150deg) saturate(0.6)" ');
+  if (type === 'cinder') return renderEnemySVG('risen').replace('<svg ', '<svg style="filter:hue-rotate(-170deg) saturate(2.2) brightness(1.1)" ');
+  if (type === 'warden') return renderEnemySVG('risen').replace('<svg ', '<svg style="filter:hue-rotate(-160deg) saturate(3) brightness(1.2) drop-shadow(0 0 8px #ff5a1a)" ');
   const w = 140, h = 160;
   let art = '';
   if (type === 'risen') {
@@ -1920,7 +2014,10 @@ const MAP_POS = {
   necromancerLair:{ x: 3, y: 4 },
   floodedStair:   { x: 2, y: 5 },
   drownedOssuary: { x: 3, y: 5 },
-  sunkenSanctum:  { x: 3, y: 6 }
+  sunkenSanctum:  { x: 3, y: 6 },
+  emberStair:     { x: 1, y: 5 },
+  cinderForge:    { x: 0, y: 5 },
+  wardenVault:    { x: 0, y: 6 }
 };
 
 // ─── ENEMIES ───
@@ -1928,7 +2025,9 @@ const ENEMIES = {
   risen: { name: 'Risen Knight', hp: 45, dmgMin: 6, dmgMax: 14, type: 'risen', xp: 25 },
   peasant: { name: 'Peasant Zombie', hp: 30, dmgMin: 4, dmgMax: 10, type: 'peasant', xp: 15 },
   necromancer: { name: 'The Necromancer', hp: 180, dmgMin: 12, dmgMax: 25, type: 'necromancer', xp: 100 },
-  wraith: { name: 'Drowned Wraith', hp: 70, dmgMin: 8, dmgMax: 17, type: 'wraith', xp: 45 }
+  wraith: { name: 'Drowned Wraith', hp: 70, dmgMin: 8, dmgMax: 17, type: 'wraith', xp: 45 },
+  cinder: { name: 'Cinder Knight', hp: 85, dmgMin: 10, dmgMax: 19, type: 'cinder', xp: 55 },
+  warden: { name: 'The Ashen Warden', hp: 240, dmgMin: 13, dmgMax: 24, type: 'warden', xp: 120 }
 };
 
 // ─── v6.2 RELIC EQUIPMENT SYSTEM ───
@@ -2029,6 +2128,9 @@ function getPlayerStats() {
   if (STATE.questFlags.blessedBladeBuff) atk += 5;
   if (STATE.questFlags.edmundAllyBuff) def += 3;
   if (STATE.questFlags.saintBlessingBuff) { atk += 2; def += 2; }
+  if (STATE.questFlags.wardenbrandBuff) atk += 6;
+  if (hasSkill('keenEdge')) atk += 3;
+  if (hasSkill('bulwark')) def += 3;
   // Merchant whetstone bonus
   if (STATE.questFlags._merchantAtkBonus) atk += STATE.questFlags._merchantAtkBonus;
   // Temporary ghost buff
@@ -2047,6 +2149,8 @@ function gainXP(amount) {
     addLog(``, 'level');
     addLog(`⬆ LEVEL UP! You are now Level ${STATE.level}`, 'level');
     addLog(`+${LEVEL_HP_BONUS} Max HP, +${LEVEL_ATK_BONUS} ATK, +${LEVEL_DEF_BONUS} DEF`, 'level');
+    STATE.skillPoints++;
+    addLog('✦ +1 skill point — open the Codex (C) to learn a skill.', 'level');
     playSound('achieve');
     screenShake(false);
     updateHP();
@@ -2059,7 +2163,7 @@ function updateStatsDisplay() {
   const stats = getPlayerStats();
   const el = document.getElementById('statsDisplay');
   if (el) {
-    el.innerHTML = `<span class="stat-item">LVL ${STATE.level}</span><span class="stat-item stat-atk">ATK ${stats.atk}</span><span class="stat-item stat-def">DEF ${stats.def}</span><span class="stat-item stat-xp">XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}</span>`;
+    el.innerHTML = `<span class="stat-item">LVL ${STATE.level}</span>${STATE.skillPoints > 0 ? `<span class="stat-item stat-sp" title="Unspent skill points — press C">✦ ${STATE.skillPoints}</span>` : ''}<span class="stat-item stat-atk">ATK ${stats.atk}</span><span class="stat-item stat-def">DEF ${stats.def}</span><span class="stat-item stat-xp">XP ${STATE.xp}/${XP_TABLE[Math.min(STATE.level+1, XP_TABLE.length-1)]}</span>`;
   }
 }
 
@@ -2069,6 +2173,8 @@ function tickCooldowns() {
   });
 }
 
+// Grace (skill): every relic ability recharges a turn sooner.
+function abilityCooldown(relic) { const cd = RELIC_STATS[relic].ability.cooldown; return hasSkill('grace') ? Math.max(1, cd - 1) : cd; }
 function useAbility(key) {
   if (!STATE.inCombat && key !== 'cartographerEye') return;
   if (STATE.abilityCooldowns[key] > 0) {
@@ -2084,15 +2190,19 @@ function useAbility(key) {
     let dmg = stats.atk + Math.floor(Math.random() * 15);
     dmg = Math.floor(dmg * 2.5);
     if (STATE.questFlags.necroWeaknessBuff && e.type === 'necromancer' && STATE.enemyHp <= STATE.enemyMaxHp / 2) dmg *= 2;
+    if (e.type === 'warden' && STATE.wardenPhase === 1 && !STATE.questFlags._wardenPlateCracked) dmg = Math.floor(dmg / 2);
     if (STATE.hasGoldenArmor) dmg = STATE.enemyMaxHp;
     STATE.enemyHp -= dmg;
+    STATE.totalDamageDealt += dmg; addCombo();
+    STATE.combatEvent = { type: 'stagger', t: Date.now() };
     addLog(`💥 POWER STRIKE! You smash the ${e.name} for ${dmg} damage!`, 'combat');
     combatLogMsg(`💥 ${dmg} POWER STRIKE!`);
     floatDamage(`-${dmg} POW!`, '#ffd700');
     playSound('sword');
     screenShake(true);
-    STATE.abilityCooldowns[key] = RELIC_STATS['Templar Longsword'].ability.cooldown;
+    STATE.abilityCooldowns[key] = abilityCooldown('Templar Longsword');
     if (STATE.enemyHp <= 0) { endCombat(true); return; }
+    checkWardenPhase();
     enemyCounterattack();
   }
   else if (key === 'ironWall') {
@@ -2100,7 +2210,7 @@ function useAbility(key) {
     addLog('🏰 IRON WALL! You brace behind your chainmail — all damage blocked this turn!', 'system');
     combatLogMsg('🏰 Iron Wall active!');
     playSound('defend');
-    STATE.abilityCooldowns[key] = RELIC_STATS['Chainmail Hauberk'].ability.cooldown;
+    STATE.abilityCooldowns[key] = abilityCooldown('Chainmail Hauberk');
     enemyCounterattack();
   }
   else if (key === 'divineHeal') {
@@ -2112,7 +2222,7 @@ function useAbility(key) {
     damageFlash('healed');
     playSound('heal');
     updateHP();
-    STATE.abilityCooldowns[key] = RELIC_STATS['Holy Water'].ability.cooldown;
+    STATE.abilityCooldowns[key] = abilityCooldown('Holy Water');
     enemyCounterattack();
   }
   else if (key === 'holyLight') {
@@ -2120,7 +2230,7 @@ function useAbility(key) {
     addLog('☀ HOLY LIGHT! The candles flare — the enemy\'s weakness is exposed! Your next attack will be a critical strike.', 'divine');
     combatLogMsg('☀ Next attack = CRITICAL!');
     playSound('scroll');
-    STATE.abilityCooldowns[key] = RELIC_STATS['Blessed Candles'].ability.cooldown;
+    STATE.abilityCooldowns[key] = abilityCooldown('Blessed Candles');
     // No enemy counterattack — it's a buff turn
   }
   else if (key === 'cartographerEye') {
@@ -2138,26 +2248,34 @@ function enemyCounterattack() {
   if (!STATE.inCombat) return;
   const e = STATE.currentEnemy;
   const stats = getPlayerStats();
+  const charging = e.type === 'warden' && STATE.questFlags._wardenCharging;
   let eDmg = e.dmgMin + Math.floor(Math.random() * (e.dmgMax - e.dmgMin + 1));
   // Apply DEF reduction
   eDmg = Math.max(1, eDmg - Math.floor(stats.def * 0.35));
-  if (STATE.defending) eDmg = Math.floor(eDmg * 0.28);
+  if (charging) eDmg *= 2;
+  if (e.type === 'warden' && STATE.wardenPhase >= 2) eDmg += 4;   // the inferno
+  // v18: parry — a defended blow may be turned aside, opening the foe to a riposte.
+  if (STATE.defending && !STATE.hasGoldenArmor && !STATE.questFlags._ironWallActive) {
+    const chance = charging ? 1 : 0.3 + (hasSkill('parryMaster') ? 0.25 : 0);
+    if (Math.random() < chance) { parryBlow(e, charging); return; }
+  }
+  if (STATE.defending) eDmg = Math.floor(eDmg * (hasSkill('unbreakable') ? 0.15 : 0.28));
   if (STATE.questFlags._ironWallActive) { eDmg = 0; STATE.questFlags._ironWallActive = false; }
   if (STATE.hasGoldenArmor) eDmg = 0;
   STATE.hp -= eDmg;
   if (eDmg > 0) {
-    addLog(`The ${e.name} strikes back for ${eDmg} damage.`, 'combat');
-    combatLogMsg(`☠ ${e.name}: ${eDmg}`);
+    addLog(`The ${e.name} ${charging ? 'brings the burning greatsword down' : 'strikes back'} for ${eDmg} damage${STATE.defending ? ' (blocked!)' : '.'}`, 'combat');
+    combatLogMsg(`☠ ${e.name}: ${eDmg}${STATE.defending ? ' (blocked)' : ''}`);
     screenShake(eDmg > 10); damageFlash('hit'); floatDamage('-' + eDmg, '#c44');
+    STATE.questFlags._hitThisFight = true;
+    resetCombo();
   } else {
-    addLog(`The ${e.name}'s attack is completely blocked!`, 'combat');
-    combatLogMsg('🛡 Blocked!');
+    addLog(STATE.hasGoldenArmor ? `The ${e.name}'s attack bounces harmlessly off your divine armor.` : `The ${e.name}'s attack is completely blocked!`, 'combat');
+    combatLogMsg(STATE.hasGoldenArmor ? '✦ Attack deflected by divine armor' : '🛡 Blocked!');
   }
+  if (STATE.defending && hasSkill('unbreakable') && STATE.hp > 0) { STATE.hp = Math.min(STATE.maxHp, STATE.hp + 3); }
   playSound('hit');
-  updateHP();
-  updateEnemyHP();
-  tickCooldowns();
-  updateCombatAbilities();
+  afterEnemyTurn(charging);
 
   if (STATE.hp <= 0) {
     // Rosary of Iron: cheat death once per combat
@@ -2187,6 +2305,78 @@ function enemyCounterattack() {
     document.getElementById('combatOverlay').classList.remove('active');
     playerDeath();
   }
+}
+
+// The enemy's turn is over: refresh the UI, tick cooldowns, and let the Warden wind up.
+function afterEnemyTurn(wasCharge) {
+  const e = STATE.currentEnemy;
+  updateHP();
+  updateEnemyHP();
+  tickCooldowns();
+  updateCombatAbilities();
+  if (e && e.type === 'warden') {
+    if (wasCharge) STATE.questFlags._wardenCharging = false;
+    else if (STATE.wardenPhase === 3 && Math.random() < 0.5) {
+      STATE.questFlags._wardenCharging = true;
+      addLog('🔥 The Warden raises his burning greatsword high above his head — DEFEND to turn it aside!', 'boss-lore');
+      combatLogMsg('⚠ Greatsword raised — DEFEND!');
+    }
+  }
+}
+
+function parryBlow(e, wasCharge) {
+  const stats = getPlayerStats();
+  let rip = Math.floor(stats.atk * 0.8 + Math.random() * 7);
+  if (hasSkill('riposte')) rip = Math.floor(rip * 1.5);
+  if (wasCharge) rip = Math.floor(rip * 1.6);
+  STATE.enemyHp -= rip;
+  STATE.totalDamageDealt += rip;
+  STATE.feats.parries = (STATE.feats.parries || 0) + 1;
+  STATE.combatEvent = { type: 'parry', t: Date.now(), dmg: rip };
+  addCombo();
+  addLog(`⚔ PARRY! You turn the ${e.name}'s blow aside and riposte for ${rip} damage!`, 'combat');
+  combatLogMsg(`⚔ PARRY — riposte ${rip}`);
+  floatDamage(`PARRY -${rip}`, '#9fd8ff');
+  playSound('defend'); setTimeout(() => playSound('sword'), 140);
+  if (e.type === 'warden' && STATE.wardenPhase === 1 && !STATE.questFlags._wardenPlateCracked) {
+    STATE.questFlags._wardenPlateCracked = true;
+    addLog('The riposte bites deep — the Warden\'s molten plate CRACKS! Your blows will land in full now.', 'quest-progress');
+    combatLogMsg('🜂 Molten plate cracked!');
+  }
+  checkAchievements();
+  afterEnemyTurn(wasCharge);
+  if (STATE.enemyHp <= 0) { endCombat(true); return; }
+  checkWardenPhase();
+}
+
+// ═══ v18 THE ASHEN WARDEN ═══
+function initWardenPhase(phase) {
+  STATE.wardenPhase = phase;
+  addLog('', 'divine');
+  if (phase === 1) {
+    addLog('═══ PHASE 1: MOLTEN PLATE ═══', 'boss-phase');
+    addLog('Liquid fire runs in the seams of his armour. Your steel skates off the glowing plate.', 'boss-lore');
+    addLog('Your blows deal half damage — DEFEND and parry his swing to crack the plate!', 'quest-progress');
+    combatLogMsg('🜂 Molten plate — parry to crack it');
+  } else if (phase === 2) {
+    addLog('═══ PHASE 2: INFERNO ═══', 'boss-phase');
+    addLog('The Warden drives his greatsword into the floor. The lake of fire rises and the vault becomes a furnace.', 'boss-lore');
+    addLog('The flames scorch you with every blow he lands (+4 damage).', 'quest-progress');
+    combatLogMsg('🔥 Inferno — every blow burns');
+  } else if (phase === 3) {
+    addLog('═══ PHASE 3: ASHFALL ═══', 'boss-phase');
+    addLog('His armour splits and ash pours out like snow. He lifts the greatsword with both hands, slow and terrible.', 'boss-lore');
+    addLog('Watch for the raised greatsword: DEFEND and you will turn it aside every time.', 'quest-progress');
+    combatLogMsg('🜂 Ashfall — watch the greatsword');
+  }
+  playSound(phase === 3 ? 'death' : 'encounter');
+  screenShake(true);
+}
+function checkWardenPhase() {
+  if (!STATE.inCombat || STATE.currentEnemy?.type !== 'warden') return;
+  const pct = STATE.enemyHp / STATE.enemyMaxHp;
+  if (STATE.wardenPhase === 1 && pct <= 0.6) initWardenPhase(2);
+  if (STATE.wardenPhase === 2 && pct <= 0.3) initWardenPhase(3);
 }
 
 function updateCombatAbilities() {
@@ -2546,6 +2736,16 @@ const NPCS = {
       blindness: 'I was not always blind. When Alaric returned and I saw what he had become, I gouged out my own eyes so I would never have to witness his work again. Some things... are worse than darkness.'
     }
   },
+  godfrey: {
+    name: 'Godfrey the Smith',
+    greeting: 'Mind the heat, lad. I am Godfrey, forge-master of the Order — or I was, before the vault fires took me. The Warden still keeps them. I cannot rest while my forge burns for the enemy.',
+    topics: {
+      warden: 'Sir Baldwin, the Ashen Warden. He swore to keep the Order\'s fire until the Order called it home. Alaric called it instead, and Baldwin answered. His plate is molten now — your steel will slide off it. Catch his swing on your shield and strike back through the crack.',
+      forge: 'Through the west arch is the forge itself, and a cinder knight stands watch among my anvils. He was a good man once. Put him down quickly — he burns hotter every turn you give him.',
+      blade: 'Bring me word that Baldwin is ash, and I will put an edge on your sword that no dead thing can turn. Wardenbrand, we called it. The last blade the Order ever tempered.',
+      fire: 'Fire is not the enemy, lad. Fire forged every sword in this fortress. It is what a man feeds it that matters.'
+    }
+  },
   aveline: {
     name: 'Sister Aveline',
     greeting: 'Do not be afraid of me, knight. I was Sister Aveline, keeper of the crypt seals. When the seals broke, the water took me — and something worse took my sanctuary. I cannot rest while it walks there.',
@@ -2638,6 +2838,20 @@ const QUESTS = {
     ],
     reward: { type: 'buff', key: 'saintBlessing', text: 'Blessing of the Drowned Saint — +20 max HP, +2 ATK, +2 DEF, and fully healed!' },
     complete: 'You kneel in the moonlight before the tomb. The water around you stills, then shines. A cold hand rests on your shoulder — and is gone. "Thank you, knight. Take what I kept for this night. Go up, and end him."'
+  },
+  ashenWarden: {
+    id: 'ashenWarden',
+    name: 'The Ashen Warden',
+    giver: 'godfrey',
+    icon: '🜂',
+    desc: 'Godfrey the Smith cannot rest while the Order\'s forge burns for the Necromancer. Put down the Cinder Knight in the forge, destroy the Ashen Warden in his vault, and return to Godfrey on the Ember Stair.',
+    objectives: [
+      { id: 'slayCinder', text: 'Defeat the Cinder Knight in the Cinder Forge', check: () => STATE.enemiesDefeated.has('cinderForge') },
+      { id: 'slayWarden', text: 'Destroy the Ashen Warden in his vault', check: () => STATE.enemiesDefeated.has('wardenVault') },
+      { id: 'returnGodfrey', text: 'Return to Godfrey on the Ember Stair', check: () => STATE.currentRoom === 'emberStair' && STATE.enemiesDefeated.has('wardenVault') }
+    ],
+    reward: { type: 'buff', key: 'wardenbrand', text: 'Wardenbrand — Godfrey tempers your blade in the last of the Order\'s fire: +6 ATK!' },
+    complete: 'Godfrey takes your sword without a word and lays it in the coals of the stair-brazier. The fire turns white. He works it for what feels like an hour and no time at all, then quenches it with a hiss like a dying breath. "Wardenbrand," he says. "Go and finish it."'
   }
 };
 
@@ -2688,6 +2902,7 @@ function completeQuest(questId) {
   if (q.reward.key === 'blessedBlade') STATE.questFlags.blessedBladeBuff = true;
   if (q.reward.key === 'edmundAlly') STATE.questFlags.edmundAllyBuff = true;
   if (q.reward.key === 'necroWeakness') STATE.questFlags.necroWeaknessBuff = true;
+  if (q.reward.key === 'wardenbrand') { STATE.questFlags.wardenbrandBuff = true; updateStatsDisplay(); }
   if (q.reward.key === 'saintBlessing') {
     STATE.questFlags.saintBlessingBuff = true;
     STATE.maxHp += 20; STATE.hp = STATE.maxHp;
@@ -2782,7 +2997,14 @@ const ACHIEVEMENTS = {
   blessed:     { icon: '🌟', name: 'Blessed by Saint Michael — Earn the golden armor' },
   lorekeeper:  { icon: '🗣', name: 'Lorekeeper — Speak with every soul who remains' },
   historian:   { icon: '🖼', name: 'Historian — Examine all three portraits' },
-  questmaster: { icon: '📋', name: 'Questmaster — Complete every quest' }
+  questmaster: { icon: '📋', name: 'Questmaster — Complete every quest' },
+  // v18
+  wardenSlain: { icon: '🜂', name: 'Ash to Ash — Destroy the Ashen Warden' },
+  unbroken:    { icon: '⚔', name: 'Unbroken Guard — Parry 10 attacks' },
+  untouched:   { icon: '✦', name: 'Untouched — Win a battle without taking damage' },
+  relentless:  { icon: '🔥', name: 'Relentless — Land a 10-hit combo' },
+  veteran:     { icon: '🌳', name: 'Veteran — Learn every skill' },
+  bestiarist:  { icon: '📖', name: 'Bestiarist — Slay one of every foe' }
 };
 
 // Totals derived from the data, so new rooms, quests and NPCs count automatically.
@@ -2836,6 +3058,15 @@ function initGame() {
   STATE.roomMoves = 0;
   STATE.merchantAvailable = false;
   STATE.merchantRoom = null;
+  STATE.skills = new Set();
+  STATE.skillPoints = 0;
+  STATE.bestiary = {};
+  STATE.feats = { parries: 0, flawless: 0 };
+  STATE.wardenPhase = 0;
+  STATE.combatEvent = null;
+  STATE.comboCount = 0;
+  STATE.bestCombo = 0;
+  STATE.totalDamageDealt = 0;
 
   // Reset room enemies
   Object.keys(ROOMS).forEach(k => {
@@ -2844,7 +3075,8 @@ function initGame() {
       k === 'courtyard' ? 'peasant' : k === 'cryptEntrance' ? 'risen' :
       k === 'catacombs' ? 'risen' : k === 'boneThrone' ? 'risen' :
       k === 'dungeonDepths' ? 'risen' : k === 'watchtower' ? 'peasant' :
-      k === 'necromancerLair' ? 'necromancer' : k === 'drownedOssuary' ? 'wraith' : null;
+      k === 'necromancerLair' ? 'necromancer' : k === 'drownedOssuary' ? 'wraith' :
+      k === 'cinderForge' ? 'cinder' : k === 'wardenVault' ? 'warden' : null;
     ROOMS[k].enemy = orig;
   });
 
@@ -2909,7 +3141,8 @@ function enterRoom(roomId) {
         activeQuests:[...STATE.activeQuests], completedQuests:[...STATE.completedQuests],
         questFlags:{...STATE.questFlags}, xp:STATE.xp, level:STATE.level,
         difficulty:STATE.difficulty, comboCount:0, bestCombo:STATE.bestCombo,
-        totalDamageDealt:STATE.totalDamageDealt, revealedRooms:STATE.revealedRooms }
+        totalDamageDealt:STATE.totalDamageDealt, revealedRooms:STATE.revealedRooms,
+        skills:[...STATE.skills], skillPoints:STATE.skillPoints, bestiary:STATE.bestiary, feats:STATE.feats }
     })); } catch(e) {}
   }
 
@@ -3036,6 +3269,13 @@ function startCombat(roomId, enemyType) {
   STATE.bossShields = 0;
   STATE.bossShadows = [];
   STATE.bossCorrectShadow = -1;
+  STATE.wardenPhase = 0;
+  STATE.questFlags._wardenCharging = false;
+  STATE.questFlags._wardenPlateCracked = false;
+  STATE.questFlags._staggered = false;
+  STATE.questFlags._hitThisFight = false;
+  STATE.combatEvent = null;
+  noteBestiary(enemyType, false);
 
   document.getElementById('combatOverlay').classList.add('active');
   document.getElementById('combatEnemyName').textContent = e.name;
@@ -3067,6 +3307,15 @@ function startCombat(roomId, enemyType) {
       setTimeout(() => initBossPhase(1), 1500);
     }, 800);
   }
+  if (enemyType === 'warden') {
+    addLog('', 'divine');
+    addLog('═══════════════════════════════════════', 'boss-phase');
+    addLog('🜂 THE ASHEN WARDEN 🜂', 'boss-phase');
+    addLog('═══════════════════════════════════════', 'boss-phase');
+    addLog('"I kept this fire for the Order for forty years," he says, and his voice is the roar of a furnace. "I keep it for him now."', 'boss-lore');
+    screenShake(true);
+    initWardenPhase(1);
+  }
 }
 
 function combatAction(action) {
@@ -3083,9 +3332,14 @@ function combatAction(action) {
     STATE.defending = false;
     const stats = getPlayerStats();
     let dmg = stats.atk + Math.floor(Math.random() * 15);
-    let crit = Math.random() < 0.2;
+    let crit = Math.random() < (hasSkill('executioner') ? 0.3 : 0.2);
     if (STATE.questFlags._guaranteedCrit) { crit = true; STATE.questFlags._guaranteedCrit = false; }
-    if (crit) dmg = Math.floor(dmg * 1.8);
+    if (crit) dmg = Math.floor(dmg * (hasSkill('executioner') ? 2.2 : 1.8));
+    // The Ashen Warden's molten plate turns half of every blow until a parry cracks it.
+    if (e.type === 'warden' && STATE.wardenPhase === 1 && !STATE.questFlags._wardenPlateCracked) {
+      dmg = Math.floor(dmg / 2);
+      if (!STATE.questFlags._plateHint) { STATE.questFlags._plateHint = true; addLog('Your blade skates off the molten plate! Defend, and parry his swing to crack it.', 'quest-progress'); }
+    }
     // Quest buff: Necromancer weakness (double damage below half HP)
     if (STATE.questFlags.necroWeaknessBuff && e.type === 'necromancer' && STATE.enemyHp <= STATE.enemyMaxHp / 2) {
       dmg = Math.floor(dmg * 2);
@@ -3121,6 +3375,10 @@ function combatAction(action) {
 
     if (STATE.hasGoldenArmor) dmg = STATE.enemyMaxHp;
     STATE.enemyHp -= dmg;
+    STATE.totalDamageDealt += dmg;
+    addCombo();
+    // A critical can stagger the foe: it loses its next strike.
+    if (crit) { STATE.combatEvent = { type: 'stagger', t: Date.now() }; if (Math.random() < 0.35 && e.type !== 'necromancer' && e.type !== 'warden') STATE.questFlags._staggered = true; }
     const msg = `You strike the ${e.name} for ${dmg} damage${crit ? ' — CRITICAL HIT!' : '.'}`;
     addLog(msg, 'combat');
     combatLogMsg(crit ? `⚔ ${dmg} CRITICAL!` : `⚔ ${dmg} damage`);
@@ -3134,6 +3392,7 @@ function combatAction(action) {
 
     // Check for boss phase transitions after damage
     if (e.type === 'necromancer') checkBossPhaseTransition();
+    checkWardenPhase();
   } else if (action === 'defend') {
     STATE.defending = true;
     addLog('You raise your shield and brace for impact.', 'system');
@@ -3142,6 +3401,7 @@ function combatAction(action) {
   } else if (action === 'flee') {
     STATE.defending = false;
     const fleeDmg = 5 + Math.floor(Math.random() * 8);
+    resetCombo();
     STATE.hp -= fleeDmg;
     addLog(`You turn and flee! The ${e.name} strikes you as you run. (-${fleeDmg} HP)`, 'combat');
     screenShake(false); damageFlash('hit'); floatDamage('-' + fleeDmg, '#c44');
@@ -3159,47 +3419,16 @@ function combatAction(action) {
     return;
   }
 
-  // Enemy counterattack
+  // Enemy counterattack (a staggered foe loses its turn)
   if (STATE.inCombat) {
-    const stats = getPlayerStats();
-    let eDmg = e.dmgMin + Math.floor(Math.random() * (e.dmgMax - e.dmgMin + 1));
-    // Apply DEF reduction
-    eDmg = Math.max(1, eDmg - Math.floor(stats.def * 0.35));
-    if (STATE.defending) eDmg = Math.floor(eDmg * 0.28);
-    if (STATE.questFlags._ironWallActive) { eDmg = 0; STATE.questFlags._ironWallActive = false; }
-    if (STATE.hasGoldenArmor) eDmg = 0;
-    STATE.hp -= eDmg;
-    if (eDmg > 0) {
-      addLog(`The ${e.name} strikes back for ${eDmg} damage${STATE.defending ? ' (blocked!)' : '.'}`, 'combat');
-      combatLogMsg(`☠ ${e.name}: ${eDmg}${STATE.defending ? ' (blocked)' : ''}`);
-      screenShake(eDmg > 10); damageFlash('hit'); floatDamage('-' + eDmg, '#c44');
-    } else {
-      addLog(`The ${e.name}'s attack bounces harmlessly off your divine armor.`, 'combat');
-      combatLogMsg('✦ Attack deflected by divine armor');
+    if (STATE.questFlags._staggered) {
+      STATE.questFlags._staggered = false;
+      addLog(`The ${e.name} reels from the blow and cannot strike back!`, 'combat');
+      combatLogMsg('💫 Staggered!');
+      afterEnemyTurn(false);
+      return;
     }
-    playSound('hit');
-    updateHP();
-    updateEnemyHP();
-    tickCooldowns();
-    updateCombatAbilities();
-
-    if (STATE.hp <= 0) {
-      // Rosary of Iron: cheat death once per combat
-      if (STATE.inventory.includes('Rosary of Iron') && !STATE.rosaryUsed) {
-        STATE.rosaryUsed = true;
-        STATE.hp = 1;
-        updateHP();
-        addLog(`✝ MARTYR'S RESOLVE! The Rosary of Iron flares — you refuse to fall! (1 HP)`, 'divine');
-        combatLogMsg('✝ Cheated death!');
-        floatDamage('SAVED!', '#ffd700');
-        playSound('divine');
-        screenShake(true);
-      } else {
-        STATE.inCombat = false;
-        document.getElementById('combatOverlay').classList.remove('active');
-        playerDeath();
-      }
-    }
+    enemyCounterattack();
   }
 }
 
@@ -3214,6 +3443,23 @@ function endCombat(victory) {
 
   // Grant XP
   gainXP(ENEMIES[e.type]?.xp || 20);
+  noteBestiary(e.type, true);
+  if (!STATE.questFlags._hitThisFight) {
+    STATE.feats.flawless = (STATE.feats.flawless || 0) + 1;
+    addLog('✦ Flawless — you took no damage in that fight.', 'achievement');
+  }
+  if (hasSkill('zeal') && e.type !== 'necromancer') {
+    STATE.hp = Math.min(STATE.maxHp, STATE.hp + 12);
+    addLog('☀ Zeal: victory restores 12 HP.', 'heal');
+    updateHP();
+  }
+  STATE.wardenPhase = 0;
+  if (e.type === 'warden') {
+    STATE.questFlags.wardenSlain = true;
+    STATE.skillPoints++;
+    addLog('The Warden falls to one knee. The fire drains from his plate like a tide going out, and for a moment you see an old knight\'s face, at peace. Then there is only ash.', 'victory');
+    addLog('✦ +1 skill point — the Warden\'s oath passes to you.', 'level');
+  }
 
   if (e.type === 'necromancer') {
     STATE.necromancerDead = true;
@@ -3323,7 +3569,7 @@ function talkNPC() {
   addLog(`You speak with ${npc.name}.`, 'npc');
 
   // Offer quest if NPC has one
-  const npcQuests = { aldric: 'blessedBlade', edmund: 'prisonersFaith', matthias: 'lostScriptures', ezra: 'merchantsGuilt', aveline: 'drownedSaint' };
+  const npcQuests = { aldric: 'blessedBlade', edmund: 'prisonersFaith', matthias: 'lostScriptures', ezra: 'merchantsGuilt', aveline: 'drownedSaint', godfrey: 'ashenWarden' };
   if (npcQuests[room.npc]) {
     giveQuest(npcQuests[room.npc]);
   }
@@ -3391,6 +3637,12 @@ function checkQuestCompletions() {
   if (STATE.currentRoom === 'sunkenSanctum' && STATE.enemiesDefeated.has('drownedOssuary') && !STATE.completedQuests.has('drownedSaint')) {
     if (!STATE.activeQuests.includes('drownedSaint')) giveQuest('drownedSaint');
     completeQuest('drownedSaint');
+  }
+
+  // The Ashen Warden: return to Godfrey once the Warden is ash
+  if (STATE.currentRoom === 'emberStair' && STATE.enemiesDefeated.has('wardenVault') && !STATE.completedQuests.has('ashenWarden')) {
+    if (!STATE.activeQuests.includes('ashenWarden')) giveQuest('ashenWarden');
+    completeQuest('ashenWarden');
   }
 
   // Final Stand: auto-given when entering necromancer's lair area
@@ -3500,6 +3752,13 @@ function checkAchievements() {
   if (STATE.completedQuests.size >= Object.keys(QUESTS).length && !STATE.achievements.has('questmaster')) {
     unlockAchieve('questmaster');
   }
+  const ach = (id, ok) => { if (ok && !STATE.achievements.has(id)) unlockAchieve(id); };
+  ach('wardenSlain', !!STATE.questFlags.wardenSlain);
+  ach('unbroken', (STATE.feats.parries || 0) >= 10);
+  ach('untouched', (STATE.feats.flawless || 0) >= 1);
+  ach('relentless', STATE.bestCombo >= 10);
+  ach('veteran', STATE.skills.size >= Object.keys(SKILLS).length);
+  ach('bestiarist', Object.keys(ENEMIES).every(t => STATE.bestiary[t] && STATE.bestiary[t].slain > 0));
 }
 
 function unlockAchieve(id) {
@@ -4828,7 +5087,7 @@ function getSceneSVG(type, roomId) {
       `;
       break;
 
-    case 'dungeon':
+    case 'dungeon': case 'emberstair': case 'forge': case 'vault':
       scene = `
         <rect width="${w}" height="${h}" fill="#060505"/>
         <rect width="${w}" height="${h}" fill="url(#stoneTex)"/>
@@ -5192,6 +5451,7 @@ function renderPortraitSVG(key) {
 document.addEventListener('keydown', (e) => {
   // v8.0: Save/Load shortcuts
   if (e.key === 'F5') { e.preventDefault(); saveGame('1'); return; }
+  if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && window.KTCodex) { window.KTCodex.toggle(); return; }
   if (e.key === 'F9') { e.preventDefault(); loadGame('1'); return; }
 
   if (STATE.inCombat) {
@@ -5229,11 +5489,14 @@ initGame();
 <script src="/game3d/cloth.js"></script>
 <script src="/game3d/nav.js"></script>
 <script src="/game3d/engine.js"></script>
+<script src="/game3d/ember.js"></script>
 <script src="/game3d/world.js"></script>
 <script src="/game3d/boss.js"></script>
 <script src="/game3d/juice.js"></script>
 <script src="/game3d/cinema.js"></script>
 <script src="/game3d/life.js"></script>
+<script src="/game3d/elements.js"></script>
 <script src="/game3d/settings.js"></script>
+<script src="/game3d/codex.js"></script>
 </body>
 </html>

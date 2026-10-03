@@ -4,7 +4,11 @@
    catacombs, ravens on the battlements that take wing at lightning, ghostly
    monks drifting through walls, chains that swing as you brush past — and a
    world that changes as you win: the storm eases with every relic, cleared
-   rooms warm, and after the Necromancer falls the open sky turns to dawn. */
+   rooms warm, and after the Necromancer falls the open sky turns to dawn.
+   v18: weather moves — storm fronts roll in, rage, and clear again; under a
+   clear sky the moon shines through the windows in shafts, in a storm the
+   lightning flickers through them; and the night itself wears on toward dawn
+   as you gather relics, scrolls and quests. */
 (function () {
   'use strict';
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
@@ -190,11 +194,79 @@
     });
   }
 
+  // ── Weather: fronts that roll in and clear ────────────────────────────────
+  // `front` drifts toward a target that changes every minute or two; the
+  // storm's strength is the front scaled by how much of the curse remains.
+  const W = { front: 0.85, target: 0.85, hold: rnd(50, 90), flash: 0, nextFlash: 0, night: 0 };
+  function updateWeather(dt) {
+    W.hold -= dt;
+    if (W.hold <= 0) {
+      const clearing = W.target > 0.5;
+      W.target = clearing ? rnd(0.0, 0.25) : rnd(0.75, 1);
+      W.hold = clearing ? rnd(50, 100) : rnd(60, 120);
+    }
+    W.front += (W.target - W.front) * Math.min(1, dt / 22);   // ~half a minute to roll in or out
+  }
+  // How far the night has worn on: relics, scrolls and quests bring the dawn closer.
+  function nightProgress() {
+    const q = typeof QUESTS !== 'undefined' ? Object.keys(QUESTS).length : 1;
+    const p = (Math.min(6, STATE.inventory.length) / 6) * 0.45 + (STATE.scrollsFound.length / 8) * 0.2 + (STATE.completedQuests.size / q) * 0.35;
+    return clamp(p, 0, 1);
+  }
+  const NIGHT_TOP = new THREE.Color('#05070f'), PRE_TOP = new THREE.Color('#0e1630'), PRE_HOR = new THREE.Color('#5a3a4a');
+  const tc = new THREE.Color();
+  // Skies: cloud cover follows the storm; the horizon warms and the moon sinks as the night wears on.
+  function updateSky() {
+    if (!C.room || !C.room.group || STATE.necromancerDead) return;
+    const p = W.night, storm = E.storm;
+    C.room.group.traverse(o => {
+      const u = o.material && o.material.uniforms;
+      if (!u || !u.horizon || !u.moonDir || !u.clouds) return;
+      if (!o.userData.night) o.userData.night = { top: u.top.value.clone(), horizon: u.horizon.value.clone(), moon: u.moonDir.value.clone(), clouds: u.clouds.value };
+      const n = o.userData.night;
+      if (n.clouds > 0.5) u.clouds.value = clamp(0.15 + storm * 0.95, 0, 1);
+      u.top.value.copy(n.top).lerp(PRE_TOP, p * 0.55);
+      u.horizon.value.copy(n.horizon).lerp(PRE_HOR, p * p * 0.6);
+      u.moonDir.value.copy(n.moon); u.moonDir.value.y = n.moon.y - p * 0.28; u.moonDir.value.normalize();
+    });
+  }
+  // Moonlight: rooms lit by a cool key light (a window, the open sky) brighten
+  // when the sky clears; in a storm lightning flickers through them.
+  function updateMoon(dt) {
+    if (!C.room || !C.room.key || STATE.necromancerDead) { if (E.tune && E.tune._moon) E.tune = null; return; }
+    const I = E.internals(), k = C.room.key;
+    const key = k.type === 'spot' ? I.spot : I.dir;
+    if (!key || !key.visible || key.userData.base == null) return;
+    const col = tc.set(k.color);
+    const moonlit = col.b > col.r * 1.05 && col.b >= col.g * 0.9;
+    if (!moonlit) { if (E.tune && E.tune._moon) E.tune = null; return; }
+    const clear = 1 - E.storm;
+    let m = 0.8 + clear * 0.55;
+    // Indoors the engine has no lightning of its own: flicker through the windows.
+    if (!C.room.lightning && !calm && E.storm > 0.55) {
+      if (C.time > W.nextFlash) { W.flash = 1; W.nextFlash = C.time + rnd(5, 14) / E.storm; }
+    }
+    if (W.flash > 0) {
+      W.flash = Math.max(0, W.flash - dt * 3.2);
+      const v = W.flash > 0.75 ? 1 : W.flash > 0.55 ? 0.15 : W.flash > 0.4 ? 0.8 : W.flash * 0.6;
+      m *= 1 + v * 2.2;
+      if (v > 0.7) C.post.flash = Math.max(C.post.flash, 0.12), C.post.flashCol.set('#b8c8ff');
+    }
+    if (!(k.type === 'spot' && k.flicker) && !(C.room.lightning && E._lnT != null)) key.intensity = key.userData.base * m;
+    const t = E.tune || (E.tune = { _moon: true });
+    t.key = (C.room.vol && C.room.vol.key != null ? C.room.vol.key : 0.35) * (0.7 + clear * 0.9) * (W.flash > 0.5 ? 2 : 1);
+  }
+
   // ── The world turns ───────────────────────────────────────────────────────
   const goal = { exposure: 1, sat: 1, tint: [1, 1, 1] };
   function updateWorld(dt) {
     const relics = Math.min(6, STATE.inventory ? STATE.inventory.length : 0);
-    E.storm = STATE.necromancerDead ? 0 : clamp(1 - relics / 6 * 0.75, 0.25, 1);
+    if (!calm) updateWeather(dt);
+    W.night += (nightProgress() - W.night) * Math.min(1, dt * 0.5);
+    E.storm = STATE.necromancerDead ? 0 : clamp(1 - relics / 6 * 0.75, 0.25, 1) * (0.2 + 0.8 * W.front);
+    E.weather = W;
+    updateSky();
+    updateMoon(dt);
     if (C.room) C.room.group.children.forEach(o => {
       const rain = o.userData && o.userData.rain; if (!rain) return;
       o.visible = E.storm > 0.05;
@@ -242,6 +314,6 @@
     updateRats(dt); updateBats(dt); updateRavens(dt); updateGhosts(dt); updateChains(dt);
   };
   if (C.roomId) { spawnFor(C.roomId); dawn(C.room); }
-  G3D.life = { state: life, spawnBats, spawnGhost };
+  G3D.life = { state: life, spawnBats, spawnGhost, weather: W, setFront(v, hold) { W.front = W.target = clamp(v, 0, 1); W.hold = hold || 90; } };
   }
 })();

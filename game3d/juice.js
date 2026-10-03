@@ -77,8 +77,15 @@
   }
 
   // ── Every blow lands ──────────────────────────────────────────────────────
-  const MIST = { risen: '#5a1010', peasant: '#4a2a10', necromancer: '#2aff5a', wraith: '#7ad8e8' };
+  const MIST = { risen: '#5a1010', peasant: '#4a2a10', necromancer: '#2aff5a', wraith: '#7ad8e8', cinder: '#ff6a20', warden: '#ff8a30' };
   E.onImpact = function (who, flag, pos) {
+    if (who === 'parry') {
+      // Steel on steel: a long freeze-frame, a slow beat, and a bright ring.
+      if (fxOK()) { E.stopT = Math.max(E.stopT, 0.11); E.slowT = Math.max(E.slowT, 0.35); E.punch(0.8); }
+      shockwave(pos, '#d8ecff', 1.5, true);
+      E.burst('spark', pos, 40, '#ffffff', 5);
+      return;
+    }
     if (who === 'enemy') {
       const crit = flag, final = STATE.enemyHp <= 0 || !STATE.inCombat;
       if (fxOK()) {
