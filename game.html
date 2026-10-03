@@ -1007,7 +1007,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v18.0</span></div>
+  <div class="game-title-bar">⚔ Knights Templar: The Siege of the Undead <span style="font-size:0.6rem;color:var(--text-dim);margin-left:8px">v19.0</span></div>
   <div class="top-stats">
     <div class="hp-wrap">
       <span class="hp-label">HP</span>
@@ -3958,49 +3958,14 @@ function playSound(type) {
 }
 
 // ═══ GREGORIAN CHANT ENGINE ═══
-let chantNodes = [];
-function toggleAudio() {
-  if (STATE.audioPlaying) {
-    chantNodes.forEach(n => { try { n.stop(); } catch(e) {} });
-    chantNodes = [];
-    STATE.audioPlaying = false;
-    document.getElementById('btnAudio').textContent = '♪ Music';
-    return;
-  }
-
-  STATE.audioPlaying = true;
-  document.getElementById('btnAudio').textContent = '■ Stop';
-  const ctx = getAudioCtx();
-
-  // Dorian drone
-  const droneFreqs = [110, 146.83, 164.81, 220]; // A2, D3, E3, A3
-  droneFreqs.forEach(f => {
-    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = f;
-    const g = ctx.createGain(); g.gain.value = 0.025;
-    osc.connect(g).connect(ctx.destination);
-    osc.start();
-    chantNodes.push(osc);
-  });
-
-  // Melodic chant voice
-  const dorianScale = [220, 246.94, 261.63, 293.66, 329.63, 349.23, 392, 440];
-  function chantNote() {
-    if (!STATE.audioPlaying) return;
-    const ctx2 = getAudioCtx();
-    const freq = dorianScale[Math.floor(Math.random() * dorianScale.length)];
-    const dur = 1.5 + Math.random() * 2;
-    const osc = ctx2.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
-    const g = ctx2.createGain();
-    const now = ctx2.currentTime;
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.04, now + 0.3);
-    g.gain.linearRampToValueAtTime(0.035, now + dur - 0.4);
-    g.gain.linearRampToValueAtTime(0, now + dur);
-    osc.connect(g).connect(ctx2.destination);
-    osc.start(now); osc.stop(now + dur);
-    setTimeout(chantNote, dur * 1000 + Math.random() * 800);
-  }
-  chantNote();
+// Sound on / off: the score (game3d/music.js), the room ambience and the combat
+// music (game3d/world.js) all follow this switch. The choice is remembered.
+function toggleAudio(forceOn) {
+  STATE.audioPlaying = forceOn === true ? true : !STATE.audioPlaying;
+  try { localStorage.setItem('kt_sound', STATE.audioPlaying ? 'on' : 'off'); } catch (e) {}
+  const btn = document.getElementById('btnAudio');
+  if (btn) { btn.textContent = STATE.audioPlaying ? '■ Stop' : '♪ Music'; btn.title = STATE.audioPlaying ? 'Turn music and sound off' : 'Turn music and sound on'; }
+  if (window.KTMusic) { if (STATE.audioPlaying) KTMusic.start(); else KTMusic.stop(); }
 }
 
 // ═══ FULLSCREEN ═══
@@ -5496,6 +5461,7 @@ initGame();
 <script src="/game3d/cinema.js"></script>
 <script src="/game3d/life.js"></script>
 <script src="/game3d/elements.js"></script>
+<script src="/game3d/music.js"></script>
 <script src="/game3d/settings.js"></script>
 <script src="/game3d/codex.js"></script>
 </body>

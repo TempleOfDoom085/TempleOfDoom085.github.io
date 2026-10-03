@@ -136,7 +136,7 @@
           float cover = texture2D(cloudMap, cu).r;
           float shadow = texture2D(cloudMap, cu - vec2(dot(sunDir, east), dot(sunDir, north)) * 0.0035).r;
           day *= mix(1.0, 0.72, ocean);
-          vec3 sunCol = vec3(1.0, 0.96, 0.9) * 2.6;
+          vec3 sunCol = vec3(1.0, 0.96, 0.9) * 1.25;
           vec3 col = day * sunCol * max(NL, 0.0) * smoothstep(-0.05, 0.15, NLs) * (1.0 - shadow * 0.5);
           // Twilight: warm, low light along the terminator.
           float tw = exp(-pow(NLs * 6.0, 2.0));
@@ -144,7 +144,7 @@
           // Ocean glint: a tight sun reflection inside a broad sheen, stronger at grazing angles.
           vec3 H = normalize(sunDir + V);
           float nh = max(dot(N, H), 0.0), fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
-          col += vec3(1.0, 0.86, 0.66) * ocean * (pow(nh, 900.0) * 5.0 + pow(nh, 90.0) * 0.18 + pow(nh, 12.0) * 0.015) * (0.3 + fres) * (1.0 - cover) * dayAmt;
+          col += vec3(1.0, 0.86, 0.66) * ocean * (pow(nh, 900.0) * 1.6 + pow(nh, 90.0) * 0.08 + pow(nh, 12.0) * 0.008) * (0.3 + fres) * (1.0 - cover) * dayAmt;
           // Night: city lights, warm and HDR so they bloom, dimmed under cloud.
           float lights = pow(texture2D(nightMap, vUv).r, 1.6);
           float night = 1.0 - smoothstep(-0.25, 0.05, NLs);
@@ -152,7 +152,7 @@
           col += day * vec3(0.006, 0.012, 0.025);
           // Blue haze at the edge of the disk.
           float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-          col += vec3(0.18, 0.45, 1.0) * rim * smoothstep(-0.3, 0.5, NLs) * 0.45;
+          col += vec3(0.18, 0.45, 1.0) * rim * smoothstep(-0.3, 0.5, NLs) * 0.3;
           // Tactical overlay: hex cells (heat-coloured) and scan waves.
           float lat = (vUv.y - 0.5) * 3.14159265, lng = vUv.x * 6.2831853 - 3.14159265;
           float S = 16.0;
@@ -198,13 +198,13 @@
           float c = texture2D(cloudMap, vUv + vec2(cloudOff, 0.0)).r;
           c = smoothstep(0.08, 0.9, c);
           float ndl = dot(N, sunDir);
-          vec3 col = vec3(1.0, 0.98, 0.95) * (smoothstep(-0.12, 0.35, ndl) * 1.7 + 0.015);
+          vec3 col = vec3(1.0, 0.98, 0.95) * (smoothstep(-0.12, 0.35, ndl) * 0.62 + 0.012);
           col *= mix(vec3(1.0), vec3(1.0, 0.55, 0.3), exp(-pow(ndl * 5.0, 2.0)) * 0.8);
           float lit = 0.0;
           for (int i = 0; i < 4; i++) { float d = 1.0 - dot(N, flash[i].xyz); lit += flash[i].w * exp(-d * 2600.0); }
           col += vec3(0.65, 0.75, 1.0) * lit * 9.0;
           float edge = smoothstep(0.0, 0.35, dot(N, V));
-          float a = c * (0.25 + 0.75 * edge) * 0.92;
+          float a = c * (0.25 + 0.75 * edge) * 0.8;
           gl_FragColor = vec4(col * a, a);
         }`,
       transparent: true, depthWrite: false, blending: T.CustomBlending, blendSrc: T.OneFactor, blendDst: T.OneMinusSrcAlphaFactor,
@@ -238,7 +238,7 @@
             vec3 tr = exp(-bR * 3.2 * (1.0 - smoothstep(-0.1, 0.6, cz)));   // reddening near the terminator
             accR += d * lit * tr; accM += d * lit;
           }
-          vec3 col = (accR * bR * phR + accM * phM * vec3(1.0, 0.85, 0.6)) * ds * 5.5;
+          vec3 col = (accR * bR * phR + accM * phM * vec3(1.0, 0.85, 0.6)) * ds * 3.2;
           col = mix(col, col + defcon * length(col) * 0.9, defconAmt * 0.5);
           gl_FragColor = vec4(col, 1.0);
         }`,
@@ -453,10 +453,10 @@
             float sp = fract(time * 0.33 + vPh), sr = sp * 0.95;
             float sonar = exp(-pow((d - sr) * 26.0, 2.0)) * (1.0 - sp) * 0.9;
             float hit = 0.0;
-            if (vHit >= 0.0 && vHit < 1.6) { float hr = vHit * 0.75; hit = exp(-pow((d - hr) * 18.0, 2.0)) * (1.0 - vHit / 1.6) * 2.5 + exp(-d * d * 60.0) * max(0.0, 1.0 - vHit * 2.0) * 6.0; }
+            if (vHit >= 0.0 && vHit < 1.6) { float hr = vHit * 0.75; hit = exp(-pow((d - hr) * 18.0, 2.0)) * (1.0 - vHit / 1.6) * 2.5 + exp(-d * d * 60.0) * max(0.0, 1.0 - vHit * 2.0) * 3.0; }
             float a = (core + sonar) + hit;
             if (a < 0.003) discard;
-            gl_FragColor = vec4(mix(c, vec3(1.0), clamp(hit * 0.3, 0.0, 0.7)) * a, 1.0); }`,
+            gl_FragColor = vec4(mix(c, vec3(1.0), clamp(hit * 0.2, 0.0, 0.4)) * a, 1.0); }`,
         transparent: true, depthWrite: false, blending: T.AdditiveBlending,
       });
       var cityMarks = new T.Mesh(g, m);
@@ -499,6 +499,7 @@
           vec3 vd = normalize(cameraPosition - p);
           vec3 sd = normalize(cross(tg, vd));
           float w = iTim.z * (0.55 + 0.45 * sin(t * 3.14159)) * (1.0 + 0.7 * exp(-pow((t - min(vHead, 1.0)) * 18.0, 2.0)));
+          w *= clamp(length(cameraPosition - p) / 3.0, 0.3, 1.0);   // stay thin in close-ups
           p += sd * aSide * w;
           vT = t; vS = aSide; vCol = iCol; vPk = iTim.w;
           gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
@@ -512,7 +513,7 @@
           float glow = exp(-pow((vT - head) * 55.0, 2.0)) * (vHead < 1.0 ? 1.0 : 0.0);
           float trail = 0.16;
           float pk = vPk > 0.0 ? pow(max(0.0, sin(vT * 6.2831 * (4.0 + vPk) - time * 9.0)), 16.0) * 1.2 : 0.0;
-          float i = (tail * tail * 1.8 + trail + glow * 3.2 + pk) * pow(across, 1.6) * vFade;
+          float i = (tail * tail * 1.3 + trail + glow * 2.4 + pk) * pow(across, 1.6) * vFade;
           gl_FragColor = vec4(vCol * i, 1.0);
         }`,
       transparent: true, depthWrite: false, blending: T.AdditiveBlending,
@@ -557,12 +558,12 @@
           float a = 0.0;
           if (vK > 0.5 && vK < 1.5) {
             float h = vQ.y * 0.5 + 0.5;
-            a = exp(-vQ.x * vQ.x * 6.0) * (1.0 - h) * (1.0 - h) * sin(vAge * 3.14159) * 3.0 + exp(-vQ.x * vQ.x * 60.0) * (1.0 - h) * (1.0 - vAge) * 4.0;
+            a = exp(-vQ.x * vQ.x * 6.0) * (1.0 - h) * (1.0 - h) * sin(vAge * 3.14159) * 2.0 + exp(-vQ.x * vQ.x * 60.0) * (1.0 - h) * (1.0 - vAge) * 2.5;
           } else {
             float d = length(vQ);
             for (int k = 0; k < 3; k++) { float fk = float(k); float t = clamp(vAge * (vK > 1.5 ? 1.0 : 1.25) - fk * 0.12, 0.0, 1.0); float r = pow(t, 0.6) * 0.95;
               a += exp(-pow((d - r) * (vK > 1.5 ? 30.0 : 20.0), 2.0)) * (1.0 - t) * (1.0 - fk * 0.25) * step(0.0001, t); }
-            a += exp(-d * d * 30.0) * max(0.0, 1.0 - vAge * 3.0) * 5.0;
+            a += exp(-d * d * 30.0) * max(0.0, 1.0 - vAge * 3.0) * 2.5;
             a *= smoothstep(1.0, 0.9, d);
           }
           if (a < 0.002) discard;
@@ -771,7 +772,7 @@
       fragmentShader: `uniform sampler2D src; uniform vec2 texel; varying vec2 vUv;
         void main(){ vec3 c = (texture2D(src, vUv + texel * vec2(-1.0, -1.0)).rgb + texture2D(src, vUv + texel * vec2(1.0, -1.0)).rgb + texture2D(src, vUv + texel * vec2(-1.0, 1.0)).rgb + texture2D(src, vUv + texel * vec2(1.0, 1.0)).rgb) * 0.25;
           c = min(c, vec3(40.0));
-          float br = max(c.r, max(c.g, c.b)), th = 0.85, knee = 0.6;
+          float br = max(c.r, max(c.g, c.b)), th = 1.4, knee = 0.5;
           float soft = clamp(br - th + knee, 0.0, 2.0 * knee); soft = soft * soft / (4.0 * knee + 1e-4);
           gl_FragColor = vec4(c * max(soft, br - th) / max(br, 1e-4), 1.0); }` });
     const down = new T.ShaderMaterial({ uniforms: { src: { value: null }, texel: { value: new T.Vector2() } }, depthTest: false, depthWrite: false, vertexShader: FSQ_VERT,
@@ -805,7 +806,7 @@
           vec2 d = uv - 0.5; float r2 = dot(d, d);
           vec2 off = d * (0.0025 + glitch * 0.02) * (0.4 + r2 * 3.0);
           vec3 c = vec3(texture2D(scene, uv + off).r, texture2D(scene, uv).g, texture2D(scene, uv - off).b);
-          c += texture2D(bloom, uv).rgb * 0.75;
+          c += texture2D(bloom, uv).rgb * 0.45;
           // Lens flare from the sun: ghosts along the line through the centre, and a halo.
           if (sunUv.z > 0.001) {
             vec2 sp = sunUv.xy, ax = vec2(0.5) - sp, asp = vec2(aspect, 1.0);
@@ -831,6 +832,44 @@
         }`,
     });
 
+    // Eye adaptation: the scene's luminance is boiled down to a 16×16 log-encoded
+    // map, read back a few times a second, and the exposure eases down when the
+    // frame gets bright (a close-up on the sunlit side, a swarm of attacks), so
+    // the picture never washes out to white.
+    const LUM = 16, lumRT = new T.WebGLRenderTarget(LUM, LUM, { type: T.UnsignedByteType, format: T.RGBAFormat, minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: false, stencilBuffer: false });
+    const lumPx = new Uint8Array(LUM * LUM * 4);
+    const lumMat = new T.ShaderMaterial({ uniforms: { src: { value: null } }, depthTest: false, depthWrite: false, vertexShader: FSQ_VERT,
+      fragmentShader: `uniform sampler2D src; varying vec2 vUv;
+        void main(){ float L = 0.0;
+          for (int y = 0; y < 4; y++) for (int x = 0; x < 4; x++) {
+            vec3 c = texture2D(src, vUv + (vec2(float(x), float(y)) - 1.5) / (4.0 * ${LUM}.0)).rgb;
+            L += dot(min(c, vec3(16.0)), vec3(0.2126, 0.7152, 0.0722));
+          }
+          gl_FragColor = vec4(clamp(log2(L / 16.0 + 1e-4) / 18.0 + 0.75, 0.0, 1.0), 0.0, 0.0, 1.0); }` });
+    const eye = { exposure: 1, target: 1, clock: 0, mean: 0 };
+    function meter(dt) {
+      eye.clock -= dt;
+      if (eye.clock <= 0) {
+        eye.clock = 0.25;
+        lumMat.uniforms.src.value = sceneRT.texture; pass(lumMat, lumRT);
+        try { renderer.readRenderTargetPixels(lumRT, 0, 0, LUM, LUM, lumPx); } catch (_) { return; }
+        // Mean linear luminance, centre-weighted (the globe sits in the middle).
+        let s = 0, ws = 0;
+        for (let y = 0; y < LUM; y++) for (let x = 0; x < LUM; x++) {
+          const dx = (x + 0.5) / LUM - 0.5, dy = (y + 0.5) / LUM - 0.5, w = 1.2 - Math.min(1, (dx * dx + dy * dy) * 3);
+          s += Math.pow(2, (lumPx[(y * LUM + x) * 4] / 255 - 0.75) * 18) * w; ws += w;
+        }
+        eye.mean = s / ws;
+        // Only ever darken: a dim frame keeps exposure 1.
+        eye.target = clamp(KEY / Math.max(eye.mean, 1e-4), 0.45, 1);
+      }
+      // Darken quickly, recover slowly, like an eye.
+      const k = eye.target < eye.exposure ? 2.2 : 0.5;
+      eye.exposure += (eye.target - eye.exposure) * Math.min(1, dt * k);
+      finalMat.uniforms.exposure.value = eye.exposure;
+    }
+    const KEY = 0.085;
+
     function makeTargets(w, h) {
       [sceneRT, ...bloomDown, ...bloomUp].forEach(t => t && t.dispose());
       if (gl2 && T.WebGLMultisampleRenderTarget && renderer.extensions.has('EXT_color_buffer_float')) {
@@ -846,7 +885,7 @@
       }
     }
 
-    function renderFrame() {
+    function renderFrame(dt) {
       renderer.setRenderTarget(sceneRT); renderer.clear(); renderer.render(scene, camera);
       // Bloom: threshold → down chain → up chain (tent filter, accumulating).
       prefilter.uniforms.src.value = sceneRT.texture; prefilter.uniforms.texel.value.set(1 / sceneRT.width, 1 / sceneRT.height);
@@ -862,6 +901,7 @@
         pass(up, bloomUp[i]); src = bloomUp[i];
       }
       finalMat.uniforms.scene.value = sceneRT.texture; finalMat.uniforms.bloom.value = src.texture;
+      meter(dt);
       pass(finalMat, null);
     }
 
@@ -954,7 +994,7 @@
           if (a) {
             const mid = tmpV.copy(a.p0).add(a.p2).normalize();
             const ll = dirToLonLat(mid);
-            flyTo(ll.lon + (Math.random() - 0.5) * 0.6, clamp(ll.lat + 0.12, -1.1, 1.1), 2.35 + Math.random() * 0.35, 6.5);
+            flyTo(ll.lon + (Math.random() - 0.5) * 0.6, clamp(ll.lat + 0.12, -1.1, 1.1), 2.7 + Math.random() * 0.4, 6.5);
           }
         }
       }
@@ -1212,7 +1252,7 @@
       const f = finalMat.uniforms.fade;
       if (loaded >= 4 || t > 4) f.value = Math.min(1, f.value + dt * 1.2); else f.value = Math.min(f.value, 0.0);
       updateSun();
-      renderFrame();
+      renderFrame(dt);
       adapt(dt);
     }
     finalMat.uniforms.fade.value = 0;
@@ -1237,7 +1277,7 @@
     function focusCity(i, hold) {
       const ll = dirToLonLat(cityPos[i]);
       cam.idle = 0; cam.intro = 1;
-      flyTo(ll.lon, clamp(ll.lat + 0.08, -1.2, 1.2), 2.25, hold || 0);
+      flyTo(ll.lon, clamp(ll.lat + 0.08, -1.2, 1.2), 2.55, hold || 0);
     }
 
     return {
@@ -1250,7 +1290,7 @@
       wasDragged() { return lastMoved > 6; },
       step(n, dt) { for (let i = 0; i < n; i++) step(dt || 1 / 60, performance.now()); },
       pause(p) { running = !p; if (running) { last = performance.now(); requestAnimationFrame(frame); } },
-      debug: () => ({ pr, loaded, arcs: arcs.length, gl2, msaa: !!(sceneRT && sceneRT.isWebGLMultisampleRenderTarget), cam: { lon: cam.lon, lat: cam.lat, dist: cam.dist } }),
+      debug: () => ({ exposure: +eye.exposure.toFixed(3), lum: +eye.mean.toFixed(4), pr, loaded, arcs: arcs.length, gl2, msaa: !!(sceneRT && sceneRT.isWebGLMultisampleRenderTarget), cam: { lon: cam.lon, lat: cam.lat, dist: cam.dist } }),
       renderer, camera, scene,
     };
   };
