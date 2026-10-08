@@ -133,7 +133,13 @@ nav {
   border-left: 2px solid transparent;
   transition: background 0.3s;
 }
-.term-line:hover { background: rgba(0,255,136,0.04); }
+.term-line:hover { background: rgba(0,255,136,0.07); }
+.term-line[data-city] { cursor: none; }
+.term-line.tracked { background: rgba(0,255,136,0.1); box-shadow: inset 0 0 0 1px rgba(0,255,136,0.25); }
+.feed-hint {
+  flex-shrink: 0; padding: 0.35rem 0.9rem; font-size: 0.45rem; letter-spacing: 0.25em;
+  color: rgba(0,255,136,0.32); border-top: 1px solid rgba(0,255,136,0.08);
+}
 @keyframes termEntry {
   from { opacity: 0; background: rgba(0,255,136,0.07); }
   to   { opacity: 1; background: transparent; }
@@ -634,15 +640,24 @@ html { font-size: 18px; }
   #music-player { display: none !important; }
 }
 
+/* ── THEATER MODE: the globe alone ── */
+body.theater .globe-layout { grid-template-columns: 1fr; }
+body.theater .left-panel, body.theater .sidebar { display: none; }
+body.theater #globe-container { height: auto; min-height: calc(100vh - 3.5rem); }
+.theater-exit {
+  position: absolute; top: 0.9rem; right: 1.2rem; z-index: 30; display: none;
+  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.2em; padding: 0.3rem 0.6rem;
+  color: rgba(0,255,136,0.6); background: rgba(10,10,12,0.8); border: 1px solid rgba(0,255,136,0.25);
+}
+body.theater .theater-exit { display: block; }
+.theater-exit:hover { color: var(--green); border-color: rgba(0,255,136,0.55); }
+
 /* ── MUSIC PLAYER — minimal strip ── */
 #music-player {
-  position: absolute;
-  bottom: 1.2rem;
-  left: 1.2rem;
-  z-index: 20;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(0,204,255,0.18);
   background: rgba(6,8,6,0.88);
-  border: 1px solid rgba(0,204,255,0.18);
-  padding: 0.3rem 0.65rem;
+  padding: 0.45rem 0.9rem;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -757,8 +772,10 @@ body::after {
 .nav-clock { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em; color: var(--text-faint); }
 
 /* DEFCON alert banner */
+.globe-header .live-label { transition: opacity 0.3s; }
+.globe-header.alerting .live-label { opacity: 0; }
 .defcon-alert {
-  position: fixed; top: 4.2rem; left: 50%;
+  position: absolute; top: 0.9rem; left: 50%; white-space: nowrap;
   transform: translateX(-50%) translateY(-16px);
   background: rgba(10,10,12,0.97); border: 1px solid;
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.3em;
@@ -994,9 +1011,10 @@ body::after {
   </div>
   <div class="nav-right-group">
     <div class="nav-controls">
-      <button class="nav-ctrl-btn active live-on" id="ctrl-live">LIVE</button>
-      <button class="nav-ctrl-btn active" id="ctrl-borders">BORDERS</button>
-      <button class="nav-ctrl-btn active" id="ctrl-cine" title="Auto-director: the camera swoops onto critical attacks while you watch">CINEMATIC</button>
+      <button class="nav-ctrl-btn active live-on" id="ctrl-live" title="Pause or resume the live feed (L)">LIVE</button>
+      <button class="nav-ctrl-btn active" id="ctrl-borders" title="Country borders (B)">BORDERS</button>
+      <button class="nav-ctrl-btn active" id="ctrl-cine" title="Auto-director: the camera swoops onto critical attacks while you watch (C)">CINEMATIC</button>
+      <button class="nav-ctrl-btn" id="ctrl-theater" title="Theater mode: hide the panels and let the globe fill the screen (T, Esc to leave)">THEATER</button>
     </div>
     <span class="nav-clock" id="utc-clock">00:00:00 UTC</span>
     <div class="defcon-badge d5" id="defcon-badge">DEFCON <span id="defcon-level">5</span></div>
@@ -1012,6 +1030,13 @@ body::after {
       LIVE INTELLIGENCE FEED
     </div>
     <div class="terminal-feed" id="terminal-feed"></div>
+    <div class="feed-hint">CLICK AN ATTACK TO TRACK IT</div>
+    <!-- Music Player — a strip at the foot of the feed -->
+    <div id="music-player">
+      <button class="mp-btn" id="mp-play">▶</button>
+      <span style="font-family:var(--mono);font-size:0.48rem;letter-spacing:0.15em;color:rgba(0,204,255,0.5);white-space:nowrap">HALO 3 OST</span>
+      <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="65">
+    </div>
   </div>
 
   <!-- GLOBE -->
@@ -1054,12 +1079,6 @@ body::after {
       </div>
     </div>
 
-    <!-- Music Player — minimal strip -->
-    <div id="music-player">
-      <button class="mp-btn" id="mp-play">▶</button>
-      <span style="font-family:var(--mono);font-size:0.48rem;letter-spacing:0.15em;color:rgba(0,204,255,0.5)">HALO 3 OST</span>
-      <input class="mp-vol" type="range" id="mp-vol" min="0" max="100" value="65">
-    </div>
     <div id="yt-player-container"><div id="yt-player"></div></div>
 
     <!-- Filter Bar -->
@@ -1091,6 +1110,8 @@ body::after {
       <div><span class="cp-status" id="cp-status">NORMAL</span></div>
       <div class="cp-hint">CLICK ELSEWHERE TO DISMISS</div>
     </div>
+
+    <button class="theater-exit" id="theater-exit" title="Leave theater mode (Esc)">✕ EXIT THEATER</button>
 
     <!-- Disclaimer -->
     <div class="disclaimer">⚠ SIMULATED DATA — FOR DEMONSTRATION PURPOSES ONLY</div>
@@ -1382,9 +1403,15 @@ function tickDefcon() {
     const alertEl = document.createElement('div');
     alertEl.className = `defcon-alert d${lvl}`;
     alertEl.textContent = `\u26a0  DEFCON ${lvl} \u2014 THREAT LEVEL ${DEFCON_LABELS[lvl]}`;
-    document.body.appendChild(alertEl);
+    const hdr = container.querySelector('.globe-header');
+    container.querySelectorAll('.defcon-alert').forEach(a => a.remove());
+    container.appendChild(alertEl);
+    if (hdr) hdr.classList.add('alerting');
     setTimeout(() => alertEl.classList.add('show'), 30);
-    setTimeout(() => { alertEl.classList.remove('show'); setTimeout(() => alertEl.remove(), 500); }, 3200);
+    setTimeout(() => {
+      alertEl.classList.remove('show');
+      setTimeout(() => { alertEl.remove(); if (hdr && !container.querySelector('.defcon-alert')) hdr.classList.remove('alerting'); }, 500);
+    }, 3200);
   }
 }
 
@@ -1507,6 +1534,8 @@ function addTerminalLine(srcCity, dstCity, evKey, severity) {
 
   const line = document.createElement('div');
   line.className = `term-line term-${evKey}`;
+  const ci = CITIES.indexOf(dstCity);
+  if (ci >= 0) { line.dataset.city = ci; line.title = `Track ${dstCity.name}, ${dstCity.country}`; }
   line.innerHTML =
     `<span class="term-ts">[${nowStr()}]</span> ` +
     `<strong>${evType.label.toUpperCase()}</strong>` +
@@ -1690,6 +1719,26 @@ document.getElementById('ctrl-cine').addEventListener('click', function() {
 });
 if (!GLOBE.director) document.getElementById('ctrl-cine').classList.remove('active');
 
+function setTheater(on) {
+  document.body.classList.toggle('theater', on);
+  document.getElementById('ctrl-theater').classList.toggle('active', on);
+  window.dispatchEvent(new Event('resize'));   // the renderer re-fits the canvas
+  if (on) container.scrollIntoView({ block: 'start' });
+}
+document.getElementById('ctrl-theater').addEventListener('click', () => setTheater(!document.body.classList.contains('theater')));
+document.getElementById('theater-exit').addEventListener('click', e => { e.stopPropagation(); setTheater(false); });
+
+// Keyboard: L live · B borders · C cinematic · T theater · Esc closes the card, then leaves theater.
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'l') document.getElementById('ctrl-live').click();
+  else if (k === 'b') document.getElementById('ctrl-borders').click();
+  else if (k === 'c') document.getElementById('ctrl-cine').click();
+  else if (k === 't') setTheater(!document.body.classList.contains('theater'));
+  else if (k === 'escape') { if (profileOpen) closeProfile(); else if (document.body.classList.contains('theater')) setTheater(false); }
+});
+
 // ─── FILTER BAR LOGIC ─────────────────────────────────────────────────────────
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', e => {
@@ -1728,13 +1777,14 @@ function showCountryProfile(cityObj, screenX, screenY) {
   statusEl.textContent = profile.status;
   statusEl.className   = `cp-status ${profile.status}`;
 
-  // Position popup near the click but keep it on screen
+  // The camera flies the city to the centre of the globe panel: sit the card
+  // beside it (below it on a narrow screen), inside the panel.
   const popup = profileEl;
-  const pw = 240, ph = 280;
-  let px = screenX + 14;
-  let py = screenY - 20;
-  if (px + pw > window.innerWidth - 340) px = screenX - pw - 14;
-  if (py + ph > window.innerHeight - 20) py = window.innerHeight - ph - 20;
+  const cw = container.clientWidth, ch = container.clientHeight;
+  const pw = popup.offsetWidth || 240, ph = popup.offsetHeight || 280;
+  let px = cw / 2 + Math.min(90, cw * 0.08), py = ch / 2 - ph / 2;
+  if (px + pw > cw - 16) { px = (cw - pw) / 2; py = ch / 2 + 40; }
+  px = Math.max(12, Math.min(px, cw - pw - 12)); py = Math.max(12, Math.min(py, ch - ph - 12));
   popup.style.left = px + 'px';
   popup.style.top  = py + 'px';
   popup.classList.add('visible');
@@ -1742,7 +1792,7 @@ function showCountryProfile(cityObj, screenX, screenY) {
 }
 
 container.addEventListener('click', e => {
-  if (e.target.closest('.filter-bar, #music-player, #country-profile, button, input')) return;
+  if (e.target.closest('.filter-bar, #country-profile, button, input')) return;
   if (GLOBE.wasDragged()) return;   // the end of a drag isn't a click
   const i = GLOBE.pickCity(e.clientX, e.clientY);
   if (i >= 0) {
@@ -1751,11 +1801,28 @@ container.addEventListener('click', e => {
     return;
   }
   // Click elsewhere = dismiss
-  if (profileOpen) {
-    profileEl.classList.remove('visible');
-    profileOpen = false;
-    GLOBE.release();
-  }
+  if (profileOpen) closeProfile();
+});
+
+function closeProfile() {
+  profileEl.classList.remove('visible');
+  profileOpen = false;
+  GLOBE.release();
+  terminalEl.querySelectorAll('.term-line.tracked').forEach(l => l.classList.remove('tracked'));
+}
+
+// Track an attack from the feed: fly to its target and open the country card.
+terminalEl.addEventListener('click', e => {
+  const line = e.target.closest('.term-line[data-city]');
+  if (!line) return;
+  const i = +line.dataset.city;
+  terminalEl.querySelectorAll('.term-line.tracked').forEach(l => l.classList.remove('tracked'));
+  line.classList.add('tracked');
+  GLOBE.focusCity(i);
+  showCountryProfile({ city: CITIES[i] });
+  // On a phone the feed sits below the globe: bring the globe back into view.
+  const r = container.getBoundingClientRect();
+  if (r.bottom < 80 || r.top > window.innerHeight - 80 || r.top < -r.height / 2) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 // UTC Clock
@@ -1796,9 +1863,9 @@ container.addEventListener('click', e => {
   });
   document.addEventListener('mouseleave', () => c.style.opacity = '0');
   document.addEventListener('mouseenter', () => c.style.opacity = '1');
-  document.querySelectorAll('a,button,[role="button"]').forEach(el => {
-    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  // Delegated, so feed lines added later get the hover cursor too.
+  document.addEventListener('mouseover', e => {
+    document.body.classList.toggle('cursor-hover', !!e.target.closest('a,button,[role="button"],.term-line[data-city]'));
   });
 })();
 </script>
