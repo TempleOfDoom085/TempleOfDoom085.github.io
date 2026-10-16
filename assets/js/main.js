@@ -30,7 +30,7 @@ const fadeObserver = new IntersectionObserver((entries) => {
       entry.target.classList.add('visible');
     }
   });
-}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+}, { threshold: 0, rootMargin: '0px 0px 15% 0px' });
 document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 
 // Close hamburger when a nav link is clicked on mobile
@@ -60,7 +60,9 @@ const backBtn = document.getElementById('backToTop');
 window.addEventListener('scroll', () => {
   if (window.scrollY > 600) backBtn.classList.add('show');
   else backBtn.classList.remove('show');
-});
+  // Phones: the floating audio / INTEL controls appear once the opening screen is behind you.
+  document.body.classList.toggle('past-hero', window.scrollY > window.innerHeight * 0.9);
+}, { passive: true });
 
 // ── v9.0: NAV MORPH ON SCROLL ──
 const navEl = document.querySelector('nav');
@@ -638,7 +640,7 @@ function closeKonami() {
 (function() {
   const CMDS = {
     help: `AVAILABLE COMMANDS\n─────────────────────────────────────────────\n  whoami              — who is this guy\n  ls                  — list sections\n  cat about.txt       — about Brian\n  cat skills.txt      — full skill set\n  cat experience.txt  — work history\n  cat certs.txt       — certifications\n  cat contact.txt     — get in touch\n  ./play              — launch the game\n  clear               — clear terminal\n  exit                — close terminal`,
-    whoami: `brian@fortress — AI Security Advisor @ Cranium AI\n─────────────────────────────────────────────\n  Location  : Towaco, NJ\n  Status    : Securing enterprise AI\n  Clearance : 16+ Certifications\n  XP        : 10+ years sales, 3+ years tech\n  Current   : SNHU Cyber Security Program\n  Build     : v12.0`,
+    whoami: `brian@fortress — AI Security Advisor @ Cranium AI\n─────────────────────────────────────────────\n  Location  : Towaco, NJ\n  Status    : Securing enterprise AI\n  Clearance : 16+ Certifications\n  XP        : 10+ years sales, 3+ years tech\n  Current   : SNHU Cyber Security Program\n  Build     : v19.0`,
     ls: `about/         experience/    skills/        projects/\ncerts/         education/     contact/\ngame.exe`,
     'ls -la': `drwxr-xr-x  brian  fortress  about/\ndrwxr-xr-x  brian  fortress  skills/\n-rwxr-xr-x  brian  fortress  game.exe\n-rw-r--r--  brian  fortress  contact.txt\n-rw-r--r--  brian  fortress  README.md`,
     'ls -al': `drwxr-xr-x  brian  fortress  about/\ndrwxr-xr-x  brian  fortress  skills/\n-rwxr-xr-x  brian  fortress  game.exe\n-rw-r--r--  brian  fortress  contact.txt\n-rw-r--r--  brian  fortress  README.md`,
@@ -820,6 +822,7 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     { icon: '⚔',  name: 'Game',            desc: 'Knights Templar — now in real-time 3D',tag: 'section', href: '#game-section' },
     { icon: '🛡', name: 'Certifications',  desc: 'Security certs and credentials',      tag: 'section', href: '#certs' },
     { icon: '🎓', name: 'Education',       desc: 'SNHU, CU Boulder',                    tag: 'section', href: '#education' },
+    { icon: '🧰', name: 'Full Skill Set',  desc: 'Every skill, by category',            tag: 'section', href: '#all-skills' },
     { icon: '🤝', name: 'Volunteering',    desc: 'Community involvement',               tag: 'section', href: '#volunteering' },
     { icon: '📬', name: 'Contact',         desc: 'Get in touch',                        tag: 'section', href: '#contact' },
     { icon: '#',  name: 'Hash Analyzer',   desc: 'Identify and analyze hashes',         tag: 'tool', href: 'tools/hash.html' },
@@ -879,7 +882,12 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     close();
     if (item.action === 'terminal') { openTerminal(); return; }
     if (item.href && item.href.startsWith('#')) {
-      document.querySelector(item.href)?.scrollIntoView({ behavior: 'smooth' });
+      const target = document.querySelector(item.href);
+      // Credentials panels live behind tabs: open the tab, then scroll to the section.
+      if (target && target.classList.contains('cred-panel')) {
+        document.getElementById('credtab-' + target.id)?.click();
+        document.getElementById('credentials').scrollIntoView({ behavior: 'smooth' });
+      } else target?.scrollIntoView({ behavior: 'smooth' });
     } else if (item.href) {
       window.location.href = item.href;
     }
@@ -915,7 +923,7 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
 
   function cycle(elId, phrases, offset) {
     const el = document.getElementById(elId);
-    if (!el) return;
+    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let idx = 0;
 
     function typeOut(text, cb) {
@@ -933,10 +941,10 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     }
     function next() {
       idx = (idx + 1) % phrases.length;
-      setTimeout(() => typeOut(phrases[idx], () => setTimeout(() => eraseOut(next), 2600)), 320);
+      setTimeout(() => typeOut(phrases[idx], () => setTimeout(() => eraseOut(next), 5200)), 320);
     }
 
-    setTimeout(() => eraseOut(next), 2800 + offset);
+    setTimeout(() => eraseOut(next), 6000 + offset);
   }
 
   cycle('hero-cycle-left',  leftPhrases,  0);
@@ -1081,4 +1089,43 @@ if (window.innerWidth <= 768) {
     };
     new MutationObserver(sync).observe(results, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
+})();
+
+// ── UX REVAMP: CREDENTIALS TABS ──
+// Certifications, Education and the full skill set share one section. Links to
+// #certs / #education / #all-skills (nav, ⌘K palette) open the matching tab.
+(function () {
+  const tabs = [...document.querySelectorAll('.cred-tab')];
+  if (!tabs.length) return;
+  function select(tab, focus) {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    if (focus) tab.focus();
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (e.key === 'Home') { e.preventDefault(); select(tabs[0], true); }
+      else if (e.key === 'End') { e.preventDefault(); select(tabs[tabs.length - 1], true); }
+      else if (d) { e.preventDefault(); select(tabs[(i + d + tabs.length) % tabs.length], true); }
+    });
+  });
+  function openFromHash(hash) {
+    const tab = tabs.find(t => '#' + t.getAttribute('aria-controls') === hash);
+    if (!tab) return false;
+    select(tab);
+    document.getElementById('credentials').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (a && openFromHash(a.getAttribute('href'))) e.preventDefault();
+  });
+  window.addEventListener('hashchange', () => openFromHash(location.hash));
+  if (location.hash) openFromHash(location.hash);
 })();
