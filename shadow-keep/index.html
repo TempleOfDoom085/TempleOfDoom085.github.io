@@ -258,7 +258,10 @@ const INTEL=[
  '63% of breached orgs had no AI governance policy. (IBM 2025)',
  '65% of shadow AI breaches exposed customer PII. (IBM 2025)',
  'EU AI Act fines for prohibited AI reach EUR 35M or 7% of global turnover.',
- 'EU AI Act high-risk rules now apply from Dec 2, 2027. (AI Omnibus, 2026)'
+ 'EU AI Act high-risk rules now apply from Dec 2, 2027. (AI Omnibus, 2026)',
+ 'The global average data breach cost $4.44M. (IBM 2025)',
+ '40% of shadow AI breaches exposed intellectual property. (IBM 2025)',
+ '11% of orgs could not say whether they had a shadow AI incident. (IBM 2025)'
 ];
 
 /* ================= SPRITES ================= */
@@ -456,15 +459,15 @@ const VENDORS=[
 let S,curHard=false;
 const PLAYER={tag:'',co:''};try{const pj=JSON.parse(localStorage.getItem('shadowkeep-player')||'{}');PLAYER.tag=String(pj.tag||'').slice(0,12);PLAYER.co=String(pj.co||'').slice(0,28);}catch(e){}
 function newGame(mode='title',hard=false){curHard=hard;
- S={mode,hard,frame:0,rooms:makeRooms(),rx:1,ry:1,found:0,scrolls:0,threats:0,hits:0,deaths:0,playT:0,intelI:Math.floor(Math.random()*INTEL.length),
+ S={mode,hard,frame:0,rooms:makeRooms(),rx:1,ry:1,found:0,scrolls:0,threats:0,hits:0,deaths:0,playT:0,intelI:0,intelOrder:null,
   gear:{lantern:false,blade:false,shield:false},talked:{},vendorBest:0,vendorSeal:false,vg:null,hydraDelay:0,
   p:{x:123,y:120,w:10,h:10,face:'up',hp:hard?2:3,max:hard?2:3,inv:0,atk:0,cd:0,kx:0,ky:0,step:0,hitSet:new Set(),charge:0,spin:0,shield:0,scd:0},
   bolts:[],parts:[],floats:[],toast:null,banner:{t:150,stat:''},big:null,dialog:null,visited:{'1,1':true},shake:0,freeze:0,
   boss:{x:128,y:64,hp:hard?32:24,max:hard?32:24,phase:1,t:0,st:0,shield:true,active:false,dead:false,deathT:0,hurt:0,fire:0,spiral:0},
   hydra:{},intro:{scene:0,t:0},lockMsg:0,shieldMsg:0,winT:0,overT:0,final:null,cranium:false,xr:0,xray:0,tf:0,pulse:0,lb:0,lbT:0,zoom:1,zx:128,zy:88,cine:null,card:null,ab:0,postedBest:0,rings:[],amb:[],cracks:null,trans:null,flash:0};
- hydraInit();S.banner.stat=nextIntel();if(xrBtn)xrBtn.classList.add('locked');
+ hydraInit();S.banner.stat='';if(xrBtn)xrBtn.classList.add('locked');
 }
-function nextIntel(){return INTEL[(S.intelI++)%INTEL.length];}
+function nextIntel(){if(!S.intelOrder){S.intelOrder=INTEL.map((_,i)=>i).sort(()=>Math.random()-.5);}return S.intelI<INTEL.length?INTEL[S.intelOrder[S.intelI++]]:'';}
 newGame();
 const room=()=>S.rooms[S.rx+','+S.ry];
 
@@ -519,10 +522,10 @@ function hurtPlayer(fx,fy){const p=S.p;if(p.inv>0)return;
  const c=pc(),dx=c.x-fx,dy=c.y-fy,d=Math.hypot(dx,dy)||1;
  if(p.shield>0){p.kx=dx/d*2;p.ky=dy/d*2;sfx(900,.05,'square',-300,.03);return;}
  p.hp--;S.hits++;S.ab=1.4;p.inv=S.hard?50:70;p.kx=dx/d*3;p.ky=dy/d*3;shake(4);S.freeze=4;sfx(180,.2,'sawtooth',-120,.07);burst(c.x,c.y,'#ff4d6d',10);
- if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;postProgress();S.overStat=nextIntel();setSong(null);jingle([392,330,262,196],.16);}}
+ if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;postProgress();setSong(null);jingle([392,330,262,196],.16);}}
 function changeRoom(dx,dy){const p=S.p,snap=takeSnap();S.rx+=dx;S.ry+=dy;S.bolts=[];S.parts=[];S.floats=[];S.amb=[];S.rings=[];S.trans={dx,dy,t:0,n:22,snap};
  if(dx===-1)p.x=COLS*T-p.w-2;if(dx===1)p.x=2;if(dy===-1)p.y=PH-p.h-2;if(dy===1)p.y=2;
- const r=room();S.banner={t:r.boss?0:120,stat:nextIntel()};
+ const r=room(),first=!S.visited[r.key];S.banner=r.boss?{t:0,stat:''}:first?{t:120,stat:nextIntel()}:{t:70,stat:''};
  if(!S.visited[r.key]){S.visited[r.key]=true;if(r.hint)setTimeout(()=>{if(S.mode==='play'&&room()===r)toast(r.hint[0],r.hint[1],300,true);},2200);}
  if(r.boss){if(!S.boss.active&&!S.boss.dead)setTimeout(()=>{if(S.mode==='play'&&room().boss&&!S.boss.active&&!S.boss.dead)startCine('rogue');},1100);
    else if(S.boss.dead&&!S.hydra.dead&&!S.hydra.active)S.hydraDelay=50;}}
@@ -632,7 +635,7 @@ function update(){
  if(S.trans){aQ=aQ||A;bQ=bQ||B;cQ=cQ||C;return;}
  updateAmbient(room());
  if(S.big&&room().boss){S.big.t--;if(A&&S.big.t>10)S.big.t=10;if(S.big.t<=0)S.big=null;bQ=bQ||B;cQ=cQ||C;return;}
- if(S.banner.t>0&&!S.big&&!room().boss){S.banner.t--;if(A&&S.banner.t>12)S.banner.t=12;return;}
+ if(S.banner.t>0&&S.banner.stat&&!S.big&&!room().boss){S.banner.t--;if(A&&S.banner.t>12)S.banner.t=12;return;}
  if(S.toast&&S.toast.pause&&!S.big){S.toast.t--;if(A&&S.toast.t>12)S.toast.t=12;if(S.toast.t<=0)S.toast=null;return;}
  if(MN){S.mode='inv';sfx(500,.05);return;}
  S.playT++;const p=S.p;
@@ -692,7 +695,7 @@ function updateTransform(){S.tf++;const c=pc(),t=S.tf;
  if(t>210){S.mode='play';S.big={a:'CRANIUM MODE',b:'PRESS C · X-RAY',t:150};toast('ALL '+NASSET+' SHADOW AI INVENTORIED','X-ray recharges as you fight. The Arena gate is open, north of the CISO.',330);}}
 function updateFX(){for(const q of S.parts){q.x+=q.vx;q.y+=q.vy;q.vx*=.92;q.vy*=.92;q.l--;}S.parts=S.parts.filter(q=>q.l>0);
  for(const f of S.floats){f.y-=.4;f.l--;}S.floats=S.floats.filter(f=>f.l>0);if(S.shake>0)S.shake*=.85;if(S.shake<.3)S.shake=0;if(S.pulse>0)S.pulse--;S.lb+=(S.lbT-S.lb)*.12;S.ab*=.88;if(S.flash>0)S.flash--;for(const r of S.rings){r.r+=2.2;r.l--;}S.rings=S.rings.filter(r=>r.l>0);if(S.card){S.card.t++;if(S.card.t>120)S.card=null;}if(S.trans){S.trans.t++;if(S.trans.t>=S.trans.n)S.trans=null;}}
-function respawn(){const p=S.p;p.hp=p.max;p.inv=90;p.kx=p.ky=0;p.charge=p.spin=p.shield=0;S.rx=1;S.ry=1;p.x=123;p.y=120;S.bolts=[];S.parts=[];S.floats=[];S.banner={t:150,stat:nextIntel()};S.big=null;S.hydraDelay=0;S.cracks=null;S.zoom=1;S.lbT=0;S.cine=null;S.trans=null;S.card=null;S.amb=[];
+function respawn(){const p=S.p;p.hp=p.max;p.inv=90;p.kx=p.ky=0;p.charge=p.spin=p.shield=0;S.rx=1;S.ry=1;p.x=123;p.y=120;S.bolts=[];S.parts=[];S.floats=[];S.banner={t:70,stat:''};S.big=null;S.hydraDelay=0;S.cracks=null;S.zoom=1;S.lbT=0;S.cine=null;S.trans=null;S.card=null;S.amb=[];
  const b=S.boss;if(!b.dead){Object.assign(b,{hp:b.max,phase:1,active:false,st:0,shield:true,fire:0});S.rooms['1,0'].enemies=[];}
  if(!S.hydra.dead)hydraInit();S.mode='play';}
 function talk(R){const n=R.npc,who=n.who;
@@ -843,9 +846,9 @@ function draw(){
  g.restore();
  drawHUD();
  const top=bandTop();
- if(S.banner.t>0&&S.mode!=='dialog'&&S.mode!=='cine'&&!S.big&&!S.trans){const a=Math.min(1,S.banner.t/20),lines=wrap(S.banner.stat,232),h=22+lines.length*10,y0=top(h+4);g.globalAlpha=a;
+ if(S.banner.t>0&&S.mode!=='dialog'&&S.mode!=='cine'&&!S.big&&!S.trans){const a=Math.min(1,S.banner.t/20),lines=S.banner.stat?wrap(S.banner.stat,232):[],h=(lines.length?22:16)+lines.length*10,y0=top(h+4);g.globalAlpha=a;
    rect('rgba(6,4,12,.88)',0,y0,W,h+4);rect('#f2c14e',0,y0,W,1);rect('#f2c14e',0,y0+3+h,W,1);txt(R.name,128,y0+15,'#f2c14e',F8,'center');
-   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));if(!R.boss&&(f>>4)%2)txt('A ▶',250,y0+15,'#f2c14e',F8,'right');g.globalAlpha=1;}
+   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));if(lines.length&&!R.boss&&(f>>4)%2)txt('A ▶',250,y0+15,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.big){const t=S.big,a=Math.min(1,t.t/15),y0=top(44);g.globalAlpha=a;rect('rgba(6,4,12,.9)',0,y0,W,44);rect('#b07cff',0,y0,W,2);rect('#d63ad6',0,y0+42,W,2);
    if((f>>2)%9===0)txt(t.a,130,y0+20,'#d63ad6',F8,'center');txt(t.a,128,y0+20,'#ffffff',F8,'center');txt(t.b,128,y0+35,'#b07cff',F8,'center');if(R.boss&&S.mode==='play'&&(f>>4)%2)txt('A ▶',250,y0+20,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15),y0=top(h);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,y0,240,h);rect(t.pause?'#f2c14e':'#b07cff',8,y0,240,1);rect(t.pause?'#f2c14e':'#b07cff',8,y0+h-1,240,1);
