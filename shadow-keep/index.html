@@ -566,10 +566,10 @@ input[type="email"] {
 
   <div class="legend">
     <span><kbd>←↑↓→</kbd>/<kbd>WASD</kbd> move</span>
-    <span><kbd>SPACE</kbd> talk · strike · hold to charge</span>
-    <span><kbd>X</kbd> 360° spin</span>
+    <span><kbd>Z</kbd> (A) talk · strike · hold to charge</span>
+    <span><kbd>X</kbd> (B) 360° spin</span>
     <span><kbd>I</kbd> AI inventory</span>
-    <span><kbd>C</kbd> AgentSensor scan (Cranium Mode)</span>
+    <span><kbd>SPACE</kbd> AgentSensor scan (Cranium Mode)</span>
   </div>
 
   <div class="pad" aria-label="Touch controls">
@@ -1774,7 +1774,7 @@ let aQ = false,
   mQ = false,
   cQ = false,
   aDown = false;
-const CK = new Set(["KeyC", "KeyL"]);
+const CK = new Set(["Space", "KeyC", "KeyL"]);
 const KM = {
   ArrowUp: "up",
   KeyW: "up",
@@ -1785,7 +1785,7 @@ const KM = {
   ArrowRight: "right",
   KeyD: "right",
 };
-const AK = new Set(["Space", "KeyJ", "KeyZ", "Enter"]),
+const AK = new Set(["KeyZ", "KeyJ", "Enter"]),
   BK = new Set(["KeyX", "KeyK", "ShiftLeft", "ShiftRight"]),
   MK = new Set(["KeyI", "Escape", "Tab", "KeyP"]);
 const typing = (e) => e.target && e.target.closest && e.target.closest("input,textarea,select,button,a");
@@ -1810,7 +1810,13 @@ addEventListener("keydown", (e) => {
     e.preventDefault();
   }
   if (CK.has(e.code)) {
-    if (!e.repeat) cQ = true;
+    // Space is the scan key in play, but outside play (menus, dialogue, pop-ups)
+    // it still advances like A, since that's what people reach for.
+    const spaceAsA = e.code === "Space" && (S.mode !== "play" || (S.msg && S.msg.pause) || (!S.msg && S.queue.some((m) => m.pause)));
+    if (!e.repeat) {
+      if (spaceAsA) aQ = true;
+      else cQ = true;
+    }
     e.preventDefault();
   }
 });
@@ -5447,7 +5453,7 @@ function drawVendor() {
     rect("#3d1a6e", 8, 166, 116, 22);
     rect(pulse ? "#b07cff" : "#7b3fe4", 8, 166, 116, 2);
     txt("ALLOW", 66, 178, "#ffffff", F8, "center");
-    txt(kbd ? "SPACE" : "A · TAP", 66, 187, "#c9a8ff", F8, "center");
+    txt(kbd ? "Z" : "A · TAP", 66, 187, "#c9a8ff", F8, "center");
     rect("#5a1020", 132, 166, 116, 22);
     rect(pulse ? "#ff3b5c" : "#a3203a", 132, 166, 116, 2);
     txt("BLOCK", 190, 178, "#ffffff", F8, "center");
@@ -5620,9 +5626,9 @@ function drawControls() {
   rect("#7b3fe4", 40, 28, 176, 2);
   const rows = [
     [touch ? "D-PAD" : "ARROWS", "Move"],
-    [touch ? "A" : "SPACE", "Talk · strike · hold to charge"],
+    [touch ? "A" : "Z", "Talk · strike · hold to charge"],
     [touch ? "B" : "X", "360° spin attack"],
-    [touch ? "SCAN" : "C", "AgentSensor scan (unlocks later)"],
+    [touch ? "SCAN" : "SPACE", "AgentSensor scan (unlocks later)"],
     [touch ? "☰" : "I", "AI inventory"],
   ];
   rows.forEach(([k, d], i) => {
