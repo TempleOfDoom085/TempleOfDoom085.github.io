@@ -1,0 +1,114 @@
+
+
+<div class="wrap">
+  <div class="marquee">
+    <div class="brand">
+      <span class="eyebrow">CRANIUM PRESENTS</span>
+      <h1>SHADOW KEEP</h1>
+      <p class="sub">Shadow AI has slipped into the kingdom's <b>code</b>, <b>cloud</b>, <b>vendors</b>, <b>agents</b>, <b>bank</b> and <b>hospital</b>. Find it, validate the supply chain, and red team what's waiting in the Arena.</p>
+    </div>
+    <div class="toggles">
+      <button class="btn" id="snd" type="button" aria-pressed="true">SOUND</button>
+      <button class="btn" id="crt" type="button" aria-pressed="true">CRT</button>
+      <button class="btn" id="fx" type="button" aria-pressed="true">EFFECTS: FULL</button>
+    </div>
+  </div>
+
+  <div class="cab"><canvas id="game" width="256" height="192" aria-label="Shadow Keep game screen"></canvas>
+    <div class="entry" id="entry" hidden>
+      <form id="entryForm" novalidate>
+        <h2>WHO GOES THERE?</h2>
+        <p class="hint">Shown on the leaderboard.</p><p class="msg err" id="eMsg" role="status"></p>
+        <label>PLAYER TAG<input type="text" id="eTag" maxlength="12" autocomplete="nickname" placeholder="e.g. SENTINEL7" required></label>
+        <label>ORGANIZATION<input type="text" id="eCo" maxlength="28" autocomplete="organization" placeholder="Your company" required></label>
+        <div class="row"><button class="btn" type="button" id="eBack">BACK</button><button class="btn primary" type="submit">START QUEST</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><kbd>←↑↓→</kbd>/<kbd>WASD</kbd> move</span>
+    <span><kbd>SPACE</kbd> talk · strike · hold to charge</span>
+    <span><kbd>X</kbd> 360° spin</span>
+    <span><kbd>I</kbd> AI inventory</span>
+    <span><kbd>C</kbd> AgentSensor scan (Cranium Mode)</span>
+  </div>
+
+  <div class="pad" aria-label="Touch controls">
+    <div class="dpad">
+      <button class="u" data-k="up" aria-label="Up">▲</button>
+      <button class="l" data-k="left" aria-label="Left">◀</button>
+      <button class="m" data-k="menu" aria-label="AI inventory">☰</button>
+      <button class="r" data-k="right" aria-label="Right">▶</button>
+      <button class="d" data-k="down" aria-label="Down">▼</button>
+    </div>
+    <div class="face">
+      <button class="cb locked" id="xrBtn" data-k="c" aria-label="AgentSensor scan">SCAN</button>
+      <button class="bb" data-k="b" aria-label="Spin attack or block">B</button>
+      <button class="ab" data-k="a" aria-label="Action">A</button>
+    </div>
+  </div>
+
+  <section class="deck" id="claim" hidden>
+    <div class="head"><h2>CLAIM YOUR AI RISK REPORT</h2><span class="msg" id="finalLine"></span></div>
+    <p>Post your score to the leaderboard. Add your work details and Cranium will send you the real version: how much shadow AI is running in your organization.</p>
+    <form id="claimForm" novalidate>
+      <label>PLAYER TAG<input type="text" id="fTag" maxlength="12" autocomplete="nickname" placeholder="e.g. SENTINEL7" required></label>
+      <label>ORGANIZATION<input type="text" id="fCompany" maxlength="28" autocomplete="organization" placeholder="Your company"></label>
+      <label>NAME<input type="text" id="fName" maxlength="60" autocomplete="name" placeholder="First and last name"></label>
+      <label>WORK EMAIL<input type="email" id="fEmail" maxlength="90" autocomplete="email" placeholder="you@company.com"></label>
+      <label>PHONE (OPTIONAL)<input type="tel" id="fPhone" maxlength="20" autocomplete="tel" placeholder="555-555-5555"></label>
+      <label>TITLE<input type="text" id="fTitle" maxlength="60" autocomplete="organization-title" placeholder="e.g. CISO"></label>
+      <label class="consent"><input type="checkbox" id="fConsent"><span>Cranium may contact me about AI security. Only Cranium sees these details; the leaderboard shows your tag, organization and score.</span></label>
+      <div class="actions">
+        <button class="btn primary" type="submit" id="fSubmit">SEND REPORT + POST SCORE</button>
+        <button class="btn" type="button" id="fScoreOnly">POST SCORE ONLY</button>
+        <span class="msg" id="fMsg" role="status"></span>
+      </div>
+    </form>
+  </section>
+
+  <section class="deck" id="share" hidden>
+    <div class="head"><h2>SHARE YOUR RUN</h2></div>
+    <canvas id="shareCard" width="600" height="314" aria-label="Share card with your grade and stats"></canvas>
+    <div class="post" id="postText"></div>
+    <div class="actions">
+      <button class="btn primary" type="button" id="copyPost">COPY POST</button>
+      <a class="btn" id="liLink" href="https://www.linkedin.com/feed/" target="_blank" rel="noopener">OPEN LINKEDIN</a>
+      <button class="btn" type="button" id="saveCard" hidden>SAVE IMAGE</button>
+      <span class="msg" id="shareMsg" role="status"></span>
+    </div>
+  </section>
+
+  <section class="deck" id="board">
+    <div class="head"><h2>TOP SENTINELS</h2><span class="msg" id="boardNote"></span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th class="num">#</th><th>TAG</th><th>COMPANY</th><th class="num">SCORE</th><th class="num">TIME</th></tr></thead>
+        <tbody id="boardBody"><tr><td colspan="5" class="empty">Loading scores…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="deck" id="leads" hidden>
+    <div class="head"><h2>LEADS <span id="leadCount"></span></h2><span class="msg">Visible only to you</span></div>
+    <div class="actions">
+      <button class="btn" type="button" id="leadsRefresh">REFRESH</button>
+      <button class="btn primary" type="button" id="leadsCopy">COPY CSV</button>
+      <button class="btn" type="button" id="leadsSave" hidden>DOWNLOAD CSV</button>
+      <span class="msg" id="leadMsg" role="status"></span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>NAME</th><th>EMAIL</th><th>PHONE</th><th>ORG</th><th class="num">SCORE</th><th>DATE</th></tr></thead>
+        <tbody id="leadBody"><tr><td colspan="6" class="empty">No leads yet. Finished players who share their details show up here.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="credit">
+    <span class="by">DESIGNED &amp; BUILT BY <b>BRIAN TEMPLE</b></span>
+    <a href="https://templeofdoom085.github.io/" target="_blank" rel="noopener">More of my work →</a>
+  </footer>
+</div>
+

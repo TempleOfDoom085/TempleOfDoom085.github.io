@@ -1,0 +1,9 @@
+{
+  "name": "shadow-keep",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs github && node build.mjs claude",
+    "test": "node build.mjs claude && node tests/run.mjs"
+  }
+}
