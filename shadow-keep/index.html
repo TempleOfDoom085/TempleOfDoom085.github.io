@@ -472,7 +472,7 @@ const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 const pc=()=>({x:S.p.x+5,y:S.p.y+5});
 function burst(x,y,col,n=12,sp=1.6){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=Math.random()*sp+.3;S.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:18+Math.random()*22,c:Array.isArray(col)?col[i%col.length]:col});}}
 function floatT(x,y,t,c){S.floats.push({x,y,t,c,l:50});}
-function toast(a,b,t=220){S.toast={a,b,t};}
+function toast(a,b,t=220,pause=false){S.toast={a,b,t,pause};}
 function shake(n){S.shake=Math.max(S.shake,n);}
 function wrap(text,maxW,font=F8){g.font=font;const words=text.split(' '),lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(g.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}if(cur)lines.push(cur);return lines;}
 function say(lines,done){S.dialog={lines,i:0,c:0,done};S.mode='dialog';sfx(660,.06);}
@@ -498,7 +498,7 @@ function hurtPlayer(fx,fy){const p=S.p;if(p.inv>0)return;
 function changeRoom(dx,dy){const p=S.p,snap=takeSnap();S.rx+=dx;S.ry+=dy;S.bolts=[];S.parts=[];S.floats=[];S.amb=[];S.rings=[];S.trans={dx,dy,t:0,n:22,snap};
  if(dx===-1)p.x=COLS*T-p.w-2;if(dx===1)p.x=2;if(dy===-1)p.y=PH-p.h-2;if(dy===1)p.y=2;
  const r=room();S.banner={t:120,stat:nextIntel()};
- if(!S.visited[r.key]){S.visited[r.key]=true;if(r.hint)setTimeout(()=>{if(S.mode==='play'&&room()===r)toast(r.hint[0],r.hint[1],240);},2900);}
+ if(!S.visited[r.key]){S.visited[r.key]=true;if(r.hint)setTimeout(()=>{if(S.mode==='play'&&room()===r)toast(r.hint[0],r.hint[1],300,true);},2200);}
  if(r.boss){if(!S.boss.active&&!S.boss.dead)setTimeout(()=>{if(S.mode==='play'&&room().boss&&!S.boss.active&&!S.boss.dead)startCine('rogue');},1100);
    else if(S.boss.dead&&!S.hydra.dead&&!S.hydra.active)S.hydraDelay=50;}}
 function bossIntro(){say([{who:'ROGUE MODEL',t:'Unregistered. Unmonitored. Unstoppable.'},
@@ -605,6 +605,8 @@ function update(){
  // ---- play ----
  if(S.trans){aQ=aQ||A;bQ=bQ||B;cQ=cQ||C;return;}
  updateAmbient(room());
+ if(S.banner.t>0&&!S.big&&!room().boss){S.banner.t--;if(A&&S.banner.t>12)S.banner.t=12;return;}
+ if(S.toast&&S.toast.pause&&!S.big){S.toast.t--;if(A&&S.toast.t>12)S.toast.t=12;if(S.toast.t<=0)S.toast=null;return;}
  if(MN){S.mode='inv';sfx(500,.05);return;}
  S.playT++;const p=S.p;
  const R0=room(),fight=(S.boss.active&&!S.boss.dead)||(S.hydra.active&&!S.hydra.dead);
@@ -807,11 +809,11 @@ function draw(){
  const top=bandTop();
  if(S.banner.t>0&&S.mode!=='dialog'&&S.mode!=='cine'&&!S.big&&!S.trans){const a=Math.min(1,S.banner.t/20),lines=wrap(S.banner.stat,232),h=22+lines.length*10,y0=top(h+4);g.globalAlpha=a;
    rect('rgba(6,4,12,.88)',0,y0,W,h+4);rect('#f2c14e',0,y0,W,1);rect('#f2c14e',0,y0+3+h,W,1);txt(R.name,128,y0+15,'#f2c14e',F8,'center');
-   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));g.globalAlpha=1;}
+   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));if(!R.boss&&(f>>4)%2)txt('A ▶',250,y0+15,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.big){const t=S.big,a=Math.min(1,t.t/15),y0=top(44);g.globalAlpha=a;rect('rgba(6,4,12,.9)',0,y0,W,44);rect('#b07cff',0,y0,W,2);rect('#d63ad6',0,y0+42,W,2);
    if((f>>2)%9===0)txt(t.a,130,y0+20,'#d63ad6',F8,'center');txt(t.a,128,y0+20,'#ffffff',F8,'center');txt(t.b,128,y0+35,'#b07cff',F8,'center');g.globalAlpha=1;}
- if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15),y0=top(h);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,y0,240,h);rect('#b07cff',8,y0,240,1);rect('#b07cff',8,y0+h-1,240,1);
-   txt(t.a,14,y0+11,'#b07cff');lines.forEach((l,i)=>txt(l,14,y0+23+i*10,'#ece8f7'));g.globalAlpha=1;}
+ if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15),y0=top(h);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,y0,240,h);rect(t.pause?'#f2c14e':'#b07cff',8,y0,240,1);rect(t.pause?'#f2c14e':'#b07cff',8,y0+h-1,240,1);
+   txt(t.a,14,y0+11,'#b07cff');lines.forEach((l,i)=>txt(l,14,y0+23+i*10,'#ece8f7'));if(t.pause&&(f>>4)%2)txt('A ▶',244,y0+11,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.lb>.01){const bh=Math.round(22*S.lb);rect('#000',0,HUD,W,bh);rect('#000',0,H-bh,W,bh);}
  if(S.card)drawCard();
  if(S.mode==='dialog')drawDialog();
@@ -872,7 +874,7 @@ function drawOver(){const f=S.frame,t=S.overT;rect('rgba(24,0,8,.92)',0,0,W,H);
  txt('DEFENSES BREACHED',128,24,'#ff4d6d',F8,'center');
  txt('SHADOW AI '+S.found+'/'+NASSET+'  ·  '+fmtT(S.playT),128,38,'#9d96bb',F8,'center');
  rect('#0b0812',16,48,224,100);g.strokeStyle='#f2c14e';g.lineWidth=1;g.strokeRect(16.5,48.5,223,99);
- txt(LOCAL?'YOUR BEST RUNS':'TOP SENTINELS',128,62,'#f2c14e',F8,'center');
+ txt(REMOTE?'TEAM LEADERBOARD':LOCAL?'YOUR BEST RUNS':'TOP SENTINELS',128,62,'#f2c14e',F8,'center');
  if(!boardLive)txt('LOADING SCORES',128,100,'#5d5680',F8,'center');
  else if(!topList.length){txt('NO SCORES YET',128,92,'#9d96bb',F8,'center');txt(LOCAL?'FINISH A RUN TO SET ONE':'BE THE FIRST TO FINISH',128,106,'#b07cff',F8,'center');}
  else topList.forEach((r,i)=>{if(t<8+i*6)return;const y=78+i*14,col=i===0?'#f2c14e':'#ece8f7';
@@ -1129,7 +1131,8 @@ const crt=document.createElement('canvas');crt.width=W;crt.height=H;{const c=crt
 function post(){g.setTransform(1,0,0,1,0,0);if(!gl&&crtOn)g.drawImage(crt,0,0);present();}
 
 /* ================= LEADERBOARD · LEADS · SHARE ================= */
-let db=null,user=null,uid=null,owner=false,downloads=null,topScore=null,topList=[],boardLive=false,saved=false,LOCAL=false;
+let db=null,user=null,uid=null,owner=false,downloads=null,topScore=null,topList=[],boardLive=false,saved=false,LOCAL=false,REMOTE=false;
+const SUPA={url:'',key:''};
 const $=id=>document.getElementById(id);
 const boardBody=$('boardBody'),boardNote=$('boardNote');
 function cell(text,cls){const td=document.createElement('td');td.textContent=text;if(cls)td.className=cls;return td;}
@@ -1141,7 +1144,7 @@ function renderBoard(docs){boardBody.textContent='';boardLive=true;topList=docs.
   tr.appendChild(cell(Number(s.score||0).toLocaleString('en-US'),'num'));tr.appendChild(cell(String(s.time||''),'num'));boardBody.appendChild(tr);});
  const t=docs[0].data()||{};topScore={tag:String(t.tag||'???').slice(0,12),score:Number(t.score||0)};}
 (async()=>{
- const use=window.claude&&window.claude.use;if(!use){localMode();return;}
+ const use=window.claude&&window.claude.use;if(!use){if(SUPA.url&&SUPA.key)remoteMode();else localMode();return;}
  try{[db,user,downloads]=await Promise.all([window.claude.use('db'),window.claude.use('user'),window.claude.use('downloads')]);}catch(e){}
  if(user){try{owner=await user.isOwner();}catch(e){}try{uid=await user.id();}catch(e){}}
  if(downloads){$('saveCard').hidden=false;$('leadsSave').hidden=false;}
@@ -1152,6 +1155,14 @@ function renderBoard(docs){boardBody.textContent='';boardLive=true;topList=docs.
 const LKEY='shadowkeep-best-v1';
 function loadLocal(){let a=[];try{a=JSON.parse(localStorage.getItem(LKEY)||'[]');}catch(e){}return Array.isArray(a)?a:[];}
 function renderLocal(){const a=loadLocal().sort((x,y)=>y.score-x.score).slice(0,10);renderBoard(a.map(o=>({data:()=>o})));}
+function supaHeaders(){const h={apikey:SUPA.key,'Content-Type':'application/json'};if(SUPA.key.startsWith('eyJ'))h.Authorization='Bearer '+SUPA.key;return h;}
+async function fetchRemote(){try{const r=await fetch(SUPA.url.replace(/\/$/,'')+'/rest/v1/scores?select=tag,company,score,grade,time,hard&order=score.desc&limit=10',{headers:supaHeaders()});
+  if(!r.ok)throw 0;const rows=await r.json();renderBoard((Array.isArray(rows)?rows:[]).map(o=>({data:()=>o})));boardNote.textContent='Live · updates every minute';}
+ catch(e){boardNote.textContent='Leaderboard offline. Scores still save on this device.';renderLocal();}}
+function remoteMode(){REMOTE=true;document.querySelector('#board h2').textContent='TEAM LEADERBOARD';
+ ['fName','fEmail','fTitle','fConsent'].forEach(id=>{const el=$(id);if(el)el.closest('label').hidden=true;});$('fSubmit').hidden=true;$('fScoreOnly').textContent='POST SCORE';
+ document.querySelector('#claim h2').textContent='POST YOUR RUN';document.querySelector('#claim p').textContent='Add a tag and post your score to the team leaderboard.';
+ fetchRemote();setInterval(()=>{if(!document.hidden)fetchRemote();},60000);}
 function localMode(){LOCAL=true;document.querySelector('#board h2').textContent='YOUR BEST RUNS';boardNote.textContent='Saved on this device';
  ['fName','fEmail','fTitle','fConsent'].forEach(id=>{const el=$(id);if(el)el.closest('label').hidden=true;});$('fSubmit').hidden=true;$('fScoreOnly').textContent='SAVE SCORE';
  document.querySelector('#claim h2').textContent='SAVE YOUR RUN';document.querySelector('#claim p').textContent='Add a tag to save this run to your best runs on this device.';renderLocal();}
@@ -1173,6 +1184,12 @@ async function postScore(withLead){const F=S.final;if(!F||saved)return;
   if(!$('fConsent').checked){fail('Tick the box so Cranium can send your report.');return;}
   if(!uid){fail('This view can\'t store contact details. Post your score only.');return;}
   lead={name,email,company,title,tag,score:F.score,grade:F.grade,hard:F.hard,at:Date.now(),consent:true};}
+ if(REMOTE){$('fScoreOnly').disabled=true;fMsg.className='msg';fMsg.textContent='Posting…';
+   try{const r=await fetch(SUPA.url.replace(/\/$/,'')+'/rest/v1/scores',{method:'POST',headers:Object.assign(supaHeaders(),{Prefer:'return=minimal'}),body:JSON.stringify({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard})});
+    if(!r.ok)throw 0;saved=true;fMsg.textContent='Posted to the team leaderboard.';fetchRemote();buildShare(F,tag);}
+   catch(e){$('fScoreOnly').disabled=false;fail('Couldn\'t reach the leaderboard. Try again in a moment.');}
+   try{const a=loadLocal();a.push({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard,at:Date.now()});localStorage.setItem(LKEY,JSON.stringify(a.sort((x,y)=>y.score-x.score).slice(0,25)));}catch(e){}
+   return;}
  if(LOCAL){try{const a=loadLocal();a.push({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard,at:Date.now()});a.sort((x,y)=>y.score-x.score);localStorage.setItem(LKEY,JSON.stringify(a.slice(0,25)));}catch(e){}
    saved=true;fMsg.className='msg';fMsg.textContent='Saved to your best runs.';renderLocal();buildShare(F,tag);return;}
  if(!db){fail('Saving is unavailable in this view.');return;}
