@@ -73,6 +73,7 @@ td{padding:6px 8px;border-bottom:1px solid #221d36;font-size:20px;white-space:no
 td.num{text-align:right}th.num{text-align:right}
 tr.top1 td{color:var(--gold)}
 .chip{font-family:var(--display);font-size:7px;padding:3px 5px;border:1px solid var(--red);color:var(--red);margin-left:6px;vertical-align:middle}
+.chip.win{border-color:var(--gold);color:#1a1206;background:var(--gold)}
 .grade{font-family:var(--display);font-size:11px}
 .empty{color:var(--dim);padding:10px 0}
 form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
@@ -183,8 +184,8 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
     <div class="head"><h2>TOP SENTINELS</h2><span class="msg" id="boardNote"></span></div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th class="num">#</th><th>TAG</th><th>COMPANY</th><th>GRADE</th><th class="num">SCORE</th><th class="num">TIME</th></tr></thead>
-        <tbody id="boardBody"><tr><td colspan="6" class="empty">Loading scores…</td></tr></tbody>
+        <thead><tr><th class="num">#</th><th>TAG</th><th>COMPANY</th><th class="num">SCORE</th><th class="num">TIME</th></tr></thead>
+        <tbody id="boardBody"><tr><td colspan="5" class="empty">Loading scores…</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -199,7 +200,7 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
     </div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>NAME</th><th>EMAIL</th><th>COMPANY</th><th>TITLE</th><th class="num">SCORE</th><th>DATE</th></tr></thead>
+        <thead><tr><th>NAME</th><th>EMAIL</th><th>PHONE</th><th>ORG</th><th class="num">SCORE</th><th>DATE</th></tr></thead>
         <tbody id="leadBody"><tr><td colspan="6" class="empty">No leads yet. Finished players who share their details show up here.</td></tr></tbody>
       </table>
     </div>
@@ -460,7 +461,7 @@ function newGame(mode='title',hard=false){curHard=hard;
   p:{x:123,y:120,w:10,h:10,face:'up',hp:hard?2:3,max:hard?2:3,inv:0,atk:0,cd:0,kx:0,ky:0,step:0,hitSet:new Set(),charge:0,spin:0,shield:0,scd:0},
   bolts:[],parts:[],floats:[],toast:null,banner:{t:150,stat:''},big:null,dialog:null,visited:{'1,1':true},shake:0,freeze:0,
   boss:{x:128,y:64,hp:hard?32:24,max:hard?32:24,phase:1,t:0,st:0,shield:true,active:false,dead:false,deathT:0,hurt:0,fire:0,spiral:0},
-  hydra:{},intro:{scene:0,t:0},lockMsg:0,shieldMsg:0,winT:0,overT:0,final:null,cranium:false,xr:0,xray:0,tf:0,pulse:0,lb:0,lbT:0,zoom:1,zx:128,zy:88,cine:null,card:null,ab:0,rings:[],amb:[],cracks:null,trans:null,flash:0};
+  hydra:{},intro:{scene:0,t:0},lockMsg:0,shieldMsg:0,winT:0,overT:0,final:null,cranium:false,xr:0,xray:0,tf:0,pulse:0,lb:0,lbT:0,zoom:1,zx:128,zy:88,cine:null,card:null,ab:0,postedBest:0,rings:[],amb:[],cracks:null,trans:null,flash:0};
  hydraInit();S.banner.stat=nextIntel();if(xrBtn)xrBtn.classList.add('locked');
 }
 function nextIntel(){return INTEL[(S.intelI++)%INTEL.length];}
@@ -518,7 +519,7 @@ function hurtPlayer(fx,fy){const p=S.p;if(p.inv>0)return;
  const c=pc(),dx=c.x-fx,dy=c.y-fy,d=Math.hypot(dx,dy)||1;
  if(p.shield>0){p.kx=dx/d*2;p.ky=dy/d*2;sfx(900,.05,'square',-300,.03);return;}
  p.hp--;S.hits++;S.ab=1.4;p.inv=S.hard?50:70;p.kx=dx/d*3;p.ky=dy/d*3;shake(4);S.freeze=4;sfx(180,.2,'sawtooth',-120,.07);burst(c.x,c.y,'#ff4d6d',10);
- if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;S.overStat=nextIntel();setSong(null);jingle([392,330,262,196],.16);}}
+ if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;postProgress();S.overStat=nextIntel();setSong(null);jingle([392,330,262,196],.16);}}
 function changeRoom(dx,dy){const p=S.p,snap=takeSnap();S.rx+=dx;S.ry+=dy;S.bolts=[];S.parts=[];S.floats=[];S.amb=[];S.rings=[];S.trans={dx,dy,t:0,n:22,snap};
  if(dx===-1)p.x=COLS*T-p.w-2;if(dx===1)p.x=2;if(dy===-1)p.y=PH-p.h-2;if(dy===1)p.y=2;
  const r=room();S.banner={t:r.boss?0:120,stat:nextIntel()};
@@ -765,8 +766,16 @@ function updateBolts(R){const p=S.p,c=pc();
 
 /* ================= SCORE / WIN ================= */
 function computeFinal(){const sec=S.playT/60|0;let sc=6000-sec*3-S.hits*60-S.deaths*400+S.scrolls*200+S.vendorBest*100+S.threats*15;if(S.hard)sc*=1.5;sc=Math.max(100,Math.round(sc));
- const k=S.hard?1.5:1,grade=sc>=6500*k?'S':sc>=5000*k?'A':sc>=3500*k?'B':'C';
+ const k=S.hard?1.5:1,grade=sc>=6500*k?'S':sc>=5000*k?'A':sc>=3500*k?'B':'C';sc+=3000;
  return{score:sc,grade,sec,time:fmtT(S.playT),hard:S.hard,frameworks:S.scrolls,vendors:S.vendorBest,threats:S.threats,hits:S.hits};}
+function progressScore(){let sc=S.found*200+S.scrolls*100+S.vendorBest*50+S.threats*10+(S.found===NASSET?300:0)+(S.boss.active||S.boss.dead?300:0)+(S.boss.dead?1000:0)+(S.hydra.active?300:0);if(S.hard)sc*=1.5;return Math.min(2900,Math.round(sc));}
+function stageLabel(){return S.boss.dead?'HYDRA':S.boss.active?'BOSS':S.found===NASSET?'ARENA':S.found+'/'+NASSET+' AI';}
+async function postProgress(){if(!PLAYER.tag)return;const sc=progressScore();if(sc<=S.postedBest||sc<200)return;S.postedBest=sc;
+ const row={tag:PLAYER.tag,company:PLAYER.co,score:sc,grade:null,time:fmtT(S.playT),hard:S.hard,reached:stageLabel()};
+ try{if(REMOTE){await fetch(SUPA.url.replace(/\/$/,'')+'/rest/v1/scores',{method:'POST',headers:Object.assign(supaHeaders(),{Prefer:'return=minimal'}),body:JSON.stringify(row)});fetchRemote();}
+  else if(db){await db.collection('scores').add(Object.assign({},row,{grade:'',at:Date.now()}));}
+  else if(LOCAL){const a=loadLocal();a.push(Object.assign({},row,{grade:'',at:Date.now()}));localStorage.setItem(LKEY,JSON.stringify(a.sort((x,y)=>y.score-x.score).slice(0,25)));renderLocal();}}
+ catch(e){}}
 function win(){S.final=computeFinal();S.mode='win';S.winT=0;jingle([523,659,784,659,784,1047,1319],.12);showClaim(S.final);}
 
 /* ================= DRAW ================= */
@@ -905,7 +914,7 @@ function drawOver(){const f=S.frame,t=S.overT;rect('rgba(24,0,8,.92)',0,0,W,H);
  if(!boardLive)txt('LOADING SCORES',128,100,'#5d5680',F8,'center');
  else if(!topList.length){txt('NO SCORES YET',128,92,'#9d96bb',F8,'center');txt(LOCAL?'FINISH A RUN TO SET ONE':'BE THE FIRST TO FINISH',128,106,'#b07cff',F8,'center');}
  else topList.forEach((r,i)=>{if(t<8+i*6)return;const y=78+i*14,mine=PLAYER.tag&&r.tag===PLAYER.tag,col=mine?'#c9a8ff':i===0?'#f2c14e':'#ece8f7';if(mine)rect('rgba(176,124,255,.18)',20,y-9,216,12);
-   txt(String(i+1),26,y,col);txt(r.tag,40,y,col);txt(r.grade,170,y,r.grade==='S'?'#b07cff':col,F8,'center');txt(r.score.toLocaleString('en-US'),232,y,col,F8,'right');if(r.hard)rect('#ff3b5c',178,y-6,3,3);});
+   txt(String(i+1),26,y,col);txt(r.tag,40,y,col);if(r.won){rect('#f2c14e',164,y-7,11,6);rect('#f2c14e',164,y-10,2,3);rect('#f2c14e',168,y-11,3,4);rect('#f2c14e',173,y-10,2,3);rect('#8a5a10',165,y-5,9,1);}txt(r.score.toLocaleString('en-US'),232,y,col,F8,'right');if(r.hard)rect('#ff3b5c',178,y-6,3,3);});
  const need=topList.length?topList[topList.length-1].score:0;
  txt(topList.length>=5?'BEAT '+need.toLocaleString('en-US')+' TO MAKE THE BOARD':LOCAL?'FINISH THE QUEST TO SAVE A SCORE':'FINISH THE QUEST TO POST A SCORE',128,162,'#b07cff',F8,'center');
  if(t>40&&(f>>5)%2)txt('PRESS A TO RESPAWN',128,182,'#ffffff',F8,'center');}
@@ -1166,11 +1175,15 @@ const SUPA={url:'https://ckrtnunhbdtirftwwozw.supabase.co',key:'sb_publishable_Y
 const $=id=>document.getElementById(id);
 const boardBody=$('boardBody'),boardNote=$('boardNote');
 function cell(text,cls){const td=document.createElement('td');td.textContent=text;if(cls)td.className=cls;return td;}
-function renderBoard(docs){boardBody.textContent='';boardLive=true;topList=docs.slice(0,5).map(d=>{const s=d.data()||{};return{tag:String(s.tag||'???').slice(0,12),co:String(s.company||'').slice(0,10),grade:String(s.grade||'-'),score:Number(s.score||0),hard:!!s.hard};});
- if(!docs.length){const tr=document.createElement('tr');const td=cell('No scores yet. Beat the game to post the first one.','empty');td.colSpan=6;tr.appendChild(td);boardBody.appendChild(tr);topScore=null;return;}
+function renderBoard(docs){const seen=new Set();docs=docs.filter(d=>{const o=d.data()||{},k=String(o.tag||'')+'|'+String(o.company||'').toLowerCase();if(seen.has(k))return false;seen.add(k);return true;}).slice(0,10);
+ boardBody.textContent='';boardLive=true;const won=o=>!!(o.grade&&/^[SABC]$/.test(String(o.grade)));
+ topList=docs.slice(0,5).map(d=>{const s=d.data()||{};return{tag:String(s.tag||'???').slice(0,12),co:String(s.company||'').slice(0,10),score:Number(s.score||0),hard:!!s.hard,won:won(s)};});
+ if(!docs.length){const tr=document.createElement('tr');const td=cell('No scores yet. Play a run to post the first one.','empty');td.colSpan=5;tr.appendChild(td);boardBody.appendChild(tr);topScore=null;return;}
  docs.forEach((d,i)=>{const s=d.data()||{};const tr=document.createElement('tr');if(i===0)tr.className='top1';
-  tr.appendChild(cell(String(i+1),'num'));const tg=cell(String(s.tag||'???'));if(s.hard){const ch=document.createElement('span');ch.className='chip';ch.textContent='HARD';tg.appendChild(ch);}tr.appendChild(tg);
-  tr.appendChild(cell(String(s.company||'—')));const gd=cell(String(s.grade||'-'),'grade');tr.appendChild(gd);
+  tr.appendChild(cell(String(i+1),'num'));const tg=cell(String(s.tag||'???'));
+  if(won(s)){const ch=document.createElement('span');ch.className='chip win';ch.textContent='CLEARED';tg.appendChild(ch);}
+  if(s.hard){const ch=document.createElement('span');ch.className='chip';ch.textContent='HARD';tg.appendChild(ch);}tr.appendChild(tg);
+  tr.appendChild(cell(String(s.company||'—')));
   tr.appendChild(cell(Number(s.score||0).toLocaleString('en-US'),'num'));tr.appendChild(cell(String(s.time||''),'num'));boardBody.appendChild(tr);});
  const t=docs[0].data()||{};topScore={tag:String(t.tag||'???').slice(0,12),score:Number(t.score||0)};}
 (async()=>{
@@ -1179,14 +1192,14 @@ function renderBoard(docs){boardBody.textContent='';boardLive=true;topList=docs.
  if(user){try{owner=await user.isOwner();}catch(e){}try{uid=await user.id();}catch(e){}}
  if(downloads){$('saveCard').hidden=false;$('leadsSave').hidden=false;}
  if(!db){localMode();return;}
- db.collection('scores').orderBy('score','desc').limit(10).onSnapshot(s=>renderBoard(s.docs),()=>{boardNote.textContent='Leaderboard paused. Reload to reconnect.';});
+ db.collection('scores').orderBy('score','desc').limit(60).onSnapshot(s=>renderBoard(s.docs),()=>{boardNote.textContent='Leaderboard paused. Reload to reconnect.';});
  if(owner){$('leads').hidden=false;loadLeads();}
 })();
 const LKEY='shadowkeep-best-v1';
 function loadLocal(){let a=[];try{a=JSON.parse(localStorage.getItem(LKEY)||'[]');}catch(e){}return Array.isArray(a)?a:[];}
-function renderLocal(){const a=loadLocal().sort((x,y)=>y.score-x.score).slice(0,10);renderBoard(a.map(o=>({data:()=>o})));}
+function renderLocal(){const a=loadLocal().sort((x,y)=>y.score-x.score).slice(0,25);renderBoard(a.map(o=>({data:()=>o})));}
 function supaHeaders(){const h={apikey:SUPA.key,'Content-Type':'application/json'};if(SUPA.key.startsWith('eyJ'))h.Authorization='Bearer '+SUPA.key;return h;}
-async function fetchRemote(){try{const r=await fetch(SUPA.url.replace(/\/$/,'')+'/rest/v1/scores?select=tag,company,score,grade,time,hard&order=score.desc&limit=10',{headers:supaHeaders()});
+async function fetchRemote(){try{const r=await fetch(SUPA.url.replace(/\/$/,'')+'/rest/v1/scores?select=tag,company,score,grade,time,hard,reached&order=score.desc&limit=60',{headers:supaHeaders()});
   if(!r.ok)throw 0;const rows=await r.json();renderBoard((Array.isArray(rows)?rows:[]).map(o=>({data:()=>o})));boardNote.textContent='Live · updates every minute';}
  catch(e){boardNote.textContent='Leaderboard offline. Scores still save on this device.';renderLocal();}}
 function remoteMode(){REMOTE=true;document.querySelector('#board h2').textContent='TEAM LEADERBOARD';
@@ -1196,7 +1209,7 @@ function remoteMode(){REMOTE=true;document.querySelector('#board h2').textConten
 function localMode(){LOCAL=true;document.querySelector('#board h2').textContent='YOUR BEST RUNS';boardNote.textContent='Saved on this device';
  ['fName','fEmail','fPhone','fTitle','fConsent'].forEach(id=>{const el=$(id);if(el)el.closest('label').hidden=true;});$('fSubmit').hidden=true;$('fScoreOnly').textContent='SAVE SCORE';
  document.querySelector('#claim h2').textContent='SAVE YOUR RUN';document.querySelector('#claim p').textContent='Add a tag to save this run to your best runs on this device.';renderLocal();}
-function renderOffline(){boardBody.textContent='';const tr=document.createElement('tr');const td=cell('Sign in to claude.ai to see and post scores.','empty');td.colSpan=6;tr.appendChild(td);boardBody.appendChild(tr);}
+function renderOffline(){boardBody.textContent='';const tr=document.createElement('tr');const td=cell('Sign in to claude.ai to see and post scores.','empty');td.colSpan=5;tr.appendChild(td);boardBody.appendChild(tr);}
 
 const form=$('claimForm'),fMsg=$('fMsg');
 function showClaim(F){saved=false;$('claim').hidden=false;$('fTag').value=PLAYER.tag;$('fCompany').value=PLAYER.co;if((REMOTE||LOCAL)&&PLAYER.tag)setTimeout(()=>postScore(false),400);$('share').hidden=true;fMsg.textContent='';fMsg.className='msg';
@@ -1216,7 +1229,7 @@ async function postScore(withLead){const F=S.final;if(!F||(saved&&!withLead))ret
   if(!uid&&!REMOTE){fail('This view can\'t store contact details. Post your score only.');return;}
   lead={name,email,phone,company,title,tag,score:F.score,grade:F.grade,hard:F.hard,at:Date.now(),consent:true};}
  if(REMOTE){const base=SUPA.url.replace(/\/$/,'')+'/rest/v1/',hdr=Object.assign(supaHeaders(),{Prefer:'return=minimal'});fMsg.className='msg';fMsg.textContent=lead?'Sending…':'Posting…';
-   if(!saved){try{const r=await fetch(base+'scores',{method:'POST',headers:hdr,body:JSON.stringify({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard})});
+   if(!saved){try{const r=await fetch(base+'scores',{method:'POST',headers:hdr,body:JSON.stringify({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard,reached:'CLEARED'})});
      if(!r.ok)throw 0;saved=true;$('fScoreOnly').hidden=true;fMsg.textContent='Posted to the team leaderboard.';fetchRemote();buildShare(F,tag);}
     catch(e){fail('Couldn\'t reach the leaderboard. Try again in a moment.');}}
    if(lead){$('fSubmit').disabled=true;try{const r=await fetch(base+'leads',{method:'POST',headers:hdr,body:JSON.stringify({name:lead.name,email:lead.email,phone:lead.phone||null,org:company,title:lead.title||null,tag,score:F.score,grade:F.grade})});
@@ -1264,9 +1277,9 @@ async function loadLeads(){if(!db||!owner)return;const lm=$('leadMsg');lm.classN
  catch(e){lm.className='msg err';lm.textContent='Couldn\'t load leads. Try Refresh.';}}
 function renderLeads(){const b=$('leadBody');b.textContent='';$('leadCount').textContent='('+leadRows.length+')';
  if(!leadRows.length){const tr=document.createElement('tr');const td=cell('No leads yet. Finished players who share their details show up here.','empty');td.colSpan=6;tr.appendChild(td);b.appendChild(tr);return;}
- leadRows.forEach(r=>{const tr=document.createElement('tr');[r.name,r.email,r.company,r.title].forEach(v=>tr.appendChild(cell(String(v||'—'))));tr.appendChild(cell(Number(r.score||0).toLocaleString('en-US'),'num'));
+ leadRows.forEach(r=>{const tr=document.createElement('tr');[r.name,r.email,r.phone,r.company].forEach(v=>tr.appendChild(cell(String(v||'—'))));tr.appendChild(cell(Number(r.score||0).toLocaleString('en-US'),'num'));
   tr.appendChild(cell(r.at?new Date(r.at).toLocaleDateString('en-US'):'—'));b.appendChild(tr);});}
-const csv=()=>{const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';return['Name,Email,Company,Title,Tag,Score,Grade,Hard,Date'].concat(leadRows.map(r=>[r.name,r.email,r.company,r.title,r.tag,r.score,r.grade,r.hard?'yes':'no',r.at?new Date(r.at).toISOString():''].map(q).join(','))).join('\n');};
+const csv=()=>{const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';return['Name,Email,Phone,Organization,Title,Tag,Score,Grade,Hard,Date'].concat(leadRows.map(r=>[r.name,r.email,r.phone,r.company,r.title,r.tag,r.score,r.grade,r.hard?'yes':'no',r.at?new Date(r.at).toISOString():''].map(q).join(','))).join('\n');};
 $('leadsRefresh').addEventListener('click',loadLeads);
 $('leadsCopy').addEventListener('click',()=>copyText(csv(),$('leadMsg')));
 $('leadsSave').addEventListener('click',async()=>{if(!downloads)return;try{await downloads.save({filename:'shadow-keep-leads.csv',data:csv()});$('leadMsg').className='msg';$('leadMsg').textContent='Saved.';}catch(e){$('leadMsg').className='msg';$('leadMsg').textContent='Save cancelled.';}});
