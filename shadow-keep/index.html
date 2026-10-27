@@ -463,7 +463,9 @@ document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;
     if(k==='a'){aQ=true;aDown=true;}else if(k==='b')bQ=true;else if(k==='menu')mQ=true;else if(k==='c')cQ=true;else keys[k]=true;b.classList.add('on');});
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>{if(k==='a')aDown=false;else if(!['b','menu','c'].includes(k))keys[k]=false;b.classList.remove('on');}));
   b.addEventListener('contextmenu',e=>e.preventDefault());});
-cv.addEventListener('pointerdown',e=>{audio();if(e.pointerType==='touch')document.body.classList.add('touch');if(S.mode!=='play'&&S.mode!=='vendor'){aQ=true;}});
+cv.addEventListener('pointerdown',e=>{audio();if(e.pointerType==='touch')document.body.classList.add('touch');
+  if(S.mode==='vendor'&&S.vg){if(S.vg.phase==='decide'){const r=cv.getBoundingClientRect();if((e.clientX-r.left)/r.width<.5)aQ=true;else bQ=true;}else aQ=true;return;}
+  if(S.mode!=='play'){aQ=true;}});
 
 /* ================= HELPERS ================= */
 function solidAt(px,py,oob){const tx=Math.floor(px/T),ty=Math.floor(py/T);if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return oob;return SOLID.has(room().map[ty][tx]);}
@@ -566,12 +568,12 @@ function startVendor(){const list=VENDORS.slice().sort(()=>Math.random()-.5);S.v
 function vendorDecide(allow){const v=S.vg,ven=v.list[v.i],should=!ven.ai||(ven.disc&&ven.test);
  const why=!ven.ai?'No AI inside. Cleared.':ven.disc&&ven.test?'AI disclosed and red-team tested. Cleared.':!ven.disc?'Hidden AI. Undisclosed third-party AI is your risk.':'AI disclosed, but never red-team tested.';
  const right=allow!==null&&allow===should;if(right){v.ok++;sfx(988,.12,'square',300,.05);}else sfx(140,.25,'sawtooth',-60,.06);
- v.res={right,timeout:allow===null,should,why};v.phase='result';v.t=0;}
+ v.res={right,timeout:allow===null,should,why,chose:allow};v.phase='result';v.t=0;}
 function updateVendor(A,B){const v=S.vg;v.t++;
  if(v.phase==='walk'&&v.t>40){v.phase='scan';v.t=0;sfx(600,.4,'triangle',600,.03);}
  else if(v.phase==='scan'&&v.t>55){v.phase='decide';v.t=0;sfx(v.list[v.i].ai?1100:500,.15,'square',0,.04);}
  else if(v.phase==='decide'){if(A)vendorDecide(true);else if(B)vendorDecide(false);else if(v.t>v.limit)vendorDecide(null);}
- else if(v.phase==='result'&&(v.t>110||(v.t>25&&(A||B)))){v.i++;v.t=0;v.phase=v.i>=v.list.length?'end':'walk';
+ else if(v.phase==='result'&&(v.t>150||(v.t>45&&(A||B)))){v.i++;v.t=0;v.phase=v.i>=v.list.length?'end':'walk';
    if(v.phase==='end'){const prev=S.vendorBest;S.vendorBest=Math.max(S.vendorBest,v.ok);
      if(v.ok>=6&&!S.vendorSeal){S.vendorSeal=true;S.p.max++;S.p.hp=S.p.max;v.reward=true;jingle([523,659,784,1047,1319],.1);}else jingle(v.ok>=6?[659,784,988]:[392,330,262],.12);}}
  else if(v.phase==='end'&&v.t>40&&(A||B)){S.mode='play';S.vg=null;
@@ -689,8 +691,9 @@ function talk(R){const n=R.npc,who=n.who;
   if(!S.gear.lantern){say([{who,t:'Halt. You need the Discovery Lantern from the High CISO before you can scan vendors.'}]);return;}
   if(S.vendorSeal){say([{who,t:'The line is validated, Sentinel. The bank and the hospital are through the side doors.'}]);return;}
   say([{who,t:'Eight vendors want through this gate. Some hide AI in their products.'},
-   {who,t:'Your lantern scans each one. ALLOW a vendor with no AI, or with AI that is disclosed AND red-team tested.'},
-   {who,t:'BLOCK everything else. A to allow, B to block. Clear 6 of 8 to earn the Vendor Seal. Ready?'}],startVendor);}}
+   {who,t:'Each card shows what the vendor claims. Your lantern scans what they actually ship.'},
+   {who,t:'ALLOW: no AI found, or AI they disclosed AND red-team tested. BLOCK: hidden AI, or AI that was never red teamed.'},
+   {who,t:'Get 6 of 8 right to earn the Vendor Seal. Ready?'}],startVendor);}}
 function openChest(R){R.chest.open=true;S.gear.blade=true;sfx(440,.1);burst(R.chest.tx*T+8,R.chest.ty*T+8,['#f2c14e','#b07cff'],20,2);
  say([{who:'ARENA BLADE',t:'An automated red-teaming blade. Hold A to charge, then release for a spin attack that deals double damage.'}],()=>{S.big={a:'ARENA BLADE',b:'HOLD A · RELEASE TO SPIN',t:110};jingle([523,784,1047]);});}
 
@@ -1076,19 +1079,21 @@ function drawVendor(){const v=S.vg,f=S.frame,ven=v.list[Math.min(v.i,v.list.leng
  const vx=v.phase==='walk'?Math.round(-40+(v.t/40)*68):28,vi=VENDORS.indexOf(ven)%vendSpr.length;
  g.drawImage(vendSpr[vi],vx,72+((f>>4)%2));
  if(v.phase==='scan'){const sy=72+(v.t/55)*32*1.0;g.fillStyle='rgba(176,124,255,.25)';g.fillRect(vx-6,72,44,sy-72);rect('#b07cff',vx-8,Math.round(sy),48,2);g.drawImage(lanternI,vx+42,Math.round(sy)-6);}
+ if(v.phase==='walk'||v.phase==='scan')txt(v.phase==='scan'?'SCANNING'+'...'.slice(0,(f>>3)%4):'NEXT VENDOR',60,150,'#9d96bb',F8,'center');
  if(v.phase==='decide'||v.phase==='result'){if(ven.ai){g.fillStyle=`rgba(214,58,214,${.25+.15*Math.sin(f*.3)})`;g.beginPath();g.arc(vx+16,96,14,0,7);g.fill();g.drawImage(chip,vx+8,88);txt('AI DETECTED',60,150,'#d63ad6',F8,'center');}
    else txt('NO AI FOUND',60,150,'#b07cff',F8,'center');}
  // card
  rect('#f4e7c5',124,30,124,104);rect('#c9a227',124,30,124,3);rect('#8a7a5a',124,131,124,3);
  g.font=F8;const dark='#2b2016';g.fillStyle=dark;txtD(ven.name,130,46,'#5a1a1a');
  wrap(ven.prod,112).forEach((l,i)=>txtD(l,130,60+i*10,dark));
- txtD('DISCLOSES AI',130,92,'#5a4a3a');txtD(ven.disc?'YES':'NO',242,92,ven.disc?'#3d1a6e':'#a3203a','right');
- txtD('RED TEAMED',130,108,'#5a4a3a');txtD(ven.test?'YES':'NO',242,108,ven.test?'#3d1a6e':'#a3203a','right');
- txtD('VENDOR CARD',130,124,'#8a7a5a');
- if(v.phase==='decide'){const frac=1-v.t/v.limit;rect('#08060f',124,140,124,6);rect(frac>.3?'#b07cff':'#ff3b5c',125,141,122*frac,4);
-   txt('A ALLOW',148,164,'#b07cff',F8,'center');txt('B BLOCK',226,164,'#ff4d6d',F8,'center');}
+ txtD('CLAIMS AI',130,92,'#5a4a3a');txtD(ven.disc?'YES':'NO',242,92,'#2b2016','right');
+ txtD('RED TEAMED',130,108,'#5a4a3a');txtD(!ven.disc?'N/A':ven.test?'YES':'NO',242,108,!ven.disc?'#8a7a5a':ven.test?'#3d1a6e':'#a3203a','right');
+ txtD('WHAT THEY CLAIM',130,124,'#8a7a5a');
+ if(v.phase==='decide'){const frac=1-v.t/v.limit,kbd=!document.body.classList.contains('touch');rect('#08060f',8,158,240,4);rect(frac>.3?'#f2c14e':'#ff3b5c',8,158,240*frac,4);
+   const pulse=(f>>3)%2;rect('#3d1a6e',8,166,116,22);rect(pulse?'#b07cff':'#7b3fe4',8,166,116,2);txt('ALLOW',66,178,'#ffffff',F8,'center');txt(kbd?'SPACE':'A · TAP',66,187,'#c9a8ff',F8,'center');
+   rect('#5a1020',132,166,116,22);rect(pulse?'#ff3b5c':'#a3203a',132,166,116,2);txt('BLOCK',190,178,'#ffffff',F8,'center');txt(kbd?'X':'B · TAP',190,187,'#ffb3c0',F8,'center');}
  if(v.phase==='result'){const r=v.res;rect('rgba(6,4,12,.94)',0,138,W,54);rect(r.right?'#b07cff':'#ff3b5c',0,138,W,2);
-   txt(r.timeout?'TOO SLOW':r.right?'CORRECT':'WRONG CALL',128,154,r.right?'#b07cff':'#ff4d6d',F8,'center');
+   txt(r.timeout?'TOO SLOW':(r.chose?'ALLOWED · ':'BLOCKED · ')+(r.right?'CORRECT':'WRONG CALL'),128,154,r.right?'#b07cff':'#ff4d6d',F8,'center');
    wrap((r.right?'':'Should be '+(r.should?'ALLOWED. ':'BLOCKED. '))+r.why,236).forEach((l,i)=>txt(l,128,168+i*10,'#ece8f7',F8,'center'));}}
 function txtD(s,x,y,c,align='left'){g.font=F8;g.textAlign=align;g.fillStyle=c;g.fillText(s,x,y);g.textAlign='left';}
 function castle(by){g.fillStyle='#120d26';g.fillRect(30,by-40,196,60);
