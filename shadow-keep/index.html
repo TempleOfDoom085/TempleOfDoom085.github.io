@@ -41,7 +41,7 @@ h2{font-family:var(--display);font-size:12px;margin:0;color:var(--teal);letter-s
 .btn[aria-pressed="false"]{color:var(--dim)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn:focus-visible,.pad button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.cab{background:var(--panel);border:3px solid var(--edge);padding:10px;box-shadow:inset 0 0 0 3px #04030a,0 0 40px rgba(176,124,255,.08),0 10px 0 #04030a}
+.cab{position:relative;background:var(--panel);border:3px solid var(--edge);padding:10px;box-shadow:inset 0 0 0 3px #04030a,0 0 40px rgba(176,124,255,.08),0 10px 0 #04030a}
 canvas#game{display:block;width:100%;max-width:100%;aspect-ratio:4/3;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;touch-action:none}
 .legend{color:var(--dim);display:flex;gap:8px 20px;flex-wrap:wrap}
 .legend kbd{font-family:var(--display);font-size:9px;color:var(--ink);background:var(--edge);padding:3px 6px;border-bottom:2px solid #04030a}
@@ -87,6 +87,14 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
 .credit .by b{color:var(--gold);font-weight:normal}
 .credit a{color:var(--teal);text-decoration:none;border-bottom:2px solid #4a2a80}
 .credit a:hover,.credit a:focus-visible{color:var(--gold);border-color:var(--gold)}
+.entry{position:absolute;inset:10px;background:rgba(7,6,13,.94);display:flex;align-items:center;justify-content:center;padding-inline:16px}
+.entry{overflow-y:auto;padding-block:8px}
+.entry form{display:flex;flex-direction:column;gap:8px;width:min(100%,320px);margin-block:auto}
+.entry h2{text-align:center;color:var(--gold);font-size:12px}
+.entry .hint{margin:0;text-align:center;color:var(--dim);font-size:16px;line-height:1.1}
+.entry .msg:empty{display:none}
+.entry input{font-size:19px;padding:4px 8px}
+.entry .row{display:flex;gap:10px}.entry .row .btn{flex:1;padding-block:10px}
 .post{background:var(--field);border:2px solid var(--edge);padding:10px 12px;color:var(--ink);white-space:pre-wrap;font-size:19px}
 </style>
 
@@ -103,7 +111,17 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
     </div>
   </div>
 
-  <div class="cab"><canvas id="game" width="256" height="192" aria-label="Shadow Keep game screen"></canvas></div>
+  <div class="cab"><canvas id="game" width="256" height="192" aria-label="Shadow Keep game screen"></canvas>
+    <div class="entry" id="entry" hidden>
+      <form id="entryForm" novalidate>
+        <h2>WHO GOES THERE?</h2>
+        <p class="hint">Shown on the leaderboard.</p><p class="msg err" id="eMsg" role="status"></p>
+        <label>PLAYER TAG<input type="text" id="eTag" maxlength="12" autocomplete="nickname" placeholder="e.g. SENTINEL7" required></label>
+        <label>ORGANIZATION<input type="text" id="eCo" maxlength="28" autocomplete="organization" placeholder="Your company" required></label>
+        <div class="row"><button class="btn" type="button" id="eBack">BACK</button><button class="btn primary" type="submit">START QUEST</button></div>
+      </form>
+    </div>
+  </div>
 
   <div class="legend">
     <span><kbd>←↑↓→</kbd>/<kbd>WASD</kbd> move</span>
@@ -133,11 +151,12 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
     <p>Post your score to the leaderboard. Add your work details and Cranium will send you the real version: how much shadow AI is running in your organization.</p>
     <form id="claimForm" novalidate>
       <label>PLAYER TAG<input type="text" id="fTag" maxlength="12" autocomplete="nickname" placeholder="e.g. SENTINEL7" required></label>
-      <label>COMPANY<input type="text" id="fCompany" maxlength="28" autocomplete="organization" placeholder="Your company"></label>
+      <label>ORGANIZATION<input type="text" id="fCompany" maxlength="28" autocomplete="organization" placeholder="Your company"></label>
       <label>NAME<input type="text" id="fName" maxlength="60" autocomplete="name" placeholder="First and last name"></label>
       <label>WORK EMAIL<input type="email" id="fEmail" maxlength="90" autocomplete="email" placeholder="you@company.com"></label>
+      <label>PHONE (OPTIONAL)<input type="tel" id="fPhone" maxlength="20" autocomplete="tel" placeholder="555-555-5555"></label>
       <label>TITLE<input type="text" id="fTitle" maxlength="60" autocomplete="organization-title" placeholder="e.g. CISO"></label>
-      <label class="consent"><input type="checkbox" id="fConsent"><span>Cranium may contact me about AI security. Only Cranium sees these details; the leaderboard shows your tag, company and score.</span></label>
+      <label class="consent"><input type="checkbox" id="fConsent"><span>Cranium may contact me about AI security. Only Cranium sees these details; the leaderboard shows your tag, organization and score.</span></label>
       <div class="actions">
         <button class="btn primary" type="submit" id="fSubmit">SEND REPORT + POST SCORE</button>
         <button class="btn" type="button" id="fScoreOnly">POST SCORE ONLY</button>
@@ -432,6 +451,7 @@ const VENDORS=[
 
 /* ================= STATE ================= */
 let S,curHard=false;
+const PLAYER={tag:'',co:''};try{const pj=JSON.parse(localStorage.getItem('shadowkeep-player')||'{}');PLAYER.tag=String(pj.tag||'').slice(0,12);PLAYER.co=String(pj.co||'').slice(0,28);}catch(e){}
 function newGame(mode='title',hard=false){curHard=hard;
  S={mode,hard,frame:0,rooms:makeRooms(),rx:1,ry:1,found:0,scrolls:0,threats:0,hits:0,deaths:0,playT:0,intelI:Math.floor(Math.random()*INTEL.length),
   gear:{lantern:false,blade:false,shield:false},talked:{},vendorBest:0,vendorSeal:false,vg:null,hydraDelay:0,
@@ -588,7 +608,8 @@ function update(){
  if(S.mode==='transform'){updateTransform();return;}
  if(S.mode==='cine'){updateCine();updateAmbient(room());return;}
  if(S.mode==='title'){setSong(ac?'main':null);if(B){S.hard=!S.hard;sfx(S.hard?220:660,.12,'square',S.hard?-80:200,.05);}
-   if(A){const h=S.hard;newGame('intro',h);jingle([523,659,784,1047]);}return;}
+   if(A)openEntry();return;}
+ if(S.mode==='entry')return;
  if(S.mode==='intro'){S.intro.t++;setSong('dark');if(A){if(S.intro.t<20)return;S.intro.scene++;S.intro.t=0;sfx(660,.05);}
    if(S.intro.t>240){S.intro.scene++;S.intro.t=0;}if(S.intro.scene>3){S.mode='play';S.banner={t:120,stat:nextIntel()};}return;}
  if(S.mode==='win'){S.winT++;if(A&&S.winT>90){const h=S.hard;hideClaim();newGame('title',h);}return;}
@@ -875,12 +896,12 @@ function drawWorld(R,ox,oy){const f=S.frame,p=S.p;g.save();g.translate(ox,oy+HUD
  g.restore();}
 function drawOver(){const f=S.frame,t=S.overT;rect('rgba(24,0,8,.92)',0,0,W,H);
  txt('DEFENSES BREACHED',128,24,'#ff4d6d',F8,'center');
- txt('SHADOW AI '+S.found+'/'+NASSET+'  ·  '+fmtT(S.playT),128,38,'#9d96bb',F8,'center');
+ txt((PLAYER.tag?PLAYER.tag+'  ·  ':'')+'AI '+S.found+'/'+NASSET+'  ·  '+fmtT(S.playT),128,38,'#9d96bb',F8,'center');
  rect('#0b0812',16,48,224,100);g.strokeStyle='#f2c14e';g.lineWidth=1;g.strokeRect(16.5,48.5,223,99);
  txt(REMOTE?'TEAM LEADERBOARD':LOCAL?'YOUR BEST RUNS':'TOP SENTINELS',128,62,'#f2c14e',F8,'center');
  if(!boardLive)txt('LOADING SCORES',128,100,'#5d5680',F8,'center');
  else if(!topList.length){txt('NO SCORES YET',128,92,'#9d96bb',F8,'center');txt(LOCAL?'FINISH A RUN TO SET ONE':'BE THE FIRST TO FINISH',128,106,'#b07cff',F8,'center');}
- else topList.forEach((r,i)=>{if(t<8+i*6)return;const y=78+i*14,col=i===0?'#f2c14e':'#ece8f7';
+ else topList.forEach((r,i)=>{if(t<8+i*6)return;const y=78+i*14,mine=PLAYER.tag&&r.tag===PLAYER.tag,col=mine?'#c9a8ff':i===0?'#f2c14e':'#ece8f7';if(mine)rect('rgba(176,124,255,.18)',20,y-9,216,12);
    txt(String(i+1),26,y,col);txt(r.tag,40,y,col);txt(r.grade,170,y,r.grade==='S'?'#b07cff':col,F8,'center');txt(r.score.toLocaleString('en-US'),232,y,col,F8,'right');if(r.hard)rect('#ff3b5c',178,y-6,3,3);});
  const need=topList.length?topList[topList.length-1].score:0;
  txt(topList.length>=5?'BEAT '+need.toLocaleString('en-US')+' TO MAKE THE BOARD':LOCAL?'FINISH THE QUEST TO SAVE A SCORE':'FINISH THE QUEST TO POST A SCORE',128,162,'#b07cff',F8,'center');
@@ -1108,7 +1129,8 @@ function drawTitle(){const f=S.frame;const gr=g.createLinearGradient(0,0,0,H);gr
  txt('CRANIUM',128,44,'#f2c14e',F24,'center');rect('#b07cff',40,52,176,2);
  txt('SHADOW KEEP',128,70,'#ece8f7',F16,'center');txt('AN AI SECURITY QUEST',128,84,'#9d96bb',F8,'center');txt('A GAME BY BRIAN TEMPLE',128,96,'#7d6a9a',F8,'center');
  if(topScore){rect('rgba(6,4,12,.75)',36,110,184,14);txt('TOP  '+topScore.tag+'  '+topScore.score.toLocaleString('en-US'),128,120,'#f2c14e',F8,'center');}
- g.drawImage(knight[(f>>4)%2],120,146);
+ g.drawImage(knight[(f>>4)%2],120,138);
+ if(PLAYER.tag)txt('PLAYER  '+PLAYER.tag,128,160,'#c9a8ff',F8,'center');
  txt('B · HARD MODE: '+(S.hard?'ON':'OFF'),128,174,S.hard?'#ff4d6d':'#9d96bb',F8,'center');
  if((f>>5)%2)txt('PRESS A TO START',128,188,'#ffffff',F8,'center');}
 const SCENES=['THE KINGDOM OF ENTERPRISE EMBRACED AI. EVERY TEAM WANTED IN.','TEAMS LAUNCHED MODELS NO ONE APPROVED. NOBODY KEPT AN INVENTORY.','IN THE SHADOWS, A ROGUE MODEL GREW, FED BY A POISONED SUPPLY CHAIN.','ONE SENTINEL WAS CALLED TO RESTORE VISIBILITY.'];
@@ -1165,41 +1187,45 @@ async function fetchRemote(){try{const r=await fetch(SUPA.url.replace(/\/$/,'')+
   if(!r.ok)throw 0;const rows=await r.json();renderBoard((Array.isArray(rows)?rows:[]).map(o=>({data:()=>o})));boardNote.textContent='Live · updates every minute';}
  catch(e){boardNote.textContent='Leaderboard offline. Scores still save on this device.';renderLocal();}}
 function remoteMode(){REMOTE=true;document.querySelector('#board h2').textContent='TEAM LEADERBOARD';
- ['fName','fEmail','fTitle','fConsent'].forEach(id=>{const el=$(id);if(el)el.closest('label').hidden=true;});$('fSubmit').hidden=true;$('fScoreOnly').textContent='POST SCORE';
- document.querySelector('#claim h2').textContent='POST YOUR RUN';document.querySelector('#claim p').textContent='Add a tag and post your score to the team leaderboard.';
+ $('fScoreOnly').textContent='POST SCORE';$('fSubmit').textContent='SEND MY AI RISK REPORT';
+ document.querySelector('#claim p').textContent='Your score posts to the team leaderboard automatically. Want the real version? Leave your details and Cranium will send how much shadow AI is running in your organization.';
  fetchRemote();setInterval(()=>{if(!document.hidden)fetchRemote();},60000);}
 function localMode(){LOCAL=true;document.querySelector('#board h2').textContent='YOUR BEST RUNS';boardNote.textContent='Saved on this device';
- ['fName','fEmail','fTitle','fConsent'].forEach(id=>{const el=$(id);if(el)el.closest('label').hidden=true;});$('fSubmit').hidden=true;$('fScoreOnly').textContent='SAVE SCORE';
+ ['fName','fEmail','fPhone','fTitle','fConsent'].forEach(id=>{const el=$(id);if(el)el.closest('label').hidden=true;});$('fSubmit').hidden=true;$('fScoreOnly').textContent='SAVE SCORE';
  document.querySelector('#claim h2').textContent='SAVE YOUR RUN';document.querySelector('#claim p').textContent='Add a tag to save this run to your best runs on this device.';renderLocal();}
 function renderOffline(){boardBody.textContent='';const tr=document.createElement('tr');const td=cell('Sign in to claude.ai to see and post scores.','empty');td.colSpan=6;tr.appendChild(td);boardBody.appendChild(tr);}
 
 const form=$('claimForm'),fMsg=$('fMsg');
-function showClaim(F){saved=false;$('claim').hidden=false;$('share').hidden=true;fMsg.textContent='';fMsg.className='msg';
+function showClaim(F){saved=false;$('claim').hidden=false;$('fTag').value=PLAYER.tag;$('fCompany').value=PLAYER.co;if((REMOTE||LOCAL)&&PLAYER.tag)setTimeout(()=>postScore(false),400);$('share').hidden=true;fMsg.textContent='';fMsg.className='msg';
  $('finalLine').textContent=F.grade+' · '+F.score.toLocaleString('en-US')+' PTS';$('fSubmit').disabled=false;$('fScoreOnly').disabled=false;
  if(!db&&!LOCAL){fMsg.textContent='Saving is unavailable in this view, but you can still share your run.';buildShare(F);}
  setTimeout(()=>$('claim').scrollIntoView({behavior:'smooth',block:'start'}),2600);}
 function hideClaim(){$('claim').hidden=true;$('share').hidden=true;}
 const clean=(s,n)=>String(s||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,n);
-async function postScore(withLead){const F=S.final;if(!F||saved)return;
+async function postScore(withLead){const F=S.final;if(!F||(saved&&!withLead))return;
  const tag=clean($('fTag').value,12).toUpperCase(),company=clean($('fCompany').value,28);
  if(!tag){fail('Add a player tag for the leaderboard.');$('fTag').focus();return;}
  let lead=null;
  if(withLead){const name=clean($('fName').value,60),email=clean($('fEmail').value,90),title=clean($('fTitle').value,60);
   if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){fail('Add your name and a valid work email, or post your score only.');return;}
   if(!$('fConsent').checked){fail('Tick the box so Cranium can send your report.');return;}
-  if(!uid){fail('This view can\'t store contact details. Post your score only.');return;}
-  lead={name,email,company,title,tag,score:F.score,grade:F.grade,hard:F.hard,at:Date.now(),consent:true};}
- if(REMOTE){$('fScoreOnly').disabled=true;fMsg.className='msg';fMsg.textContent='Posting…';
-   try{const r=await fetch(SUPA.url.replace(/\/$/,'')+'/rest/v1/scores',{method:'POST',headers:Object.assign(supaHeaders(),{Prefer:'return=minimal'}),body:JSON.stringify({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard})});
-    if(!r.ok)throw 0;saved=true;fMsg.textContent='Posted to the team leaderboard.';fetchRemote();buildShare(F,tag);}
-   catch(e){$('fScoreOnly').disabled=false;fail('Couldn\'t reach the leaderboard. Try again in a moment.');}
+  const phone=clean($('fPhone').value,20).replace(/[^0-9+()\-. ]/g,'');
+  if(!uid&&!REMOTE){fail('This view can\'t store contact details. Post your score only.');return;}
+  lead={name,email,phone,company,title,tag,score:F.score,grade:F.grade,hard:F.hard,at:Date.now(),consent:true};}
+ if(REMOTE){const base=SUPA.url.replace(/\/$/,'')+'/rest/v1/',hdr=Object.assign(supaHeaders(),{Prefer:'return=minimal'});fMsg.className='msg';fMsg.textContent=lead?'Sending…':'Posting…';
+   if(!saved){try{const r=await fetch(base+'scores',{method:'POST',headers:hdr,body:JSON.stringify({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard})});
+     if(!r.ok)throw 0;saved=true;$('fScoreOnly').hidden=true;fMsg.textContent='Posted to the team leaderboard.';fetchRemote();buildShare(F,tag);}
+    catch(e){fail('Couldn\'t reach the leaderboard. Try again in a moment.');}}
+   if(lead){$('fSubmit').disabled=true;try{const r=await fetch(base+'leads',{method:'POST',headers:hdr,body:JSON.stringify({name:lead.name,email:lead.email,phone:lead.phone||null,org:company,title:lead.title||null,tag,score:F.score,grade:F.grade})});
+     if(!r.ok)throw 0;fMsg.className='msg';fMsg.textContent='Report request sent. Cranium will be in touch.';}
+    catch(e){$('fSubmit').disabled=false;fail('Couldn\'t send your details. Try again in a moment.');}}
    try{const a=loadLocal();a.push({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard,at:Date.now()});localStorage.setItem(LKEY,JSON.stringify(a.sort((x,y)=>y.score-x.score).slice(0,25)));}catch(e){}
    return;}
  if(LOCAL){try{const a=loadLocal();a.push({tag,company,score:F.score,grade:F.grade,time:F.time,hard:F.hard,at:Date.now()});a.sort((x,y)=>y.score-x.score);localStorage.setItem(LKEY,JSON.stringify(a.slice(0,25)));}catch(e){}
    saved=true;fMsg.className='msg';fMsg.textContent='Saved to your best runs.';renderLocal();buildShare(F,tag);return;}
  if(!db){fail('Saving is unavailable in this view.');return;}
  $('fSubmit').disabled=true;$('fScoreOnly').disabled=true;fMsg.className='msg';fMsg.textContent='Saving…';
- try{await db.collection('scores').add({tag,company,score:F.score,grade:F.grade,time:F.time,sec:F.sec,hard:F.hard,frameworks:F.frameworks,vendors:F.vendors,at:Date.now()});
+ try{if(!saved)await db.collection('scores').add({tag,company,score:F.score,grade:F.grade,time:F.time,sec:F.sec,hard:F.hard,frameworks:F.frameworks,vendors:F.vendors,at:Date.now()});
   if(lead){await db.collection('leads/'+uid+'/entries').add(lead);try{await db.doc('leadIndex/'+uid).set({at:Date.now()});}catch(e){}}
   saved=true;fMsg.textContent=lead?'Score posted. Report request sent to Cranium.':'Score posted to the leaderboard.';buildShare(F,tag);if(owner)loadLeads();}
  catch(e){$('fSubmit').disabled=false;$('fScoreOnly').disabled=false;
@@ -1242,6 +1268,15 @@ $('leadsRefresh').addEventListener('click',loadLeads);
 $('leadsCopy').addEventListener('click',()=>copyText(csv(),$('leadMsg')));
 $('leadsSave').addEventListener('click',async()=>{if(!downloads)return;try{await downloads.save({filename:'shadow-keep-leads.csv',data:csv()});$('leadMsg').className='msg';$('leadMsg').textContent='Saved.';}catch(e){$('leadMsg').className='msg';$('leadMsg').textContent='Save cancelled.';}});
 
+function openEntry(){S.mode='entry';const e=$('entry');e.hidden=false;$('eTag').value=PLAYER.tag;$('eCo').value=PLAYER.co;sfx(660,.06);setTimeout(()=>{try{$('eTag').focus();}catch(_){}},50);}
+function closeEntry(){$('entry').hidden=true;}
+$('eBack').addEventListener('click',()=>{closeEntry();S.mode='title';});
+$('entryForm').addEventListener('submit',e=>{e.preventDefault();audio();
+ const t0=clean($('eTag').value,12).toUpperCase(),c0=clean($('eCo').value,28);if(!t0||!c0){$('eMsg').textContent=!t0?'Add a player tag.':'Add your organization.';$(!t0?'eTag':'eCo').focus();return;}$('eMsg').textContent='';
+ PLAYER.tag=t0;PLAYER.co=c0;
+ try{localStorage.setItem('shadowkeep-player',JSON.stringify(PLAYER));}catch(_){}
+ closeEntry();try{document.activeElement&&document.activeElement.blur();}catch(_){}
+ const h=S.hard;newGame('intro',h);jingle([523,659,784,1047]);});
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0;
 function loop(now){acc+=Math.min(100,now-last);last=now;while(acc>=1000/60){update();acc-=1000/60;}draw();requestAnimationFrame(loop);}
