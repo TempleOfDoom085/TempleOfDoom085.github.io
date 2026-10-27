@@ -131,7 +131,7 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
     <span><kbd>SPACE</kbd> talk · strike · hold to charge</span>
     <span><kbd>X</kbd> 360° spin</span>
     <span><kbd>I</kbd> AI inventory</span>
-    <span><kbd>C</kbd> X-ray (Cranium Mode)</span>
+    <span><kbd>C</kbd> AgentSensor scan (Cranium Mode)</span>
   </div>
 
   <div class="pad" aria-label="Touch controls">
@@ -143,7 +143,7 @@ input[type=text],input[type=email]{font-family:var(--body);font-size:22px;color:
       <button class="d" data-k="down" aria-label="Down">▼</button>
     </div>
     <div class="face">
-      <button class="cb locked" id="xrBtn" data-k="c" aria-label="X-ray">X-RAY</button>
+      <button class="cb locked" id="xrBtn" data-k="c" aria-label="AgentSensor scan">SCAN</button>
       <button class="bb" data-k="b" aria-label="Spin attack or block">B</button>
       <button class="ab" data-k="a" aria-label="Action">A</button>
     </div>
@@ -409,7 +409,7 @@ function makeRooms(){return{
   "######bGGb######","#..............#","#.p.mm....mm.p.#","#...mm....mm...#","t..............t","................",
   "t..............t","#.....cccc.....#","#.p...cccc...p.#","#.....cccc.....#","#######..#######"]),
   npc:{x:112,y:46,spr:cisoH,who:'HIGH CISO',key:'ciso'},scroll:{tx:2,ty:9,name:'EU AI ACT'},enemies:[],items:[]},
- '0,1':{key:'0,1',name:'CODE CATACOMBS',theme:'cata',pal:PALS.cata,dark:true,hint:['PROMPT-INJECTION GOBLINS','They hurl malicious prompts. Your lantern lights the dark.'],map:M([
+ '0,1':{key:'0,1',name:'CODE CATACOMBS',theme:'cata',pal:PALS.cata,dark:true,hint:['PROMPT-INJECTION GOBLINS','They hurl malicious prompts. Detect AI lights the dark.'],map:M([
   "wwwwwww..wwwwwww","w.....w..w.....w","w.p...w..w...p.w","w..............w","w.ww...pp...ww.w","w...............",
   "w.ww...pp...ww.w","w..............w","w.p..........p.w","wt............tw","wwwwwwwwwwwwwwww"]),
   model:{tx:14,ty:1,src:'CODE',desc:'LLM call hidden in a Python repo'},scroll:{tx:1,ty:7,name:'NIST AI RMF'},
@@ -667,7 +667,7 @@ function update(){
  else{if(p.charge>=CH()){p.spin=22;p.spinDmg=2;p.hitSet=new Set();p.atk=0;shake(2);sfx(260,.25,'sawtooth',500,.05);burst(c.x,c.y,['#b07cff','#ffffff'],18,2.6);}p.charge=0;}
  if(B&&p.scd<=0&&p.spin<=0){p.spin=18;p.spinDmg=1;p.hitSet=new Set();p.atk=0;p.charge=0;p.scd=50;sfx(420,.16,'sawtooth',380,.045);burst(c.x,c.y,'#ffffff',8,1.6);
   if(S.gear.shield){p.shield=30;sfx(700,.12,'triangle',300,.04);}}
- if(C){if(!S.cranium){if(S.shieldMsg<=0){toast('X-RAY LOCKED','Inventory all '+NASSET+' shadow AI to unlock Cranium Mode.',170);S.shieldMsg=300;}}
+ if(C){if(!S.cranium){if(S.shieldMsg<=0){toast('AGENTSENSOR LOCKED','Inventory all '+NASSET+' shadow AI to unlock Cranium Mode.',170);S.shieldMsg=300;}}
   else if(S.xr>=100&&S.xray<=0){S.xray=180;S.xr=0;shake(5);sfx(150,.8,'sawtooth',1200,.06);sfx(60,.8,'sine',-20,.1);}
   else if(S.xray<=0){floatT(c.x,c.y-14,'CHARGING '+Math.floor(S.xr)+'%','#b07cff');sfx(300,.05,'square',0,.02);}}
  if(S.cranium){if(S.xray>0){S.xray--;if(S.xray===150||S.xray===100||S.xray===50)xrayPulse(S.xray===150);}else S.xr=Math.min(100,S.xr+.04);
@@ -693,13 +693,13 @@ function xrayPulse(first){const R=room(),c=pc();S.pulse=24;S.ab=1.2;shake(5);sfx
  if(first){for(const b of S.bolts)if(!b.friendly)burst(b.x,b.y,'#b07cff',3,.8);S.bolts=S.bolts.filter(b=>b.friendly);}
  for(const e of R.enemies.slice())if(e.alive)damageEnemy(e,2);
  if(R.boss){const b=S.boss,h=S.hydra;
-  if(b.active&&!b.dead){b.shield=false;b.st=0;bossHit(2,'X-RAYED');}
+  if(b.active&&!b.dead){b.shield=false;b.st=0;bossHit(2,'SCANNED');}
   else if(h.active&&!h.dead){for(const hd of h.heads)if(hd.alive)hydraHitHead(hd,2);if(hydraOpen()&&S.mode==='play')hydraHitCore(2);}}}
 function updateTransform(){S.tf++;const c=pc(),t=S.tf;
  if(t<90&&t%2===0){const a=Math.random()*7,r=64;S.parts.push({x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r,vx:-Math.cos(a)*2.3,vy:-Math.sin(a)*2.3,l:26,c:['#b07cff','#d63ad6','#ffffff'][t%3]});}
  if(t%10===0&&t<90)sfx(180+t*9,.1,'square',0,.03);
  if(t===90){S.cranium=true;S.xr=100;shake(9);burst(c.x,c.y,['#b07cff','#ffffff','#d63ad6'],70,3.6);sfx(70,.9,'sawtooth',700,.08);jingle([523,659,784,1047,1319,1568],.07);if(xrBtn)xrBtn.classList.remove('locked');}
- if(t>210){S.mode='play';S.big={a:'CRANIUM MODE',b:'PRESS C · X-RAY',t:150};toast('ALL '+NASSET+' SHADOW AI INVENTORIED','X-ray recharges as you fight. The Arena gate is open, north of the CISO.',330);}}
+ if(t>210){S.mode='play';S.big={a:'CRANIUM MODE',b:'PRESS C · AGENTSENSOR SCAN',t:150};toast('ALL '+NASSET+' SHADOW AI INVENTORIED','AgentSensor recharges as you fight. The Arena gate is open, north of the CISO.',330);}}
 function updateFX(){for(const q of S.parts){q.x+=q.vx;q.y+=q.vy;q.vx*=.92;q.vy*=.92;q.l--;}S.parts=S.parts.filter(q=>q.l>0);
  for(const f of S.floats){f.y-=.4;f.l--;}S.floats=S.floats.filter(f=>f.l>0);if(S.shake>0)S.shake*=.85;if(S.shake<.3)S.shake=0;if(S.pulse>0)S.pulse--;S.lb+=(S.lbT-S.lb)*.12;S.ab*=.88;if(S.flash>0)S.flash--;for(const r of S.rings){r.r+=2.2;r.l--;}S.rings=S.rings.filter(r=>r.l>0);if(S.card){S.card.t++;if(S.card.t>120)S.card=null;}if(S.trans){S.trans.t++;if(S.trans.t>=S.trans.n)S.trans=null;}}
 function respawn(){const p=S.p;p.hp=p.max;p.inv=90;p.kx=p.ky=0;p.charge=p.spin=p.shield=0;S.rx=1;S.ry=1;p.x=123;p.y=120;S.bolts=[];S.parts=[];S.floats=[];S.banner={t:70,stat:''};S.big=null;S.hydraDelay=0;S.cracks=null;S.zoom=1;S.lbT=0;S.cine=null;S.trans=null;S.card=null;S.amb=[];
@@ -709,9 +709,9 @@ function talk(R){const n=R.npc,who=n.who;
  if(n.key==='ciso'){
   if(!S.talked.ciso)say([{who,t:'Sentinel! The kingdom adopted AI faster than anyone could track it.'},
     {who,t:'Shadow AI now hides in our code, our cloud, our vendors, our agents, even the bank and the hospital.'},
-    {who,t:'Take the Discovery Lantern. It reveals the AI no one inventoried. Strike with A, spin with B.'},
+    {who,t:'Take Detect AI, our shadow-AI lantern. It reveals the AI no one inventoried. Strike with A, spin with B.'},
     {who,t:'Find all '+NASSET+' shadow models and map our frameworks. Then face what waits in THE ARENA.'}],
-    ()=>{S.talked.ciso=true;S.gear.lantern=true;jingle([523,659,784,1047],.08);S.big={a:'DISCOVERY LANTERN',b:'HIDDEN AI NOW GLOWS',t:110};});
+    ()=>{S.talked.ciso=true;S.gear.lantern=true;jingle([523,659,784,1047],.08);S.big={a:'DETECT AI ONLINE',b:'HIDDEN AI NOW GLOWS',t:110};});
   else if(S.found<NASSET){const all=[['0,1','the Code Catacombs (west)'],['2,1','the Cloud Keep (east)'],['2,0','the Vendor Bazaar (north of the Cloud Keep)'],['0,0','the Agent Spire (north of the Catacombs)'],['0,2','the Bank Vault (through the Vendor Gate, south)'],['2,2','the Hospital Wing (through the Vendor Gate, south)']];
    const left=all.filter(([k])=>!S.rooms[k].model.found).map(x=>x[1]);
    say([{who,t:(NASSET-S.found)+' shadow model'+(NASSET-S.found===1?'':'s')+' remain. Search '+left.slice(0,2).join(' and ')+'.'}]);}
@@ -719,14 +719,14 @@ function talk(R){const n=R.npc,who=n.who;
  else if(n.key==='vendor'){
   if(!S.talked.vendor)say([{who,t:'Every vendor in this bazaar swears their product has no AI inside.'},
     {who,t:'Trust, but verify. Third-party AI is still your risk.'},
-    {who,t:'Take this Governance Shield. It upgrades your B spin: now it also reflects attacks back at their source.'}],
-    ()=>{S.talked.vendor=true;S.gear.shield=true;jingle([392,523,659,784],.08);S.big={a:'GOVERNANCE SHIELD',b:'B SPIN NOW REFLECTS',t:110};});
-  else say([{who,t:S.rooms['2,0'].model.found?'You found the hidden chatbot. Validate every vendor like that.':'One of these stalls is hiding an AI feature. Your lantern will show it.'}]);}
+    {who,t:'Take this Arena Shield. It upgrades your B spin: now it also reflects attacks back at their source.'}],
+    ()=>{S.talked.vendor=true;S.gear.shield=true;jingle([392,523,659,784],.08);S.big={a:'ARENA SHIELD',b:'B SPIN NOW REFLECTS',t:110};});
+  else say([{who,t:S.rooms['2,0'].model.found?'You found the hidden chatbot. Validate every vendor like that.':'One of these stalls is hiding an AI feature. Detect AI will show it.'}]);}
  else if(n.key==='gate'){
-  if(!S.gear.lantern){say([{who,t:'Halt. You need the Discovery Lantern from the High CISO before you can scan vendors.'}]);return;}
+  if(!S.gear.lantern){say([{who,t:'Halt. You need Detect AI from the High CISO before you can scan vendors.'}]);return;}
   if(S.vendorSeal){say([{who,t:'The line is validated, Sentinel. The bank and the hospital are through the side doors.'}]);return;}
   say([{who,t:'Eight vendors want through this gate. Some hide AI in their products.'},
-   {who,t:'Each card shows what the vendor claims. Your lantern scans what they actually ship.'},
+   {who,t:'Each card shows what the vendor claims. Detect AI scans what they actually ship.'},
    {who,t:'ALLOW: no AI found, or AI they disclosed AND red-team tested. BLOCK: hidden AI, or AI that was never red teamed.'},
    {who,t:'Get 6 of 8 right to earn the Vendor Seal. Ready?'}],startVendor);}}
 function openChest(R){R.chest.open=true;S.gear.blade=true;sfx(440,.1);burst(R.chest.tx*T+8,R.chest.ty*T+8,['#f2c14e','#b07cff'],20,2);
@@ -1058,7 +1058,7 @@ function drawXray(R){const f=S.frame,t=S.xray;
   if(h.active&&!h.dead){for(const hd of h.heads)if(hd.alive)tgt(hd.x,hd.y,9,hd.label);tgt(h.x,h.y+6,16,'CORE');}}
  drawPlayer();
  const sy=(f*3)%PH;g.fillStyle='rgba(176,124,255,.18)';g.fillRect(0,sy-10,W,10);rect('#b07cff',0,sy,W,2);
- rect('rgba(2,8,18,.9)',4,4,92,15);txt('X-RAY',8,15,'#b07cff');rect('#2a1450',50,9,42,5);rect('#b07cff',50,9,42*t/180,5);}
+ rect('rgba(2,8,18,.9)',4,4,146,15);txt('AGENTSENSOR',8,15,'#b07cff');rect('#2a1450',100,9,46,5);rect('#b07cff',100,9,46*t/180,5);}
 function drawTransform(){const t=S.tf,c=pc(),pr=Math.min(1,t/90);
  g.fillStyle=`rgba(4,3,10,${Math.min(.8,t/40)})`;g.fillRect(0,0,W,PH);
  g.globalCompositeOperation='lighter';glow(c.x,c.y,30+pr*40,'176,124,255',.25+pr*.35);glow(c.x,c.y,18,'214,58,214',.3*pr);g.globalCompositeOperation='source-over';
