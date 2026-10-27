@@ -571,34 +571,6 @@ body.cursor-click #cursor-ring {
   transform: translateY(0);
 }
 
-/* ── YOU DIED OVERLAY ── */
-#you-died-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0);
-  z-index: 999998; display: flex; align-items: center;
-  justify-content: center; flex-direction: column;
-  pointer-events: none; transition: background 1.8s ease;
-}
-#you-died-overlay.active { background: rgba(0,0,0,0.94); pointer-events: all; }
-#you-died-inner { text-align: center; opacity: 0; transform: scale(0.96); transition: opacity 1.1s ease 1s, transform 1.1s ease 1s; }
-#you-died-overlay.active #you-died-inner { opacity: 1; transform: scale(1); }
-.you-died-text {
-  font-family: var(--serif); font-size: clamp(4rem, 10vw, 8rem);
-  font-weight: 300; color: var(--crimson); letter-spacing: 0.3em;
-  text-shadow: 0 0 60px rgba(139,0,0,0.9), 0 0 140px rgba(139,0,0,0.4);
-  margin-bottom: 0.8rem;
-}
-.you-died-sub {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.35em;
-  color: rgba(245,242,236,0.35); text-transform: uppercase; margin-bottom: 2.5rem;
-}
-#you-died-overlay .yd-btn {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em;
-  text-transform: uppercase; border: 1px solid rgba(139,0,0,0.5);
-  color: rgba(245,242,236,0.6); background: none; padding: 0.75rem 2.5rem;
-  cursor: none; transition: all 0.25s;
-}
-#you-died-overlay .yd-btn:hover { background: rgba(139,0,0,0.2); color: var(--paper); border-color: var(--crimson); }
-
 /* ── KONAMI OVERLAY ── */
 #konami-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.96);
@@ -1492,3 +1464,55 @@ html.stealth-mode #rain-indicator {
   outline-offset: 2px;
 }
 #main-content:focus { outline: none; }
+
+/* ── MOBILE REVAMP (Oct 2026) ────────────────────────────────────────────────
+   Phones were getting a 40,000px page: 21 full-size tool cards stacked one per
+   row, floating widgets on top of the text, a nav that scrolled away, and
+   desktop-sized type. This block tightens all of that for small screens only. */
+@media (max-width: 768px) {
+  html { font-size: 16px; scroll-padding-top: 64px; }
+  body { font-size: 16px; line-height: 1.65; padding-top: 58px; }
+
+  /* Nav stays on screen so the menu is always one tap away */
+  nav, nav.scrolled { position: fixed; top: 0; left: 0; right: 0; padding: 0.9rem 1.1rem; }
+  .nav-links { max-height: calc(100vh - 58px); overflow-y: auto; }
+
+  /* Battery-heavy ambient effects off on phones */
+  #auroraCanvas, #clickCanvas, #rain-canvas, #rain-indicator,
+  .card-shine, .holo-foil, .tool-card-glow { display: none !important; }
+
+  /* Floating clutter that sat on top of the content */
+  #audioWidget, #vrToggle, #visitorRecon { display: none !important; }
+  .back-to-top { width: 40px; height: 40px; right: 14px; bottom: 14px; }
+
+  /* Tighter rhythm */
+  section { padding: 3rem 1.1rem; }
+  .section-title { font-size: clamp(1.7rem, 8vw, 2.3rem); line-height: 1.2; margin-bottom: 1.5rem; }
+  .hero-left, .hero-right { padding: 2.75rem 1.25rem; }
+
+  /* Tools: compact two-column tiles instead of 21 half-screen cards */
+  .tools-grid-main { grid-template-columns: 1fr 1fr !important; gap: 0.6rem; }
+  .tools-grid-main .cyber-tool-card { padding: 0.95rem 0.85rem; gap: 0.2rem; min-height: 0; }
+  .tools-grid-main .tool-card-icon { font-size: 1.25rem; margin: 0; }
+  .tools-grid-main .tool-card-name { font-size: 0.95rem; line-height: 1.25; letter-spacing: 0.01em; }
+  .tools-grid-main .tool-card-label { font-size: 0.55rem; }
+  .tools-grid-main .tool-card-desc,
+  .tools-grid-main .tool-card-tags,
+  .tools-grid-main .tool-card-cta { display: none; }
+  /* Show the first 8; the full set lives on the Tools Hub */
+  .tools-grid-main > .cyber-tool-card:nth-of-type(n+9) { display: none; }
+
+  /* Featured pages: short rows — name, one line of description, link */
+  .featured-grid { grid-template-columns: 1fr !important; gap: 0.75rem; }
+  .featured-grid .cyber-tool-card { padding: 1.1rem 1.1rem 1rem; gap: 0.25rem; }
+  .featured-grid .tool-card-icon { font-size: 1.3rem; margin: 0; }
+  .featured-grid .tool-card-name { font-size: 1.1rem; }
+  .featured-grid .tool-card-tags { display: none; }
+  .featured-grid .tool-card-desc {
+    font-size: 0.85rem; margin: 0.1rem 0 0.4rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* Hover-only tilt/glow effects do nothing useful on touch */
+  .cyber-tool-card, .project-item { transform: none !important; }
+}

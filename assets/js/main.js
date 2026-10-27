@@ -30,7 +30,7 @@ const fadeObserver = new IntersectionObserver((entries) => {
       entry.target.classList.add('visible');
     }
   });
-}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+}, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 
 // Close hamburger when a nav link is clicked on mobile
@@ -273,7 +273,7 @@ const staggerObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) entry.target.classList.add('visible');
   });
-}, { threshold: 0.1 });
+}, { threshold: 0 });
 document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.observe(el));
 
 // ── v12.0: CINEMATIC ENGINE ──
@@ -580,14 +580,6 @@ document.querySelectorAll('.stagger-children').forEach(el => staggerObserver.obs
   requestAnimationFrame(draw);
 })();
 
-// YOU DIED overlay — triggered only from game code, not on exit-intent
-
-function closeYouDied() {
-  const overlay = document.getElementById('you-died-overlay');
-  overlay.classList.remove('active');
-  setTimeout(() => { overlay.style.display = 'none'; }, 1800);
-}
-
 // ── v9.1: KONAMI CODE ──
 (function() {
   const SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
@@ -742,7 +734,6 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
     devoted:   { icon: '⏳', name: 'Devoted',    desc: 'Spend 2+ minutes reading' },
     recruiter: { icon: '📧', name: 'Recruiter',  desc: 'Click the contact link' },
     gamer:     { icon: '🎮', name: 'Gamer',      desc: 'Enter the Konami code' },
-    mortality: { icon: '☠',  name: 'Mortality',  desc: 'Try to leave the page' },
     connected: { icon: '🌐', name: 'Connected',  desc: 'Visit GitHub or LinkedIn' },
   };
   const KEY = 'bt_ach_v1';
@@ -785,10 +776,6 @@ function closeTerminal() { window._closeTerminal && window._closeTerminal(); }
   // Player — game launch button
   const glb = document.querySelector('.game-launch-btn');
   if (glb) glb.addEventListener('click', () => unlock('player'));
-
-  // Mortality — You Died overlay shows
-  new MutationObserver(ms => { ms.forEach(m => { if (m.target.classList.contains('active')) unlock('mortality'); }); })
-    .observe(document.getElementById('you-died-overlay'), { attributes: true, attributeFilter: ['class'] });
 
   // Gamer — Konami overlay shows
   new MutationObserver(ms => { ms.forEach(m => { if (m.target.classList.contains('show')) unlock('gamer'); }); })

@@ -95,15 +95,6 @@
 <!-- STEALTH FLASH INDICATOR -->
 <div id="stealth-flash">STEALTH MODE</div>
 
-<!-- YOU DIED OVERLAY -->
-<div id="you-died-overlay">
-  <div id="you-died-inner">
-    <div class="you-died-text">YOU DIED</div>
-    <div class="you-died-sub">The quest remains unfinished...</div>
-    <button class="yd-btn" onclick="closeYouDied()">Rise Again</button>
-  </div>
-</div>
-
 <!-- TERMINAL OVERLAY -->
 <div id="terminal-overlay" role="dialog" aria-modal="true" aria-label="Interactive portfolio terminal">
   <div class="terminal-topbar">
@@ -384,7 +375,7 @@
       <span class="section-label" style="margin-top:3rem;display:block">05 — Cyber Tools</span>
       <h3 style="font-family:var(--head);font-size:1.4rem;font-weight:600;color:var(--paper);margin-top:0.5rem">Temple <em>Tools</em> — Live Cyber Utilities</h3>
     </div>
-    <div class="cyber-tools-grid stagger-children fade-in">
+    <div class="cyber-tools-grid tools-grid-main stagger-children fade-in">
 
       <a href="tools/hash.html" class="cyber-tool-card tool-green">
         <div class="tool-card-glow"></div>
@@ -691,7 +682,7 @@
       <span class="section-label" style="display:block">06 — Featured Pages</span>
       <h3 style="font-family:var(--head);font-size:1.4rem;font-weight:600;color:var(--paper);margin-top:0.5rem">Beyond the <em>Tools Hub</em></h3>
     </div>
-    <div class="cyber-tools-grid stagger-children fade-in" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+    <div class="cyber-tools-grid featured-grid stagger-children fade-in" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
 
       <a href="threat-globe.html" class="cyber-tool-card" style="border-color:rgba(0,212,255,0.12)" onmouseenter="this.style.borderColor='rgba(0,212,255,0.35)';this.style.boxShadow='0 0 40px rgba(0,212,255,0.1),inset 0 0 30px rgba(0,212,255,0.04)'" onmouseleave="this.style.borderColor='rgba(0,212,255,0.12)';this.style.boxShadow=''">
         <div class="tool-card-glow" style="background:radial-gradient(ellipse at top left,rgba(0,212,255,0.08) 0%,transparent 70%)"></div>
@@ -1414,7 +1405,7 @@
           <li>8 achievements tracked across the site — unlock them by exploring, playing, connecting, and lurking</li>
           <li>Toast notifications slide in from the bottom-left when an achievement is unlocked</li>
           <li>Progress persists in localStorage — your unlocks survive page refreshes</li>
-          <li>Achievements: Explorer, Player, Analyst, Devoted, Recruiter, Gamer, Mortality, Connected</li>
+          <li>Achievements: Explorer, Player, Analyst, Devoted, Recruiter, Gamer, Connected</li>
         </ul>
         <div class="patch-category">Portfolio — Skill Tree</div>
         <ul class="patch-list">
@@ -1448,7 +1439,6 @@
           <li>Custom crusader sword cursor — the ⚔ follows your mouse with a gold particle trail throughout the site</li>
           <li>Scroll-driven stat counters — the numbers in the About section now count up from zero when scrolled into view</li>
           <li>Hero section parallax — text layers on both sides of the hero respond to mouse movement at different depths</li>
-          <li>"You Died" exit-intent — try to leave without finishing the quest and see what happens</li>
           <li>Projects section header animation removed — static, cleaner presentation</li>
         </ul>
         <div class="patch-category">Secrets</div>
