@@ -1069,3 +1069,29 @@ if (window.innerWidth <= 768) {
     new MutationObserver(sync).observe(results, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
 })();
+
+// ── MOBILE: "Show all" collapse for long lists ──
+// Any element with data-m-show="N" shows only its first N children on phones,
+// followed by a button that reveals the rest. Desktop is untouched (CSS-gated).
+(function() {
+  document.querySelectorAll('[data-m-show]').forEach(list => {
+    const n = parseInt(list.dataset.mShow, 10) || 3;
+    const items = [...list.children];
+    if (items.length <= n) return;
+    items.slice(n).forEach(el => el.classList.add('m-extra'));
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'm-show-all';
+    const label = list.dataset.mLabel || 'items';
+    const closedText = `Show all ${items.length} ${label} ▾`;
+    btn.textContent = closedText;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', () => {
+      const open = list.classList.toggle('m-expanded');
+      btn.setAttribute('aria-expanded', String(open));
+      btn.textContent = open ? 'Show less ▴' : closedText;
+      if (!open) list.scrollIntoView({ block: 'start' });
+    });
+    list.after(btn);
+  });
+})();

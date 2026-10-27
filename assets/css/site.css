@@ -1516,3 +1516,28 @@ html.stealth-mode #rain-indicator {
   /* Hover-only tilt/glow effects do nothing useful on touch */
   .cyber-tool-card, .project-item { transform: none !important; }
 }
+
+/* ── MOBILE: collapsed lists, compact certs & skills ── */
+.m-show-all { display: none; }
+@media (max-width: 768px) {
+  [data-m-show]:not(.m-expanded) > .m-extra { display: none !important; }
+  .m-show-all {
+    display: block; width: 100%; margin-top: 0.9rem; padding: 0.8rem 1rem;
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold); background: rgba(184,147,58,0.05);
+    border: 1px solid rgba(184,147,58,0.3); cursor: pointer;
+  }
+
+  /* Certs: issuer + name + date, tags dropped */
+  .cert-grid-full { gap: 0.6rem; }
+  .cert-card-full { padding: 0.9rem 1rem; gap: 0.25rem; }
+  .cert-card-full .cert-skills-row { display: none; }
+  .cert-name-full { font-size: 1rem; line-height: 1.3; }
+
+  /* Honor roll: headline + date only */
+  .honor-list > div > div:nth-child(2) { display: none; }
+
+  /* Full skill set: tighter pills */
+  .skills-full-grid { gap: 0.8rem; }
+  .skill-pill { font-size: 0.62rem; padding: 3px 7px; }
+}
