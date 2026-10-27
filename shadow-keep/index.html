@@ -564,7 +564,7 @@ function attackHit(box,dmg,set){const R=room();
    if(!set.has(h)&&ov(box,{x:h.x-18,y:h.y-10,w:36,h:26})){set.add(h);if(hydraOpen())hydraHitCore(dmg);else{floatT(h.x,h.y-18,'CUT THE HEADS','#b07cff');sfx(1400,.05,'square',-400,.03);}}}}
 
 /* ================= VENDOR GATE ================= */
-function startVendor(){const list=VENDORS.slice().sort(()=>Math.random()-.5);S.vg={list,i:0,phase:'walk',t:0,ok:0,res:null,limit:(S.hard?240:360),done:false};S.mode='vendor';jingle([523,659,784],.08);}
+function startVendor(){const list=VENDORS.slice().sort(()=>Math.random()-.5);S.vg={list,i:0,phase:'walk',t:0,ok:0,res:null,limit:(S.hard?360:480),done:false};S.mode='vendor';jingle([523,659,784],.08);}
 function vendorDecide(allow){const v=S.vg,ven=v.list[v.i],should=!ven.ai||(ven.disc&&ven.test);
  const why=!ven.ai?'No AI inside. Cleared.':ven.disc&&ven.test?'AI disclosed and red-team tested. Cleared.':!ven.disc?'Hidden AI. Undisclosed third-party AI is your risk.':'AI disclosed, but never red-team tested.';
  const right=allow!==null&&allow===should;if(right){v.ok++;sfx(988,.12,'square',300,.05);}else sfx(140,.25,'sawtooth',-60,.06);
