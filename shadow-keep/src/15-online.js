@@ -555,42 +555,7 @@ function renderLeads() {
     b.appendChild(tr);
   });
 }
-const csv = () => {
-  const q = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-  return ["Name,Email,Phone,Organization,Title,Tag,Score,Grade,Hard,Date"]
-    .concat(
-      leadRows.map((r) =>
-        [
-          r.name,
-          r.email,
-          r.phone,
-          r.company,
-          r.title,
-          r.tag,
-          r.score,
-          r.grade,
-          r.hard ? "yes" : "no",
-          r.at ? new Date(r.at).toISOString() : "",
-        ]
-          .map(q)
-          .join(","),
-      ),
-    )
-    .join("\n");
-};
 $("leadsRefresh").addEventListener("click", loadLeads);
-$("leadsCopy").addEventListener("click", () => copyText(csv(), $("leadMsg")));
-$("leadsSave").addEventListener("click", async () => {
-  if (!downloads) return;
-  try {
-    await downloads.save({ filename: "shadow-keep-leads.csv", data: csv() });
-    $("leadMsg").className = "msg";
-    $("leadMsg").textContent = "Saved.";
-  } catch (e) {
-    $("leadMsg").className = "msg";
-    $("leadMsg").textContent = "Save cancelled.";
-  }
-});
 
 function openEntry() {
   S.mode = "entry";

@@ -632,8 +632,6 @@ input[type="email"] {
     <div class="head"><h2>LEADS <span id="leadCount"></span></h2><span class="msg">Visible only to you</span></div>
     <div class="actions">
       <button class="btn" type="button" id="leadsRefresh">REFRESH</button>
-      <button class="btn primary" type="button" id="leadsCopy">COPY CSV</button>
-      <button class="btn" type="button" id="leadsSave" hidden>DOWNLOAD CSV</button>
       <span class="msg" id="leadMsg" role="status"></span>
     </div>
     <div class="tablewrap">
@@ -6326,42 +6324,7 @@ function renderLeads() {
     b.appendChild(tr);
   });
 }
-const csv = () => {
-  const q = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-  return ["Name,Email,Phone,Organization,Title,Tag,Score,Grade,Hard,Date"]
-    .concat(
-      leadRows.map((r) =>
-        [
-          r.name,
-          r.email,
-          r.phone,
-          r.company,
-          r.title,
-          r.tag,
-          r.score,
-          r.grade,
-          r.hard ? "yes" : "no",
-          r.at ? new Date(r.at).toISOString() : "",
-        ]
-          .map(q)
-          .join(","),
-      ),
-    )
-    .join("\n");
-};
 $("leadsRefresh").addEventListener("click", loadLeads);
-$("leadsCopy").addEventListener("click", () => copyText(csv(), $("leadMsg")));
-$("leadsSave").addEventListener("click", async () => {
-  if (!downloads) return;
-  try {
-    await downloads.save({ filename: "shadow-keep-leads.csv", data: csv() });
-    $("leadMsg").className = "msg";
-    $("leadMsg").textContent = "Saved.";
-  } catch (e) {
-    $("leadMsg").className = "msg";
-    $("leadMsg").textContent = "Save cancelled.";
-  }
-});
 
 function openEntry() {
   S.mode = "entry";
