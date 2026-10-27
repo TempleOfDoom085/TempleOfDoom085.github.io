@@ -519,7 +519,7 @@ function hurtPlayer(fx,fy){const p=S.p;if(p.inv>0)return;
  if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;S.overStat=nextIntel();setSong(null);jingle([392,330,262,196],.16);}}
 function changeRoom(dx,dy){const p=S.p,snap=takeSnap();S.rx+=dx;S.ry+=dy;S.bolts=[];S.parts=[];S.floats=[];S.amb=[];S.rings=[];S.trans={dx,dy,t:0,n:22,snap};
  if(dx===-1)p.x=COLS*T-p.w-2;if(dx===1)p.x=2;if(dy===-1)p.y=PH-p.h-2;if(dy===1)p.y=2;
- const r=room();S.banner={t:120,stat:nextIntel()};
+ const r=room();S.banner={t:r.boss?0:120,stat:nextIntel()};
  if(!S.visited[r.key]){S.visited[r.key]=true;if(r.hint)setTimeout(()=>{if(S.mode==='play'&&room()===r)toast(r.hint[0],r.hint[1],300,true);},2200);}
  if(r.boss){if(!S.boss.active&&!S.boss.dead)setTimeout(()=>{if(S.mode==='play'&&room().boss&&!S.boss.active&&!S.boss.dead)startCine('rogue');},1100);
    else if(S.boss.dead&&!S.hydra.dead&&!S.hydra.active)S.hydraDelay=50;}}
@@ -579,7 +579,7 @@ function attackHit(box,dmg,set){const R=room();
  if(!R.boss)return;
  const b=S.boss;if(b.active&&!b.dead&&!set.has(b)&&ov(box,{x:b.x-20,y:b.y-20,w:40,h:40})){set.add(b);
    if(!b.shield)bossHit(dmg);else{sfx(1400,.05,'square',-400,.03);burst(b.x,b.y,'#b07cff',5);floatT(b.x,b.y-24,'BLOCKED','#b07cff');
-     if(S.shieldMsg<=0){toast('ITS SHIELD IS UP','Dodge, or reflect its bolts with your shield. Strike when it glows red.',170);S.shieldMsg=420;}}}
+     if(S.shieldMsg<=0){toast('ITS SHIELD IS UP','Dodge, or reflect its bolts with your B spin. Strike when it glows red.',300,true);S.shieldMsg=420;}}}
  const h=S.hydra;if(h.active&&!h.dead){for(const hd of h.heads)if(hd.alive&&!set.has(hd)&&ov(box,{x:hd.x-9,y:hd.y-9,w:18,h:18})){set.add(hd);hydraHitHead(hd,dmg);}
    if(!set.has(h)&&ov(box,{x:h.x-18,y:h.y-10,w:36,h:26})){set.add(h);if(hydraOpen())hydraHitCore(dmg);else{floatT(h.x,h.y-18,'CUT THE HEADS','#b07cff');sfx(1400,.05,'square',-400,.03);}}}}
 
@@ -628,6 +628,7 @@ function update(){
  // ---- play ----
  if(S.trans){aQ=aQ||A;bQ=bQ||B;cQ=cQ||C;return;}
  updateAmbient(room());
+ if(S.big&&room().boss){S.big.t--;if(A&&S.big.t>10)S.big.t=10;if(S.big.t<=0)S.big=null;bQ=bQ||B;cQ=cQ||C;return;}
  if(S.banner.t>0&&!S.big&&!room().boss){S.banner.t--;if(A&&S.banner.t>12)S.banner.t=12;return;}
  if(S.toast&&S.toast.pause&&!S.big){S.toast.t--;if(A&&S.toast.t>12)S.toast.t=12;if(S.toast.t<=0)S.toast=null;return;}
  if(MN){S.mode='inv';sfx(500,.05);return;}
@@ -835,7 +836,7 @@ function draw(){
    rect('rgba(6,4,12,.88)',0,y0,W,h+4);rect('#f2c14e',0,y0,W,1);rect('#f2c14e',0,y0+3+h,W,1);txt(R.name,128,y0+15,'#f2c14e',F8,'center');
    lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));if(!R.boss&&(f>>4)%2)txt('A ▶',250,y0+15,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.big){const t=S.big,a=Math.min(1,t.t/15),y0=top(44);g.globalAlpha=a;rect('rgba(6,4,12,.9)',0,y0,W,44);rect('#b07cff',0,y0,W,2);rect('#d63ad6',0,y0+42,W,2);
-   if((f>>2)%9===0)txt(t.a,130,y0+20,'#d63ad6',F8,'center');txt(t.a,128,y0+20,'#ffffff',F8,'center');txt(t.b,128,y0+35,'#b07cff',F8,'center');g.globalAlpha=1;}
+   if((f>>2)%9===0)txt(t.a,130,y0+20,'#d63ad6',F8,'center');txt(t.a,128,y0+20,'#ffffff',F8,'center');txt(t.b,128,y0+35,'#b07cff',F8,'center');if(R.boss&&S.mode==='play'&&(f>>4)%2)txt('A ▶',250,y0+20,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15),y0=top(h);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,y0,240,h);rect(t.pause?'#f2c14e':'#b07cff',8,y0,240,1);rect(t.pause?'#f2c14e':'#b07cff',8,y0+h-1,240,1);
    txt(t.a,14,y0+11,'#b07cff');lines.forEach((l,i)=>txt(l,14,y0+23+i*10,'#ece8f7'));if(t.pause&&(f>>4)%2)txt('A ▶',244,y0+11,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.lb>.01){const bh=Math.round(22*S.lb);rect('#000',0,HUD,W,bh);rect('#000',0,H-bh,W,bh);}
