@@ -264,6 +264,13 @@ const INTEL=[
  '11% of orgs could not say whether they had a shadow AI incident. (IBM 2025)'
 ];
 
+const ROOMFACT={
+ '1,1':'Cranium was born from KPMG Studio and works inside the Fortune 10. (cranium.ai)',
+ '0,1':'Cranium CodeSensor finds AI hiding in your code repositories. (cranium.ai)',
+ '2,1':'Cranium CloudSensor watches cloud environments for AI and risky changes. (cranium.ai)',
+ '0,0':'Cranium AgentSensor maps AI agents, the tools they call, and who they talk to. (cranium.ai)',
+ '1,2':'Cranium AI Cards share your AI posture with partners and regulators. (cranium.ai)'
+};
 /* ================= SPRITES ================= */
 function spr(rows,pal,s){const h=rows.length,w=rows[0].length,c=document.createElement('canvas');c.width=w*s;c.height=h*s;const x=c.getContext('2d');
   for(let j=0;j<h;j++)for(let i=0;i<w;i++){const ch=rows[j][i];if(ch!=='.'&&pal[ch]){x.fillStyle=pal[ch];x.fillRect(i*s,j*s,s,s);}}return c;}
@@ -525,7 +532,7 @@ function hurtPlayer(fx,fy){const p=S.p;if(p.inv>0)return;
  if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;postProgress();setSong(null);jingle([392,330,262,196],.16);}}
 function changeRoom(dx,dy){const p=S.p,snap=takeSnap();S.rx+=dx;S.ry+=dy;S.bolts=[];S.parts=[];S.floats=[];S.amb=[];S.rings=[];S.trans={dx,dy,t:0,n:22,snap};
  if(dx===-1)p.x=COLS*T-p.w-2;if(dx===1)p.x=2;if(dy===-1)p.y=PH-p.h-2;if(dy===1)p.y=2;
- const r=room(),first=!S.visited[r.key];S.banner=r.boss?{t:0,stat:''}:first?{t:120,stat:nextIntel()}:{t:70,stat:''};
+ const r=room(),first=!S.visited[r.key];S.banner=r.boss?{t:0,stat:''}:first?(ROOMFACT[r.key]?{t:130,stat:ROOMFACT[r.key],own:true}:{t:120,stat:nextIntel()}):{t:70,stat:''};
  if(!S.visited[r.key]){S.visited[r.key]=true;if(r.hint)setTimeout(()=>{if(S.mode==='play'&&room()===r)toast(r.hint[0],r.hint[1],300,true);},2200);}
  if(r.boss){if(!S.boss.active&&!S.boss.dead)setTimeout(()=>{if(S.mode==='play'&&room().boss&&!S.boss.active&&!S.boss.dead)startCine('rogue');},1100);
    else if(S.boss.dead&&!S.hydra.dead&&!S.hydra.active)S.hydraDelay=50;}}
@@ -617,7 +624,7 @@ function update(){
    if(A)openEntry();return;}
  if(S.mode==='entry')return;
  if(S.mode==='intro'){S.intro.t++;setSong('dark');if(A){if(S.intro.t<20)return;S.intro.scene++;S.intro.t=0;sfx(660,.05);}
-   if(S.intro.t>240){S.intro.scene++;S.intro.t=0;}if(S.intro.scene>3){S.mode='play';S.banner={t:120,stat:nextIntel()};}return;}
+   if(S.intro.t>240){S.intro.scene++;S.intro.t=0;}if(S.intro.scene>3){S.mode='play';S.banner={t:130,stat:ROOMFACT['1,1'],own:true};}return;}
  if(S.mode==='win'){S.winT++;if(A&&S.winT>90){const h=S.hard;hideClaim();newGame('title',h);}return;}
  if(S.mode==='over'){S.overT++;if(A&&S.overT>40)respawn();return;}
  if(S.mode==='inv'){if(A||MN||B){S.mode='play';sfx(500,.05);}return;}
@@ -723,7 +730,7 @@ function talk(R){const n=R.npc,who=n.who;
    {who,t:'ALLOW: no AI found, or AI they disclosed AND red-team tested. BLOCK: hidden AI, or AI that was never red teamed.'},
    {who,t:'Get 6 of 8 right to earn the Vendor Seal. Ready?'}],startVendor);}}
 function openChest(R){R.chest.open=true;S.gear.blade=true;sfx(440,.1);burst(R.chest.tx*T+8,R.chest.ty*T+8,['#f2c14e','#b07cff'],20,2);
- say([{who:'ARENA BLADE',t:'An automated red-teaming blade. Hold A to charge, then release for a spin attack that deals double damage.'}],()=>{S.big={a:'ARENA BLADE',b:'HOLD A · RELEASE TO SPIN',t:110};jingle([523,784,1047]);});}
+ say([{who:'ARENA BLADE',t:'Named for Cranium Arena, which red teams AI using MITRE ATLAS and OWASP attacks. Hold A to charge, release to spin.'}],()=>{S.big={a:'ARENA BLADE',b:'HOLD A · RELEASE TO SPIN',t:110};jingle([523,784,1047]);});}
 
 function updateEnemy(e,R){const c=pc(),D=DIFF();if(e.hurt>0)e.hurt--;
  const ex=e.x+e.w/2,ey=e.y+e.h/2,tx=c.x-ex,ty=c.y-ey,d=Math.hypot(tx,ty)||1;
@@ -848,7 +855,7 @@ function draw(){
  const top=bandTop();
  if(S.banner.t>0&&S.mode!=='dialog'&&S.mode!=='cine'&&!S.big&&!S.trans){const a=Math.min(1,S.banner.t/20),lines=S.banner.stat?wrap(S.banner.stat,232):[],h=(lines.length?22:16)+lines.length*10,y0=top(h+4);g.globalAlpha=a;
    rect('rgba(6,4,12,.88)',0,y0,W,h+4);rect('#f2c14e',0,y0,W,1);rect('#f2c14e',0,y0+3+h,W,1);txt(R.name,128,y0+15,'#f2c14e',F8,'center');
-   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));if(lines.length&&!R.boss&&(f>>4)%2)txt('A ▶',250,y0+15,'#f2c14e',F8,'right');g.globalAlpha=1;}
+   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,S.banner.own?'#c9a8ff':'#9d96bb',F8,'center'));if(lines.length&&!R.boss&&(f>>4)%2)txt('A ▶',250,y0+15,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.big){const t=S.big,a=Math.min(1,t.t/15),y0=top(44);g.globalAlpha=a;rect('rgba(6,4,12,.9)',0,y0,W,44);rect('#b07cff',0,y0,W,2);rect('#d63ad6',0,y0+42,W,2);
    if((f>>2)%9===0)txt(t.a,130,y0+20,'#d63ad6',F8,'center');txt(t.a,128,y0+20,'#ffffff',F8,'center');txt(t.b,128,y0+35,'#b07cff',F8,'center');if(R.boss&&S.mode==='play'&&(f>>4)%2)txt('A ▶',250,y0+20,'#f2c14e',F8,'right');g.globalAlpha=1;}
  if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15),y0=top(h);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,y0,240,h);rect(t.pause?'#f2c14e':'#b07cff',8,y0,240,1);rect(t.pause?'#f2c14e':'#b07cff',8,y0+h-1,240,1);
