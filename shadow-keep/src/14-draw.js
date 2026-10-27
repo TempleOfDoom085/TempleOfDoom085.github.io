@@ -1803,7 +1803,7 @@ function drawVendor() {
     rect("#3d1a6e", 8, 166, 116, 22);
     rect(pulse ? "#b07cff" : "#7b3fe4", 8, 166, 116, 2);
     txt("ALLOW", 66, 178, "#ffffff", F8, "center");
-    txt(kbd ? "SPACE" : "A · TAP", 66, 187, "#c9a8ff", F8, "center");
+    txt(kbd ? "Z" : "A · TAP", 66, 187, "#c9a8ff", F8, "center");
     rect("#5a1020", 132, 166, 116, 22);
     rect(pulse ? "#ff3b5c" : "#a3203a", 132, 166, 116, 2);
     txt("BLOCK", 190, 178, "#ffffff", F8, "center");
@@ -1976,9 +1976,9 @@ function drawControls() {
   rect("#7b3fe4", 40, 28, 176, 2);
   const rows = [
     [touch ? "D-PAD" : "ARROWS", "Move"],
-    [touch ? "A" : "SPACE", "Talk · strike · hold to charge"],
+    [touch ? "A" : "Z", "Talk · strike · hold to charge"],
     [touch ? "B" : "X", "360° spin attack"],
-    [touch ? "SCAN" : "C", "AgentSensor scan (unlocks later)"],
+    [touch ? "SCAN" : "SPACE", "AgentSensor scan (unlocks later)"],
     [touch ? "☰" : "I", "AI inventory"],
   ];
   rows.forEach(([k, d], i) => {

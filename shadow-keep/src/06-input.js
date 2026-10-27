@@ -5,7 +5,7 @@ let aQ = false,
   mQ = false,
   cQ = false,
   aDown = false;
-const CK = new Set(["KeyC", "KeyL"]);
+const CK = new Set(["Space", "KeyC", "KeyL"]);
 const KM = {
   ArrowUp: "up",
   KeyW: "up",
@@ -16,7 +16,7 @@ const KM = {
   ArrowRight: "right",
   KeyD: "right",
 };
-const AK = new Set(["Space", "KeyJ", "KeyZ", "Enter"]),
+const AK = new Set(["KeyZ", "KeyJ", "Enter"]),
   BK = new Set(["KeyX", "KeyK", "ShiftLeft", "ShiftRight"]),
   MK = new Set(["KeyI", "Escape", "Tab", "KeyP"]);
 const typing = (e) => e.target && e.target.closest && e.target.closest("input,textarea,select,button,a");
@@ -41,7 +41,13 @@ addEventListener("keydown", (e) => {
     e.preventDefault();
   }
   if (CK.has(e.code)) {
-    if (!e.repeat) cQ = true;
+    // Space is the scan key in play, but outside play (menus, dialogue, pop-ups)
+    // it still advances like A, since that's what people reach for.
+    const spaceAsA = e.code === "Space" && (S.mode !== "play" || (S.msg && S.msg.pause) || (!S.msg && S.queue.some((m) => m.pause)));
+    if (!e.repeat) {
+      if (spaceAsA) aQ = true;
+      else cQ = true;
+    }
     e.preventDefault();
   }
 });
