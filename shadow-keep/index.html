@@ -497,7 +497,7 @@ function hurtPlayer(fx,fy){const p=S.p;if(p.inv>0)return;
  if(p.hp<=0){S.mode='over';S.overT=0;S.deaths++;S.overStat=nextIntel();setSong(null);jingle([392,330,262,196],.16);}}
 function changeRoom(dx,dy){const p=S.p,snap=takeSnap();S.rx+=dx;S.ry+=dy;S.bolts=[];S.parts=[];S.floats=[];S.amb=[];S.rings=[];S.trans={dx,dy,t:0,n:22,snap};
  if(dx===-1)p.x=COLS*T-p.w-2;if(dx===1)p.x=2;if(dy===-1)p.y=PH-p.h-2;if(dy===1)p.y=2;
- const r=room();S.banner={t:170,stat:nextIntel()};
+ const r=room();S.banner={t:120,stat:nextIntel()};
  if(!S.visited[r.key]){S.visited[r.key]=true;if(r.hint)setTimeout(()=>{if(S.mode==='play'&&room()===r)toast(r.hint[0],r.hint[1],240);},2900);}
  if(r.boss){if(!S.boss.active&&!S.boss.dead)setTimeout(()=>{if(S.mode==='play'&&room().boss&&!S.boss.active&&!S.boss.dead)startCine('rogue');},1100);
    else if(S.boss.dead&&!S.hydra.dead&&!S.hydra.active)S.hydraDelay=50;}}
@@ -588,7 +588,7 @@ function update(){
  if(S.mode==='title'){setSong(ac?'main':null);if(B){S.hard=!S.hard;sfx(S.hard?220:660,.12,'square',S.hard?-80:200,.05);}
    if(A){const h=S.hard;newGame('intro',h);jingle([523,659,784,1047]);}return;}
  if(S.mode==='intro'){S.intro.t++;setSong('dark');if(A){if(S.intro.t<20)return;S.intro.scene++;S.intro.t=0;sfx(660,.05);}
-   if(S.intro.t>240){S.intro.scene++;S.intro.t=0;}if(S.intro.scene>3){S.mode='play';S.banner={t:170,stat:nextIntel()};}return;}
+   if(S.intro.t>240){S.intro.scene++;S.intro.t=0;}if(S.intro.scene>3){S.mode='play';S.banner={t:120,stat:nextIntel()};}return;}
  if(S.mode==='win'){S.winT++;if(A&&S.winT>90){const h=S.hard;hideClaim();newGame('title',h);}return;}
  if(S.mode==='over'){S.overT++;if(A&&S.overT>40)respawn();return;}
  if(S.mode==='inv'){if(A||MN||B){S.mode='play';sfx(500,.05);}return;}
@@ -804,13 +804,14 @@ function draw(){
  else drawWorld(R,S.shake?Math.round((Math.random()*2-1)*S.shake):0,S.shake?Math.round((Math.random()*2-1)*S.shake):0);
  g.restore();
  drawHUD();
- if(S.banner.t>0&&S.mode!=='dialog'&&S.mode!=='cine'&&!S.big&&!S.trans){const a=Math.min(1,S.banner.t/20),lines=wrap(S.banner.stat,232),h=22+lines.length*10;g.globalAlpha=a;
-   rect('rgba(6,4,12,.88)',0,HUD+62,W,h+4);rect('#f2c14e',0,HUD+62,W,1);rect('#f2c14e',0,HUD+65+h,W,1);txt(R.name,128,HUD+77,'#f2c14e',F8,'center');
-   lines.forEach((l,i)=>txt(l,128,HUD+92+i*10,'#9d96bb',F8,'center'));g.globalAlpha=1;}
- if(S.big){const t=S.big,a=Math.min(1,t.t/15);g.globalAlpha=a;rect('rgba(6,4,12,.9)',0,HUD+62,W,44);rect('#b07cff',0,HUD+62,W,2);rect('#d63ad6',0,HUD+104,W,2);
-   if((f>>2)%9===0)txt(t.a,130,HUD+82,'#d63ad6',F8,'center');txt(t.a,128,HUD+82,'#ffffff',F8,'center');txt(t.b,128,HUD+97,'#b07cff',F8,'center');g.globalAlpha=1;}
- if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,HUD+4,240,h);rect('#b07cff',8,HUD+4,240,1);rect('#b07cff',8,HUD+3+h,240,1);
-   txt(t.a,14,HUD+15,'#b07cff');lines.forEach((l,i)=>txt(l,14,HUD+27+i*10,'#ece8f7'));g.globalAlpha=1;}
+ const top=bandTop();
+ if(S.banner.t>0&&S.mode!=='dialog'&&S.mode!=='cine'&&!S.big&&!S.trans){const a=Math.min(1,S.banner.t/20),lines=wrap(S.banner.stat,232),h=22+lines.length*10,y0=top(h+4);g.globalAlpha=a;
+   rect('rgba(6,4,12,.88)',0,y0,W,h+4);rect('#f2c14e',0,y0,W,1);rect('#f2c14e',0,y0+3+h,W,1);txt(R.name,128,y0+15,'#f2c14e',F8,'center');
+   lines.forEach((l,i)=>txt(l,128,y0+30+i*10,'#9d96bb',F8,'center'));g.globalAlpha=1;}
+ if(S.big){const t=S.big,a=Math.min(1,t.t/15),y0=top(44);g.globalAlpha=a;rect('rgba(6,4,12,.9)',0,y0,W,44);rect('#b07cff',0,y0,W,2);rect('#d63ad6',0,y0+42,W,2);
+   if((f>>2)%9===0)txt(t.a,130,y0+20,'#d63ad6',F8,'center');txt(t.a,128,y0+20,'#ffffff',F8,'center');txt(t.b,128,y0+35,'#b07cff',F8,'center');g.globalAlpha=1;}
+ if(S.toast&&S.mode==='play'&&!S.big){const t=S.toast,lines=wrap(t.b,228),h=20+lines.length*10,a=Math.min(1,t.t/15),y0=top(h);g.globalAlpha=a;rect('rgba(6,4,12,.93)',8,y0,240,h);rect('#b07cff',8,y0,240,1);rect('#b07cff',8,y0+h-1,240,1);
+   txt(t.a,14,y0+11,'#b07cff');lines.forEach((l,i)=>txt(l,14,y0+23+i*10,'#ece8f7'));g.globalAlpha=1;}
  if(S.lb>.01){const bh=Math.round(22*S.lb);rect('#000',0,HUD,W,bh);rect('#000',0,H-bh,W,bh);}
  if(S.card)drawCard();
  if(S.mode==='dialog')drawDialog();
@@ -879,6 +880,7 @@ function drawOver(){const f=S.frame,t=S.overT;rect('rgba(24,0,8,.92)',0,0,W,H);
  const need=topList.length?topList[topList.length-1].score:0;
  txt(topList.length>=5?'BEAT '+need.toLocaleString('en-US')+' TO MAKE THE BOARD':LOCAL?'FINISH THE QUEST TO SAVE A SCORE':'FINISH THE QUEST TO POST A SCORE',128,162,'#b07cff',F8,'center');
  if(t>40&&(f>>5)%2)txt('PRESS A TO RESPAWN',128,182,'#ffffff',F8,'center');}
+function bandTop(){const py=S.p.y+5,lb=Math.round(22*S.lb);return h=>py<PH/2?H-lb-6-h:HUD+lb+6;}
 function drawCard(){const c=S.card,t=c.t,k=ease(t/8),sc=2.6-1.6*k,a=t>90?Math.max(0,1-(t-90)/30):Math.min(1,t/4);g.globalAlpha=a;
  rect('rgba(4,3,10,.88)',0,118,W,40);rect(c.col,0,118,W,2);rect(c.col,0,156,W,2);
  g.save();g.translate(128,141);g.scale(sc,sc);if((t>>2)%6===0)txt(c.a,2,0,'#d63ad6',F16,'center');txt(c.a,0,0,'#ffffff',F16,'center');g.restore();
