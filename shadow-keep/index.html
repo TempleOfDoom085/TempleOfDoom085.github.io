@@ -265,7 +265,7 @@ const INTEL=[
 ];
 
 const ROOMFACT={
- '1,1':'Cranium was born from KPMG Studio and works inside the Fortune 10. (cranium.ai)',
+ '1,1':'Trusted inside the Fortune 10. Cranium tracks 100+ AI risk signals, 24/7. (cranium.ai)',
  '0,1':'Cranium CodeSensor finds AI hiding in your code repositories. (cranium.ai)',
  '2,1':'Cranium CloudSensor watches cloud environments for AI and risky changes. (cranium.ai)',
  '0,0':'Cranium AgentSensor maps AI agents, the tools they call, and who they talk to. (cranium.ai)',
@@ -510,7 +510,7 @@ function floatT(x,y,t,c){S.floats.push({x,y,t,c,l:50});}
 function toast(a,b,t=220,pause=false){S.toast={a,b,t,pause};}
 function shake(n){S.shake=Math.max(S.shake,n);}
 function wrap(text,maxW,font=F8){g.font=font;const words=text.split(' '),lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(g.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}if(cur)lines.push(cur);return lines;}
-function say(lines,done){S.dialog={lines,i:0,c:0,done};S.mode='dialog';sfx(660,.06);}
+function say(lines,done){const out=[];for(const L of lines){const w=wrap(L.t,230);for(let i=0;i<w.length;i+=3)out.push({who:L.who,t:w.slice(i,i+3).join(' ')});}S.dialog={lines:out,i:0,c:0,done};S.mode='dialog';sfx(660,.06);}
 function hash(a,b){let h=(a*374761393+b*668265263)^0x5bd1e995;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967295;}
 const fmtT=f=>{const t=f/60|0;return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');};
 const DIFF=()=>S.hard?1.3:1;
