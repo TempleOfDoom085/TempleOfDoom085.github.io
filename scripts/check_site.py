@@ -37,6 +37,9 @@ def err(check, msg):
 def html_pages():
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not d.startswith('.'))
+        # Shadow Keep's src/ holds page fragments that build.mjs stitches into shadow-keep/index.html.
+        if os.path.relpath(dirpath, ROOT).replace(os.sep, '/') == 'shadow-keep':
+            dirnames[:] = [d for d in dirnames if d != 'src']
         for f in sorted(filenames):
             if f.endswith('.html'):
                 yield os.path.relpath(os.path.join(dirpath, f), ROOT).replace(os.sep, '/')

@@ -46,8 +46,8 @@ const html = target.standalone
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Shadow Keep: an 8-bit AI security quest. Find the shadow AI, validate the supply chain, red team the Rogue Model.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' https://ckrtnunhbdtirftwwozw.supabase.co">
+<meta name="description" content="Shadow Keep: a 16-bit style AI security quest by Brian Temple. Find the shadow AI, validate the supply chain, red team the Rogue Model.">
 <style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
