@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; worker-src 'self' blob:; frame-src 'self'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Lantern: an AI discovery scanner that builds an AI bill of materials for a code repo, flags leaked keys and risky model files, and maps findings to OWASP LLM Top 10 and NIST AI RMF. Runs entirely in your browser.">
+<link rel="canonical" href="https://templeofdoom085.github.io/lantern/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brian Temple Portfolio">
+<meta property="og:url" content="https://templeofdoom085.github.io/lantern/">
+<meta property="og:title" content="Lantern — AI Discovery Scanner">
+<meta property="og:description" content="Find the AI hiding in a code repo: libraries, LLM calls, model files and leaked keys, mapped to OWASP and NIST. Runs in your browser.">
+<meta property="og:image" content="https://templeofdoom085.github.io/img/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<title>Lantern — AI Discovery Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0c; --bg2: #0d0d10; --bg3: #121218;
+  --c: #f0c040; --c-dim: rgba(240,192,64,0.08); --c-mid: rgba(240,192,64,0.35);
+  --red: #ff4455; --orange: #ff8c00; --cyan: #00d4ff; --green: #00ff88; --violet: #b06aff;
+  --text: #f5f2ec; --text-dim: rgba(245,242,236,0.6); --text-faint: rgba(245,242,236,0.3);
+  --border: rgba(255,255,255,0.07); --border-c: rgba(240,192,64,0.25);
+  --mono: 'Share Tech Mono', monospace; --head: 'Rajdhani', sans-serif;
+}
+html { font-size: 18px; }
+body { font-family: var(--head); background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh;
+  background-image: radial-gradient(ellipse 60% 40% at 50% -10%, rgba(240,192,64,0.10), transparent 70%); }
+:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+a { color: var(--c); }
+nav { position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 0.9rem 1.5rem; background: rgba(10,10,12,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+nav a, nav span { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; }
+nav span { color: var(--text-faint); }
+main { max-width: 1040px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+.kicker { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.3em; color: var(--c); text-transform: uppercase; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); line-height: 1.05; margin: 0.4rem 0 0.8rem; font-weight: 700; }
+h1 em { font-style: normal; color: var(--c); text-shadow: 0 0 28px rgba(240,192,64,0.45); }
+.lead { color: var(--text-dim); font-size: 1.1rem; max-width: 46rem; }
+.privacy { margin-top: 1rem; font-family: var(--mono); font-size: 0.72rem; color: var(--green); letter-spacing: 0.05em; }
+.panel { margin-top: 2rem; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+.inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.inp { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.inp h3 { font-size: 1rem; letter-spacing: 0.04em; }
+.inp p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.4; }
+input[type=text] { width: 100%; background: #08080a; border: 1px solid var(--border); color: var(--text); font-family: var(--mono);
+  font-size: 0.8rem; padding: 0.6rem; border-radius: 6px; }
+button, .btn { cursor: pointer; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--c-dim); color: var(--c); border: 1px solid var(--border-c); border-radius: 6px; padding: 0.6rem 0.9rem; text-align: center; }
+button:hover, .btn:hover { background: rgba(240,192,64,0.16); }
+button:disabled { opacity: 0.4; cursor: wait; }
+input[type=file] { display: none; }
+#status { margin-top: 1rem; font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); min-height: 1.2em; }
+#results { display: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1.5rem; }
+.stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; }
+.stat b { display: block; font-size: 1.9rem; line-height: 1; }
+.stat span { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; color: var(--text-faint); text-transform: uppercase; }
+.s-high b { color: var(--red); } .s-medium b { color: var(--orange); } .s-low b { color: var(--c); } .s-info b { color: var(--cyan); } .s-fp b { color: var(--text-faint); }
+h2 { font-size: 1.4rem; margin: 2rem 0 0.75rem; }
+h2 small { font-family: var(--mono); font-size: 0.7rem; color: var(--text-faint); letter-spacing: 0.1em; margin-left: 0.5rem; }
+.bom { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip { font-family: var(--mono); font-size: 0.72rem; padding: 0.25rem 0.55rem; border-radius: 4px; border: 1px solid var(--border-c); color: var(--c); background: var(--c-dim); }
+.chip.none { color: var(--text-faint); border-color: var(--border); background: none; }
+.map { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.6rem; }
+.map div { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.9rem; font-size: 0.9rem; }
+.map b { color: var(--violet); font-family: var(--mono); font-size: 0.75rem; display: block; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+.toolbar label { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 0.35rem; align-items: center; }
+.finding { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--text-faint); border-radius: 6px; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; }
+.finding.high { border-left-color: var(--red); } .finding.medium { border-left-color: var(--orange); }
+.finding.low { border-left-color: var(--c); } .finding.info { border-left-color: var(--cyan); }
+.f-top { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
+.sev { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; padding: 0.1rem 0.4rem; border-radius: 3px; text-transform: uppercase; }
+.sev.high { background: rgba(255,68,85,0.15); color: var(--red); } .sev.medium { background: rgba(255,140,0,0.15); color: var(--orange); }
+.sev.low { background: var(--c-dim); color: var(--c); } .sev.info { background: rgba(0,212,255,0.1); color: var(--cyan); }
+.sev.fp { background: rgba(255,255,255,0.05); color: var(--text-faint); }
+.f-label { font-weight: 600; }
+.f-loc { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); word-break: break-all; }
+.f-snip { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem; white-space: pre-wrap; word-break: break-all; }
+.f-note { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.25rem; }
+.tags { margin-top: 0.35rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag { font-family: var(--mono); font-size: 0.64rem; color: var(--violet); border: 1px solid rgba(176,106,255,0.3); border-radius: 3px; padding: 0.05rem 0.35rem; }
+.how { margin-top: 3rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.how div { border-top: 1px solid var(--border-c); padding-top: 0.75rem; }
+.how h3 { font-size: 1rem; color: var(--c); }
+.how p { font-size: 0.9rem; color: var(--text-dim); }
+footer { margin-top: 3rem; font-family: var(--mono); font-size: 0.7rem; color: var(--text-faint); line-height: 1.7; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/#projects">← Projects</a>
+  <span>Lantern · AI Discovery</span>
+</nav>
+<main>
+  <div class="kicker">Phase 1 · AI discovery</div>
+  <h1>Find the <em>AI</em> hiding in your code.</h1>
+  <p class="lead">Lantern scans a repo and builds an AI bill of materials: the ML libraries, LLM API calls, model names and model files it uses. It also flags leaked keys and unsafe model formats, grades each finding by context to cut false positives, and maps everything to the OWASP Top 10 for LLM Apps and NIST AI RMF.</p>
+  <p class="privacy">● Runs entirely in your browser. Nothing you scan is uploaded or stored.</p>
+
+  <div class="panel">
+    <div class="inputs">
+      <div class="inp">
+        <h3>Try the demo</h3>
+        <p>A made-up repo with planted findings, including a decoy that should <i>not</i> be flagged.</p>
+        <button id="demoBtn" type="button">Scan demo repo</button>
+      </div>
+      <div class="inp">
+        <h3>Scan a folder</h3>
+        <p>Pick a project folder on your computer. Files are read locally.</p>
+        <label class="btn" for="dirInput">Choose folder</label>
+        <input id="dirInput" type="file" webkitdirectory multiple>
+      </div>
+      <div class="inp">
+        <h3>Scan a public GitHub repo</h3>
+        <p>Only scan repos you own or have permission to scan.</p>
+        <input id="ghInput" type="text" placeholder="owner/repo or GitHub URL" autocomplete="off" spellcheck="false">
+        <button id="ghBtn" type="button">Scan repo</button>
+      </div>
+    </div>
+    <div id="status" role="status" aria-live="polite"></div>
+  </div>
+
+  <section id="results">
+    <div class="stats" id="stats"></div>
+    <h2>AI bill of materials <small id="bomCount"></small></h2>
+    <div class="bom" id="bom"></div>
+    <h2>Framework coverage <small>where findings land</small></h2>
+    <div class="map" id="map"></div>
+    <h2>Findings</h2>
+    <div class="toolbar">
+      <label><input type="checkbox" id="showFp"> show false positives</label>
+      <button id="exportBom" type="button">Export CycloneDX</button>
+      <button id="exportMd" type="button">Export report (.md)</button>
+    </div>
+    <div id="findings"></div>
+  </section>
+
+  <section class="how">
+    <div><h3>1 · Discover</h3><p>Matches real imports, dependency files, LLM endpoints and model names, not plain words. A game about torches isn't PyTorch.</p></div>
+    <div><h3>2 · Grade</h3><p>Secrets are scored by randomness and nearby "example" or "demo" words, so sample keys drop to low or false positive.</p></div>
+    <div><h3>3 · Inspect models</h3><p>Pickle-based model files can run code when loaded. Lantern looks inside them for calls like os.system or eval.</p></div>
+    <div><h3>4 · Map &amp; export</h3><p>Each finding is tagged with the OWASP LLM risk and NIST AI RMF function it supports, then exported as a CycloneDX AI-BOM.</p></div>
+  </section>
+
+  <footer>
+    An original learning project by Brian Temple. Regex and heuristics only, not a production security tool.<br>
+    Next phases: red-team harness · system cards · compliance roll-up · dashboard.
+  </footer>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ------------------------------------------------------------ rules
+const CODE_EXT = new Set(['py','js','mjs','cjs','ts','tsx','jsx','ipynb','java','go','rb','r','html','htm']);
+const TEXT_EXT = new Set([...CODE_EXT, 'json','yml','yaml','toml','cfg','ini','txt','md','env','sh','']);
+const MODEL_EXT = new Set(['pt','pth','onnx','safetensors','h5','keras','pkl','joblib','gguf','ggml','tflite','ckpt','pb','mlmodel']);
+const PICKLE_EXT = new Set(['pkl','joblib','pt','pth','ckpt']);
+const DEP_FILES = new Set(['requirements.txt','pyproject.toml','setup.py','setup.cfg','Pipfile','environment.yml','package.json']);
+const SKIP_DIRS = /(^|\/)(\.git|node_modules|dist|build|\.venv|venv|__pycache__|\.next|vendor)\//;
+const FIXTURE = /\b(example|sample|dummy|fake|placeholder|mock|demo|test(ing)?|acme|xxx+|your[_-]?(api[_-]?)?key|redacted|do not reveal|lorem)\b/i;
+
+const AI_PACKAGES = {
+  'openai':'OpenAI SDK','anthropic':'Anthropic SDK','@anthropic-ai/sdk':'Anthropic SDK','google-generativeai':'Google Gemini SDK',
+  '@google/generative-ai':'Google Gemini SDK','cohere':'Cohere SDK','mistralai':'Mistral SDK','groq':'Groq SDK',
+  'torch':'PyTorch','torchvision':'PyTorch','tensorflow':'TensorFlow','@tensorflow/tfjs':'TensorFlow.js','keras':'Keras','jax':'JAX',
+  'scikit-learn':'scikit-learn','sklearn':'scikit-learn','xgboost':'XGBoost','lightgbm':'LightGBM','transformers':'HF Transformers',
+  'huggingface-hub':'HF Hub','huggingface_hub':'HF Hub','@huggingface/inference':'HF Inference','@xenova/transformers':'Transformers.js',
+  'langchain':'LangChain','langchain-core':'LangChain','llama-index':'LlamaIndex','llama_index':'LlamaIndex',
+  'sentence-transformers':'Sentence Transformers','onnxruntime':'ONNX Runtime','crewai':'CrewAI','autogen':'AutoGen',
+  'pyautogen':'AutoGen','ollama':'Ollama'
+};
+const PY_MOD = { torch:'PyTorch', tensorflow:'TensorFlow', keras:'Keras', jax:'JAX', sklearn:'scikit-learn', transformers:'HF Transformers',
+  openai:'OpenAI SDK', anthropic:'Anthropic SDK', llama_index:'LlamaIndex', xgboost:'XGBoost', lightgbm:'LightGBM',
+  onnxruntime:'ONNX Runtime', sentence_transformers:'Sentence Transformers', huggingface_hub:'HF Hub', cohere:'Cohere SDK',
+  mistralai:'Mistral SDK', crewai:'CrewAI', autogen:'AutoGen' };
+
+// Framework tags. OWASP = OWASP Top 10 for LLM Applications 2025; NIST = AI RMF function.
+const T = {
+  inv:   ['NIST Map', 'EU AI Act inventory'],
+  dep:   ['OWASP LLM03 Supply Chain', 'NIST Map'],
+  api:   ['OWASP LLM02 Info Disclosure', 'NIST Map'],
+  model: ['OWASP LLM03 Supply Chain', 'OWASP LLM04 Poisoning', 'NIST Measure'],
+  secret:['OWASP LLM02 Info Disclosure', 'NIST Manage'],
+  data:  ['EU AI Act transparency', 'NIST Map'],
+  agent: ['OWASP LLM06 Excessive Agency', 'NIST Govern'],
+};
+
+const CODE_RULES = [
+  { cat:'AI library', tags:T.inv, re:/^\s*(?:import|from)\s+(torch|tensorflow|keras|jax|sklearn|transformers|openai|anthropic|langchain\w*|llama_index|xgboost|lightgbm|onnxruntime|sentence_transformers|huggingface_hub|cohere|mistralai|crewai|autogen)\b/,
+    name:(m)=>PY_MOD[m[1]] || (m[1].startsWith('langchain') ? 'LangChain' : m[1]) },
+  { cat:'AI library', tags:T.inv, re:/(?:require\(|from\s+|import\s*\(?)\s*['"](openai|@anthropic-ai\/sdk|@google\/generative-ai|@tensorflow\/tfjs[\w-]*|@huggingface\/[\w-]+|@xenova\/transformers|langchain[\w\/-]*|ml5|brain\.js)['"]/,
+    name:(m)=>AI_PACKAGES[m[1]] || m[1] },
+  { cat:'LLM API call', tags:T.api, re:/https?:\/\/(api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com|api-inference\.huggingface\.co|api\.groq\.com|api\.mistral\.ai|api\.cohere\.(?:ai|com)|openrouter\.ai|api\.together\.xyz|api\.replicate\.com|[\w-]+\.openai\.azure\.com)/,
+    name:(m)=>m[1] },
+  { cat:'LLM API call', tags:T.api, re:/(?:localhost|127\.0\.0\.1):11434/, name:()=>'Ollama (local)' },
+  { cat:'Model reference', tags:T.inv, re:/['"](gpt-(?:4o?|4\.1|5|3\.5)[\w.-]*|o[134](?:-mini)?|claude-(?:3|opus|sonnet|haiku)[\w.-]*|gemini-[\d.]+[\w-]*|llama-?[234][\w.-]*|mistral-[\w.-]+)['"]/, name:(m)=>m[1] },
+  { cat:'Model reference', tags:T.model, re:/from_pretrained\(\s*['"]([\w.\/-]+)['"]/, name:(m)=>m[1] },
+  { cat:'Agent risk', tags:T.agent, re:/\b(allow_dangerous_code\s*=\s*True|ShellTool|PythonREPLTool|BashProcess|dangerously[\w]*)\b/, name:(m)=>m[1].replace(/\s+/g, '') },
+  { cat:'Agent tooling', tags:T.agent, re:/^(?!\s*(?:import|from)\s)(?:.*\b)(tools\s*=\s*\[|tool_choice|function_call|AgentExecutor\(|create_react_agent\()/, name:(m)=>m[1].replace(/\s*=\s*\[/, '=[...]').replace('(', '') },
+];
+const SECRET_RULES = [
+  [/sk-ant-[A-Za-z0-9_-]{30,}/g, 'Anthropic API key'],
+  [/sk-(?:proj-)?[A-Za-z0-9]{20,}/g, 'OpenAI-style API key'],
+  [/AIza[0-9A-Za-z_-]{35}/g, 'Google API key'],
+  [/ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{40,}/g, 'GitHub token'],
+  [/AKIA[0-9A-Z]{16}/g, 'AWS access key ID'],
+  [/hf_[A-Za-z0-9]{30,}/g, 'Hugging Face token'],
+  [/xox[baprs]-[A-Za-z0-9-]{20,}/g, 'Slack token'],
+  [/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g, 'Private key'],
+  [/(?:postgres|mysql|mongodb(?:\+srv)?):\/\/[^:\s'"]+:[^@\s'"]+@/g, 'DB connection string with password'],
+  [/sb_secret_[A-Za-z0-9_-]{20,}|service_role/g, 'Supabase secret key'],
+  [/sb_publishable_[A-Za-z0-9_-]{20,}/g, 'Supabase publishable key'],
+];
+const DATA_RULES = [
+  [/ipapi\.co|ipinfo\.io|ip-api\.com|ipgeolocation\.io|geojs\.io|ipwho\.is/, 'IP geolocation lookup'],
+  [/googletagmanager|google-analytics\.com|gtag\(|plausible\.io|clarity\.ms|hotjar|segment\.(?:com|io)/, 'Analytics / tracking'],
+  [/[\w-]+\.supabase\.co|firebaseio\.com|firestore\.googleapis|[\w-]+\.workers\.dev/, 'Backend / data store'],
+];
+
+function entropy(s) {
+  if (!s) return 0;
+  const c = {}; for (const ch of s) c[ch] = (c[ch] || 0) + 1;
+  let e = 0; for (const k in c) { const p = c[k] / s.length; e -= p * Math.log2(p); }
+  return e;
+}
+function gradeSecret(label, token, ctx) {
+  if (label === 'Supabase publishable key') return ['info', 'Designed to be public. Safe only if Row Level Security is on for every table.'];
+  const body = token.replace(/^(sk-ant-|sk-proj-|sk-|AIza|ghp_|github_pat_|AKIA|hf_|xox[baprs]-)/, '');
+  const structural = ['Private key', 'DB connection string with password', 'Supabase secret key'].includes(label);
+  if (!structural && entropy(body) < 3.3) return ['fp', `Low randomness (entropy ${entropy(body).toFixed(1)}), so probably not a real key.`];
+  if (FIXTURE.test(ctx)) return ['low', 'Looks like a test or demo value ("example"/"demo"-style words nearby). Verify.'];
+  return ['high', 'Possible live credential. Rotate it, then remove it from git history.'];
+}
+const mask = (t) => t.length > 14 ? t.slice(0, 10) + '…' + '•'.repeat(4) : t;
+
+// Look inside pickle bytes for imports that would run code on load.
+function inspectPickle(bytes) {
+  let s = ''; const n = Math.min(bytes.length, 4_000_000);
+  for (let i = 0; i < n; i++) s += String.fromCharCode(bytes[i]);
+  if (!(bytes[0] === 0x80 || /^\(|^c/.test(s))) {
+    if (bytes[0] === 0x50 && bytes[1] === 0x4b) return { kind: 'zip' };
+    return { kind: 'unknown' };
+  }
+  const hits = [];
+  const pairs = [['os','system'],['posix','system'],['nt','system'],['subprocess','Popen'],['subprocess','call'],['subprocess','run'],
+    ['subprocess','check_output'],['builtins','eval'],['builtins','exec'],['__builtin__','eval'],['builtins','__import__'],
+    ['socket','socket'],['shutil','rmtree'],['webbrowser','open'],['runpy','run_path']];
+  for (const [mod, fn] of pairs) {
+    // module name preceded by a non-word byte, or by the GLOBAL opcode 'c' right after another opcode
+    const re = new RegExp(`(?:^|[^\\w.]|[^\\w.]c)${mod}[\\s\\S]{0,6}${fn}\\b`);
+    if (re.test(s)) hits.push(`${mod}.${fn}`);
+  }
+  return { kind: 'pickle', hits };
+}
+
+// ------------------------------------------------------------ scan
+function scanFiles(files) {
+  const findings = []; let nText = 0;
+  const add = (o) => findings.push(o);
+  for (const f of files) {
+    const path = f.path; const base = path.split('/').pop();
+    const ext = base.includes('.') ? base.split('.').pop().toLowerCase() : '';
+    if (SKIP_DIRS.test('/' + path)) continue;
+    if (MODEL_EXT.has(ext)) {
+      const size = f.size ?? (f.bytes ? f.bytes.length : 0);
+      let sev = size > 1024 ? 'medium' : 'low';
+      let note = size > 1024 ? '' : 'Tiny file. May be a Git LFS pointer or a placeholder.';
+      if (PICKLE_EXT.has(ext) && f.bytes) {
+        const r = inspectPickle(f.bytes);
+        if (r.kind === 'pickle' && r.hits.length) { sev = 'high'; note = `Pickle imports ${r.hits.join(', ')}. Loading this file would run that code. Do not load it.`; }
+        else if (r.kind === 'pickle') note = 'Pickle format: no dangerous imports found, but pickles can still run code. Prefer safetensors.';
+        else if (r.kind === 'zip') note = 'Zip-based PyTorch checkpoint. Contains a pickle, so load with weights_only=True.';
+        else note = (note + ' Pickle-family format: can run code when loaded. Prefer safetensors.').trim();
+      } else if (PICKLE_EXT.has(ext)) note = (note + ' Pickle-family format: can run code when loaded.').trim();
+      add({ cat: 'Model file', label: '.' + ext + ' model', file: path, line: 0, snippet: `${size.toLocaleString()} bytes`, sev, note, tags: T.model, bom: '.' + ext + ' model file' });
+      continue;
+    }
+    if (f.text == null) continue;
+    nText++;
+    const text = f.text;
+    if (DEP_FILES.has(base)) {
+      if (base === 'package.json') {
+        let deps = {}; try { const j = JSON.parse(text); deps = { ...(j.dependencies || {}), ...(j.devDependencies || {}) }; } catch (e) {}
+        for (const [d, v] of Object.entries(deps)) {
+          if (AI_PACKAGES[d] || d.startsWith('@tensorflow/') || d.startsWith('langchain'))
+            add({ cat: 'AI dependency', label: AI_PACKAGES[d] || d, file: path, line: 0, snippet: `${d}@${v}`, sev: 'medium', note: '', tags: T.dep, bom: AI_PACKAGES[d] || d });
+        }
+      } else {
+        text.split('\n').forEach((ln, i) => {
+          const m = ln.match(/^\s*['"]?([A-Za-z0-9_.\-]+)/);
+          if (m && AI_PACKAGES[m[1].toLowerCase()] && !ln.trim().startsWith('#'))
+            add({ cat: 'AI dependency', label: AI_PACKAGES[m[1].toLowerCase()], file: path, line: i + 1, snippet: ln.trim(), sev: 'medium', note: '', tags: T.dep, bom: AI_PACKAGES[m[1].toLowerCase()] });
+        });
+      }
+    }
+    const lines = text.split('\n');
+    const isCode = CODE_EXT.has(ext);
+    lines.forEach((raw, i) => {
+      const ln = raw.length > 5000 ? raw.slice(0, 5000) : raw;
+      const ctx = lines.slice(Math.max(0, i - 3), i + 3).join('\n') + ' ' + path;
+      if (isCode) for (const r of CODE_RULES) {
+        const m = ln.match(r.re);
+        if (!m) continue;
+        const agent = r.cat.startsWith('Agent');
+        add({ cat: r.cat, label: r.name(m), file: path, line: i + 1, snippet: ln.trim().slice(0, 140),
+          sev: r.cat === 'Agent risk' ? 'high' : r.cat === 'Agent tooling' ? 'low' : 'medium',
+          note: r.cat === 'Agent risk' ? 'Agent can run shell commands or arbitrary code. One prompt injection could take over the host.'
+              : r.cat === 'Agent tooling' ? 'Agent can call tools. Check what each tool is allowed to do.' : '',
+          tags: r.tags, bom: agent ? null : r.name(m) });
+      }
+      for (const [re, label] of SECRET_RULES) {
+        re.lastIndex = 0; let m;
+        while ((m = re.exec(ln))) {
+          const [sev, note] = gradeSecret(label, m[0], ctx);
+          add({ cat: 'Secret', label, file: path, line: i + 1, snippet: sev === 'fp' ? m[0] : mask(m[0]), sev, note, tags: T.secret });
+        }
+      }
+      for (const [re, label] of DATA_RULES) {
+        const m = ln.match(re);
+        if (m) add({ cat: 'Data flow', label, file: path, line: i + 1, snippet: m[0], sev: 'info', note: 'Data leaves to a third party here. Note it in your privacy and transparency docs.', tags: T.data });
+      }
+    });
+  }
+  // de-dupe: one data-flow finding per file+label; others per file+label+snippet
+  const seen = new Set();
+  const out = findings.filter((f) => {
+    const k = [f.cat, f.label, f.file, f.cat === 'Data flow' ? '' : f.snippet].join('|');
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+  return { nText, findings: out };
+}
+
+// ------------------------------------------------------------ inputs
+const DEMO = [
+  { path: 'requirements.txt', text: 'flask==3.0\nopenai>=1.40\ntorch==2.4\nlangchain-core\n' },
+  { path: 'app/chatbot.py', text: 'from openai import OpenAI\nimport torch\nclient = OpenAI()\nresp = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}])\n' },
+  { path: 'app/agent.py', text: 'from langchain.agents import AgentExecutor\nexecutor = AgentExecutor(agent=agent, tools=[ShellTool()], allow_dangerous_code=True)\n' },
+  { path: 'app/config.py', text: '# Prod config\nOPENAI_KEY = "sk-proj-' + 'Qm7xR2vT9kLp4WzN8bYc3HdJ6fGs1aEu5oKi0nVt' + '"\n' },
+  { path: 'app/docs_example.py', text: '# Example config - replace with your own\nAPI_KEY = "sk-exampleexampleexampleexample"\n' },
+  { path: 'web/game.js', text: '// The hero lights a torch and walks into the dungeon\nconst torch = { lit: true };\nfetch("https://ipapi.co/json/").then(r => r.json());\n' },
+  { path: 'web/package.json', text: '{"name":"web","dependencies":{"@tensorflow/tfjs":"^4.20.0","express":"^4"}}' },
+  { path: 'models/classifier.pkl', bytes: (() => {
+      // A tiny protocol-2 pickle whose REDUCE would call os.system. Never loaded, only read as bytes.
+      const s = '\x80\x02cos\nsystem\nq\x00X\x0f\x00\x00\x00echo not-loadedq\x01\x85q\x02Rq\x03.';
+      const pad = 2048; const b = new Uint8Array(s.length + pad);
+      for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+      return b; })() },
+];
+
+const status = (msg) => { $('status').textContent = msg; };
+const busy = (on) => { ['demoBtn', 'ghBtn'].forEach((id) => { $(id).disabled = on; }); };
+
+async function readLocal(fileList) {
+  const out = []; let skipped = 0;
+  for (const file of fileList) {
+    const path = (file.webkitRelativePath || file.name).split('/').slice(1).join('/') || file.name;
+    if (SKIP_DIRS.test('/' + path)) continue;
+    const ext = path.includes('.') ? path.split('.').pop().toLowerCase() : '';
+    if (MODEL_EXT.has(ext)) {
+      const bytes = PICKLE_EXT.has(ext) ? new Uint8Array(await file.slice(0, 4_000_000).arrayBuffer()) : null;
+      out.push({ path, size: file.size, bytes });
+    } else if (TEXT_EXT.has(ext) && file.size < 2_000_000) {
+      out.push({ path, text: await file.text() });
+    } else skipped++;
+  }
+  return { files: out, skipped };
+}
+
+async function readGitHub(input) {
+  const m = input.trim().replace(/\.git$/, '').match(/(?:github\.com\/)?([\w.-]+)\/([\w.-]+)/);
+  if (!m) throw new Error('Enter owner/repo or a github.com URL.');
+  const [, owner, repo] = m;
+  const meta = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+  if (meta.status === 404) throw new Error('Repo not found, or it is private.');
+  if (meta.status === 403) throw new Error('GitHub API rate limit hit (60 requests per hour). Try again later.');
+  const { default_branch } = await meta.json();
+  const tr = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(default_branch)}?recursive=1`);
+  if (!tr.ok) throw new Error('Could not list repo files.');
+  const tree = (await tr.json()).tree.filter((t) => t.type === 'blob' && !SKIP_DIRS.test('/' + t.path));
+  const wanted = tree.filter((t) => {
+    const ext = t.path.includes('.') ? t.path.split('.').pop().toLowerCase() : '';
+    return MODEL_EXT.has(ext) || (TEXT_EXT.has(ext) && t.size < 1_000_000);
+  }).slice(0, 400);
+  const out = []; let done = 0;
+  const raw = (p) => `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(default_branch)}/${p.split('/').map(encodeURIComponent).join('/')}`;
+  const queue = [...wanted];
+  async function worker() {
+    while (queue.length) {
+      const t = queue.shift();
+      const ext = t.path.includes('.') ? t.path.split('.').pop().toLowerCase() : '';
+      try {
+        if (MODEL_EXT.has(ext)) {
+          let bytes = null;
+          if (PICKLE_EXT.has(ext) && t.size < 4_000_000) { const r = await fetch(raw(t.path)); bytes = new Uint8Array(await r.arrayBuffer()); }
+          out.push({ path: t.path, size: t.size, bytes });
+        } else {
+          const r = await fetch(raw(t.path)); if (r.ok) out.push({ path: t.path, text: await r.text() });
+        }
+      } catch (e) { /* skip unreadable file */ }
+      status(`Reading ${owner}/${repo}… ${++done}/${wanted.length} files`);
+    }
+  }
+  await Promise.all(Array.from({ length: 6 }, worker));
+  return { files: out, skipped: tree.length - wanted.length, name: `${owner}/${repo}` };
+}
+
+// ------------------------------------------------------------ render
+const ORDER = { high: 0, medium: 1, low: 2, info: 3, fp: 4 };
+let last = null;
+
+function render(target, res) {
+  last = { target, ...res };
+  const f = res.findings; const c = { high: 0, medium: 0, low: 0, info: 0, fp: 0 };
+  f.forEach((x) => c[x.sev]++);
+  $('stats').innerHTML = [['Files read', res.nText + res.models, ''], ['High', c.high, 's-high'], ['Medium', c.medium, 's-medium'],
+    ['Low', c.low, 's-low'], ['Info', c.info, 's-info'], ['False pos.', c.fp, 's-fp']]
+    .map(([k, v, cls]) => `<div class="stat ${cls}"><b>${v}</b><span>${k}</span></div>`).join('');
+  const bom = [...new Set(f.filter((x) => x.bom && x.sev !== 'fp').map((x) => x.bom))].sort();
+  $('bomCount').textContent = bom.length ? `${bom.length} components` : '';
+  $('bom').innerHTML = bom.length ? bom.map((b) => `<span class="chip">${esc(b)}</span>`).join('') : '<span class="chip none">No AI usage detected</span>';
+  const tagCount = {};
+  f.filter((x) => x.sev !== 'fp').forEach((x) => x.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+  const tags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]);
+  $('map').innerHTML = tags.length ? tags.map(([t, n]) => `<div><b>${esc(t)}</b>${n} finding${n > 1 ? 's' : ''}</div>`).join('') : '<div>Nothing to map.</div>';
+  drawFindings();
+  $('results').style.display = 'block';
+  status(`Scanned ${target}: ${f.filter((x) => x.sev !== 'fp').length} findings${res.skipped ? `, ${res.skipped} non-code files skipped` : ''}.`);
+}
+
+function drawFindings() {
+  const show = $('showFp').checked;
+  const list = last.findings.filter((x) => show || x.sev !== 'fp').sort((a, b) => ORDER[a.sev] - ORDER[b.sev] || a.cat.localeCompare(b.cat) || a.file.localeCompare(b.file));
+  $('findings').innerHTML = list.length ? list.map((x) => `
+    <div class="finding ${x.sev}">
+      <div class="f-top"><span class="sev ${x.sev}">${x.sev === 'fp' ? 'false pos.' : x.sev}</span>
+        <span class="f-label">${esc(x.cat)} · ${esc(x.label)}</span>
+        <span class="f-loc">${esc(x.file)}${x.line ? ':' + x.line : ''}</span></div>
+      <div class="f-snip">${esc(x.snippet)}</div>
+      ${x.note ? `<div class="f-note">→ ${esc(x.note)}</div>` : ''}
+      <div class="tags">${x.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+    </div>`).join('') : '<p class="f-note">No findings. Clean repo, or no AI in it.</p>';
+}
+
+function download(name, type, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function cyclonedx() {
+  const comps = new Map();
+  last.findings.filter((x) => x.bom && x.sev !== 'fp').forEach((x) => {
+    const type = x.cat === 'Model file' || x.cat === 'Model reference' ? 'machine-learning-model' : 'library';
+    const key = type + ':' + x.bom;
+    if (!comps.has(key)) comps.set(key, { type, name: x.bom, 'bom-ref': key, evidence: { occurrences: [] } });
+    comps.get(key).evidence.occurrences.push({ location: x.file + (x.line ? ':' + x.line : '') });
+  });
+  return JSON.stringify({
+    bomFormat: 'CycloneDX', specVersion: '1.6', version: 1,
+    metadata: { timestamp: new Date().toISOString(), tools: { components: [{ type: 'application', name: 'Lantern', version: '1.0' }] },
+      component: { type: 'application', name: last.target } },
+    components: [...comps.values()],
+  }, null, 2);
+}
+
+function markdown() {
+  const rows = last.findings.filter((x) => x.sev !== 'fp').sort((a, b) => ORDER[a.sev] - ORDER[b.sev]);
+  return [`# Lantern scan: ${last.target}`, '', `Scanned ${new Date().toISOString().slice(0, 10)}.`, '',
+    '| Severity | Category | Finding | Location | Frameworks | Note |', '|---|---|---|---|---|---|',
+    ...rows.map((x) => `| ${x.sev} | ${x.cat} | ${x.label} | \`${x.file}${x.line ? ':' + x.line : ''}\` | ${x.tags.join('; ')} | ${x.note} |`)].join('\n');
+}
+
+async function run(target, loader) {
+  busy(true); status('Scanning…');
+  try {
+    const { files, skipped, name } = await loader();
+    const res = scanFiles(files);
+    render(name || target, { ...res, skipped, models: files.filter((x) => x.text == null).length });
+  } catch (e) { status('⚠ ' + e.message); }
+  busy(false);
+}
+
+$('demoBtn').addEventListener('click', () => run('demo repo', async () => ({ files: DEMO, skipped: 0 })));
+$('dirInput').addEventListener('change', (e) => { if (e.target.files.length) run('your folder', () => readLocal(e.target.files)); });
+$('ghBtn').addEventListener('click', () => { const v = $('ghInput').value; if (v.trim()) run(v.trim(), () => readGitHub(v)); });
+$('ghInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('ghBtn').click(); });
+$('showFp').addEventListener('change', () => last && drawFindings());
+$('exportBom').addEventListener('click', () => last && download('lantern-aibom.cdx.json', 'application/json', cyclonedx()));
+$('exportMd').addEventListener('click', () => last && download('lantern-report.md', 'text/markdown', markdown()));
+})();
+</script>
+</body>
+</html>
